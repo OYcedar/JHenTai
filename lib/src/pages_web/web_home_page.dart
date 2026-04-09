@@ -35,6 +35,7 @@ class WebHomeController extends GetxController {
       _currentSearch = searchQuery;
     }
     _loadHomePage();
+    loadSearchHistory();
   }
 
   @override
@@ -45,6 +46,16 @@ class WebHomeController extends GetxController {
 
   String _currentSection = 'home';
   String _currentSearch = '';
+  String _ranklistTl = '15';
+
+  final searchHistory = <String>[].obs;
+
+  void loadSearchHistory() async {
+    try {
+      final items = await backendApiClient.fetchSearchHistory();
+      searchHistory.value = items.map((e) => (e['keyword'] as String?) ?? '').where((s) => s.isNotEmpty).toList();
+    } catch (_) {}
+  }
 
   Future<void> _loadHomePage() async {
     _currentSection = 'home';
@@ -56,6 +67,10 @@ class WebHomeController extends GetxController {
     _currentSearch = keyword;
     _currentSection = 'home';
     currentPage.value = 0;
+    if (keyword.trim().isNotEmpty) {
+      backendApiClient.recordSearchHistory(keyword.trim()).catchError((_) {});
+      loadSearchHistory();
+    }
     await _fetchGalleryList();
   }
 
@@ -71,10 +86,11 @@ class WebHomeController extends GetxController {
 
   Future<void> refresh() => _fetchGalleryList();
 
-  Future<void> loadUrl(String section) async {
+  Future<void> loadUrl(String section, {String? tl}) async {
     _currentSection = section;
     _currentSearch = '';
     currentPage.value = 0;
+    if (tl != null) _ranklistTl = tl;
     await _fetchGalleryList();
   }
 
@@ -107,11 +123,15 @@ class WebHomeController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     try {
+      final advParams = _buildAdvancedParams() ?? <String, dynamic>{};
+      if (_currentSection == 'ranklist') {
+        advParams['tl'] = _ranklistTl;
+      }
       final result = await backendApiClient.fetchGalleryList(
         section: _currentSection,
         page: currentPage.value > 0 ? currentPage.value.toString() : null,
         search: _currentSearch.isNotEmpty ? _currentSearch : null,
-        advancedParams: _buildAdvancedParams(),
+        advancedParams: advParams.isNotEmpty ? advParams : null,
       );
 
       final galleryList = (result['galleries'] as List?) ?? [];
@@ -148,6 +168,11 @@ class WebHomePage extends GetView<WebHomeController> {
         title: Text('home.title'.tr),
         actions: [
           IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => Get.toNamed('/web/history'),
+            tooltip: 'home.history'.tr,
+          ),
+          IconButton(
             icon: const Icon(Icons.download),
             onPressed: () => Get.toNamed('/web/downloads'),
             tooltip: 'home.downloads'.tr,
@@ -171,16 +196,91 @@ class WebHomePage extends GetView<WebHomeController> {
             child: Row(
               children: [
                 Expanded(
-                  child: TextField(
-                    controller: controller.searchController,
-                    decoration: InputDecoration(
-                      hintText: 'home.search'.tr,
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    ),
-                    onSubmitted: (value) => controller.search(value),
-                  ),
+                  child: Obx(() {
+                    final history = controller.searchHistory.toList();
+                    return RawAutocomplete<String>(
+                      textEditingController: controller.searchController,
+                      focusNode: FocusNode(),
+                      optionsBuilder: (textEditingValue) {
+                        if (history.isEmpty) return const Iterable<String>.empty();
+                        final query = textEditingValue.text.toLowerCase();
+                        if (query.isEmpty) return history.take(10);
+                        return history.where((s) => s.toLowerCase().contains(query)).take(10);
+                      },
+                      fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
+                        return TextField(
+                          controller: textController,
+                          focusNode: focusNode,
+                          decoration: InputDecoration(
+                            hintText: 'home.search'.tr,
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          onSubmitted: (value) {
+                            onFieldSubmitted();
+                            controller.search(value);
+                          },
+                        );
+                      },
+                      optionsViewBuilder: (context, onSelected, options) {
+                        return Align(
+                          alignment: Alignment.topLeft,
+                          child: Material(
+                            elevation: 4,
+                            borderRadius: BorderRadius.circular(8),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 300, maxWidth: 500),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: ListView.builder(
+                                      shrinkWrap: true,
+                                      padding: EdgeInsets.zero,
+                                      itemCount: options.length,
+                                      itemBuilder: (context, index) {
+                                        final option = options.elementAt(index);
+                                        return ListTile(
+                                          dense: true,
+                                          leading: const Icon(Icons.history, size: 18),
+                                          title: Text(option, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                          onTap: () => onSelected(option),
+                                          trailing: IconButton(
+                                            icon: const Icon(Icons.close, size: 16),
+                                            onPressed: () {
+                                              backendApiClient.deleteSearchHistoryItem(option).catchError((_) {});
+                                              controller.searchHistory.remove(option);
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  if (options.isNotEmpty)
+                                    InkWell(
+                                      onTap: () {
+                                        backendApiClient.clearSearchHistory().catchError((_) {});
+                                        controller.searchHistory.clear();
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8),
+                                        child: Text('searchHistory.clearAll'.tr,
+                                            style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      onSelected: (value) {
+                        controller.searchController.text = value;
+                        controller.search(value);
+                      },
+                    );
+                  }),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
@@ -230,6 +330,33 @@ class WebHomePage extends GetView<WebHomeController> {
                 ],
               );
             }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRanklistPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text('ranklist.title'.tr),
+        children: [
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '15'); },
+            child: Text('ranklist.allTime'.tr),
+          ),
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '13'); },
+            child: Text('ranklist.year'.tr),
+          ),
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '12'); },
+            child: Text('ranklist.month'.tr),
+          ),
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '11'); },
+            child: Text('ranklist.yesterday'.tr),
           ),
         ],
       ),
@@ -295,6 +422,22 @@ class WebHomePage extends GetView<WebHomeController> {
             onTap: () {
               Navigator.pop(context);
               controller.loadUrl('watched');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.leaderboard),
+            title: Text('home.ranklist'.tr),
+            onTap: () {
+              Navigator.pop(context);
+              _showRanklistPicker(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text('home.history'.tr),
+            onTap: () {
+              Navigator.pop(context);
+              Get.toNamed('/web/history');
             },
           ),
           const Divider(),

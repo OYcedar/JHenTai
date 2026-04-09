@@ -181,6 +181,42 @@ class WebKoKR {
       'settings.localGalleryDir': '로컬 갤러리 디렉토리',
       'settings.extraScanPaths': '추가 스캔 경로',
       'settings.switchSiteFailed': '사이트 전환 실패: @error',
+      'settings.language': '언어',
+
+      // history
+      'history.title': '방문 기록',
+      'history.empty': '방문 기록 없음',
+      'history.clearAll': '전체 삭제',
+      'history.clearTitle': '방문 기록 삭제',
+      'history.clearConfirm': '모든 방문 기록을 삭제하시겠습니까?',
+      'history.loadFailed': '방문 기록 로드 실패: @error',
+
+      // search history
+      'searchHistory.clearAll': '검색 기록 삭제',
+
+      // comment
+      'comment.placeholder': '댓글 작성...',
+      'comment.send': '전송',
+      'comment.posted': '댓글 게시됨',
+      'comment.postedMsg': '댓글이 게시되었습니다',
+      'comment.postFailed': '댓글 게시 실패: @error',
+      'comment.voteFailed': '투표 실패: @error',
+
+      // ranklist
+      'ranklist.title': '랭킹',
+      'ranklist.allTime': '역대',
+      'ranklist.year': '연간',
+      'ranklist.month': '월간',
+      'ranklist.yesterday': '어제',
+
+      // thumbnails
+      'thumbnails.title': '썸네일 (@count)',
+      'thumbnails.grid': '썸네일 그리드',
+      'thumbnails.loadFailed': '썸네일 로드 실패: @error',
+
+      // home additions
+      'home.history': '방문 기록',
+      'home.ranklist': '랭킹',
     };
   }
 }

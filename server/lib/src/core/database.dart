@@ -92,6 +92,27 @@ class ServerDatabase {
 
     _db.execute('CREATE INDEX IF NOT EXISTS idx_cache_expire ON dio_cache(expire_date)');
     _db.execute('CREATE INDEX IF NOT EXISTS idx_cache_url ON dio_cache(url)');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS history (
+        gid INTEGER PRIMARY KEY,
+        token TEXT NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        cover_url TEXT NOT NULL DEFAULT '',
+        category TEXT NOT NULL DEFAULT '',
+        visit_time TEXT NOT NULL
+      )
+    ''');
+    _db.execute('CREATE INDEX IF NOT EXISTS idx_history_visit ON history(visit_time DESC)');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS search_history (
+        keyword TEXT PRIMARY KEY,
+        use_count INTEGER NOT NULL DEFAULT 1,
+        last_used TEXT NOT NULL
+      )
+    ''');
+    _db.execute('CREATE INDEX IF NOT EXISTS idx_search_last ON search_history(last_used DESC)');
   }
 
   // --- Config operations ---
@@ -234,6 +255,54 @@ class ServerDatabase {
 
   void deleteArchiveDownload(int gid) {
     _db.execute('DELETE FROM archive_download WHERE gid = ?', [gid]);
+  }
+
+  // --- History operations ---
+
+  void upsertHistory(int gid, String token, String title, String coverUrl, String category) {
+    _db.execute('''
+      INSERT OR REPLACE INTO history (gid, token, title, cover_url, category, visit_time)
+      VALUES (?, ?, ?, ?, ?, ?)
+    ''', [gid, token, title, coverUrl, category, DateTime.now().toIso8601String()]);
+  }
+
+  List<Map<String, dynamic>> selectHistory({int limit = 50, int offset = 0}) {
+    return _db.select(
+      'SELECT * FROM history ORDER BY visit_time DESC LIMIT ? OFFSET ?',
+      [limit, offset],
+    ).map(_rowToMap).toList();
+  }
+
+  void deleteHistory(int gid) {
+    _db.execute('DELETE FROM history WHERE gid = ?', [gid]);
+  }
+
+  void clearHistory() {
+    _db.execute('DELETE FROM history');
+  }
+
+  // --- Search history operations ---
+
+  void recordSearch(String keyword) {
+    _db.execute('''
+      INSERT INTO search_history (keyword, use_count, last_used) VALUES (?, 1, ?)
+      ON CONFLICT(keyword) DO UPDATE SET use_count = use_count + 1, last_used = ?
+    ''', [keyword, DateTime.now().toIso8601String(), DateTime.now().toIso8601String()]);
+  }
+
+  List<Map<String, dynamic>> selectSearchHistory({int limit = 20}) {
+    return _db.select(
+      'SELECT * FROM search_history ORDER BY last_used DESC LIMIT ?',
+      [limit],
+    ).map(_rowToMap).toList();
+  }
+
+  void deleteSearchHistory(String keyword) {
+    _db.execute('DELETE FROM search_history WHERE keyword = ?', [keyword]);
+  }
+
+  void clearSearchHistory() {
+    _db.execute('DELETE FROM search_history');
   }
 
   // --- Cache operations ---

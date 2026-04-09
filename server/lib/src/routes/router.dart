@@ -12,13 +12,16 @@ import '../service/event_bus.dart';
 import '../service/gallery_download_service.dart';
 import '../service/local_gallery_service.dart';
 import 'auth_routes.dart';
+import 'comment_routes.dart';
 import 'download_routes.dart';
 import 'favorite_routes.dart';
 import 'gallery_routes.dart';
+import 'history_routes.dart';
 import 'image_routes.dart';
 import 'local_routes.dart';
 import 'proxy_routes.dart';
 import 'rating_routes.dart';
+import 'search_history_routes.dart';
 import 'setting_routes.dart';
 
 class AppRouter {
@@ -52,6 +55,9 @@ class AppRouter {
     router.mount('/api/setting/', SettingRoutes(config).router.call);
     router.mount('/api/favorite/', FavoriteRoutes(ehClient).router.call);
     router.mount('/api/rating/', RatingRoutes(ehClient).router.call);
+    router.mount('/api/history/', HistoryRoutes().router.call);
+    router.mount('/api/search-history/', SearchHistoryRoutes().router.call);
+    router.mount('/api/comment/', CommentRoutes(ehClient).router.call);
 
     router.get('/api/health', (Request request) {
       return Response.ok(

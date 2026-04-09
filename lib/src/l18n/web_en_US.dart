@@ -181,6 +181,42 @@ class WebEnUS {
       'settings.localGalleryDir': 'Local Gallery Dir',
       'settings.extraScanPaths': 'Extra Scan Paths',
       'settings.switchSiteFailed': 'Failed to switch site: @error',
+      'settings.language': 'Language',
+
+      // history
+      'history.title': 'History',
+      'history.empty': 'No browsing history',
+      'history.clearAll': 'Clear All',
+      'history.clearTitle': 'Clear History',
+      'history.clearConfirm': 'Are you sure you want to clear all browsing history?',
+      'history.loadFailed': 'Failed to load history: @error',
+
+      // search history
+      'searchHistory.clearAll': 'Clear search history',
+
+      // comment
+      'comment.placeholder': 'Write a comment...',
+      'comment.send': 'Send',
+      'comment.posted': 'Comment Posted',
+      'comment.postedMsg': 'Your comment has been posted',
+      'comment.postFailed': 'Failed to post comment: @error',
+      'comment.voteFailed': 'Failed to vote: @error',
+
+      // ranklist
+      'ranklist.title': 'Ranklist',
+      'ranklist.allTime': 'All Time',
+      'ranklist.year': 'Past Year',
+      'ranklist.month': 'Past Month',
+      'ranklist.yesterday': 'Yesterday',
+
+      // thumbnails
+      'thumbnails.title': 'Thumbnails (@count)',
+      'thumbnails.grid': 'Thumbnail Grid',
+      'thumbnails.loadFailed': 'Failed to load thumbnails: @error',
+
+      // home additions
+      'home.history': 'History',
+      'home.ranklist': 'Ranklist',
     };
   }
 }
