@@ -119,7 +119,7 @@ class WebReaderController extends GetxController {
           _loadLocal();
       }
     } catch (e) {
-      errorMessage.value = 'Failed to load gallery: $e';
+      errorMessage.value = 'reader.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
     }
@@ -154,7 +154,7 @@ class WebReaderController extends GetxController {
 
   void _loadLocal() {
     if (localImages == null || localImages!.isEmpty) {
-      errorMessage.value = 'No images provided';
+      errorMessage.value = 'reader.noImages'.tr;
       return;
     }
     totalPages.value = localImages!.length;
@@ -241,13 +241,13 @@ class WebReaderPage extends StatelessWidget {
       backgroundColor: Colors.black,
       body: Obx(() {
         if (controller.isLoading.value) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(color: Colors.white),
-                SizedBox(height: 16),
-                Text('Loading gallery...', style: TextStyle(color: Colors.white70)),
+                const CircularProgressIndicator(color: Colors.white),
+                const SizedBox(height: 16),
+                Text('reader.loading'.tr, style: const TextStyle(color: Colors.white70)),
               ],
             ),
           );
@@ -262,7 +262,7 @@ class WebReaderPage extends StatelessWidget {
                 Text(controller.errorMessage.value,
                     style: const TextStyle(color: Colors.white), textAlign: TextAlign.center),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: controller.retry, child: const Text('Retry')),
+                FilledButton(onPressed: controller.retry, child: Text('common.retry'.tr)),
               ],
             ),
           );
@@ -359,13 +359,13 @@ class _ImagePage extends StatelessWidget {
       if (url.isEmpty) {
         return SizedBox(
           height: isVertical ? MediaQuery.of(context).size.height * 0.8 : null,
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(color: Colors.white54),
-                SizedBox(height: 12),
-                Text('Loading image...', style: TextStyle(color: Colors.white54)),
+                const CircularProgressIndicator(color: Colors.white54),
+                const SizedBox(height: 12),
+                Text('reader.loadingImage'.tr, style: const TextStyle(color: Colors.white54)),
               ],
             ),
           ),
@@ -393,7 +393,7 @@ class _ImagePage extends StatelessWidget {
               children: [
                 const Icon(Icons.broken_image, color: Colors.white54, size: 48),
                 const SizedBox(height: 8),
-                const Text('Failed to load image', style: TextStyle(color: Colors.white54)),
+                Text('reader.imageFailed'.tr, style: const TextStyle(color: Colors.white54)),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () {
@@ -403,7 +403,7 @@ class _ImagePage extends StatelessWidget {
                       controller._loadImageAtIndex(index);
                     }
                   },
-                  child: const Text('Retry'),
+                  child: Text('common.retry'.tr),
                 ),
               ],
             ),
@@ -457,12 +457,12 @@ class _TopOverlay extends StatelessWidget {
                     ReadDirection.vertical => Icons.swap_vert,
                   };
                   final label = switch (controller.readDirection.value) {
-                    ReadDirection.ltr => 'LTR',
-                    ReadDirection.rtl => 'RTL',
-                    ReadDirection.vertical => 'Vertical',
+                    ReadDirection.ltr => 'reader.ltr'.tr,
+                    ReadDirection.rtl => 'reader.rtl'.tr,
+                    ReadDirection.vertical => 'reader.vertical'.tr,
                   };
                   return Tooltip(
-                    message: 'Reading direction: $label',
+                    message: 'reader.directionLabel'.trParams({'dir': label}),
                     child: IconButton(
                       icon: Icon(icon, color: Colors.white),
                       onPressed: controller.cycleReadDirection,

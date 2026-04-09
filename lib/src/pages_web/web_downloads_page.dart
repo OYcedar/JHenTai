@@ -45,7 +45,7 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
       final aTasks = await backendApiClient.listArchiveDownloads();
       archiveTasks.value = aTasks.cast<Map<String, dynamic>>();
     } catch (e) {
-      errorMessage.value = 'Failed to load tasks: $e';
+      errorMessage.value = 'downloads.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
     }
@@ -144,15 +144,15 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Downloads'),
+        title: Text('downloads.title'.tr),
         actions: [
           IconButton(icon: const Icon(Icons.refresh), onPressed: controller.refresh),
         ],
         bottom: TabBar(
           controller: controller.tabController,
-          tabs: const [
-            Tab(text: 'Gallery', icon: Icon(Icons.photo_library)),
-            Tab(text: 'Archive', icon: Icon(Icons.archive)),
+          tabs: [
+            Tab(text: 'downloads.gallery'.tr, icon: const Icon(Icons.photo_library)),
+            Tab(text: 'downloads.archive'.tr, icon: const Icon(Icons.archive)),
           ],
         ),
       ),
@@ -172,7 +172,7 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
                 FilledButton.icon(
                   icon: const Icon(Icons.refresh),
                   onPressed: controller.refresh,
-                  label: const Text('Retry'),
+                  label: Text('common.retry'.tr),
                 ),
               ],
             ),
@@ -200,7 +200,7 @@ class _GalleryTaskList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       if (controller.galleryTasks.isEmpty) {
-        return const Center(child: Text('No gallery downloads'));
+        return Center(child: Text('downloads.noGallery'.tr));
       }
       return ListView.builder(
         padding: const EdgeInsets.all(8),
@@ -219,8 +219,6 @@ class _GalleryTaskCard extends StatelessWidget {
   final WebDownloadsController controller;
   const _GalleryTaskCard({required this.task, required this.controller});
 
-  static const _statusNames = ['None', 'Downloading', 'Paused', 'Completed', 'Failed'];
-
   @override
   Widget build(BuildContext context) {
     final gid = task['gid'] as int;
@@ -233,7 +231,7 @@ class _GalleryTaskCard extends StatelessWidget {
     final completed = task['completedCount'] as int? ?? 0;
     final total = task['pageCount'] as int? ?? 0;
     final progress = total > 0 ? completed / total : 0.0;
-    final statusName = status < _statusNames.length ? _statusNames[status] : 'Unknown';
+    final statusName = 'downloads.gStatus$status'.tr;
     final isCompleted = status == 3;
 
     return Card(
@@ -299,7 +297,7 @@ class _GalleryTaskCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _StatusBadge(status: statusName, isCompleted: isCompleted),
+                        _StatusBadge(statusIndex: status, statusName: statusName, isCompleted: isCompleted),
                         const SizedBox(width: 8),
                         Text('$completed / $total', style: Theme.of(context).textTheme.bodySmall),
                       ],
@@ -317,18 +315,18 @@ class _GalleryTaskCard extends StatelessWidget {
                 if (isCompleted)
                   IconButton(
                     icon: const Icon(Icons.menu_book, color: Colors.green),
-                    tooltip: 'Read',
+                    tooltip: 'downloads.read'.tr,
                     onPressed: () => Get.toNamed('/web/reader/$gid/$token?mode=downloaded'),
                   ),
                 if (status == 1)
-                  IconButton(icon: const Icon(Icons.pause), tooltip: 'Pause',
+                  IconButton(icon: const Icon(Icons.pause), tooltip: 'downloads.pause'.tr,
                       onPressed: () => controller.pauseGallery(gid)),
                 if (status == 2 || status == 4)
-                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'Resume',
+                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'downloads.resume'.tr,
                       onPressed: () => controller.resumeGallery(gid)),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Delete',
+                  tooltip: 'common.delete'.tr,
                   onPressed: () => _confirmDelete(context, gid),
                 ),
               ],
@@ -343,13 +341,13 @@ class _GalleryTaskCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Download'),
-        content: const Text('Delete this download and its files?'),
+        title: Text('downloads.deleteTitle'.tr),
+        content: Text('downloads.deleteConfirm'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
           TextButton(
             onPressed: () { Navigator.pop(ctx); controller.deleteGallery(gid); },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('common.delete'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -367,7 +365,7 @@ class _ArchiveTaskList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       if (controller.archiveTasks.isEmpty) {
-        return const Center(child: Text('No archive downloads'));
+        return Center(child: Text('downloads.noArchive'.tr));
       }
       return ListView.builder(
         padding: const EdgeInsets.all(8),
@@ -386,11 +384,6 @@ class _ArchiveTaskCard extends StatelessWidget {
   final WebDownloadsController controller;
   const _ArchiveTaskCard({required this.task, required this.controller});
 
-  static const _statusNames = [
-    'None', 'Unlocking', 'Parsing URL', 'Downloading',
-    'Downloaded', 'Unpacking', 'Completed', 'Paused', 'Failed',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final gid = task['gid'] as int;
@@ -403,7 +396,7 @@ class _ArchiveTaskCard extends StatelessWidget {
     final downloaded = task['downloadedBytes'] as int? ?? 0;
     final total = task['totalBytes'] as int? ?? 0;
     final progress = total > 0 ? downloaded / total : 0.0;
-    final statusName = status < _statusNames.length ? _statusNames[status] : 'Unknown';
+    final statusName = 'downloads.aStatus$status'.tr;
     final isCompleted = status == 6;
 
     return Card(
@@ -469,7 +462,7 @@ class _ArchiveTaskCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _StatusBadge(status: statusName, isCompleted: isCompleted),
+                        _StatusBadge(statusIndex: status, statusName: statusName, isCompleted: isCompleted, isArchive: true),
                         const SizedBox(width: 8),
                         if (total > 0)
                           Text('${_formatBytes(downloaded)} / ${_formatBytes(total)}',
@@ -489,18 +482,18 @@ class _ArchiveTaskCard extends StatelessWidget {
                 if (isCompleted)
                   IconButton(
                     icon: const Icon(Icons.menu_book, color: Colors.green),
-                    tooltip: 'Read',
+                    tooltip: 'downloads.read'.tr,
                     onPressed: () => Get.toNamed('/web/reader/$gid/$token?mode=archive'),
                   ),
                 if (status == 3)
-                  IconButton(icon: const Icon(Icons.pause), tooltip: 'Pause',
+                  IconButton(icon: const Icon(Icons.pause), tooltip: 'downloads.pause'.tr,
                       onPressed: () => controller.pauseArchive(gid)),
                 if (status == 7 || status == 8)
-                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'Resume',
+                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'downloads.resume'.tr,
                       onPressed: () => controller.resumeArchive(gid)),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Delete',
+                  tooltip: 'common.delete'.tr,
                   onPressed: () => _confirmDelete(context, gid),
                 ),
               ],
@@ -515,13 +508,13 @@ class _ArchiveTaskCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Download'),
-        content: const Text('Delete this download and its files?'),
+        title: Text('downloads.deleteTitle'.tr),
+        content: Text('downloads.deleteConfirm'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
           TextButton(
             onPressed: () { Navigator.pop(ctx); controller.deleteArchive(gid); },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('common.delete'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -532,18 +525,15 @@ class _ArchiveTaskCard extends StatelessWidget {
 // --- Shared widgets ---
 
 class _StatusBadge extends StatelessWidget {
-  final String status;
+  final int statusIndex;
+  final String statusName;
   final bool isCompleted;
-  const _StatusBadge({required this.status, required this.isCompleted});
+  final bool isArchive;
+  const _StatusBadge({required this.statusIndex, required this.statusName, required this.isCompleted, this.isArchive = false});
 
   @override
   Widget build(BuildContext context) {
-    final color = isCompleted
-        ? Colors.green
-        : status == 'Downloading' ? Colors.blue
-        : status == 'Paused' ? Colors.orange
-        : status == 'Failed' ? Colors.red
-        : Colors.grey;
+    final color = _resolveColor();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -552,8 +542,18 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Text(status, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      child: Text(statusName, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
     );
+  }
+
+  Color _resolveColor() {
+    if (isCompleted) return Colors.green;
+    if (isArchive) {
+      // archive: 3=Downloading, 7=Paused, 8=Failed
+      return switch (statusIndex) { 3 => Colors.blue, 7 => Colors.orange, 8 => Colors.red, _ => Colors.grey };
+    }
+    // gallery: 1=Downloading, 2=Paused, 4=Failed
+    return switch (statusIndex) { 1 => Colors.blue, 2 => Colors.orange, 4 => Colors.red, _ => Colors.grey };
   }
 }
 
