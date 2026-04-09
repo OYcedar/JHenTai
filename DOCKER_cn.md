@@ -136,7 +136,8 @@ environment:
 
 ```bash
 docker-compose stop
-cp -r /path/to/jhentai-data /backup/jhentai-$(date +%Y%m%d)
+docker run --rm -v jhentai-data:/data -v $(pwd)/backup:/backup alpine \
+  tar czf /backup/jhentai-$(date +%Y%m%d).tar.gz -C / data
 docker-compose start
 ```
 
@@ -210,7 +211,6 @@ GitHub Actions 工作流 `.github/workflows/docker-publish.yml` 会在以下情�
 
 | Secret | 值 |
 |---|---|
-| `DOCKERHUB_USERNAME` | 你的 Docker Hub 用户名 |
 | `DOCKERHUB_TOKEN` | Docker Hub **Access Token**（非密码） |
 
 创建 Docker Hub Token：Docker Hub → Account Settings → Security → New Access Token。

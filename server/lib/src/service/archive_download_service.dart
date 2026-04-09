@@ -11,6 +11,10 @@ import '../network/eh_client.dart';
 import '../utils/archive_util.dart';
 import 'event_bus.dart';
 
+T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
+  return (index >= 0 && index < values.length) ? values[index] : fallback;
+}
+
 enum ArchiveStatus {
   none,         // 0
   unlocking,    // 1
@@ -112,7 +116,7 @@ class ArchiveDownloadService {
         size: row['size'] as String? ?? '',
         archivePageUrl: row['archive_page_url'] as String? ?? '',
         isOriginal: (row['is_original'] as int? ?? 0) == 1,
-        status: ArchiveStatus.values[row['archive_status'] as int],
+        status: _safeEnum(ArchiveStatus.values, row['archive_status'] as int, ArchiveStatus.failed),
         downloadPageUrl: row['download_page_url'] as String? ?? '',
         downloadUrl: row['download_url'] as String? ?? '',
         downloadedBytes: row['downloaded_bytes'] as int? ?? 0,

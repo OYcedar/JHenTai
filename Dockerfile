@@ -1,14 +1,15 @@
-# Stage 1: Build Flutter Web frontend
-FROM ghcr.io/cirruslabs/flutter:3.41.6 AS web-build
+# Stage 1: Build Flutter Web frontend (platform-independent output)
+FROM --platform=linux/amd64 ghcr.io/cirruslabs/flutter:3.41.6 AS web-build
 
 WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
-COPY lib/ lib/
 COPY web/ web/
-COPY assets/ assets/
 
 RUN flutter config --no-analytics && \
     flutter pub get
+
+COPY lib/ lib/
+COPY assets/ assets/
 
 RUN flutter build web \
     --release \
@@ -30,6 +31,7 @@ FROM debian:bookworm-slim
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libsqlite3-0 \
+    sqlite3 \
     ca-certificates \
     wget \
     && rm -rf /var/lib/apt/lists/*

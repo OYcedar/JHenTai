@@ -15,6 +15,8 @@ class AuthMiddleware {
     final stored = db.readConfig(_apiTokenConfigKey);
     if (stored != null && stored.isNotEmpty) {
       _token = stored;
+      final masked = '${_token.substring(0, 8)}...${_token.substring(_token.length - 4)}';
+      log.info('API token loaded: $masked');
     } else {
       _token = _generateToken();
       db.writeConfig(_apiTokenConfigKey, _token);
@@ -63,6 +65,10 @@ class AuthMiddleware {
     }
     if (path == 'api/health') return true;
     if (path == 'api/auth/token/verify') return true;
+    if (path.startsWith('ws/')) {
+      final wsToken = request.url.queryParameters['token'];
+      return wsToken == _token;
+    }
     return false;
   }
 

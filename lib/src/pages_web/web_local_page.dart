@@ -218,6 +218,12 @@ class _FullImageDialogState extends State<_FullImageDialog> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Dialog.fullscreen(
       child: Scaffold(

@@ -11,6 +11,10 @@ import '../core/log.dart';
 import '../network/eh_client.dart';
 import '../service/event_bus.dart';
 
+T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
+  return (index >= 0 && index < values.length) ? values[index] : fallback;
+}
+
 enum GalleryDownloadStatus {
   none,
   downloading,
@@ -87,7 +91,7 @@ class GalleryDownloadService {
         galleryUrl: row['gallery_url'] as String,
         coverUrl: row['cover_url'] as String? ?? '',
         uploader: row['uploader'] as String? ?? '',
-        status: GalleryDownloadStatus.values[row['download_status'] as int],
+        status: _safeEnum(GalleryDownloadStatus.values, row['download_status'] as int, GalleryDownloadStatus.failed),
         completedCount: row['completed_count'] as int? ?? 0,
         group: row['group_name'] as String? ?? 'default',
       );
@@ -304,6 +308,14 @@ class GalleryDownloadService {
             log.error('Error downloading image $i for gallery ${task.gid}', e);
             await Future.delayed(Duration(seconds: retries));
           }
+        }
+
+        if (!downloaded && task.status == GalleryDownloadStatus.downloading) {
+          log.warning('Failed to download image $i after $maxRetries retries, marking gallery ${task.gid} as failed');
+          task.status = GalleryDownloadStatus.failed;
+          db.updateGalleryDownloadStatus(task.gid, GalleryDownloadStatus.failed.index);
+          _notifyProgress(task);
+          return;
         }
       }
 

@@ -8,6 +8,7 @@ import '../core/database.dart';
 
 class SettingRoutes {
   final ServerConfig _config;
+  static const _reservedKeys = {'api_token', 'eh_cookies'};
 
   SettingRoutes(this._config);
 
@@ -63,6 +64,7 @@ class SettingRoutes {
     }
 
     for (final entry in body.entries) {
+      if (_reservedKeys.contains(entry.key)) continue;
       final value = entry.value is String ? entry.value : jsonEncode(entry.value);
       db.writeConfig(entry.key, value);
     }
@@ -93,6 +95,12 @@ class SettingRoutes {
   }
 
   Future<Response> _updateSetting(Request request, String key) async {
+    if (_reservedKeys.contains(key)) {
+      return Response.forbidden(
+        jsonEncode({'error': 'Cannot modify reserved key: $key'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
     Map<String, dynamic> body;
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
@@ -110,6 +118,12 @@ class SettingRoutes {
   }
 
   Future<Response> _deleteSetting(Request request, String key) async {
+    if (_reservedKeys.contains(key)) {
+      return Response.forbidden(
+        jsonEncode({'error': 'Cannot delete reserved key: $key'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
     db.deleteConfig(key);
     return Response.ok(
       jsonEncode({'success': true}),
