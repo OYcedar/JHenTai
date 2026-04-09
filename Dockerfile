@@ -34,7 +34,8 @@ RUN apt-get update && \
     sqlite3 \
     ca-certificates \
     wget \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -sf /usr/lib/*/libsqlite3.so.0 /usr/lib/libsqlite3.so
 
 RUN groupadd -g 1000 jhentai && \
     useradd -u 1000 -g jhentai -m -s /bin/bash jhentai

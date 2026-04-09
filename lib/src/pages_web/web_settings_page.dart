@@ -181,34 +181,14 @@ class WebSettingsPage extends GetView<WebSettingsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Login with credentials', style: Theme.of(context).textTheme.titleSmall),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller.loginUserController,
-          decoration: const InputDecoration(
-            labelText: 'Username',
-            border: OutlineInputBorder(),
-          ),
+        Text('Login with cookies (recommended)', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 4),
+        Text(
+          'EH forum login is blocked by Cloudflare in server environments. '
+          'Please login via browser, then copy cookies here.\n'
+          'Steps: Login at e-hentai.org → F12 → Application → Cookies → copy values below.',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
         ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: controller.loginPassController,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Password',
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (_) => controller.login(),
-        ),
-        const SizedBox(height: 8),
-        Obx(() => FilledButton(
-          onPressed: controller.isLoggingIn.value ? null : controller.login,
-          child: controller.isLoggingIn.value
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Login'),
-        )),
-        const Divider(height: 32),
-        Text('Or paste cookies', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         TextField(
           controller: controller.cookieController,
@@ -219,9 +199,45 @@ class WebSettingsPage extends GetView<WebSettingsController> {
           ),
         ),
         const SizedBox(height: 8),
-        OutlinedButton(
+        FilledButton(
           onPressed: controller.loginWithCookies,
           child: const Text('Set Cookies'),
+        ),
+        const Divider(height: 32),
+        Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text('Login with credentials (may fail due to Cloudflare)',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.grey)),
+            children: [
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller.loginUserController,
+                decoration: const InputDecoration(
+                  labelText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: controller.loginPassController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+                onSubmitted: (_) => controller.login(),
+              ),
+              const SizedBox(height: 8),
+              Obx(() => OutlinedButton(
+                onPressed: controller.isLoggingIn.value ? null : controller.login,
+                child: controller.isLoggingIn.value
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Login'),
+              )),
+            ],
+          ),
         ),
       ],
     );

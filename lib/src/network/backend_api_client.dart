@@ -106,7 +106,7 @@ class BackendApiClient {
   // --- Proxy image URL for display ---
 
   String proxyImageUrl(String imageUrl) {
-    return '$_baseUrl/api/proxy/image?url=${Uri.encodeComponent(imageUrl)}';
+    return '$_baseUrl/api/proxy/image?url=${Uri.encodeComponent(imageUrl)}&token=${Uri.encodeComponent(_token ?? '')}';
   }
 
   // --- Auth ---
@@ -251,15 +251,15 @@ class BackendApiClient {
   // --- Image URL helpers ---
 
   String galleryImageUrl(int gid, String filename) {
-    return '$_baseUrl/api/image/gallery/$gid/$filename';
+    return '$_baseUrl/api/image/gallery/$gid/$filename?token=${Uri.encodeComponent(_token ?? '')}';
   }
 
   String archiveImageUrl(int gid, String filename) {
-    return '$_baseUrl/api/image/archive/$gid/$filename';
+    return '$_baseUrl/api/image/archive/$gid/$filename?token=${Uri.encodeComponent(_token ?? '')}';
   }
 
   String imageFileUrl(String filePath) {
-    return '$_baseUrl/api/image/file?path=${Uri.encodeComponent(filePath)}';
+    return '$_baseUrl/api/image/file?path=${Uri.encodeComponent(filePath)}&token=${Uri.encodeComponent(_token ?? '')}';
   }
 
   // --- Structured gallery endpoints ---
