@@ -136,7 +136,8 @@ environment:
 
 ```bash
 docker-compose stop
-cp -r /path/to/jhentai-data /backup/jhentai-$(date +%Y%m%d)
+docker run --rm -v jhentai-data:/data -v $(pwd)/backup:/backup alpine \
+  tar czf /backup/jhentai-$(date +%Y%m%d).tar.gz -C / data
 docker-compose start
 ```
 
@@ -210,7 +211,6 @@ GitHub Actions 워크플로 `.github/workflows/docker-publish.yml`은 다음 상
 
 | Secret | 값 |
 |---|---|
-| `DOCKERHUB_USERNAME` | Docker Hub 사용자 이름 |
 | `DOCKERHUB_TOKEN` | Docker Hub **Access Token** (비밀번호 아님) |
 
 Docker Hub 토큰 생성: Docker Hub → Account Settings → Security → New Access Token.

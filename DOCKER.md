@@ -136,7 +136,8 @@ Everything is stored under the `/data` volume:
 
 ```bash
 docker-compose stop
-cp -r /path/to/jhentai-data /backup/jhentai-$(date +%Y%m%d)
+docker run --rm -v jhentai-data:/data -v $(pwd)/backup:/backup alpine \
+  tar czf /backup/jhentai-$(date +%Y%m%d).tar.gz -C / data
 docker-compose start
 ```
 
@@ -210,7 +211,6 @@ The GitHub Actions workflow `.github/workflows/docker-publish.yml` automatically
 
 | Secret | Value |
 |---|---|
-| `DOCKERHUB_USERNAME` | Your Docker Hub username |
 | `DOCKERHUB_TOKEN` | A Docker Hub **Access Token** (not your password) |
 
 To create a Docker Hub token: Docker Hub → Account Settings → Security → New Access Token.

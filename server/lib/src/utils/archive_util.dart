@@ -3,13 +3,35 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
+import 'package:path/path.dart' as p;
 
 Future<bool> extractZipArchive(String archivePath, String extractPath) async {
   return Isolate.run(() {
     InputFileStream? inputStream;
     try {
       inputStream = InputFileStream(archivePath);
-      extractArchiveToDisk(ZipDecoder().decodeBuffer(inputStream), extractPath);
+      final archive = ZipDecoder().decodeBuffer(inputStream);
+      final canonicalBase = p.canonicalize(extractPath);
+
+      for (final file in archive.files) {
+        final filePath = p.join(extractPath, file.name);
+        final canonicalPath = p.canonicalize(filePath);
+
+        if (!canonicalPath.startsWith('$canonicalBase/') &&
+            canonicalPath != canonicalBase) {
+          continue;
+        }
+
+        if (file.isFile) {
+          final outFile = File(canonicalPath);
+          outFile.parent.createSync(recursive: true);
+          final out = outFile.openSync(mode: FileMode.write);
+          out.writeFromSync(file.content as List<int>);
+          out.closeSync();
+        } else {
+          Directory(canonicalPath).createSync(recursive: true);
+        }
+      }
       return true;
     } catch (e) {
       return false;

@@ -19,6 +19,7 @@ class WebReaderController extends GetxController {
   final _loadedImageUrls = <int, String>{};
 
   late PageController pageController;
+  final focusNode = FocusNode();
 
   @override
   void onInit() {
@@ -32,6 +33,7 @@ class WebReaderController extends GetxController {
   @override
   void onClose() {
     pageController.dispose();
+    focusNode.dispose();
     super.onClose();
   }
 
@@ -154,7 +156,7 @@ class WebReaderPage extends GetView<WebReaderController> {
 
   Widget _buildReader(BuildContext context) {
     return KeyboardListener(
-      focusNode: FocusNode()..requestFocus(),
+      focusNode: controller.focusNode..requestFocus(),
       autofocus: true,
       onKeyEvent: (event) {
         if (event is KeyDownEvent) {

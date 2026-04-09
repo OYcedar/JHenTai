@@ -16,6 +16,7 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
 
   WebSocketChannel? _wsChannel;
   StreamSubscription? _wsSubscription;
+  Timer? _reconnectTimer;
 
   @override
   void onInit() {
@@ -27,6 +28,7 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
 
   @override
   void onClose() {
+    _reconnectTimer?.cancel();
     tabController.dispose();
     _wsSubscription?.cancel();
     _wsChannel?.sink.close();
@@ -52,12 +54,16 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
   int _reconnectAttempts = 0;
 
   void _connectWebSocket() {
+    if (isClosed) return;
     _wsSubscription?.cancel();
     _wsChannel?.sink.close();
 
     try {
       final wsUrl = backendApiClient.baseUrl.replaceFirst('http', 'ws');
-      _wsChannel = WebSocketChannel.connect(Uri.parse('$wsUrl/ws/events'));
+      final wsToken = backendApiClient.currentToken ?? '';
+      _wsChannel = WebSocketChannel.connect(
+        Uri.parse('$wsUrl/ws/events?token=$wsToken'),
+      );
       _reconnectAttempts = 0;
 
       _wsSubscription = _wsChannel!.stream.listen(
@@ -77,10 +83,12 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
   }
 
   void _scheduleReconnect() {
+    if (isClosed) return;
     _reconnectAttempts++;
     final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(1, 30));
     debugPrint('WebSocket reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)');
-    Future.delayed(delay, _connectWebSocket);
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(delay, _connectWebSocket);
   }
 
   void _handleWsMessage(String message) {

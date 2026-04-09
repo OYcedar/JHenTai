@@ -159,6 +159,12 @@ class _WebSetupPageState extends State<WebSetupPage> {
   String? _error;
 
   @override
+  void dispose() {
+    _tokenController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(

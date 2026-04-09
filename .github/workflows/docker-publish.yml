@@ -12,6 +12,9 @@ on:
       - 'lib/src/pages_web/**'
       - 'lib/src/network/backend_api_client.dart'
       - 'web/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
       - 'Dockerfile'
       - 'docker-entrypoint.sh'
       - 'docker-compose.yml'
@@ -67,7 +70,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

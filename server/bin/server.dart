@@ -87,21 +87,19 @@ Future<void> main(List<String> args) async {
   log.info('Server running at http://${server.address.host}:${server.port}');
   log.info('API available at http://${server.address.host}:${server.port}/api/');
 
-  ProcessSignal.sigint.watch().listen((_) async {
+  bool shuttingDown = false;
+  Future<void> shutdown() async {
+    if (shuttingDown) return;
+    shuttingDown = true;
     log.info('Shutting down...');
     eventBus.dispose();
     db.dispose();
     await server.close();
     exit(0);
-  });
+  }
 
-  ProcessSignal.sigterm.watch().listen((_) async {
-    log.info('Shutting down...');
-    eventBus.dispose();
-    db.dispose();
-    await server.close();
-    exit(0);
-  });
+  ProcessSignal.sigint.watch().listen((_) => shutdown());
+  ProcessSignal.sigterm.watch().listen((_) => shutdown());
 }
 
 Handler _buildHandler(Handler apiHandler, ServerConfig config) {

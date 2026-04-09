@@ -12,6 +12,7 @@ class BackendApiClient {
 
   String get baseUrl => _baseUrl;
   bool get hasToken => _token != null && _token!.isNotEmpty;
+  String? get currentToken => _token;
 
   BackendApiClient();
 

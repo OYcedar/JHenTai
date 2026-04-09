@@ -17,6 +17,12 @@ class WebHomeController extends GetxController {
     _loadHomePage();
   }
 
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
+  }
+
   String _currentSection = 'home';
   String _currentSearch = '';
 
