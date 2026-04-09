@@ -4,12 +4,14 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../core/database.dart';
+import '../network/eh_client.dart';
 import '../service/tag_translation_service.dart';
 
 class TagRoutes {
   final TagTranslationService _service;
+  final EHClient? _ehClient;
 
-  TagRoutes(this._service);
+  TagRoutes(this._service, [this._ehClient]);
 
   Router get router {
     final router = Router();
@@ -19,6 +21,7 @@ class TagRoutes {
     router.get('/translate', _translate);
     router.post('/batch', _batch);
     router.get('/search', _search);
+    router.post('/vote', _vote);
 
     return router;
   }
@@ -87,6 +90,42 @@ class TagRoutes {
     final results = db.searchTagTranslations(query, limit: limit);
     return Response.ok(
       jsonEncode({'results': results}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _vote(Request request) async {
+    if (_ehClient == null) {
+      return Response.internalServerError(body: jsonEncode({'error': 'EHClient not available'}));
+    }
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON'}));
+    }
+
+    final gid = body['gid'] as int?;
+    final token = body['token'] as String?;
+    final apiuid = body['apiuid'] as int?;
+    final apikey = body['apikey'] as String?;
+    final namespace = body['namespace'] as String?;
+    final tag = body['tag'] as String?;
+    final vote = body['vote'] as int?;
+
+    if (gid == null || token == null || apiuid == null || apikey == null ||
+        namespace == null || tag == null || vote == null) {
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Missing required fields: gid, token, apiuid, apikey, namespace, tag, vote'}));
+    }
+
+    final result = await _ehClient!.voteTag(
+      apiuid: apiuid, apikey: apikey, gid: gid, token: token,
+      namespace: namespace, tag: tag, vote: vote,
+    );
+
+    return Response.ok(
+      jsonEncode(result),
       headers: {'Content-Type': 'application/json'},
     );
   }

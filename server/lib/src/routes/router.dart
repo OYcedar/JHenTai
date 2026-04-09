@@ -13,6 +13,7 @@ import '../service/gallery_download_service.dart';
 import '../service/local_gallery_service.dart';
 import '../service/tag_translation_service.dart';
 import 'auth_routes.dart';
+import 'block_rule_routes.dart';
 import 'comment_routes.dart';
 import 'download_routes.dart';
 import 'favorite_routes.dart';
@@ -63,8 +64,9 @@ class AppRouter {
     router.mount('/api/history/', HistoryRoutes().router.call);
     router.mount('/api/search-history/', SearchHistoryRoutes().router.call);
     router.mount('/api/comment/', CommentRoutes(ehClient).router.call);
-    router.mount('/api/tag/', TagRoutes(tagTranslationService).router.call);
+    router.mount('/api/tag/', TagRoutes(tagTranslationService, ehClient).router.call);
     router.mount('/api/quick-search/', QuickSearchRoutes().router.call);
+    router.mount('/api/block-rule/', BlockRuleRoutes().router.call);
 
     router.get('/api/health', (Request request) {
       return Response.ok(

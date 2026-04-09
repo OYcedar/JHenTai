@@ -116,7 +116,7 @@ class _ThumbnailCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        Get.toNamed('/web/reader/$gid/$token');
+        Get.toNamed('/web/reader/$gid/$token?startPage=$index');
       },
       borderRadius: BorderRadius.circular(6),
       child: Container(

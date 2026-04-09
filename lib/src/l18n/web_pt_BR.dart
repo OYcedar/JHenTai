@@ -238,6 +238,52 @@ class WebPtBR {
 
       // tag suggest
       'tagSuggest.tag': 'Tag',
+
+      // common extras
+      'common.save': 'Salvar',
+
+      // reader enhancements
+      'reader.fitWidth': 'Ajustar Largura',
+      'reader.doubleColumn': 'Duas Colunas',
+      'reader.autoStart': 'Leitura Automática',
+      'reader.autoStop': 'Parar Leitura Automática',
+
+      // block rules
+      'blockRule.title': 'Regras de Bloqueio',
+      'blockRule.empty': 'Nenhuma regra de bloqueio configurada',
+      'blockRule.add': 'Adicionar Regra',
+      'blockRule.edit': 'Editar Regra',
+      'blockRule.manage': 'Gerenciar Regras de Bloqueio',
+      'blockRule.ruleCount': '@count regras',
+      'blockRule.ungrouped': 'Sem grupo',
+      'blockRule.deleteGroup': 'Excluir Grupo',
+      'blockRule.target': 'Alvo',
+      'blockRule.attribute': 'Atributo',
+      'blockRule.pattern': 'Padrão',
+      'blockRule.expression': 'Expressão',
+      'blockRule.expressionHint': 'Valor para comparar',
+      'blockRule.groupId': 'ID do Grupo',
+      'blockRule.groupIdHint': 'Nome do grupo opcional',
+      'blockRule.blocked': 'Bloqueado',
+      'blockRule.tagBlocked': 'Tag "@tag" foi bloqueada',
+      'blockRule.uploaderBlocked': 'Uploader "@uploader" foi bloqueado',
+      'blockRule.blockTag': 'Bloquear esta tag',
+      'blockRule.blockUploader': 'Bloquear este uploader',
+
+      // download enhancements
+      'downloads.search': 'Pesquisar downloads...',
+      'downloads.allGroups': 'Todos os Grupos',
+      'downloads.group': 'Grupo',
+
+      // tag voting
+      'tagVote.search': 'Pesquisar',
+      'tagVote.searchUploader': 'Pesquisar uploader',
+      'tagVote.voteUp': 'Votar Positivo',
+      'tagVote.voteDown': 'Votar Negativo',
+      'tagVote.success': 'Votado',
+      'tagVote.votedUp': 'Votou positivo para "@tag"',
+      'tagVote.votedDown': 'Votou negativo para "@tag"',
+      'tagVote.failed': 'Falha ao votar: @error',
     };
   }
 }

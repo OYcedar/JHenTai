@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 
 enum ReaderMode { online, downloaded, archive, local }
-enum ReadDirection { ltr, rtl, vertical }
+enum ReadDirection { ltr, rtl, vertical, fitWidth, doubleColumn }
 
 class WebReaderController extends GetxController {
   late int gid;
@@ -21,6 +22,10 @@ class WebReaderController extends GetxController {
   final showOverlay = true.obs;
   final readDirection = ReadDirection.ltr.obs;
 
+  final isAutoMode = false.obs;
+  final autoInterval = 5.0.obs;
+  Timer? _autoTimer;
+
   final _imagePageUrls = <String>[];
   final _loadedImageUrls = <int, String>{};
 
@@ -31,12 +36,14 @@ class WebReaderController extends GetxController {
   List<String>? localImages;
 
   Timer? _saveProgressTimer;
+  int? _startPage;
 
   @override
   void onInit() {
     super.onInit();
     gid = int.tryParse(Get.parameters['gid'] ?? '') ?? 0;
     token = Get.parameters['token'] ?? '';
+    _startPage = int.tryParse(Get.parameters['startPage'] ?? '');
 
     final modeParam = Get.parameters['mode'] ?? 'online';
     mode = switch (modeParam) {
@@ -53,6 +60,7 @@ class WebReaderController extends GetxController {
 
   @override
   void onClose() {
+    _autoTimer?.cancel();
     _saveProgressTimer?.cancel();
     _saveProgressNow();
     pageController.dispose();
@@ -74,6 +82,11 @@ class WebReaderController extends GetxController {
   }
 
   Future<void> _restoreProgress() async {
+    if (_startPage != null && _startPage! >= 0) {
+      currentPage.value = _startPage!;
+      _initPageController(_startPage!);
+      return;
+    }
     if (gid == 0) return;
     try {
       final saved = await backendApiClient.getSetting('read_progress_$gid');
@@ -81,16 +94,22 @@ class WebReaderController extends GetxController {
         final page = int.tryParse(saved) ?? 0;
         if (page > 0 && page < totalPages.value) {
           currentPage.value = page;
-          if (readDirection.value == ReadDirection.vertical) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              // Rough scroll for vertical mode
-            });
-          } else {
-            pageController = PageController(initialPage: page);
-          }
+          _initPageController(page);
         }
       }
     } catch (_) {}
+  }
+
+  void _initPageController(int page) {
+    final dir = readDirection.value;
+    if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
+      return;
+    }
+    if (dir == ReadDirection.doubleColumn) {
+      pageController = PageController(initialPage: page ~/ 2);
+    } else {
+      pageController = PageController(initialPage: page);
+    }
   }
 
   void _scheduleSaveProgress() {
@@ -107,7 +126,6 @@ class WebReaderController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     try {
-      await _restoreProgress();
       switch (mode) {
         case ReaderMode.online:
           await _loadOnline();
@@ -118,6 +136,7 @@ class WebReaderController extends GetxController {
         case ReaderMode.local:
           _loadLocal();
       }
+      await _restoreProgress();
     } catch (e) {
       errorMessage.value = 'reader.loadFailed'.trParams({'error': '$e'});
     } finally {
@@ -133,7 +152,7 @@ class WebReaderController extends GetxController {
     _imagePageUrls.addAll(pages);
     totalPages.value = total;
     imageUrls.value = List.filled(_imagePageUrls.length, '');
-    _preloadImages(0);
+    _preloadAround(0);
   }
 
   Future<void> _loadDownloaded() async {
@@ -163,10 +182,12 @@ class WebReaderController extends GetxController {
         .toList();
   }
 
-  Future<void> _preloadImages(int startIndex) async {
-    for (int i = startIndex; i < _imagePageUrls.length && i < startIndex + 5; i++) {
-      if (_loadedImageUrls.containsKey(i)) continue;
-      _loadImageAtIndex(i);
+  void _preloadAround(int center) {
+    if (mode != ReaderMode.online) return;
+    for (int i = math.max(0, center - 1); i < _imagePageUrls.length && i <= center + 3; i++) {
+      if (!_loadedImageUrls.containsKey(i)) {
+        _loadImageAtIndex(i);
+      }
     }
   }
 
@@ -192,26 +213,59 @@ class WebReaderController extends GetxController {
     }
   }
 
-  void onPageChanged(int page) {
-    currentPage.value = page;
+  void retryImage(int index) {
     if (mode == ReaderMode.online) {
-      _preloadImages(page);
+      _loadedImageUrls.remove(index);
+      imageUrls[index] = '';
+      _loadImageAtIndex(index);
+    }
+  }
+
+  void onPageChanged(int page) {
+    if (readDirection.value == ReadDirection.doubleColumn) {
+      currentPage.value = (page * 2).clamp(0, totalPages.value - 1);
+    } else {
+      currentPage.value = page;
+    }
+    if (mode == ReaderMode.online) {
+      _preloadAround(currentPage.value);
     }
     _scheduleSaveProgress();
   }
 
   void goToPage(int page) {
-    if (page >= 0 && page < totalPages.value) {
-      if (readDirection.value == ReadDirection.vertical) {
-        return;
-      }
+    if (page < 0 || page >= totalPages.value) return;
+    final dir = readDirection.value;
+    if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
+      return;
+    }
+    if (dir == ReadDirection.doubleColumn) {
+      pageController.animateToPage(page ~/ 2,
+          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    } else {
       pageController.animateToPage(page,
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
   }
 
-  void nextPage() => goToPage(currentPage.value + 1);
-  void prevPage() => goToPage(currentPage.value - 1);
+  void nextPage() {
+    final dir = readDirection.value;
+    if (dir == ReadDirection.doubleColumn) {
+      goToPage(currentPage.value + 2);
+    } else {
+      goToPage(currentPage.value + 1);
+    }
+  }
+
+  void prevPage() {
+    final dir = readDirection.value;
+    if (dir == ReadDirection.doubleColumn) {
+      goToPage(math.max(0, currentPage.value - 2));
+    } else {
+      goToPage(currentPage.value - 1);
+    }
+  }
+
   void toggleOverlay() => showOverlay.value = !showOverlay.value;
 
   void cycleReadDirection() {
@@ -219,13 +273,62 @@ class WebReaderController extends GetxController {
     final next = (readDirection.value.index + 1) % values.length;
     readDirection.value = values[next];
     backendApiClient.putSetting('web_read_direction', next).catchError((_) {});
-    if (values[next] != ReadDirection.vertical) {
+    final newDir = values[next];
+    if (newDir != ReadDirection.vertical && newDir != ReadDirection.fitWidth) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentPage.value < totalPages.value) {
-          pageController = PageController(initialPage: currentPage.value);
+          if (newDir == ReadDirection.doubleColumn) {
+            pageController = PageController(initialPage: currentPage.value ~/ 2);
+          } else {
+            pageController = PageController(initialPage: currentPage.value);
+          }
         }
       });
     }
+  }
+
+  void toggleAutoMode() {
+    isAutoMode.value = !isAutoMode.value;
+    if (isAutoMode.value) {
+      _startAutoTimer();
+    } else {
+      _autoTimer?.cancel();
+    }
+  }
+
+  void setAutoInterval(double seconds) {
+    autoInterval.value = seconds;
+    if (isAutoMode.value) {
+      _autoTimer?.cancel();
+      _startAutoTimer();
+    }
+  }
+
+  void _startAutoTimer() {
+    _autoTimer?.cancel();
+    _autoTimer = Timer.periodic(Duration(milliseconds: (autoInterval.value * 1000).round()), (_) {
+      final dir = readDirection.value;
+      if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
+        if (scrollController.hasClients) {
+          final target = scrollController.offset + 600;
+          if (target >= scrollController.position.maxScrollExtent) {
+            isAutoMode.value = false;
+            _autoTimer?.cancel();
+            return;
+          }
+          scrollController.animateTo(target,
+              duration: Duration(milliseconds: (autoInterval.value * 800).round()),
+              curve: Curves.linear);
+        }
+      } else {
+        if (currentPage.value >= totalPages.value - 1) {
+          isAutoMode.value = false;
+          _autoTimer?.cancel();
+          return;
+        }
+        nextPage();
+      }
+    });
   }
 
   Future<void> retry() => _loadGallery();
@@ -298,9 +401,15 @@ class _ReaderBody extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: controller.toggleOverlay,
-            child: Obx(() => controller.readDirection.value == ReadDirection.vertical
-                ? _buildVerticalReader(context)
-                : _buildPageReader(context)),
+            child: Obx(() {
+              final dir = controller.readDirection.value;
+              return switch (dir) {
+                ReadDirection.vertical => _buildVerticalReader(context),
+                ReadDirection.fitWidth => _buildFitWidthReader(context),
+                ReadDirection.doubleColumn => _buildDoubleColumnReader(context),
+                _ => _buildPageReader(context),
+              };
+            }),
           ),
           _TopOverlay(controller: controller),
           _BottomOverlay(controller: controller),
@@ -315,7 +424,7 @@ class _ReaderBody extends StatelessWidget {
       reverse: controller.readDirection.value == ReadDirection.rtl,
       itemCount: controller.totalPages.value,
       onPageChanged: controller.onPageChanged,
-      itemBuilder: (context, index) => _ImagePage(controller: controller, index: index),
+      itemBuilder: (context, index) => _DoubleTapZoomImage(controller: controller, index: index),
     ));
   }
 
@@ -329,7 +438,7 @@ class _ReaderBody extends StatelessWidget {
             if (page != controller.currentPage.value) {
               controller.currentPage.value = page;
               if (controller.mode == ReaderMode.online) {
-                controller._preloadImages(page);
+                controller._preloadAround(page);
               }
             }
           }
@@ -343,14 +452,138 @@ class _ReaderBody extends StatelessWidget {
       ),
     ));
   }
+
+  Widget _buildFitWidthReader(BuildContext context) {
+    return Obx(() => NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification is ScrollUpdateNotification) {
+          final metrics = notification.metrics;
+          if (metrics.maxScrollExtent > 0) {
+            final page = (metrics.pixels / metrics.maxScrollExtent * (controller.totalPages.value - 1)).round();
+            if (page != controller.currentPage.value) {
+              controller.currentPage.value = page;
+              if (controller.mode == ReaderMode.online) {
+                controller._preloadAround(page);
+              }
+            }
+          }
+        }
+        return false;
+      },
+      child: ListView.builder(
+        controller: controller.scrollController,
+        itemCount: controller.totalPages.value,
+        itemBuilder: (context, index) => _ImagePage(controller: controller, index: index, isVertical: true, fitWidth: true),
+      ),
+    ));
+  }
+
+  Widget _buildDoubleColumnReader(BuildContext context) {
+    final total = controller.totalPages.value;
+    final pageCount = (total / 2).ceil();
+    return Obx(() => PageView.builder(
+      controller: controller.pageController,
+      itemCount: pageCount,
+      onPageChanged: controller.onPageChanged,
+      itemBuilder: (context, pairIndex) {
+        final leftIdx = pairIndex * 2;
+        final rightIdx = leftIdx + 1;
+        return Row(
+          children: [
+            Expanded(child: _DoubleTapZoomImage(controller: controller, index: leftIdx)),
+            if (rightIdx < total)
+              Expanded(child: _DoubleTapZoomImage(controller: controller, index: rightIdx))
+            else
+              const Expanded(child: SizedBox.shrink()),
+          ],
+        );
+      },
+    ));
+  }
+}
+
+class _DoubleTapZoomImage extends StatefulWidget {
+  final WebReaderController controller;
+  final int index;
+  const _DoubleTapZoomImage({required this.controller, required this.index});
+
+  @override
+  State<_DoubleTapZoomImage> createState() => _DoubleTapZoomImageState();
+}
+
+class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTickerProviderStateMixin {
+  final _transformationController = TransformationController();
+  late AnimationController _animController;
+  Animation<Matrix4>? _animation;
+  TapDownDetails? _doubleTapDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200))
+      ..addListener(() {
+        if (_animation != null) _transformationController.value = _animation!.value;
+      });
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  void _handleDoubleTap() {
+    final pos = _doubleTapDetails?.localPosition ?? Offset.zero;
+    if (_transformationController.value.isIdentity()) {
+      final end = Matrix4.identity()
+        ..translate(-pos.dx, -pos.dy)
+        ..scale(2.0)
+        ..translate(pos.dx, pos.dy);
+      _animation = Matrix4Tween(begin: _transformationController.value, end: end).animate(_animController);
+      _animController.forward(from: 0);
+    } else {
+      _animation = Matrix4Tween(begin: _transformationController.value, end: Matrix4.identity()).animate(_animController);
+      _animController.forward(from: 0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onDoubleTapDown: (d) => _doubleTapDetails = d,
+      onDoubleTap: _handleDoubleTap,
+      child: InteractiveViewer(
+        transformationController: _transformationController,
+        minScale: 0.5,
+        maxScale: 4.0,
+        child: Center(child: _ImageContent(controller: widget.controller, index: widget.index)),
+      ),
+    );
+  }
 }
 
 class _ImagePage extends StatelessWidget {
   final WebReaderController controller;
   final int index;
   final bool isVertical;
+  final bool fitWidth;
 
-  const _ImagePage({required this.controller, required this.index, this.isVertical = false});
+  const _ImagePage({required this.controller, required this.index, this.isVertical = false, this.fitWidth = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return _ImageContent(controller: controller, index: index, isVertical: isVertical, fitWidth: fitWidth);
+  }
+}
+
+class _ImageContent extends StatelessWidget {
+  final WebReaderController controller;
+  final int index;
+  final bool isVertical;
+  final bool fitWidth;
+
+  const _ImageContent({required this.controller, required this.index, this.isVertical = false, this.fitWidth = false});
 
   @override
   Widget build(BuildContext context) {
@@ -372,10 +605,10 @@ class _ImagePage extends StatelessWidget {
         );
       }
 
-      final image = Image.network(
+      return Image.network(
         url,
-        fit: isVertical ? BoxFit.fitWidth : BoxFit.contain,
-        width: isVertical ? double.infinity : null,
+        fit: (isVertical || fitWidth) ? BoxFit.fitWidth : BoxFit.contain,
+        width: (isVertical || fitWidth) ? double.infinity : null,
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           final total = loadingProgress.expectedTotalBytes;
@@ -396,13 +629,7 @@ class _ImagePage extends StatelessWidget {
                 Text('reader.imageFailed'.tr, style: const TextStyle(color: Colors.white54)),
                 const SizedBox(height: 8),
                 TextButton(
-                  onPressed: () {
-                    if (controller.mode == ReaderMode.online) {
-                      controller._loadedImageUrls.remove(index);
-                      controller.imageUrls[index] = '';
-                      controller._loadImageAtIndex(index);
-                    }
-                  },
+                  onPressed: () => controller.retryImage(index),
                   child: Text('common.retry'.tr),
                 ),
               ],
@@ -410,9 +637,6 @@ class _ImagePage extends StatelessWidget {
           ),
         ),
       );
-
-      if (isVertical) return image;
-      return InteractiveViewer(minScale: 0.5, maxScale: 4.0, child: Center(child: image));
     });
   }
 }
@@ -450,6 +674,14 @@ class _TopOverlay extends StatelessWidget {
                     textAlign: TextAlign.center,
                   )),
                 ),
+                Obx(() => IconButton(
+                  icon: Icon(
+                    controller.isAutoMode.value ? Icons.pause_circle : Icons.play_circle,
+                    color: controller.isAutoMode.value ? Colors.amber : Colors.white,
+                  ),
+                  tooltip: controller.isAutoMode.value ? 'reader.autoStop'.tr : 'reader.autoStart'.tr,
+                  onPressed: controller.toggleAutoMode,
+                )),
                 IconButton(
                   icon: const Icon(Icons.grid_view, color: Colors.white),
                   tooltip: 'thumbnails.grid'.tr,
@@ -461,11 +693,15 @@ class _TopOverlay extends StatelessWidget {
                     ReadDirection.ltr => Icons.arrow_forward,
                     ReadDirection.rtl => Icons.arrow_back,
                     ReadDirection.vertical => Icons.swap_vert,
+                    ReadDirection.fitWidth => Icons.fit_screen,
+                    ReadDirection.doubleColumn => Icons.view_column,
                   };
                   final label = switch (controller.readDirection.value) {
                     ReadDirection.ltr => 'reader.ltr'.tr,
                     ReadDirection.rtl => 'reader.rtl'.tr,
                     ReadDirection.vertical => 'reader.vertical'.tr,
+                    ReadDirection.fitWidth => 'reader.fitWidth'.tr,
+                    ReadDirection.doubleColumn => 'reader.doubleColumn'.tr,
                   };
                   return Tooltip(
                     message: 'reader.directionLabel'.trParams({'dir': label}),
@@ -492,7 +728,7 @@ class _BottomOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() => AnimatedPositioned(
       duration: const Duration(milliseconds: 200),
-      bottom: controller.showOverlay.value ? 0 : -120,
+      bottom: controller.showOverlay.value ? 0 : -140,
       left: 0, right: 0,
       child: Container(
         padding: EdgeInsets.only(
@@ -518,6 +754,26 @@ class _BottomOverlay extends StatelessWidget {
                     onChanged: (v) => controller.goToPage(v.round()),
                   )
                 : const SizedBox.shrink()),
+            Obx(() {
+              if (!controller.isAutoMode.value) return const SizedBox.shrink();
+              return Row(
+                children: [
+                  const Icon(Icons.timer, color: Colors.white54, size: 16),
+                  const SizedBox(width: 4),
+                  Text('${controller.autoInterval.value.toStringAsFixed(1)}s',
+                      style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  Expanded(
+                    child: Slider(
+                      value: controller.autoInterval.value,
+                      min: 2, max: 15, divisions: 26,
+                      onChanged: controller.setAutoInterval,
+                      activeColor: Colors.amber,
+                      inactiveColor: Colors.white24,
+                    ),
+                  ),
+                ],
+              );
+            }),
             _buildThumbnailStrip(),
           ],
         ),

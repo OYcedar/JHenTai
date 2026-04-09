@@ -238,6 +238,52 @@ class WebZhTW {
 
       // tag suggest
       'tagSuggest.tag': '標籤',
+
+      // common extras
+      'common.save': '儲存',
+
+      // reader enhancements
+      'reader.fitWidth': '適應寬度',
+      'reader.doubleColumn': '雙頁模式',
+      'reader.autoStart': '自動閱讀',
+      'reader.autoStop': '停止自動閱讀',
+
+      // block rules
+      'blockRule.title': '封鎖規則',
+      'blockRule.empty': '沒有設定封鎖規則',
+      'blockRule.add': '新增規則',
+      'blockRule.edit': '編輯規則',
+      'blockRule.manage': '管理封鎖規則',
+      'blockRule.ruleCount': '@count 條規則',
+      'blockRule.ungrouped': '未分組',
+      'blockRule.deleteGroup': '刪除分組',
+      'blockRule.target': '目標',
+      'blockRule.attribute': '屬性',
+      'blockRule.pattern': '匹配模式',
+      'blockRule.expression': '運算式',
+      'blockRule.expressionHint': '要匹配的值',
+      'blockRule.groupId': '分組 ID',
+      'blockRule.groupIdHint': '選填的分組名稱',
+      'blockRule.blocked': '已封鎖',
+      'blockRule.tagBlocked': '標籤 "@tag" 已被封鎖',
+      'blockRule.uploaderBlocked': '上傳者 "@uploader" 已被封鎖',
+      'blockRule.blockTag': '封鎖此標籤',
+      'blockRule.blockUploader': '封鎖此上傳者',
+
+      // download enhancements
+      'downloads.search': '搜尋下載...',
+      'downloads.allGroups': '所有分組',
+      'downloads.group': '分組',
+
+      // tag voting
+      'tagVote.search': '搜尋',
+      'tagVote.searchUploader': '搜尋上傳者',
+      'tagVote.voteUp': '投贊成票',
+      'tagVote.voteDown': '投反對票',
+      'tagVote.success': '已投票',
+      'tagVote.votedUp': '已為 "@tag" 投贊成票',
+      'tagVote.votedDown': '已為 "@tag" 投反對票',
+      'tagVote.failed': '投票失敗: @error',
     };
   }
 }

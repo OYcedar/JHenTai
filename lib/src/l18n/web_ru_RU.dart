@@ -238,6 +238,52 @@ class WebRuRU {
 
       // tag suggest
       'tagSuggest.tag': 'Тег',
+
+      // common extras
+      'common.save': 'Сохранить',
+
+      // reader enhancements
+      'reader.fitWidth': 'По ширине',
+      'reader.doubleColumn': 'Двойная страница',
+      'reader.autoStart': 'Автопролистывание',
+      'reader.autoStop': 'Остановить автопролистывание',
+
+      // block rules
+      'blockRule.title': 'Правила блокировки',
+      'blockRule.empty': 'Нет настроенных правил блокировки',
+      'blockRule.add': 'Добавить правило',
+      'blockRule.edit': 'Редактировать правило',
+      'blockRule.manage': 'Управление правилами блокировки',
+      'blockRule.ruleCount': '@count правил',
+      'blockRule.ungrouped': 'Без группы',
+      'blockRule.deleteGroup': 'Удалить группу',
+      'blockRule.target': 'Цель',
+      'blockRule.attribute': 'Атрибут',
+      'blockRule.pattern': 'Шаблон',
+      'blockRule.expression': 'Выражение',
+      'blockRule.expressionHint': 'Значение для сопоставления',
+      'blockRule.groupId': 'ID группы',
+      'blockRule.groupIdHint': 'Необязательное имя группы',
+      'blockRule.blocked': 'Заблокировано',
+      'blockRule.tagBlocked': 'Тег "@tag" заблокирован',
+      'blockRule.uploaderBlocked': 'Загрузчик "@uploader" заблокирован',
+      'blockRule.blockTag': 'Заблокировать тег',
+      'blockRule.blockUploader': 'Заблокировать загрузчика',
+
+      // download enhancements
+      'downloads.search': 'Поиск загрузок...',
+      'downloads.allGroups': 'Все группы',
+      'downloads.group': 'Группа',
+
+      // tag voting
+      'tagVote.search': 'Поиск',
+      'tagVote.searchUploader': 'Найти загрузчика',
+      'tagVote.voteUp': 'За',
+      'tagVote.voteDown': 'Против',
+      'tagVote.success': 'Голос учтён',
+      'tagVote.votedUp': 'Проголосовали за "@tag"',
+      'tagVote.votedDown': 'Проголосовали против "@tag"',
+      'tagVote.failed': 'Ошибка голосования: @error',
     };
   }
 }

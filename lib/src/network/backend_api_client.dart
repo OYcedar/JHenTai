@@ -451,6 +451,58 @@ class BackendApiClient {
     await _dio.delete('/api/quick-search/${Uri.encodeComponent(name)}');
   }
 
+  // --- Block rules ---
+
+  Future<List<dynamic>> listBlockRules() async {
+    final response = await _dio.get('/api/block-rule/list');
+    return (response.data['rules'] as List?) ?? [];
+  }
+
+  Future<Map<String, dynamic>> saveBlockRule({
+    int? id,
+    String groupId = '',
+    required String target,
+    required String attribute,
+    required String pattern,
+    required String expression,
+  }) async {
+    final response = await _dio.post('/api/block-rule/save', data: {
+      if (id != null) 'id': id,
+      'group_id': groupId,
+      'target': target,
+      'attribute': attribute,
+      'pattern': pattern,
+      'expression': expression,
+    });
+    return response.data;
+  }
+
+  Future<void> deleteBlockRule(int id) async {
+    await _dio.delete('/api/block-rule/$id');
+  }
+
+  Future<void> deleteBlockRuleGroup(String groupId) async {
+    await _dio.delete('/api/block-rule/group/${Uri.encodeComponent(groupId)}');
+  }
+
+  // --- Tag voting ---
+
+  Future<Map<String, dynamic>> voteTag({
+    required int gid,
+    required String token,
+    required int apiuid,
+    required String apikey,
+    required String namespace,
+    required String tag,
+    required int vote,
+  }) async {
+    final response = await _dio.post('/api/tag/vote', data: {
+      'gid': gid, 'token': token, 'apiuid': apiuid, 'apikey': apikey,
+      'namespace': namespace, 'tag': tag, 'vote': vote,
+    });
+    return response.data;
+  }
+
   // --- Settings ---
 
   Future<Map<String, dynamic>> getSettings() async {

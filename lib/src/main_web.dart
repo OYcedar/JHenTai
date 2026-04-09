@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/l18n/web_locale_text.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_block_rules_page.dart';
 import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
 import 'package:jhentai/src/pages_web/web_history_page.dart';
@@ -235,6 +236,13 @@ final _webRoutes = [
     page: () => const WebThumbnailsPage(),
     binding: BindingsBuilder(() {
       Get.lazyPut(() => WebThumbnailsController());
+    }),
+  ),
+  GetPage(
+    name: '/web/block-rules',
+    page: () => const WebBlockRulesPage(),
+    binding: BindingsBuilder(() {
+      Get.lazyPut(() => WebBlockRulesController());
     }),
   ),
 ];

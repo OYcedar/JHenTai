@@ -289,6 +289,37 @@ class EHClient {
     }
   }
 
+  // --- Tag voting ---
+
+  Future<Map<String, dynamic>> voteTag({
+    required int apiuid,
+    required String apikey,
+    required int gid,
+    required String token,
+    required String namespace,
+    required String tag,
+    required int vote,
+  }) async {
+    try {
+      final response = await _dio.post(
+        apiUrl,
+        options: Options(contentType: Headers.jsonContentType),
+        data: {
+          'method': 'taggallery',
+          'apiuid': apiuid,
+          'apikey': apikey,
+          'gid': gid,
+          'token': token,
+          'tags': '$namespace:$tag',
+          'vote': vote,
+        },
+      );
+      return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Failed to vote tag'};
+    }
+  }
+
   // --- Gallery API ---
 
   Future<Map<String, dynamic>> fetchGalleryMetadata(int gid, String token) async {
