@@ -14,9 +14,59 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
   final isLoading = true.obs;
   final errorMessage = ''.obs;
 
+  final searchQuery = ''.obs;
+  final selectedGroup = Rxn<String>();
+
   WebSocketChannel? _wsChannel;
   StreamSubscription? _wsSubscription;
   Timer? _reconnectTimer;
+
+  List<Map<String, dynamic>> get filteredGalleryTasks {
+    var list = galleryTasks.toList();
+    final group = selectedGroup.value;
+    if (group != null) {
+      list = list.where((t) => (t['group_name'] ?? t['groupName'] ?? 'default') == group).toList();
+    }
+    final q = searchQuery.value.toLowerCase();
+    if (q.isNotEmpty) {
+      list = list.where((t) {
+        final title = (t['title'] as String? ?? '').toLowerCase();
+        final uploader = (t['uploader'] as String? ?? '').toLowerCase();
+        final category = (t['category'] as String? ?? '').toLowerCase();
+        return title.contains(q) || uploader.contains(q) || category.contains(q);
+      }).toList();
+    }
+    return list;
+  }
+
+  List<Map<String, dynamic>> get filteredArchiveTasks {
+    var list = archiveTasks.toList();
+    final group = selectedGroup.value;
+    if (group != null) {
+      list = list.where((t) => (t['group_name'] ?? t['groupName'] ?? 'default') == group).toList();
+    }
+    final q = searchQuery.value.toLowerCase();
+    if (q.isNotEmpty) {
+      list = list.where((t) {
+        final title = (t['title'] as String? ?? '').toLowerCase();
+        final uploader = (t['uploader'] as String? ?? '').toLowerCase();
+        final category = (t['category'] as String? ?? '').toLowerCase();
+        return title.contains(q) || uploader.contains(q) || category.contains(q);
+      }).toList();
+    }
+    return list;
+  }
+
+  Set<String> get allGroups {
+    final groups = <String>{};
+    for (final t in galleryTasks) {
+      groups.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
+    }
+    for (final t in archiveTasks) {
+      groups.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
+    }
+    return groups;
+  }
 
   @override
   void onInit() {
@@ -178,15 +228,67 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
             ),
           );
         }
-        return TabBarView(
-          controller: controller.tabController,
+        return Column(
           children: [
-            _GalleryTaskList(controller: controller),
-            _ArchiveTaskList(controller: controller),
+            _DownloadFilterBar(controller: controller),
+            Expanded(
+              child: TabBarView(
+                controller: controller.tabController,
+                children: [
+                  _GalleryTaskList(controller: controller),
+                  _ArchiveTaskList(controller: controller),
+                ],
+              ),
+            ),
           ],
         );
       }),
     );
+  }
+}
+
+class _DownloadFilterBar extends StatelessWidget {
+  final WebDownloadsController controller;
+  const _DownloadFilterBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final groups = controller.allGroups;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'downloads.search'.tr,
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (v) => controller.searchQuery.value = v,
+              ),
+            ),
+            if (groups.length > 1) ...[
+              const SizedBox(width: 8),
+              Obx(() => DropdownButton<String?>(
+                value: controller.selectedGroup.value,
+                hint: Text('downloads.allGroups'.tr),
+                items: [
+                  DropdownMenuItem<String?>(value: null, child: Text('downloads.allGroups'.tr)),
+                  ...groups.map((g) => DropdownMenuItem(value: g, child: Text(g))),
+                ],
+                onChanged: (v) => controller.selectedGroup.value = v,
+                underline: const SizedBox.shrink(),
+                isDense: true,
+              )),
+            ],
+          ],
+        ),
+      );
+    });
   }
 }
 
@@ -199,14 +301,15 @@ class _GalleryTaskList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.galleryTasks.isEmpty) {
+      final tasks = controller.filteredGalleryTasks;
+      if (tasks.isEmpty) {
         return Center(child: Text('downloads.noGallery'.tr));
       }
       return ListView.builder(
         padding: const EdgeInsets.all(8),
-        itemCount: controller.galleryTasks.length,
+        itemCount: tasks.length,
         itemBuilder: (context, index) {
-          final task = controller.galleryTasks[index];
+          final task = tasks[index];
           return _GalleryTaskCard(task: task, controller: controller);
         },
       );
@@ -227,6 +330,7 @@ class _GalleryTaskCard extends StatelessWidget {
     final category = task['category'] as String? ?? '';
     final uploader = task['uploader'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
+    final groupName = (task['group_name'] ?? task['groupName'] ?? 'default') as String;
     final status = task['status'] as int? ?? 0;
     final completed = task['completedCount'] as int? ?? 0;
     final total = task['pageCount'] as int? ?? 0;
@@ -299,6 +403,17 @@ class _GalleryTaskCard extends StatelessWidget {
                       children: [
                         _StatusBadge(statusIndex: status, statusName: statusName, isCompleted: isCompleted),
                         const SizedBox(width: 8),
+                        if (groupName != 'default') ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(groupName, style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         Text('$completed / $total', style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
@@ -308,7 +423,6 @@ class _GalleryTaskCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Actions
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -364,14 +478,15 @@ class _ArchiveTaskList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.archiveTasks.isEmpty) {
+      final tasks = controller.filteredArchiveTasks;
+      if (tasks.isEmpty) {
         return Center(child: Text('downloads.noArchive'.tr));
       }
       return ListView.builder(
         padding: const EdgeInsets.all(8),
-        itemCount: controller.archiveTasks.length,
+        itemCount: tasks.length,
         itemBuilder: (context, index) {
-          final task = controller.archiveTasks[index];
+          final task = tasks[index];
           return _ArchiveTaskCard(task: task, controller: controller);
         },
       );

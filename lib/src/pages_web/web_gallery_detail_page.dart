@@ -429,10 +429,18 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
           runSpacing: 8,
           children: [
             Obx(() => _CategoryChip(category: controller.category.value)),
-            Obx(() => Chip(
-              avatar: const Icon(Icons.person, size: 16),
-              label: Text(controller.uploader.value),
-              visualDensity: VisualDensity.compact,
+            Obx(() => GestureDetector(
+              onSecondaryTapUp: (details) {
+                _showUploaderContextMenu(context, details.globalPosition, controller.uploader.value);
+              },
+              onLongPressStart: (details) {
+                _showUploaderContextMenu(context, details.globalPosition, controller.uploader.value);
+              },
+              child: Chip(
+                avatar: const Icon(Icons.person, size: 16),
+                label: Text(controller.uploader.value),
+                visualDensity: VisualDensity.compact,
+              ),
             )),
             Obx(() => Chip(
               avatar: const Icon(Icons.photo_library, size: 16),
@@ -587,16 +595,24 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
                       children: entry.value.map((tag) {
                         final translated = controller.getTranslatedTag(entry.key, tag);
                         final showTranslated = translated != tag;
-                        return Tooltip(
-                          message: showTranslated ? tag : '',
-                          child: ActionChip(
-                            label: Text(showTranslated ? translated : tag, style: const TextStyle(fontSize: 12)),
-                            visualDensity: VisualDensity.compact,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            onPressed: () {
-                              final query = '${entry.key}:"$tag\$"';
-                              Get.toNamed('/web/home', arguments: {'search': query});
-                            },
+                        return GestureDetector(
+                          onSecondaryTapUp: (details) {
+                            _showTagContextMenu(context, details.globalPosition, entry.key, tag);
+                          },
+                          onLongPressStart: (details) {
+                            _showTagContextMenu(context, details.globalPosition, entry.key, tag);
+                          },
+                          child: Tooltip(
+                            message: showTranslated ? tag : '',
+                            child: ActionChip(
+                              label: Text(showTranslated ? translated : tag, style: const TextStyle(fontSize: 12)),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              onPressed: () {
+                                final query = '${entry.key}:"$tag\$"';
+                                Get.toNamed('/web/home', arguments: {'search': query});
+                              },
+                            ),
                           ),
                         );
                       }).toList(),
@@ -609,6 +625,121 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
         ],
       );
     });
+  }
+
+  void _showTagContextMenu(BuildContext context, Offset position, String namespace, String tag) {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
+      items: [
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.search, size: 20),
+            title: Text('tagVote.search'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () {
+            final query = '$namespace:"$tag\$"';
+            Get.toNamed('/web/home', arguments: {'search': query});
+          },
+        ),
+        if (controller.apiuid != null && controller.apikey != null) ...[
+          PopupMenuItem(
+            child: ListTile(
+              leading: const Icon(Icons.thumb_up, size: 20, color: Colors.green),
+              title: Text('tagVote.voteUp'.tr, style: const TextStyle(fontSize: 14)),
+              dense: true, contentPadding: EdgeInsets.zero,
+            ),
+            onTap: () => _voteTag(namespace, tag, 1),
+          ),
+          PopupMenuItem(
+            child: ListTile(
+              leading: const Icon(Icons.thumb_down, size: 20, color: Colors.red),
+              title: Text('tagVote.voteDown'.tr, style: const TextStyle(fontSize: 14)),
+              dense: true, contentPadding: EdgeInsets.zero,
+            ),
+            onTap: () => _voteTag(namespace, tag, -1),
+          ),
+        ],
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.block, size: 20, color: Colors.orange),
+            title: Text('blockRule.blockTag'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _quickBlockTag(namespace, tag),
+        ),
+      ],
+    );
+  }
+
+  void _showUploaderContextMenu(BuildContext context, Offset position, String uploader) {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
+      items: [
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.search, size: 20),
+            title: Text('tagVote.searchUploader'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => Get.toNamed('/web/home', arguments: {'search': 'uploader:$uploader'}),
+        ),
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.block, size: 20, color: Colors.orange),
+            title: Text('blockRule.blockUploader'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _quickBlockUploader(uploader),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _voteTag(String namespace, String tag, int vote) async {
+    try {
+      await backendApiClient.voteTag(
+        gid: controller.gid, token: controller.token,
+        apiuid: controller.apiuid!, apikey: controller.apikey!,
+        namespace: namespace, tag: tag, vote: vote,
+      );
+      Get.snackbar(
+        'tagVote.success'.tr,
+        vote > 0 ? 'tagVote.votedUp'.trParams({'tag': tag}) : 'tagVote.votedDown'.trParams({'tag': tag}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('common.error'.tr, 'tagVote.failed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+    }
+  }
+
+  Future<void> _quickBlockTag(String namespace, String tag) async {
+    try {
+      await backendApiClient.saveBlockRule(
+        target: 'gallery', attribute: 'tag', pattern: 'like',
+        expression: '$namespace:$tag',
+      );
+      Get.snackbar('blockRule.blocked'.tr, 'blockRule.tagBlocked'.trParams({'tag': '$namespace:$tag'}),
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> _quickBlockUploader(String uploader) async {
+    try {
+      await backendApiClient.saveBlockRule(
+        target: 'gallery', attribute: 'uploader', pattern: 'equal',
+        expression: uploader,
+      );
+      Get.snackbar('blockRule.blocked'.tr, 'blockRule.uploaderBlocked'.trParams({'uploader': uploader}),
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   Widget _buildComments(BuildContext context) {

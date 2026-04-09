@@ -4,7 +4,9 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../core/database.dart';
 import '../network/eh_client.dart';
+import 'block_rule_routes.dart';
 
 class GalleryRoutes {
   final EHClient _client;
@@ -54,6 +56,14 @@ class GalleryRoutes {
       final result = await _client.proxyGet(url, queryParams: queryParams.isNotEmpty ? queryParams : null);
       final html = result['data']?.toString() ?? '';
       final galleries = _parseGalleryListHtml(html);
+
+      final blockRules = db.selectAllBlockRules();
+      if (blockRules.isNotEmpty) {
+        final list = galleries['galleries'] as List<Map<String, dynamic>>?;
+        if (list != null) {
+          list.removeWhere((g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
+        }
+      }
 
       return Response.ok(
         jsonEncode(galleries),

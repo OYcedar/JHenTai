@@ -242,6 +242,52 @@ class WebZhCN {
 
       // tag suggest
       'tagSuggest.tag': '标签',
+
+      // common extras
+      'common.save': '保存',
+
+      // reader enhancements
+      'reader.fitWidth': '适应宽度',
+      'reader.doubleColumn': '双页模式',
+      'reader.autoStart': '自动阅读',
+      'reader.autoStop': '停止自动阅读',
+
+      // block rules
+      'blockRule.title': '屏蔽规则',
+      'blockRule.empty': '没有配置屏蔽规则',
+      'blockRule.add': '添加规则',
+      'blockRule.edit': '编辑规则',
+      'blockRule.manage': '管理屏蔽规则',
+      'blockRule.ruleCount': '@count 条规则',
+      'blockRule.ungrouped': '未分组',
+      'blockRule.deleteGroup': '删除分组',
+      'blockRule.target': '目标',
+      'blockRule.attribute': '属性',
+      'blockRule.pattern': '匹配模式',
+      'blockRule.expression': '表达式',
+      'blockRule.expressionHint': '要匹配的值',
+      'blockRule.groupId': '分组 ID',
+      'blockRule.groupIdHint': '可选的分组名称',
+      'blockRule.blocked': '已屏蔽',
+      'blockRule.tagBlocked': '标签 "@tag" 已被屏蔽',
+      'blockRule.uploaderBlocked': '上传者 "@uploader" 已被屏蔽',
+      'blockRule.blockTag': '屏蔽此标签',
+      'blockRule.blockUploader': '屏蔽此上传者',
+
+      // download enhancements
+      'downloads.search': '搜索下载...',
+      'downloads.allGroups': '所有分组',
+      'downloads.group': '分组',
+
+      // tag voting
+      'tagVote.search': '搜索',
+      'tagVote.searchUploader': '搜索上传者',
+      'tagVote.voteUp': '投赞成票',
+      'tagVote.voteDown': '投反对票',
+      'tagVote.success': '已投票',
+      'tagVote.votedUp': '已为 "@tag" 投赞成票',
+      'tagVote.votedDown': '已为 "@tag" 投反对票',
+      'tagVote.failed': '投票失败: @error',
     };
   }
 }

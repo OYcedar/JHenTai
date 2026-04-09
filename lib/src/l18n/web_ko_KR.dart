@@ -242,6 +242,52 @@ class WebKoKR {
 
       // tag suggest
       'tagSuggest.tag': '태그',
+
+      // common extras
+      'common.save': '저장',
+
+      // reader enhancements
+      'reader.fitWidth': '너비 맞춤',
+      'reader.doubleColumn': '두 페이지 보기',
+      'reader.autoStart': '자동 넘기기',
+      'reader.autoStop': '자동 넘기기 중지',
+
+      // block rules
+      'blockRule.title': '차단 규칙',
+      'blockRule.empty': '차단 규칙이 없습니다',
+      'blockRule.add': '규칙 추가',
+      'blockRule.edit': '규칙 편집',
+      'blockRule.manage': '차단 규칙 관리',
+      'blockRule.ruleCount': '@count개 규칙',
+      'blockRule.ungrouped': '그룹 없음',
+      'blockRule.deleteGroup': '그룹 삭제',
+      'blockRule.target': '대상',
+      'blockRule.attribute': '속성',
+      'blockRule.pattern': '패턴',
+      'blockRule.expression': '표현식',
+      'blockRule.expressionHint': '일치할 값',
+      'blockRule.groupId': '그룹 ID',
+      'blockRule.groupIdHint': '선택적 그룹 이름',
+      'blockRule.blocked': '차단됨',
+      'blockRule.tagBlocked': '태그 "@tag"가 차단되었습니다',
+      'blockRule.uploaderBlocked': '업로더 "@uploader"가 차단되었습니다',
+      'blockRule.blockTag': '이 태그 차단',
+      'blockRule.blockUploader': '이 업로더 차단',
+
+      // download enhancements
+      'downloads.search': '다운로드 검색...',
+      'downloads.allGroups': '모든 그룹',
+      'downloads.group': '그룹',
+
+      // tag voting
+      'tagVote.search': '검색',
+      'tagVote.searchUploader': '업로더 검색',
+      'tagVote.voteUp': '추천',
+      'tagVote.voteDown': '비추천',
+      'tagVote.success': '투표 완료',
+      'tagVote.votedUp': '"@tag"에 추천했습니다',
+      'tagVote.votedDown': '"@tag"에 비추천했습니다',
+      'tagVote.failed': '투표 실패: @error',
     };
   }
 }

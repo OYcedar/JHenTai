@@ -141,6 +141,8 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   const SizedBox(height: 24),
                   _buildTagTranslationSection(context),
                   const SizedBox(height: 24),
+                  _buildBlockRuleSection(context),
+                  const SizedBox(height: 24),
                   _buildServerInfoSection(context),
                 ],
               ),
@@ -436,6 +438,30 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         ),
       ),
     ));
+  }
+
+  Widget _buildBlockRuleSection(BuildContext context) {
+    final ruleCount = 0.obs;
+    backendApiClient.listBlockRules().then((rules) => ruleCount.value = rules.length).catchError((_) => 0);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('blockRule.title'.tr, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Obx(() => Text('blockRule.ruleCount'.trParams({'count': '${ruleCount.value}'}))),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              icon: const Icon(Icons.block),
+              label: Text('blockRule.manage'.tr),
+              onPressed: () => Get.toNamed('/web/block-rules'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildServerInfoSection(BuildContext context) {

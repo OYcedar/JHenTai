@@ -133,6 +133,17 @@ class ServerDatabase {
         sort_order INTEGER NOT NULL DEFAULT 0
       )
     ''');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS block_rule (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        group_id TEXT NOT NULL DEFAULT '',
+        target TEXT NOT NULL,
+        attribute TEXT NOT NULL,
+        pattern TEXT NOT NULL,
+        expression TEXT NOT NULL
+      )
+    ''');
   }
 
   // --- Config operations ---
@@ -401,6 +412,48 @@ class ServerDatabase {
 
   void deleteQuickSearch(String name) {
     _db.execute('DELETE FROM quick_search WHERE name = ?', [name]);
+  }
+
+  // --- Block rule operations ---
+
+  List<Map<String, dynamic>> selectAllBlockRules() {
+    return _db.select('SELECT * FROM block_rule ORDER BY id ASC').map(_rowToMap).toList();
+  }
+
+  int insertBlockRule(Map<String, dynamic> data) {
+    _db.execute('''
+      INSERT INTO block_rule (group_id, target, attribute, pattern, expression)
+      VALUES (?, ?, ?, ?, ?)
+    ''', [
+      data['group_id'] ?? '',
+      data['target'] ?? 'gallery',
+      data['attribute'] ?? 'title',
+      data['pattern'] ?? 'like',
+      data['expression'] ?? '',
+    ]);
+    return _db.lastInsertRowId;
+  }
+
+  void updateBlockRule(int id, Map<String, dynamic> data) {
+    _db.execute('''
+      UPDATE block_rule SET group_id = ?, target = ?, attribute = ?, pattern = ?, expression = ?
+      WHERE id = ?
+    ''', [
+      data['group_id'] ?? '',
+      data['target'] ?? 'gallery',
+      data['attribute'] ?? 'title',
+      data['pattern'] ?? 'like',
+      data['expression'] ?? '',
+      id,
+    ]);
+  }
+
+  void deleteBlockRule(int id) {
+    _db.execute('DELETE FROM block_rule WHERE id = ?', [id]);
+  }
+
+  void deleteBlockRulesByGroupId(String groupId) {
+    _db.execute('DELETE FROM block_rule WHERE group_id = ?', [groupId]);
   }
 
   // --- Cache operations ---
