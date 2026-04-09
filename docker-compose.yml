@@ -1,0 +1,30 @@
+services:
+  jhentai:
+    build: .
+    # To pull from Docker Hub instead of building locally, comment out 'build' above
+    # and uncomment the 'image' line below:
+    # image: hemumoe/jhentai:latest
+    container_name: jhentai
+    ports:
+      - "8080:8080"
+    volumes:
+      - jhentai-data:/data
+      # Optional: mount local gallery directories
+      # - /mnt/user/media/manga:/media/manga:ro
+      # - /mnt/user/media/doujinshi:/media/doujinshi:ro
+    environment:
+      - JH_DATA_DIR=/data
+      - JH_PORT=8080
+      - JH_HOST=0.0.0.0
+      - JH_WEB_DIR=/app/web
+      # PUID/PGID for file ownership (default 1000:1000)
+      - PUID=1000
+      - PGID=1000
+      # Comma-separated extra scan paths for local gallery scanning
+      # - JH_EXTRA_SCAN_PATHS=/media/manga,/media/doujinshi
+    restart: unless-stopped
+    mem_limit: 1g
+
+volumes:
+  jhentai-data:
+    driver: local

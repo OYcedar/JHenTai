@@ -1,4 +1,5 @@
-![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux-brightgreen)
+![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux%20%7C%20Docker-brightgreen)
+[![docker](https://img.shields.io/docker/pulls/hemumoe/jhentai)](https://hub.docker.com/r/hemumoe/jhentai)
 ![last-commit](https://img.shields.io/github/last-commit/jiangtian616/JHenTai)
 [![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/total)](https://github.com/jiangtian616/JHenTai/releases)
 [![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/latest/total)](https://github.com/jiangtian616/JHenTai/releases)
@@ -8,13 +9,13 @@
 
 # JHenTai
 
-English | [简体中文](https://github.com/jiangtian616/JHenTai/blob/master/README_cn.md) | [한국어](https://github.com/jiangtian616/JHenTai/blob/master/README_kr.md)
+[English](https://github.com/OYcedar/JHenTai/blob/master/README.md) | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/README_cn.md) | 한국어
 
 [Q&A](https://github.com/jiangtian616/JHenTai/wiki/Common-Questions)
 
 ## 개요
 
-Android & iOS & Windows & MacOS & Linux를 지원하는 E-Hentai 애플리케이션.
+Android & iOS & Windows & MacOS & Linux 및 **Docker (Web)** 를 지원하는 E-Hentai 애플리케이션.
 
 아직 개발 중입니다. 오류 제보나 기능 요청은 언제나 환영합니다.
 
@@ -52,6 +53,44 @@ Windows 설치: download Windows_xxx.zip 파일을 다운로드하고 압축 해
 MacOS 설치(지원 중지): .dmg 파일을 다운로드합니다. 만약 프록시 서버를 이용한다면 네트워크 설정에서 프록시 주소를 설정해 주세요.
 
 Linux 설치(지원 중지): Linux_xxx.zip 파일을 다운로드하고 압축 해제를 하세요. 만약 프록시 서버를 이용한다면 네트워크 설정에서 프록시 주소를 설정해 주세요.
+
+## Docker / Web 배포
+
+JHenTai는 **Docker 컨테이너**로 배포하여 모든 기기의 웹 브라우저에서 접속할 수 있습니다. NAS(Unraid, Synology 등), 헤드리스 서버, 상시 가동 셀프 호스팅 환경에 적합합니다. **AMD64**와 **ARM64** 아키텍처를 지원합니다.
+
+```bash
+docker pull hemumoe/jhentai:latest
+```
+
+**docker-compose로 빠르게 시작:**
+
+```yaml
+services:
+  jhentai:
+    image: hemumoe/jhentai:latest
+    container_name: jhentai
+    ports:
+      - "8080:8080"
+    volumes:
+      - jhentai-data:/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+    restart: unless-stopped
+
+volumes:
+  jhentai-data:
+```
+
+```bash
+docker-compose up -d
+```
+
+브라우저에서 `http://<서버IP>:8080`을 열고 `docker logs jhentai`에 표시된 API 토큰을 입력하면 사용할 수 있습니다.
+
+**상세 Docker 배포 문서** (설정, 백업, 리버스 프록시, CI/CD, 보안, 문제 해결)는 아래를 참조하세요:
+
+> **[Docker 배포 가이드 (한국어)](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)** | [English](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md) | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md)
 
 ## 개발 동기
 
@@ -138,6 +177,7 @@ Tag order optimization:
 - [x] 태그 추천/비추천, 태그 강조/숨김
 - [x] 댓글, 댓글 추천
 - [x] 지문 잠금 해제
+- [x] Docker 배포 + 웹 UI — 브라우저에서 접속, Unraid/NAS 지원
 
 ## 번역
 
