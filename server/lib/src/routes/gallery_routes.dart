@@ -70,6 +70,7 @@ class GalleryRoutes {
           'archiverUrl': detail.archiverUrl,
           'imagePageUrls': detail.imagePageUrls,
           'galleryUrl': galleryUrl,
+          'tags': detail.tags,
         }),
         headers: {'Content-Type': 'application/json'},
       );

@@ -44,7 +44,7 @@ class AppRouter {
     router.mount('/api/proxy/', ProxyRoutes(ehClient).router.call);
     router.mount('/api/auth/', AuthRoutes(ehClient).router.call);
     router.mount('/api/gallery/', GalleryRoutes(ehClient).router.call);
-    router.mount('/api/download/', DownloadRoutes(galleryDownloadService, archiveDownloadService).router.call);
+    router.mount('/api/download/', DownloadRoutes(galleryDownloadService, archiveDownloadService, config).router.call);
     router.mount('/api/local/', LocalRoutes(localGalleryService).router.call);
     router.mount('/api/image/', ImageRoutes(config).router.call);
     router.mount('/api/setting/', SettingRoutes(config).router.call);

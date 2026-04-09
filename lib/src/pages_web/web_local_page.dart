@@ -6,8 +6,6 @@ class WebLocalController extends GetxController {
   final galleries = <Map<String, dynamic>>[].obs;
   final isLoading = true.obs;
   final isScanning = false.obs;
-  final selectedImages = <String>[].obs;
-  final selectedGalleryTitle = ''.obs;
   final errorMessage = ''.obs;
 
   @override
@@ -41,12 +39,20 @@ class WebLocalController extends GetxController {
   }
 
   Future<void> openGallery(Map<String, dynamic> gallery) async {
-    selectedGalleryTitle.value = gallery['title'] as String? ?? '';
+    final title = gallery['title'] as String? ?? '';
     final path = gallery['path'] as String? ?? '';
     try {
       final images = await backendApiClient.getLocalGalleryImages(path);
-      selectedImages.value = images;
-      Get.toNamed('/web/local/viewer');
+      if (images.isEmpty) {
+        Get.snackbar('Empty', 'No images found in this gallery',
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      Get.toNamed('/web/reader/0/local?mode=local', arguments: {
+        'images': images,
+        'title': title,
+      });
     } catch (e) {
       Get.snackbar('Error', 'Failed to load gallery images: $e',
           snackPosition: SnackPosition.BOTTOM);
@@ -137,121 +143,11 @@ class WebLocalPage extends GetView<WebLocalController> {
               overflow: TextOverflow.ellipsis,
             ),
             subtitle: Text('${gallery['imageCount'] ?? 0} images'),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: const Icon(Icons.menu_book),
             onTap: () => controller.openGallery(gallery),
           ),
         );
       },
     ));
-  }
-}
-
-class WebLocalViewerPage extends GetView<WebLocalController> {
-  const WebLocalViewerPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Obx(() => Text(controller.selectedGalleryTitle.value)),
-      ),
-      body: Obx(() {
-        if (controller.selectedImages.isEmpty) {
-          return const Center(child: Text('No images'));
-        }
-        return GridView.builder(
-          padding: const EdgeInsets.all(8),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 300,
-            childAspectRatio: 0.75,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: controller.selectedImages.length,
-          itemBuilder: (context, index) {
-            final imagePath = controller.selectedImages[index];
-            final imageUrl = backendApiClient.imageFileUrl(imagePath);
-            return InkWell(
-              onTap: () => _showFullImage(context, index),
-              child: Image.network(
-                imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image)),
-              ),
-            );
-          },
-        );
-      }),
-    );
-  }
-
-  void _showFullImage(BuildContext context, int initialIndex) {
-    showDialog(
-      context: context,
-      builder: (ctx) => _FullImageDialog(
-        images: controller.selectedImages,
-        initialIndex: initialIndex,
-      ),
-    );
-  }
-}
-
-class _FullImageDialog extends StatefulWidget {
-  final List<String> images;
-  final int initialIndex;
-
-  const _FullImageDialog({required this.images, required this.initialIndex});
-
-  @override
-  State<_FullImageDialog> createState() => _FullImageDialogState();
-}
-
-class _FullImageDialogState extends State<_FullImageDialog> {
-  late PageController _pageController;
-  late int _currentPage;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentPage = widget.initialIndex;
-    _pageController = PageController(initialPage: widget.initialIndex);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog.fullscreen(
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text('${_currentPage + 1} / ${widget.images.length}'),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ),
-        body: PageView.builder(
-          controller: _pageController,
-          itemCount: widget.images.length,
-          onPageChanged: (page) => setState(() => _currentPage = page),
-          itemBuilder: (context, index) {
-            final imageUrl = backendApiClient.imageFileUrl(widget.images[index]);
-            return InteractiveViewer(
-              child: Center(
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image, size: 64)),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
   }
 }
