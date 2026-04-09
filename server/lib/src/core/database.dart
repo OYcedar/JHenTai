@@ -113,6 +113,26 @@ class ServerDatabase {
       )
     ''');
     _db.execute('CREATE INDEX IF NOT EXISTS idx_search_last ON search_history(last_used DESC)');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS tag_translation (
+        namespace TEXT NOT NULL,
+        key TEXT NOT NULL,
+        tag_name TEXT NOT NULL DEFAULT '',
+        full_tag_name TEXT NOT NULL DEFAULT '',
+        intro TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY (namespace, key)
+      )
+    ''');
+    _db.execute('CREATE INDEX IF NOT EXISTS idx_tag_name ON tag_translation(tag_name)');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS quick_search (
+        name TEXT PRIMARY KEY,
+        config TEXT NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
   }
 
   // --- Config operations ---
@@ -303,6 +323,84 @@ class ServerDatabase {
 
   void clearSearchHistory() {
     _db.execute('DELETE FROM search_history');
+  }
+
+  // --- Tag translation operations ---
+
+  void clearTagTranslations() {
+    _db.execute('DELETE FROM tag_translation');
+  }
+
+  void insertTagTranslation(String namespace, String key, String tagName, String fullTagName, String intro) {
+    _db.execute(
+      'INSERT OR REPLACE INTO tag_translation (namespace, key, tag_name, full_tag_name, intro) VALUES (?, ?, ?, ?, ?)',
+      [namespace, key, tagName, fullTagName, intro],
+    );
+  }
+
+  void batchInsertTagTranslations(List<List<String>> rows) {
+    _db.execute('BEGIN TRANSACTION');
+    try {
+      final stmt = _db.prepare(
+        'INSERT OR REPLACE INTO tag_translation (namespace, key, tag_name, full_tag_name, intro) VALUES (?, ?, ?, ?, ?)',
+      );
+      for (final row in rows) {
+        stmt.execute(row);
+      }
+      stmt.dispose();
+      _db.execute('COMMIT');
+    } catch (e) {
+      _db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  Map<String, dynamic>? getTagTranslation(String namespace, String key) {
+    final result = _db.select(
+      'SELECT * FROM tag_translation WHERE namespace = ? AND key = ?',
+      [namespace, key],
+    );
+    return result.isEmpty ? null : _rowToMap(result.first);
+  }
+
+  List<Map<String, dynamic>> batchGetTagTranslations(List<Map<String, String>> tags) {
+    final results = <Map<String, dynamic>>[];
+    for (final tag in tags) {
+      final r = getTagTranslation(tag['namespace'] ?? '', tag['key'] ?? '');
+      if (r != null) results.add(r);
+    }
+    return results;
+  }
+
+  List<Map<String, dynamic>> searchTagTranslations(String query, {int limit = 20}) {
+    final like = '%$query%';
+    return _db.select(
+      'SELECT * FROM tag_translation WHERE tag_name LIKE ? OR key LIKE ? LIMIT ?',
+      [like, like, limit],
+    ).map(_rowToMap).toList();
+  }
+
+  int tagTranslationCount() {
+    final result = _db.select('SELECT COUNT(*) as cnt FROM tag_translation');
+    return result.first['cnt'] as int;
+  }
+
+  // --- Quick search operations ---
+
+  List<Map<String, dynamic>> selectAllQuickSearches() {
+    return _db.select('SELECT * FROM quick_search ORDER BY sort_order ASC, name ASC')
+        .map(_rowToMap).toList();
+  }
+
+  void upsertQuickSearch(String name, String config, {int sortOrder = 0}) {
+    _db.execute(
+      'INSERT OR REPLACE INTO quick_search (name, config, sort_order) VALUES (?, ?, ?)',
+      [name, config, sortOrder],
+    );
+  }
+
+  void deleteQuickSearch(String name) {
+    _db.execute('DELETE FROM quick_search WHERE name = ?', [name]);
   }
 
   // --- Cache operations ---

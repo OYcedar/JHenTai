@@ -11,6 +11,7 @@ import '../service/archive_download_service.dart';
 import '../service/event_bus.dart';
 import '../service/gallery_download_service.dart';
 import '../service/local_gallery_service.dart';
+import '../service/tag_translation_service.dart';
 import 'auth_routes.dart';
 import 'comment_routes.dart';
 import 'download_routes.dart';
@@ -20,9 +21,11 @@ import 'history_routes.dart';
 import 'image_routes.dart';
 import 'local_routes.dart';
 import 'proxy_routes.dart';
+import 'quick_search_routes.dart';
 import 'rating_routes.dart';
 import 'search_history_routes.dart';
 import 'setting_routes.dart';
+import 'tag_routes.dart';
 
 class AppRouter {
   final EHClient ehClient;
@@ -32,6 +35,7 @@ class AppRouter {
   final ServerConfig config;
   final EventBus eventBus;
   final String authToken;
+  final TagTranslationService tagTranslationService;
 
   AppRouter({
     required this.ehClient,
@@ -41,6 +45,7 @@ class AppRouter {
     required this.config,
     required this.eventBus,
     required this.authToken,
+    required this.tagTranslationService,
   });
 
   Handler get handler {
@@ -58,6 +63,8 @@ class AppRouter {
     router.mount('/api/history/', HistoryRoutes().router.call);
     router.mount('/api/search-history/', SearchHistoryRoutes().router.call);
     router.mount('/api/comment/', CommentRoutes(ehClient).router.call);
+    router.mount('/api/tag/', TagRoutes(tagTranslationService).router.call);
+    router.mount('/api/quick-search/', QuickSearchRoutes().router.call);
 
     router.get('/api/health', (Request request) {
       return Response.ok(

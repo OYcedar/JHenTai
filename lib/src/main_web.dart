@@ -134,6 +134,7 @@ class JHenTaiWebApp extends StatelessWidget {
         Locale('zh', 'TW'),
         Locale('ko', 'KR'),
         Locale('pt', 'BR'),
+        Locale('ru', 'RU'),
       ],
       locale: locale,
       fallbackLocale: const Locale('en', 'US'),
@@ -155,6 +156,7 @@ class JHenTaiWebApp extends StatelessWidget {
       Locale('zh', 'TW'),
       Locale('ko', 'KR'),
       Locale('pt', 'BR'),
+      Locale('ru', 'RU'),
     ];
     for (final loc in supported) {
       if (loc.languageCode == platformLocale.languageCode) {

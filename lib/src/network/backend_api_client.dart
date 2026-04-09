@@ -409,6 +409,48 @@ class BackendApiClient {
     return ((response.data['names'] as List?) ?? []).cast<String>();
   }
 
+  // --- Tag translation ---
+
+  Future<Map<String, dynamic>> refreshTagTranslation() async {
+    final response = await _dio.post('/api/tag/refresh');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getTagTranslationStatus() async {
+    final response = await _dio.get('/api/tag/status');
+    return response.data;
+  }
+
+  Future<Map<String, String>> translateTags(List<Map<String, String>> tags) async {
+    final response = await _dio.post('/api/tag/batch',
+        data: jsonEncode({'tags': tags}),
+        options: Options(headers: {'Content-Type': 'application/json'}));
+    final translations = response.data['translations'] as Map<String, dynamic>? ?? {};
+    return translations.map((k, v) => MapEntry(k, v.toString()));
+  }
+
+  Future<List<dynamic>> searchTags(String query, {int limit = 20}) async {
+    final response = await _dio.get('/api/tag/search', queryParameters: {'q': query, 'limit': limit});
+    return (response.data['results'] as List?) ?? [];
+  }
+
+  // --- Quick search ---
+
+  Future<List<dynamic>> listQuickSearches() async {
+    final response = await _dio.get('/api/quick-search/list');
+    return (response.data['items'] as List?) ?? [];
+  }
+
+  Future<void> saveQuickSearch(String name, String config, {int sortOrder = 0}) async {
+    await _dio.post('/api/quick-search/save', data: {
+      'name': name, 'config': config, 'sortOrder': sortOrder,
+    });
+  }
+
+  Future<void> deleteQuickSearch(String name) async {
+    await _dio.delete('/api/quick-search/${Uri.encodeComponent(name)}');
+  }
+
   // --- Settings ---
 
   Future<Map<String, dynamic>> getSettings() async {

@@ -217,6 +217,31 @@ class WebKoKR {
       // home additions
       'home.history': '방문 기록',
       'home.ranklist': '랭킹',
+
+      // tag translation
+      'tagTranslation.title': '태그 번역',
+      'tagTranslation.loaded': '@count개 태그 로드됨',
+      'tagTranslation.notLoaded': '태그 데이터베이스가 로드되지 않음',
+      'tagTranslation.lastUpdate': '마지막 업데이트: @time',
+      'tagTranslation.refresh': '태그 데이터베이스 새로고침',
+      'tagTranslation.refreshSuccess': '@count개 태그 업데이트됨',
+      'tagTranslation.refreshFailed': '새로고침 실패: @error',
+
+      // list mode
+      'listMode.toggle': '보기 모드 전환',
+      'listMode.grid': '그리드',
+      'listMode.list': '목록',
+      'listMode.listCompact': '간략 목록',
+
+      // quick search
+      'quickSearch.title': '빠른 검색',
+      'quickSearch.empty': '저장된 검색 없음',
+      'quickSearch.saveCurrent': '현재 검색 저장',
+      'quickSearch.saveTitle': '빠른 검색 저장',
+      'quickSearch.nameLabel': '이름',
+
+      // tag suggest
+      'tagSuggest.tag': '태그',
     };
   }
 }

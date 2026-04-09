@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:web/web.dart' as web;
 
 class WebHomeController extends GetxController {
   final searchController = TextEditingController();
@@ -19,6 +22,12 @@ class WebHomeController extends GetxController {
   final searchInDesc = false.obs;
   final showExpunged = false.obs;
 
+  // List mode: grid, list, listCompact
+  final listMode = 'grid'.obs;
+
+  // Quick search
+  final quickSearches = <Map<String, dynamic>>[].obs;
+
   static const _categoryKeys = [
     'category.doujinshi', 'category.manga', 'category.artistCg', 'category.gameCg', 'category.western',
     'category.nonH', 'category.imageSet', 'category.cosplay', 'category.asianPorn', 'category.misc',
@@ -28,6 +37,10 @@ class WebHomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final savedMode = web.window.localStorage.getItem('jh_web_list_mode');
+    if (savedMode != null && ['grid', 'list', 'listCompact'].contains(savedMode)) {
+      listMode.value = savedMode;
+    }
     final args = Get.arguments;
     if (args is Map<String, dynamic> && args['search'] is String) {
       final searchQuery = args['search'] as String;
@@ -36,6 +49,7 @@ class WebHomeController extends GetxController {
     }
     _loadHomePage();
     loadSearchHistory();
+    loadQuickSearches();
   }
 
   @override
@@ -155,6 +169,64 @@ class WebHomeController extends GetxController {
   bool isCategoryEnabled(int index) {
     return (categoryFilter.value & _categoryBits[index]) == 0;
   }
+
+  void cycleListMode() {
+    final modes = ['grid', 'list', 'listCompact'];
+    final idx = modes.indexOf(listMode.value);
+    listMode.value = modes[(idx + 1) % modes.length];
+    web.window.localStorage.setItem('jh_web_list_mode', listMode.value);
+  }
+
+  IconData get listModeIcon {
+    return switch (listMode.value) {
+      'list' => Icons.view_list,
+      'listCompact' => Icons.view_headline,
+      _ => Icons.grid_view,
+    };
+  }
+
+  void loadQuickSearches() async {
+    try {
+      quickSearches.value = (await backendApiClient.listQuickSearches()).cast<Map<String, dynamic>>();
+    } catch (_) {}
+  }
+
+  Future<void> saveCurrentAsQuickSearch(String name) async {
+    final config = jsonEncode({
+      'keyword': _currentSearch,
+      'categoryFilter': categoryFilter.value,
+      'minimumRating': minimumRating.value,
+      'searchInName': searchInName.value,
+      'searchInTags': searchInTags.value,
+      'searchInDesc': searchInDesc.value,
+      'showExpunged': showExpunged.value,
+    });
+    await backendApiClient.saveQuickSearch(name, config);
+    loadQuickSearches();
+  }
+
+  void applyQuickSearch(Map<String, dynamic> item) {
+    try {
+      final config = jsonDecode(item['config'] as String? ?? '{}') as Map<String, dynamic>;
+      final keyword = config['keyword'] as String? ?? '';
+      searchController.text = keyword;
+      _currentSearch = keyword;
+      categoryFilter.value = config['categoryFilter'] as int? ?? 0;
+      minimumRating.value = config['minimumRating'] as int? ?? 0;
+      searchInName.value = config['searchInName'] as bool? ?? true;
+      searchInTags.value = config['searchInTags'] as bool? ?? true;
+      searchInDesc.value = config['searchInDesc'] as bool? ?? false;
+      showExpunged.value = config['showExpunged'] as bool? ?? false;
+      currentPage.value = 0;
+      _currentSection = 'home';
+      _fetchGalleryList();
+    } catch (_) {}
+  }
+
+  Future<void> deleteQuickSearch(String name) async {
+    await backendApiClient.deleteQuickSearch(name);
+    loadQuickSearches();
+  }
 }
 
 class WebHomePage extends GetView<WebHomeController> {
@@ -167,6 +239,16 @@ class WebHomePage extends GetView<WebHomeController> {
       appBar: AppBar(
         title: Text('home.title'.tr),
         actions: [
+          Obx(() => IconButton(
+            icon: Icon(controller.listModeIcon),
+            onPressed: controller.cycleListMode,
+            tooltip: 'listMode.toggle'.tr,
+          )),
+          IconButton(
+            icon: const Icon(Icons.bookmark),
+            onPressed: () => _showQuickSearchDialog(context),
+            tooltip: 'quickSearch.title'.tr,
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             onPressed: () => Get.toNamed('/web/history'),
@@ -195,93 +277,7 @@ class WebHomePage extends GetView<WebHomeController> {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Expanded(
-                  child: Obx(() {
-                    final history = controller.searchHistory.toList();
-                    return RawAutocomplete<String>(
-                      textEditingController: controller.searchController,
-                      focusNode: FocusNode(),
-                      optionsBuilder: (textEditingValue) {
-                        if (history.isEmpty) return const Iterable<String>.empty();
-                        final query = textEditingValue.text.toLowerCase();
-                        if (query.isEmpty) return history.take(10);
-                        return history.where((s) => s.toLowerCase().contains(query)).take(10);
-                      },
-                      fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
-                        return TextField(
-                          controller: textController,
-                          focusNode: focusNode,
-                          decoration: InputDecoration(
-                            hintText: 'home.search'.tr,
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          ),
-                          onSubmitted: (value) {
-                            onFieldSubmitted();
-                            controller.search(value);
-                          },
-                        );
-                      },
-                      optionsViewBuilder: (context, onSelected, options) {
-                        return Align(
-                          alignment: Alignment.topLeft,
-                          child: Material(
-                            elevation: 4,
-                            borderRadius: BorderRadius.circular(8),
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxHeight: 300, maxWidth: 500),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Flexible(
-                                    child: ListView.builder(
-                                      shrinkWrap: true,
-                                      padding: EdgeInsets.zero,
-                                      itemCount: options.length,
-                                      itemBuilder: (context, index) {
-                                        final option = options.elementAt(index);
-                                        return ListTile(
-                                          dense: true,
-                                          leading: const Icon(Icons.history, size: 18),
-                                          title: Text(option, maxLines: 1, overflow: TextOverflow.ellipsis),
-                                          onTap: () => onSelected(option),
-                                          trailing: IconButton(
-                                            icon: const Icon(Icons.close, size: 16),
-                                            onPressed: () {
-                                              backendApiClient.deleteSearchHistoryItem(option).catchError((_) {});
-                                              controller.searchHistory.remove(option);
-                                            },
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  if (options.isNotEmpty)
-                                    InkWell(
-                                      onTap: () {
-                                        backendApiClient.clearSearchHistory().catchError((_) {});
-                                        controller.searchHistory.clear();
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8),
-                                        child: Text('searchHistory.clearAll'.tr,
-                                            style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                      onSelected: (value) {
-                        controller.searchController.text = value;
-                        controller.search(value);
-                      },
-                    );
-                  }),
-                ),
+                Expanded(child: _SearchField(controller: controller)),
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.tune),
@@ -357,6 +353,103 @@ class WebHomePage extends GetView<WebHomeController> {
           SimpleDialogOption(
             onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '11'); },
             child: Text('ranklist.yesterday'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuickSearchDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Obx(() {
+        final items = controller.quickSearches.toList();
+        return AlertDialog(
+          title: Text('quickSearch.title'.tr),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (items.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('quickSearch.empty'.tr, style: const TextStyle(color: Colors.grey)),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 300),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        final name = item['name'] as String? ?? '';
+                        return ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.bookmark_outline, size: 20),
+                          title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            controller.applyQuickSearch(item);
+                          },
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            onPressed: () => controller.deleteQuickSearch(name),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                const Divider(),
+                ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.add, size: 20),
+                  title: Text('quickSearch.saveCurrent'.tr),
+                  onTap: () => _showSaveQuickSearchDialog(ctx),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          ],
+        );
+      }),
+    );
+  }
+
+  void _showSaveQuickSearchDialog(BuildContext parentCtx) {
+    final nameController = TextEditingController();
+    showDialog(
+      context: parentCtx,
+      builder: (ctx) => AlertDialog(
+        title: Text('quickSearch.saveTitle'.tr),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: 'quickSearch.nameLabel'.tr,
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+          onSubmitted: (v) {
+            if (v.trim().isNotEmpty) {
+              controller.saveCurrentAsQuickSearch(v.trim());
+              Navigator.pop(ctx);
+            }
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                controller.saveCurrentAsQuickSearch(name);
+                Navigator.pop(ctx);
+              }
+            },
+            child: Text('common.ok'.tr),
           ),
         ],
       ),
@@ -440,6 +533,26 @@ class WebHomePage extends GetView<WebHomeController> {
               Get.toNamed('/web/history');
             },
           ),
+          Obx(() {
+            final qsList = controller.quickSearches.toList();
+            if (qsList.isEmpty) return const SizedBox.shrink();
+            return ExpansionTile(
+              leading: const Icon(Icons.bookmark),
+              title: Text('quickSearch.title'.tr),
+              children: qsList.map((item) {
+                final name = item['name'] as String? ?? '';
+                return ListTile(
+                  dense: true,
+                  contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                  title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.applyQuickSearch(item);
+                  },
+                );
+              }).toList(),
+            );
+          }),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.download),
@@ -503,24 +616,36 @@ class WebHomePage extends GetView<WebHomeController> {
 
   Widget _buildGalleryGrid(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
-      final crossAxisCount = constraints.maxWidth > 1200 ? 4
-          : constraints.maxWidth > 800 ? 3
-          : constraints.maxWidth > 500 ? 2 : 1;
-
-      return Obx(() => GridView.builder(
-        padding: const EdgeInsets.all(12),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: 0.7,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: controller.galleries.length,
-        itemBuilder: (context, index) {
-          final gallery = controller.galleries[index];
-          return _GalleryCard(gallery: gallery);
-        },
-      ));
+      return Obx(() {
+        final mode = controller.listMode.value;
+        if (mode == 'list' || mode == 'listCompact') {
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: controller.galleries.length,
+            itemBuilder: (context, index) {
+              final gallery = controller.galleries[index];
+              return _GalleryListTile(gallery: gallery, compact: mode == 'listCompact');
+            },
+          );
+        }
+        final crossAxisCount = constraints.maxWidth > 1200 ? 4
+            : constraints.maxWidth > 800 ? 3
+            : constraints.maxWidth > 500 ? 2 : 1;
+        return GridView.builder(
+          padding: const EdgeInsets.all(12),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: controller.galleries.length,
+          itemBuilder: (context, index) {
+            final gallery = controller.galleries[index];
+            return _GalleryCard(gallery: gallery);
+          },
+        );
+      });
     });
   }
 }
@@ -669,6 +794,356 @@ class _AdvancedSearchSheet extends StatelessWidget {
       Colors.blue, Colors.indigo, Colors.purple, Colors.pink, Colors.grey,
     ];
     return colors[index % colors.length];
+  }
+}
+
+class _SearchSuggestion {
+  final String text;
+  final String displayText;
+  final bool isTag;
+  final String? tagNamespace;
+
+  const _SearchSuggestion({required this.text, required this.displayText, this.isTag = false, this.tagNamespace});
+}
+
+class _SearchField extends StatefulWidget {
+  final WebHomeController controller;
+  const _SearchField({required this.controller});
+
+  @override
+  State<_SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<_SearchField> {
+  final _focusNode = FocusNode();
+  List<_SearchSuggestion> _suggestions = [];
+  final _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.searchController.addListener(_onTextChanged);
+    _focusNode.addListener(_onFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.searchController.removeListener(_onTextChanged);
+    _focusNode.removeListener(_onFocusChanged);
+    _focusNode.dispose();
+    _removeOverlay();
+    super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (_focusNode.hasFocus) {
+      _onTextChanged();
+    } else {
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (!_focusNode.hasFocus) _removeOverlay();
+      });
+    }
+  }
+
+  void _onTextChanged() async {
+    final text = widget.controller.searchController.text;
+    final suggestions = <_SearchSuggestion>[];
+
+    final history = widget.controller.searchHistory.toList();
+    final query = text.toLowerCase();
+
+    if (query.isEmpty) {
+      for (final h in history.take(8)) {
+        suggestions.add(_SearchSuggestion(text: h, displayText: h));
+      }
+    } else {
+      for (final h in history.where((s) => s.toLowerCase().contains(query)).take(5)) {
+        suggestions.add(_SearchSuggestion(text: h, displayText: h));
+      }
+
+      final lastToken = _extractLastToken(text);
+      if (lastToken.length >= 2) {
+        try {
+          final tagResults = await backendApiClient.searchTags(lastToken, limit: 8);
+          for (final tag in tagResults) {
+            final ns = tag['namespace']?.toString() ?? '';
+            final key = tag['key']?.toString() ?? '';
+            final tagName = tag['tag_name']?.toString() ?? key;
+            final display = '$ns:$tagName';
+            final insertText = '$ns:"$key\$"';
+            suggestions.add(_SearchSuggestion(
+              text: insertText,
+              displayText: display,
+              isTag: true,
+              tagNamespace: ns,
+            ));
+          }
+        } catch (_) {}
+      }
+    }
+
+    _suggestions = suggestions;
+    if (suggestions.isNotEmpty && _focusNode.hasFocus) {
+      _showOverlay();
+    } else {
+      _removeOverlay();
+    }
+  }
+
+  String _extractLastToken(String text) {
+    final trimmed = text.trimRight();
+    final lastSpace = trimmed.lastIndexOf(' ');
+    return lastSpace >= 0 ? trimmed.substring(lastSpace + 1) : trimmed;
+  }
+
+  String _replaceLastToken(String text, String replacement) {
+    final trimmed = text.trimRight();
+    final lastSpace = trimmed.lastIndexOf(' ');
+    if (lastSpace >= 0) {
+      return '${trimmed.substring(0, lastSpace + 1)}$replacement ';
+    }
+    return '$replacement ';
+  }
+
+  void _showOverlay() {
+    _removeOverlay();
+    _overlayEntry = OverlayEntry(builder: (context) {
+      return Positioned(
+        width: 500,
+        child: CompositedTransformFollower(
+          link: _layerLink,
+          showWhenUnlinked: false,
+          offset: const Offset(0, 48),
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(8),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 350),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      itemCount: _suggestions.length,
+                      itemBuilder: (context, index) {
+                        final s = _suggestions[index];
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(s.isTag ? Icons.label : Icons.history, size: 18),
+                          title: Text(s.displayText, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          subtitle: s.isTag ? Text(s.text, style: const TextStyle(fontSize: 11, color: Colors.grey)) : null,
+                          onTap: () {
+                            if (s.isTag) {
+                              widget.controller.searchController.text =
+                                  _replaceLastToken(widget.controller.searchController.text, s.text);
+                              widget.controller.searchController.selection = TextSelection.collapsed(
+                                  offset: widget.controller.searchController.text.length);
+                            } else {
+                              widget.controller.searchController.text = s.text;
+                            }
+                            _removeOverlay();
+                            if (!s.isTag) widget.controller.search(s.text);
+                          },
+                          trailing: s.isTag
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.close, size: 16),
+                                  onPressed: () {
+                                    backendApiClient.deleteSearchHistoryItem(s.text).catchError((_) {});
+                                    widget.controller.searchHistory.remove(s.text);
+                                    _onTextChanged();
+                                  },
+                                ),
+                        );
+                      },
+                    ),
+                  ),
+                  if (_suggestions.any((s) => !s.isTag))
+                    InkWell(
+                      onTap: () {
+                        backendApiClient.clearSearchHistory().catchError((_) {});
+                        widget.controller.searchHistory.clear();
+                        _removeOverlay();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Text('searchHistory.clearAll'.tr,
+                            style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: TextField(
+        controller: widget.controller.searchController,
+        focusNode: _focusNode,
+        decoration: InputDecoration(
+          hintText: 'home.search'.tr,
+          prefixIcon: const Icon(Icons.search),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+        onSubmitted: (value) {
+          _removeOverlay();
+          widget.controller.search(value);
+        },
+      ),
+    );
+  }
+}
+
+class _GalleryListTile extends StatelessWidget {
+  final Map<String, dynamic> gallery;
+  final bool compact;
+
+  const _GalleryListTile({required this.gallery, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = gallery['title'] as String? ?? '';
+    final category = gallery['category'] as String? ?? '';
+    final gid = gallery['gid'];
+    final token = gallery['token'];
+    final coverUrl = gallery['coverUrl'] as String? ?? '';
+    final uploader = gallery['uploader'] as String? ?? '';
+    final rating = (gallery['rating'] as num?)?.toDouble() ?? 0;
+    final pageCount = gallery['pageCount'] as int? ?? 0;
+    final tags = gallery['tags'] as Map<String, dynamic>?;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Get.toNamed('/web/gallery/$gid/$token'),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  width: 80,
+                  height: compact ? 80 : 110,
+                  child: coverUrl.isNotEmpty
+                      ? Image.network(
+                          backendApiClient.proxyImageUrl(coverUrl),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                          ),
+                        )
+                      : Container(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          child: const Icon(Icons.photo_library, size: 24, color: Colors.grey),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _categoryColor(category),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(category, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                        if (uploader.isNotEmpty)
+                          Text(uploader, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star, size: 14, color: Colors.amber),
+                            const SizedBox(width: 2),
+                            Text(rating.toStringAsFixed(1), style: Theme.of(context).textTheme.bodySmall),
+                          ],
+                        ),
+                        Text('${pageCount}P', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                      ],
+                    ),
+                    if (!compact && tags != null && tags.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 3,
+                        runSpacing: 3,
+                        children: _buildTagChips(tags).take(12).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildTagChips(Map<String, dynamic> tags) {
+    final chips = <Widget>[];
+    for (final entry in tags.entries) {
+      final tagList = entry.value;
+      if (tagList is List) {
+        for (final tag in tagList) {
+          chips.add(Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade400, width: 0.5),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(tag.toString(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          ));
+        }
+      }
+    }
+    return chips;
+  }
+
+  Color _categoryColor(String category) {
+    return switch (category.toLowerCase()) {
+      'doujinshi' => Colors.red.shade700,
+      'manga' => Colors.orange.shade700,
+      'artist cg' => Colors.amber.shade700,
+      'game cg' => Colors.green.shade700,
+      'western' => Colors.teal.shade700,
+      'non-h' => Colors.blue.shade700,
+      'image set' => Colors.indigo.shade700,
+      'cosplay' => Colors.purple.shade700,
+      'asian porn' => Colors.pink.shade700,
+      'misc' => Colors.grey.shade700,
+      _ => Colors.grey.shade700,
+    };
   }
 }
 

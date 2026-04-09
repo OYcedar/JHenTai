@@ -139,6 +139,8 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   const SizedBox(height: 24),
                   _buildLanguageSection(context),
                   const SizedBox(height: 24),
+                  _buildTagTranslationSection(context),
+                  const SizedBox(height: 24),
                   _buildServerInfoSection(context),
                 ],
               ),
@@ -324,7 +326,10 @@ class WebSettingsPage extends GetView<WebSettingsController> {
     final options = <MapEntry<Locale, String>>[
       MapEntry(const Locale('en', 'US'), 'English'),
       MapEntry(const Locale('zh', 'CN'), '简体中文'),
+      MapEntry(const Locale('zh', 'TW'), '繁體中文'),
       MapEntry(const Locale('ko', 'KR'), '한국어'),
+      MapEntry(const Locale('pt', 'BR'), 'Português (BR)'),
+      MapEntry(const Locale('ru', 'RU'), 'Русский'),
     ];
 
     return Card(
@@ -352,6 +357,85 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         ),
       ),
     );
+  }
+
+  Widget _buildTagTranslationSection(BuildContext context) {
+    final tagStatus = <String, dynamic>{}.obs;
+    final isRefreshing = false.obs;
+
+    void loadStatus() async {
+      try {
+        tagStatus.value = await backendApiClient.getTagTranslationStatus();
+      } catch (_) {}
+    }
+
+    loadStatus();
+
+    return Obx(() => Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('tagTranslation.title'.tr, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  tagStatus['loaded'] == true ? Icons.check_circle : Icons.info_outline,
+                  color: tagStatus['loaded'] == true ? Colors.green : Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    tagStatus['loaded'] == true
+                        ? 'tagTranslation.loaded'.trParams({'count': '${tagStatus['count'] ?? 0}'})
+                        : 'tagTranslation.notLoaded'.tr,
+                  ),
+                ),
+              ],
+            ),
+            if (tagStatus['timestamp'] != null && (tagStatus['timestamp'] as String).isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 28),
+                child: Text(
+                  'tagTranslation.lastUpdate'.trParams({'time': tagStatus['timestamp']?.toString() ?? ''}),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                ),
+              ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              icon: isRefreshing.value
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.refresh),
+              label: Text('tagTranslation.refresh'.tr),
+              onPressed: isRefreshing.value
+                  ? null
+                  : () async {
+                      isRefreshing.value = true;
+                      try {
+                        final result = await backendApiClient.refreshTagTranslation();
+                        if (result['success'] == true) {
+                          Get.snackbar('common.success'.tr, 'tagTranslation.refreshSuccess'.trParams({'count': '${result['count'] ?? 0}'}),
+                              snackPosition: SnackPosition.BOTTOM);
+                        } else {
+                          Get.snackbar('common.error'.tr, result['message']?.toString() ?? 'common.failed'.tr,
+                              snackPosition: SnackPosition.BOTTOM);
+                        }
+                        loadStatus();
+                      } catch (e) {
+                        Get.snackbar('common.error'.tr, 'tagTranslation.refreshFailed'.trParams({'error': '$e'}),
+                            snackPosition: SnackPosition.BOTTOM);
+                      } finally {
+                        isRefreshing.value = false;
+                      }
+                    },
+            ),
+          ],
+        ),
+      ),
+    ));
   }
 
   Widget _buildServerInfoSection(BuildContext context) {

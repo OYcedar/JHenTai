@@ -20,6 +20,7 @@ class WebGalleryDetailController extends GetxController {
   final archiverUrl = ''.obs;
   final imagePageUrls = <String>[].obs;
   final tags = <String, List<String>>{}.obs;
+  final translatedTags = <String, String>{}.obs;
   final comments = <Map<String, dynamic>>[].obs;
 
   final favoriteSlot = Rxn<int>();
@@ -90,11 +91,32 @@ class WebGalleryDetailController extends GetxController {
         coverUrl: coverUrl.value,
         category: category.value,
       ).catchError((_) {});
+
+      _loadTagTranslations();
     } catch (e) {
       errorMessage.value = 'detail.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> _loadTagTranslations() async {
+    try {
+      final tagList = <Map<String, String>>[];
+      for (final entry in tags.entries) {
+        for (final tag in entry.value) {
+          tagList.add({'namespace': entry.key, 'key': tag});
+        }
+      }
+      if (tagList.isEmpty) return;
+      final translations = await backendApiClient.translateTags(tagList);
+      translatedTags.value = translations;
+    } catch (_) {}
+  }
+
+  String getTranslatedTag(String namespace, String tag) {
+    final key = '$namespace:$tag';
+    return translatedTags[key] ?? tag;
   }
 
   Future<void> toggleFavorite(int? favcat) async {
@@ -562,15 +584,22 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
                     child: Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: entry.value.map((tag) => ActionChip(
-                        label: Text(tag, style: const TextStyle(fontSize: 12)),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        onPressed: () {
-                          final query = '${entry.key}:"$tag\$"';
-                          Get.toNamed('/web/home', arguments: {'search': query});
-                        },
-                      )).toList(),
+                      children: entry.value.map((tag) {
+                        final translated = controller.getTranslatedTag(entry.key, tag);
+                        final showTranslated = translated != tag;
+                        return Tooltip(
+                          message: showTranslated ? tag : '',
+                          child: ActionChip(
+                            label: Text(showTranslated ? translated : tag, style: const TextStyle(fontSize: 12)),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            onPressed: () {
+                              final query = '${entry.key}:"$tag\$"';
+                              Get.toNamed('/web/home', arguments: {'search': query});
+                            },
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
