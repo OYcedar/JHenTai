@@ -70,7 +70,7 @@ class WebGalleryDetailController extends GetxController {
         comments.value = rawComments.cast<Map<String, dynamic>>();
       }
     } catch (e) {
-      errorMessage.value = 'Failed to load gallery detail: $e';
+      errorMessage.value = 'detail.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
     }
@@ -83,16 +83,17 @@ class WebGalleryDetailController extends GetxController {
         await backendApiClient.removeFavorite(gid, token);
         favoriteSlot.value = null;
         favoriteName.value = null;
-        Get.snackbar('Removed', 'Removed from favorites', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('detail.favRemoved'.tr, 'detail.favRemovedMsg'.tr, snackPosition: SnackPosition.BOTTOM);
       } else {
         final slot = favcat ?? 0;
         await backendApiClient.addFavorite(gid, token, favcat: slot);
         favoriteSlot.value = slot;
-        favoriteName.value = _favCategoryNames[slot];
-        Get.snackbar('Added', 'Added to ${_favCategoryNames[slot]}', snackPosition: SnackPosition.BOTTOM);
+        final slotName = 'detail.favSlot'.trParams({'n': '$slot'});
+        favoriteName.value = slotName;
+        Get.snackbar('detail.favAdded'.tr, 'detail.favAddedMsg'.trParams({'name': slotName}), snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Favorite operation failed: $e',
+      Get.snackbar('common.error'.tr, 'detail.favError'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     } finally {
       isFavLoading.value = false;
@@ -101,7 +102,7 @@ class WebGalleryDetailController extends GetxController {
 
   Future<void> submitRating(double newRating) async {
     if (apiuid == null || apikey == null) {
-      Get.snackbar('Error', 'Cannot rate — login required', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'detail.rateLoginRequired'.tr, snackPosition: SnackPosition.BOTTOM);
       return;
     }
     try {
@@ -114,9 +115,9 @@ class WebGalleryDetailController extends GetxController {
       );
       final avg = result['rating_avg'] as num?;
       if (avg != null) rating.value = avg.toDouble();
-      Get.snackbar('Rated', 'Your rating: ${newRating.toStringAsFixed(1)}', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('detail.rated'.tr, 'detail.ratedMsg'.trParams({'rating': newRating.toStringAsFixed(1)}), snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Error', 'Rating failed: $e',
+      Get.snackbar('common.error'.tr, 'detail.rateFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
@@ -133,17 +134,17 @@ class WebGalleryDetailController extends GetxController {
         coverUrl: coverUrl.value,
         uploader: uploader.value,
       );
-      Get.snackbar('Download Started', 'Gallery download has been queued',
+      Get.snackbar('detail.downloadStarted'.tr, 'detail.galleryQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to start download: $e',
+      Get.snackbar('common.error'.tr, 'detail.downloadFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
   Future<void> startArchiveDownload({bool isOriginal = false}) async {
     if (archiverUrl.isEmpty) {
-      Get.snackbar('Error', 'No archive available', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'detail.noArchive'.tr, snackPosition: SnackPosition.BOTTOM);
       return;
     }
     try {
@@ -159,18 +160,15 @@ class WebGalleryDetailController extends GetxController {
         uploader: uploader.value,
         isOriginal: isOriginal,
       );
-      Get.snackbar('Download Started', 'Archive download has been queued',
+      Get.snackbar('detail.downloadStarted'.tr, 'detail.archiveQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to start archive download: $e',
+      Get.snackbar('common.error'.tr, 'detail.archiveFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
-  static const _favCategoryNames = [
-    'Favorites 0', 'Favorites 1', 'Favorites 2', 'Favorites 3', 'Favorites 4',
-    'Favorites 5', 'Favorites 6', 'Favorites 7', 'Favorites 8', 'Favorites 9',
-  ];
+  static String favSlotName(int i) => 'detail.favSlot'.trParams({'n': '$i'});
 }
 
 class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
@@ -184,11 +182,11 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
         actions: [
           IconButton(
             icon: const Icon(Icons.copy),
-            tooltip: 'Copy gallery URL',
+            tooltip: 'detail.copyUrl'.tr,
             onPressed: () {
               final url = 'https://e-hentai.org/g/${controller.gid}/${controller.token}/';
               Clipboard.setData(ClipboardData(text: url));
-              Get.snackbar('Copied', url, snackPosition: SnackPosition.BOTTOM);
+              Get.snackbar('detail.copied'.tr, url, snackPosition: SnackPosition.BOTTOM);
             },
           ),
           Obx(() {
@@ -202,7 +200,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
             return IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
                   color: isFav ? _favSlotColor(controller.favoriteSlot.value ?? 0) : null),
-              tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
+              tooltip: isFav ? 'detail.removeFromFav'.tr : 'detail.addToFav'.tr,
               onPressed: () {
                 if (isFav) {
                   controller.toggleFavorite(null);
@@ -230,7 +228,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
     showDialog(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Add to favorites'),
+        title: Text('detail.addToFavTitle'.tr),
         children: List.generate(10, (i) {
           return SimpleDialogOption(
             onPressed: () {
@@ -241,7 +239,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
               children: [
                 Icon(Icons.favorite, size: 18, color: _favSlotColor(i)),
                 const SizedBox(width: 12),
-                Text('Favorites $i'),
+                Text('detail.favSlot'.trParams({'n': '$i'})),
               ],
             ),
           );
@@ -351,7 +349,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
             )),
             Obx(() => Chip(
               avatar: const Icon(Icons.photo_library, size: 16),
-              label: Text('${controller.pageCount.value} pages'),
+              label: Text('common.pages'.trParams({'count': '${controller.pageCount.value}'})),
               visualDensity: VisualDensity.compact,
             )),
             Obx(() => InkWell(
@@ -384,7 +382,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
-          title: const Text('Rate this gallery'),
+          title: Text('detail.rateTitle'.tr),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -419,13 +417,13 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 controller.submitRating(selected);
               },
-              child: const Text('Submit'),
+              child: Text('detail.rateSubmit'.tr),
             ),
           ],
         ),
@@ -441,28 +439,28 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
         Obx(() => controller.pageCount.value > 0
             ? FilledButton.icon(
                 icon: const Icon(Icons.menu_book),
-                label: const Text('Read Online'),
+                label: Text('detail.readOnline'.tr),
                 style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
                 onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
               )
             : const SizedBox.shrink()),
         FilledButton.tonalIcon(
           icon: const Icon(Icons.download),
-          label: const Text('Download Gallery'),
+          label: Text('detail.downloadGallery'.tr),
           style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
           onPressed: controller.startGalleryDownload,
         ),
         Obx(() => controller.archiverUrl.isNotEmpty
             ? OutlinedButton.icon(
                 icon: const Icon(Icons.archive),
-                label: const Text('Archive (Resample)'),
+                label: Text('detail.archiveResample'.tr),
                 onPressed: () => controller.startArchiveDownload(isOriginal: false),
               )
             : const SizedBox.shrink()),
         Obx(() => controller.archiverUrl.isNotEmpty
             ? OutlinedButton.icon(
                 icon: const Icon(Icons.archive_outlined),
-                label: const Text('Archive (Original)'),
+                label: Text('detail.archiveOriginal'.tr),
                 onPressed: () => controller.startArchiveDownload(isOriginal: true),
               )
             : const SizedBox.shrink()),
@@ -477,7 +475,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Tags', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text('detail.tags'.tr, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...controller.tags.entries.map((entry) {
             return Padding(
@@ -526,7 +524,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Comments (${controller.comments.length})',
+          Text('detail.comments'.trParams({'count': '${controller.comments.length}'}),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...controller.comments.map((c) => _CommentCard(comment: c)),
@@ -542,7 +540,7 @@ class _CommentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final author = comment['author'] as String? ?? 'Anonymous';
+    final author = comment['author'] as String? ?? 'detail.anonymous'.tr;
     final date = comment['date'] as String? ?? '';
     final score = comment['score'] as String? ?? '';
     final body = comment['body'] as String? ?? '';

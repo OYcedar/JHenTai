@@ -19,9 +19,9 @@ class WebHomeController extends GetxController {
   final searchInDesc = false.obs;
   final showExpunged = false.obs;
 
-  static const _categoryNames = [
-    'Doujinshi', 'Manga', 'Artist CG', 'Game CG', 'Western',
-    'Non-H', 'Image Set', 'Cosplay', 'Asian Porn', 'Misc',
+  static const _categoryKeys = [
+    'category.doujinshi', 'category.manga', 'category.artistCg', 'category.gameCg', 'category.western',
+    'category.nonH', 'category.imageSet', 'category.cosplay', 'category.asianPorn', 'category.misc',
   ];
   static const _categoryBits = [2, 4, 8, 16, 512, 256, 32, 64, 1024, 1];
 
@@ -122,7 +122,7 @@ class WebHomeController extends GetxController {
       hasNextPage.value = nextUrl.isNotEmpty;
       hasPrevPage.value = prevUrl.isNotEmpty;
     } catch (e) {
-      errorMessage.value = 'Failed to load: $e';
+      errorMessage.value = 'home.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
     }
@@ -145,22 +145,22 @@ class WebHomePage extends GetView<WebHomeController> {
     return Scaffold(
       drawer: _buildDrawer(context),
       appBar: AppBar(
-        title: const Text('JHenTai'),
+        title: Text('home.title'.tr),
         actions: [
           IconButton(
             icon: const Icon(Icons.download),
             onPressed: () => Get.toNamed('/web/downloads'),
-            tooltip: 'Downloads',
+            tooltip: 'home.downloads'.tr,
           ),
           IconButton(
             icon: const Icon(Icons.folder),
             onPressed: () => Get.toNamed('/web/local'),
-            tooltip: 'Local Galleries',
+            tooltip: 'home.localGalleries'.tr,
           ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () => Get.toNamed('/web/settings'),
-            tooltip: 'Settings',
+            tooltip: 'home.settings'.tr,
           ),
         ],
       ),
@@ -174,7 +174,7 @@ class WebHomePage extends GetView<WebHomeController> {
                   child: TextField(
                     controller: controller.searchController,
                     decoration: InputDecoration(
-                      hintText: 'Search galleries...',
+                      hintText: 'home.search'.tr,
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -185,7 +185,7 @@ class WebHomePage extends GetView<WebHomeController> {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.tune),
-                  tooltip: 'Advanced search',
+                  tooltip: 'home.advancedSearch'.tr,
                   onPressed: () => _showAdvancedSearch(context),
                 ),
                 const SizedBox(width: 4),
@@ -214,14 +214,14 @@ class WebHomePage extends GetView<WebHomeController> {
                       FilledButton.icon(
                         icon: const Icon(Icons.refresh),
                         onPressed: () => controller.refresh(),
-                        label: const Text('Retry'),
+                        label: Text('common.retry'.tr),
                       ),
                     ],
                   ),
                 );
               }
               if (controller.galleries.isEmpty) {
-                return const Center(child: Text('No galleries found'));
+                return Center(child: Text('home.noGalleries'.tr));
               }
               return Column(
                 children: [
@@ -257,17 +257,17 @@ class WebHomePage extends GetView<WebHomeController> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text('JHenTai',
+                Text('home.title'.tr,
                     style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 4),
-                Text('E-Hentai Client',
+                Text('home.subtitle'.tr,
                     style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
           ),
           ListTile(
             leading: const Icon(Icons.home),
-            title: const Text('Home'),
+            title: Text('home.home'.tr),
             onTap: () {
               Navigator.pop(context);
               controller.refresh();
@@ -275,7 +275,7 @@ class WebHomePage extends GetView<WebHomeController> {
           ),
           ListTile(
             leading: const Icon(Icons.local_fire_department),
-            title: const Text('Popular'),
+            title: Text('home.popular'.tr),
             onTap: () {
               Navigator.pop(context);
               controller.loadUrl('popular');
@@ -283,7 +283,7 @@ class WebHomePage extends GetView<WebHomeController> {
           ),
           ListTile(
             leading: const Icon(Icons.favorite),
-            title: const Text('Favorites'),
+            title: Text('home.favorites'.tr),
             onTap: () {
               Navigator.pop(context);
               controller.loadUrl('favorites');
@@ -291,7 +291,7 @@ class WebHomePage extends GetView<WebHomeController> {
           ),
           ListTile(
             leading: const Icon(Icons.visibility),
-            title: const Text('Watched'),
+            title: Text('home.watched'.tr),
             onTap: () {
               Navigator.pop(context);
               controller.loadUrl('watched');
@@ -300,7 +300,7 @@ class WebHomePage extends GetView<WebHomeController> {
           const Divider(),
           ListTile(
             leading: const Icon(Icons.download),
-            title: const Text('Downloads'),
+            title: Text('home.downloads'.tr),
             onTap: () {
               Navigator.pop(context);
               Get.toNamed('/web/downloads');
@@ -308,7 +308,7 @@ class WebHomePage extends GetView<WebHomeController> {
           ),
           ListTile(
             leading: const Icon(Icons.folder),
-            title: const Text('Local Galleries'),
+            title: Text('home.localGalleries'.tr),
             onTap: () {
               Navigator.pop(context);
               Get.toNamed('/web/local');
@@ -316,7 +316,7 @@ class WebHomePage extends GetView<WebHomeController> {
           ),
           ListTile(
             leading: const Icon(Icons.settings),
-            title: const Text('Settings'),
+            title: Text('home.settings'.tr),
             onTap: () {
               Navigator.pop(context);
               Get.toNamed('/web/settings');
@@ -339,17 +339,17 @@ class WebHomePage extends GetView<WebHomeController> {
           children: [
             TextButton.icon(
               icon: const Icon(Icons.chevron_left),
-              label: const Text('Previous'),
+              label: Text('home.previous'.tr),
               onPressed: controller.hasPrevPage.value ? controller.prevPage : null,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Page ${controller.currentPage.value + 1}',
+              child: Text('home.page'.trParams({'page': '${controller.currentPage.value + 1}'}),
                   style: Theme.of(context).textTheme.bodyLarge),
             ),
             TextButton.icon(
               icon: const Icon(Icons.chevron_right),
-              label: const Text('Next'),
+              label: Text('home.next'.tr),
               onPressed: controller.hasNextPage.value ? controller.nextPage : null,
             ),
           ],
@@ -410,15 +410,15 @@ class _AdvancedSearchSheet extends StatelessWidget {
                   ),
                 ),
               ),
-              Text('Category Filter', style: Theme.of(context).textTheme.titleMedium),
+              Text('home.categoryFilter'.tr, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Obx(() => Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: List.generate(WebHomeController._categoryNames.length, (i) {
+                children: List.generate(WebHomeController._categoryKeys.length, (i) {
                   final enabled = controller.isCategoryEnabled(i);
                   return FilterChip(
-                    label: Text(WebHomeController._categoryNames[i]),
+                    label: Text(WebHomeController._categoryKeys[i].tr),
                     selected: enabled,
                     onSelected: (_) => controller.toggleCategory(i),
                     selectedColor: _chipColor(i),
@@ -431,7 +431,7 @@ class _AdvancedSearchSheet extends StatelessWidget {
                 }),
               )),
               const SizedBox(height: 20),
-              Text('Minimum Rating', style: Theme.of(context).textTheme.titleMedium),
+              Text('home.minimumRating'.tr, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
               Obx(() => Row(
                 children: [
@@ -440,7 +440,7 @@ class _AdvancedSearchSheet extends StatelessWidget {
                       value: controller.minimumRating.value.toDouble(),
                       min: 0, max: 5, divisions: 5,
                       label: controller.minimumRating.value == 0
-                          ? 'Any'
+                          ? 'home.ratingAny'.tr
                           : '${controller.minimumRating.value}+',
                       onChanged: (v) => controller.minimumRating.value = v.round(),
                     ),
@@ -448,37 +448,37 @@ class _AdvancedSearchSheet extends StatelessWidget {
                   SizedBox(
                     width: 40,
                     child: Text(
-                      controller.minimumRating.value == 0 ? 'Any' : '${controller.minimumRating.value}+',
+                      controller.minimumRating.value == 0 ? 'home.ratingAny'.tr : '${controller.minimumRating.value}+',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ),
                 ],
               )),
               const SizedBox(height: 16),
-              Text('Search In', style: Theme.of(context).textTheme.titleMedium),
+              Text('home.searchIn'.tr, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
               Obx(() => Column(
                 children: [
                   CheckboxListTile(
-                    title: const Text('Gallery Name'),
+                    title: Text('home.galleryName'.tr),
                     value: controller.searchInName.value,
                     onChanged: (v) => controller.searchInName.value = v ?? true,
                     dense: true,
                   ),
                   CheckboxListTile(
-                    title: const Text('Tags'),
+                    title: Text('home.tags'.tr),
                     value: controller.searchInTags.value,
                     onChanged: (v) => controller.searchInTags.value = v ?? true,
                     dense: true,
                   ),
                   CheckboxListTile(
-                    title: const Text('Description'),
+                    title: Text('home.description'.tr),
                     value: controller.searchInDesc.value,
                     onChanged: (v) => controller.searchInDesc.value = v ?? false,
                     dense: true,
                   ),
                   CheckboxListTile(
-                    title: const Text('Show Expunged'),
+                    title: Text('home.showExpunged'.tr),
                     value: controller.showExpunged.value,
                     onChanged: (v) => controller.showExpunged.value = v ?? false,
                     dense: true,
@@ -498,7 +498,7 @@ class _AdvancedSearchSheet extends StatelessWidget {
                         controller.searchInDesc.value = false;
                         controller.showExpunged.value = false;
                       },
-                      child: const Text('Reset'),
+                      child: Text('common.reset'.tr),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -508,7 +508,7 @@ class _AdvancedSearchSheet extends StatelessWidget {
                         Navigator.pop(context);
                         controller.search(controller.searchController.text);
                       },
-                      child: const Text('Apply & Search'),
+                      child: Text('home.applySearch'.tr),
                     ),
                   ),
                 ],

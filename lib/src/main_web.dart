@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/l18n/web_locale_text.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
@@ -116,6 +117,7 @@ class JHenTaiWebApp extends StatelessWidget {
 
     return Obx(() => GetMaterialApp(
       title: 'JHenTai',
+      translations: WebLocaleText(),
       themeMode: tc.themeMode.value,
       theme: ThemeController._buildTheme(Brightness.light, tc.seedColor.value),
       darkTheme: ThemeController._buildTheme(Brightness.dark, tc.seedColor.value),
@@ -248,11 +250,11 @@ class _WebSetupPageState extends State<WebSetupPage> {
                   Icon(Icons.lock_outline, size: 48,
                       color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 16),
-                  Text('JHenTai Server Setup',
+                  Text('setup.title'.tr,
                       style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 8),
                   Text(
-                    'Enter the API token shown in the server logs to connect.',
+                    'setup.description'.tr,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
@@ -260,7 +262,7 @@ class _WebSetupPageState extends State<WebSetupPage> {
                   TextField(
                     controller: _tokenController,
                     decoration: InputDecoration(
-                      labelText: 'API Token',
+                      labelText: 'setup.tokenLabel'.tr,
                       border: const OutlineInputBorder(),
                       errorText: _error,
                     ),
@@ -274,7 +276,7 @@ class _WebSetupPageState extends State<WebSetupPage> {
                       child: _verifying
                           ? const SizedBox(width: 20, height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Connect'),
+                          : Text('setup.connect'.tr),
                     ),
                   ),
                 ],
@@ -289,7 +291,7 @@ class _WebSetupPageState extends State<WebSetupPage> {
   Future<void> _verify() async {
     final token = _tokenController.text.trim();
     if (token.isEmpty) {
-      setState(() => _error = 'Please enter a token');
+      setState(() => _error = 'setup.emptyToken'.tr);
       return;
     }
 
@@ -306,7 +308,7 @@ class _WebSetupPageState extends State<WebSetupPage> {
     } else {
       setState(() {
         _verifying = false;
-        _error = 'Invalid token. Check your server logs for the correct token.';
+        _error = 'setup.invalidToken'.tr;
       });
     }
   }

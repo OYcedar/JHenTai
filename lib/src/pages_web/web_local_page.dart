@@ -21,7 +21,7 @@ class WebLocalController extends GetxController {
       final data = await backendApiClient.listLocalGalleries();
       galleries.value = data.cast<Map<String, dynamic>>();
     } catch (e) {
-      errorMessage.value = 'Failed to load local galleries: $e';
+      errorMessage.value = 'local.loadListFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
     }
@@ -44,7 +44,7 @@ class WebLocalController extends GetxController {
     try {
       final images = await backendApiClient.getLocalGalleryImages(path);
       if (images.isEmpty) {
-        Get.snackbar('Empty', 'No images found in this gallery',
+        Get.snackbar('local.empty'.tr, 'local.noImages'.tr,
             snackPosition: SnackPosition.BOTTOM);
         return;
       }
@@ -54,7 +54,7 @@ class WebLocalController extends GetxController {
         'title': title,
       });
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load gallery images: $e',
+      Get.snackbar('common.error'.tr, 'local.loadFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -67,7 +67,7 @@ class WebLocalPage extends GetView<WebLocalController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Local Galleries'),
+        title: Text('local.title'.tr),
         actions: [
           Obx(() => controller.isScanning.value
               ? const Padding(
@@ -93,7 +93,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                 FilledButton.icon(
                   icon: const Icon(Icons.refresh),
                   onPressed: () => controller.refresh(),
-                  label: const Text('Retry'),
+                  label: Text('common.retry'.tr),
                 ),
               ],
             ),
@@ -106,17 +106,17 @@ class WebLocalPage extends GetView<WebLocalController> {
               children: [
                 const Icon(Icons.folder_open, size: 64, color: Colors.grey),
                 const SizedBox(height: 16),
-                const Text('No local galleries found'),
+                Text('local.noGalleries'.tr),
                 const SizedBox(height: 8),
-                const Text(
-                  'Mount directories into the Docker container\nor place galleries in the local_gallery folder',
+                Text(
+                  'local.helpText'.tr,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.refresh),
-                  label: const Text('Scan Now'),
+                  label: Text('local.scanNow'.tr),
                   onPressed: controller.refresh,
                 ),
               ],
@@ -142,7 +142,7 @@ class WebLocalPage extends GetView<WebLocalController> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            subtitle: Text('${gallery['imageCount'] ?? 0} images'),
+            subtitle: Text('common.images'.trParams({'count': '${gallery['imageCount'] ?? 0}'})),
             trailing: const Icon(Icons.menu_book),
             onTap: () => controller.openGallery(gallery),
           ),

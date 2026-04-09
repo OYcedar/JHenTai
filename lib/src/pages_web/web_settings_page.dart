@@ -48,7 +48,7 @@ class WebSettingsController extends GetxController {
     final user = loginUserController.text.trim();
     final pass = loginPassController.text.trim();
     if (user.isEmpty || pass.isEmpty) {
-      Get.snackbar('Error', 'Please enter username and password',
+      Get.snackbar('common.error'.tr, 'settings.emptyCredentials'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -57,16 +57,16 @@ class WebSettingsController extends GetxController {
     try {
       final result = await backendApiClient.login(user, pass);
       if (result['success'] == true) {
-        Get.snackbar('Success', 'Login successful', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('common.success'.tr, 'settings.loginSuccess'.tr, snackPosition: SnackPosition.BOTTOM);
         loginUserController.clear();
         loginPassController.clear();
         await _loadStatus();
       } else {
-        Get.snackbar('Failed', result['message'] ?? 'Login failed',
+        Get.snackbar('common.failed'.tr, result['message'] ?? 'settings.loginFailed'.tr,
             snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
       }
     } catch (e) {
-      Get.snackbar('Error', 'Login failed: $e',
+      Get.snackbar('common.error'.tr, 'settings.loginError'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     } finally {
       isLoggingIn.value = false;
@@ -76,17 +76,17 @@ class WebSettingsController extends GetxController {
   Future<void> loginWithCookies() async {
     final cookieStr = cookieController.text.trim();
     if (cookieStr.isEmpty) {
-      Get.snackbar('Error', 'Please paste cookies', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'settings.cookieEmpty'.tr, snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
     try {
       await backendApiClient.setCookies(cookieStr);
-      Get.snackbar('Success', 'Cookies set successfully', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.success'.tr, 'settings.cookieSuccess'.tr, snackPosition: SnackPosition.BOTTOM);
       cookieController.clear();
       await _loadStatus();
     } catch (e) {
-      Get.snackbar('Error', 'Failed to set cookies: $e',
+      Get.snackbar('common.error'.tr, 'settings.cookieFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
@@ -95,9 +95,9 @@ class WebSettingsController extends GetxController {
     try {
       await backendApiClient.logout();
       await _loadStatus();
-      Get.snackbar('Success', 'Logged out', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.success'.tr, 'settings.logoutSuccess'.tr, snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('Error', 'Logout failed: $e', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'settings.logoutFailed'.trParams({'error': '$e'}), snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -106,7 +106,7 @@ class WebSettingsController extends GetxController {
       await backendApiClient.setSite(newSite);
       site.value = newSite;
     } catch (e) {
-      Get.snackbar('Error', 'Failed to switch site: $e', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'settings.switchSiteFailed'.trParams({'error': '$e'}), snackPosition: SnackPosition.BOTTOM);
     }
   }
 }
@@ -117,7 +117,7 @@ class WebSettingsPage extends GetView<WebSettingsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text('settings.title'.tr)),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -153,7 +153,7 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Account', style: Theme.of(context).textTheme.titleLarge),
+            Text('settings.account'.tr, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             Obx(() => controller.isLoggedIn.value
                 ? _buildLoggedInView(context)
@@ -170,11 +170,11 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         const Icon(Icons.check_circle, color: Colors.green),
         const SizedBox(width: 8),
         Expanded(
-          child: Obx(() => Text('Logged in as: ${controller.userName.value}')),
+          child: Obx(() => Text('settings.loggedIn'.trParams({'user': controller.userName.value}))),
         ),
         TextButton(
           onPressed: controller.logout,
-          child: const Text('Logout'),
+          child: Text('settings.logout'.tr),
         ),
       ],
     );
@@ -184,50 +184,48 @@ class WebSettingsPage extends GetView<WebSettingsController> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Login with cookies (recommended)', style: Theme.of(context).textTheme.titleSmall),
+        Text('settings.cookieLogin'.tr, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 4),
         Text(
-          'EH forum login is blocked by Cloudflare in server environments. '
-          'Please login via browser, then copy cookies here.\n'
-          'Steps: Login at e-hentai.org → F12 → Application → Cookies → copy values below.',
+          'settings.cookieHint'.tr,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller.cookieController,
           maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+          decoration: InputDecoration(
+            hintText: 'settings.cookiePlaceholder'.tr,
             border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 8),
         FilledButton(
           onPressed: controller.loginWithCookies,
-          child: const Text('Set Cookies'),
+          child: Text('settings.setCookies'.tr),
         ),
         const Divider(height: 32),
         Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
             tilePadding: EdgeInsets.zero,
-            title: Text('Login with credentials (may fail due to Cloudflare)',
+            title: Text('settings.credentialLogin'.tr,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.grey)),
             children: [
               const SizedBox(height: 8),
               TextField(
                 controller: controller.loginUserController,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: 'settings.username'.tr,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 8),
               TextField(
                 controller: controller.loginPassController,
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
+                decoration: InputDecoration(
+                  labelText: 'settings.password'.tr,
                   border: OutlineInputBorder(),
                 ),
                 onSubmitted: (_) => controller.login(),
@@ -237,7 +235,7 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                 onPressed: controller.isLoggingIn.value ? null : controller.login,
                 child: controller.isLoggingIn.value
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Login'),
+                    : Text('settings.login'.tr),
               )),
             ],
           ),
@@ -253,7 +251,7 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Site', style: Theme.of(context).textTheme.titleLarge),
+            Text('settings.site'.tr, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             Obx(() => SegmentedButton<String>(
               segments: const [
@@ -277,21 +275,21 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Appearance', style: Theme.of(context).textTheme.titleLarge),
+            Text('settings.appearance'.tr, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
-            Text('Theme Mode', style: Theme.of(context).textTheme.titleSmall),
+            Text('settings.themeMode'.tr, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Obx(() => SegmentedButton<ThemeMode>(
-              segments: const [
-                ButtonSegment(value: ThemeMode.system, label: Text('System'), icon: Icon(Icons.settings_brightness)),
-                ButtonSegment(value: ThemeMode.light, label: Text('Light'), icon: Icon(Icons.light_mode)),
-                ButtonSegment(value: ThemeMode.dark, label: Text('Dark'), icon: Icon(Icons.dark_mode)),
+              segments: [
+                ButtonSegment(value: ThemeMode.system, label: Text('settings.system'.tr), icon: const Icon(Icons.settings_brightness)),
+                ButtonSegment(value: ThemeMode.light, label: Text('settings.light'.tr), icon: const Icon(Icons.light_mode)),
+                ButtonSegment(value: ThemeMode.dark, label: Text('settings.dark'.tr), icon: const Icon(Icons.dark_mode)),
               ],
               selected: {tc.themeMode.value},
               onSelectionChanged: (selected) => tc.setThemeMode(selected.first),
             )),
             const SizedBox(height: 16),
-            Text('Accent Color', style: Theme.of(context).textTheme.titleSmall),
+            Text('settings.accentColor'.tr, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Obx(() => Wrap(
               spacing: 8,
@@ -325,18 +323,18 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Server Info', style: Theme.of(context).textTheme.titleLarge),
+            Text('settings.serverInfo'.tr, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             Obx(() {
               final info = controller.serverInfo;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _infoRow('Data Directory', info['dataDir']?.toString() ?? '-'),
-                  _infoRow('Download Directory', info['downloadDir']?.toString() ?? '-'),
-                  _infoRow('Local Gallery Dir', info['localGalleryDir']?.toString() ?? '-'),
+                  _infoRow('settings.dataDir'.tr, info['dataDir']?.toString() ?? '-'),
+                  _infoRow('settings.downloadDir'.tr, info['downloadDir']?.toString() ?? '-'),
+                  _infoRow('settings.localGalleryDir'.tr, info['localGalleryDir']?.toString() ?? '-'),
                   if (info['extraScanPaths'] is List && (info['extraScanPaths'] as List).isNotEmpty)
-                    _infoRow('Extra Scan Paths', (info['extraScanPaths'] as List).join(', ')),
+                    _infoRow('settings.extraScanPaths'.tr, (info['extraScanPaths'] as List).join(', ')),
                 ],
               );
             }),
