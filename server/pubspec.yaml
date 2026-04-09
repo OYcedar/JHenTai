@@ -1,0 +1,26 @@
+name: jhentai_server
+description: JHenTai backend server for Docker/Web deployment
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  shelf_static: ^1.1.2
+  shelf_web_socket: ^2.0.0
+  dio: ^5.4.0
+  path: ^1.9.0
+  archive: ^3.6.1
+  crypto: ^3.0.3
+  html: ^0.15.1
+  intl: ^0.19.0
+  collection: ^1.19.0
+  sqlite3: ^2.4.0
+  logger: ^2.2.0
+  uuid: ^4.4.0
+  web_socket_channel: ^3.0.0
+  args: ^2.4.0
+  mime: ^1.0.0
+  stream_channel: ^2.1.0
