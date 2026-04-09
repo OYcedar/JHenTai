@@ -13,10 +13,12 @@ import '../service/gallery_download_service.dart';
 import '../service/local_gallery_service.dart';
 import 'auth_routes.dart';
 import 'download_routes.dart';
+import 'favorite_routes.dart';
 import 'gallery_routes.dart';
 import 'image_routes.dart';
 import 'local_routes.dart';
 import 'proxy_routes.dart';
+import 'rating_routes.dart';
 import 'setting_routes.dart';
 
 class AppRouter {
@@ -48,6 +50,8 @@ class AppRouter {
     router.mount('/api/local/', LocalRoutes(localGalleryService).router.call);
     router.mount('/api/image/', ImageRoutes(config).router.call);
     router.mount('/api/setting/', SettingRoutes(config).router.call);
+    router.mount('/api/favorite/', FavoriteRoutes(ehClient).router.call);
+    router.mount('/api/rating/', RatingRoutes(ehClient).router.call);
 
     router.get('/api/health', (Request request) {
       return Response.ok(

@@ -37,6 +37,12 @@ class GalleryRoutes {
     if (page != null) queryParams['page'] = page;
     if (search != null && search.isNotEmpty) queryParams['f_search'] = search;
 
+    // Forward advanced search parameters
+    for (final key in ['f_cats', 'f_sname', 'f_stags', 'f_sdesc', 'f_sh', 'advsearch', 'f_srdd', 'f_sr']) {
+      final val = request.url.queryParameters[key];
+      if (val != null && val.isNotEmpty) queryParams[key] = val;
+    }
+
     try {
       final result = await _client.proxyGet(url, queryParams: queryParams.isNotEmpty ? queryParams : null);
       final html = result['data']?.toString() ?? '';
@@ -71,6 +77,11 @@ class GalleryRoutes {
           'imagePageUrls': detail.imagePageUrls,
           'galleryUrl': galleryUrl,
           'tags': detail.tags,
+          'apiuid': detail.apiuid,
+          'apikey': detail.apikey,
+          'favoriteSlot': detail.favoriteSlot,
+          'favoriteName': detail.favoriteName,
+          'comments': detail.comments,
         }),
         headers: {'Content-Type': 'application/json'},
       );

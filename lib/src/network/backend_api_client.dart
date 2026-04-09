@@ -280,10 +280,12 @@ class BackendApiClient {
     String section = 'home',
     String? page,
     String? search,
+    Map<String, dynamic>? advancedParams,
   }) async {
     final params = <String, dynamic>{'section': section};
     if (page != null) params['page'] = page;
     if (search != null && search.isNotEmpty) params['f_search'] = search;
+    if (advancedParams != null) params.addAll(advancedParams);
     final response = await _dio.get('/api/gallery/list', queryParameters: params);
     return response.data;
   }
@@ -298,6 +300,45 @@ class BackendApiClient {
     return response.data;
   }
 
+  // --- Favorites ---
+
+  Future<Map<String, dynamic>> addFavorite(int gid, String token, {int favcat = 0, String favnote = ''}) async {
+    final response = await _dio.post('/api/favorite/add', data: {
+      'gid': gid,
+      'token': token,
+      'favcat': favcat,
+      'favnote': favnote,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> removeFavorite(int gid, String token) async {
+    final response = await _dio.post('/api/favorite/remove', data: {
+      'gid': gid,
+      'token': token,
+    });
+    return response.data;
+  }
+
+  // --- Rating ---
+
+  Future<Map<String, dynamic>> rateGallery({
+    required int gid,
+    required String token,
+    required int apiuid,
+    required String apikey,
+    required double rating,
+  }) async {
+    final response = await _dio.post('/api/rating/rate', data: {
+      'gid': gid,
+      'token': token,
+      'apiuid': apiuid,
+      'apikey': apikey,
+      'rating': rating,
+    });
+    return response.data;
+  }
+
   // --- Settings ---
 
   Future<Map<String, dynamic>> getSettings() async {
@@ -307,6 +348,22 @@ class BackendApiClient {
 
   Future<void> updateSettings(Map<String, dynamic> settings) async {
     await _dio.put('/api/setting/', data: settings);
+  }
+
+  Future<String?> getSetting(String key) async {
+    try {
+      final response = await _dio.get('/api/setting/$key');
+      final data = response.data as Map<String, dynamic>;
+      final value = data['value'];
+      return value is String ? value : jsonEncode(value);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> putSetting(String key, dynamic value) async {
+    await _dio.put('/api/setting/$key', data: jsonEncode({'value': value}),
+        options: Options(headers: {'Content-Type': 'application/json'}));
   }
 
   // --- Health ---

@@ -11,9 +11,29 @@ class WebHomeController extends GetxController {
   final hasNextPage = false.obs;
   final hasPrevPage = false.obs;
 
+  // Advanced search state
+  final categoryFilter = 0.obs;
+  final minimumRating = 0.obs;
+  final searchInName = true.obs;
+  final searchInTags = true.obs;
+  final searchInDesc = false.obs;
+  final showExpunged = false.obs;
+
+  static const _categoryNames = [
+    'Doujinshi', 'Manga', 'Artist CG', 'Game CG', 'Western',
+    'Non-H', 'Image Set', 'Cosplay', 'Asian Porn', 'Misc',
+  ];
+  static const _categoryBits = [2, 4, 8, 16, 512, 256, 32, 64, 1024, 1];
+
   @override
   void onInit() {
     super.onInit();
+    final args = Get.arguments;
+    if (args is Map<String, dynamic> && args['search'] is String) {
+      final searchQuery = args['search'] as String;
+      searchController.text = searchQuery;
+      _currentSearch = searchQuery;
+    }
     _loadHomePage();
   }
 
@@ -28,7 +48,7 @@ class WebHomeController extends GetxController {
 
   Future<void> _loadHomePage() async {
     _currentSection = 'home';
-    _currentSearch = '';
+    if (_currentSearch.isEmpty) _currentSearch = '';
     await _fetchGalleryList();
   }
 
@@ -58,6 +78,31 @@ class WebHomeController extends GetxController {
     await _fetchGalleryList();
   }
 
+  Map<String, dynamic>? _buildAdvancedParams() {
+    final params = <String, dynamic>{};
+    bool hasAdvanced = false;
+
+    if (categoryFilter.value != 0) {
+      params['f_cats'] = categoryFilter.value.toString();
+      hasAdvanced = true;
+    }
+    if (minimumRating.value > 0) {
+      params['advsearch'] = '1';
+      params['f_sr'] = 'on';
+      params['f_srdd'] = minimumRating.value.toString();
+      hasAdvanced = true;
+    }
+    if (hasAdvanced || !searchInName.value || !searchInTags.value || searchInDesc.value || showExpunged.value) {
+      params['advsearch'] = '1';
+      if (searchInName.value) params['f_sname'] = 'on';
+      if (searchInTags.value) params['f_stags'] = 'on';
+      if (searchInDesc.value) params['f_sdesc'] = 'on';
+      if (showExpunged.value) params['f_sh'] = 'on';
+    }
+
+    return params.isNotEmpty ? params : null;
+  }
+
   Future<void> _fetchGalleryList() async {
     isLoading.value = true;
     errorMessage.value = '';
@@ -66,6 +111,7 @@ class WebHomeController extends GetxController {
         section: _currentSection,
         page: currentPage.value > 0 ? currentPage.value.toString() : null,
         search: _currentSearch.isNotEmpty ? _currentSearch : null,
+        advancedParams: _buildAdvancedParams(),
       );
 
       final galleryList = (result['galleries'] as List?) ?? [];
@@ -80,6 +126,14 @@ class WebHomeController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void toggleCategory(int index) {
+    categoryFilter.value ^= _categoryBits[index];
+  }
+
+  bool isCategoryEnabled(int index) {
+    return (categoryFilter.value & _categoryBits[index]) == 0;
   }
 }
 
@@ -130,6 +184,12 @@ class WebHomePage extends GetView<WebHomeController> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
+                  icon: const Icon(Icons.tune),
+                  tooltip: 'Advanced search',
+                  onPressed: () => _showAdvancedSearch(context),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: () => controller.refresh(),
                 ),
@@ -173,6 +233,14 @@ class WebHomePage extends GetView<WebHomeController> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showAdvancedSearch(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _AdvancedSearchSheet(controller: controller),
     );
   }
 
@@ -311,6 +379,153 @@ class WebHomePage extends GetView<WebHomeController> {
         },
       ));
     });
+  }
+}
+
+class _AdvancedSearchSheet extends StatelessWidget {
+  final WebHomeController controller;
+  const _AdvancedSearchSheet({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.3,
+      maxChildSize: 0.85,
+      expand: false,
+      builder: (ctx, scrollController) {
+        return SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Text('Category Filter', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Obx(() => Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: List.generate(WebHomeController._categoryNames.length, (i) {
+                  final enabled = controller.isCategoryEnabled(i);
+                  return FilterChip(
+                    label: Text(WebHomeController._categoryNames[i]),
+                    selected: enabled,
+                    onSelected: (_) => controller.toggleCategory(i),
+                    selectedColor: _chipColor(i),
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: enabled ? Colors.white : null,
+                      fontSize: 12,
+                    ),
+                  );
+                }),
+              )),
+              const SizedBox(height: 20),
+              Text('Minimum Rating', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Obx(() => Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: controller.minimumRating.value.toDouble(),
+                      min: 0, max: 5, divisions: 5,
+                      label: controller.minimumRating.value == 0
+                          ? 'Any'
+                          : '${controller.minimumRating.value}+',
+                      onChanged: (v) => controller.minimumRating.value = v.round(),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      controller.minimumRating.value == 0 ? 'Any' : '${controller.minimumRating.value}+',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              )),
+              const SizedBox(height: 16),
+              Text('Search In', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Obx(() => Column(
+                children: [
+                  CheckboxListTile(
+                    title: const Text('Gallery Name'),
+                    value: controller.searchInName.value,
+                    onChanged: (v) => controller.searchInName.value = v ?? true,
+                    dense: true,
+                  ),
+                  CheckboxListTile(
+                    title: const Text('Tags'),
+                    value: controller.searchInTags.value,
+                    onChanged: (v) => controller.searchInTags.value = v ?? true,
+                    dense: true,
+                  ),
+                  CheckboxListTile(
+                    title: const Text('Description'),
+                    value: controller.searchInDesc.value,
+                    onChanged: (v) => controller.searchInDesc.value = v ?? false,
+                    dense: true,
+                  ),
+                  CheckboxListTile(
+                    title: const Text('Show Expunged'),
+                    value: controller.showExpunged.value,
+                    onChanged: (v) => controller.showExpunged.value = v ?? false,
+                    dense: true,
+                  ),
+                ],
+              )),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        controller.categoryFilter.value = 0;
+                        controller.minimumRating.value = 0;
+                        controller.searchInName.value = true;
+                        controller.searchInTags.value = true;
+                        controller.searchInDesc.value = false;
+                        controller.showExpunged.value = false;
+                      },
+                      child: const Text('Reset'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        controller.search(controller.searchController.text);
+                      },
+                      child: const Text('Apply & Search'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Color _chipColor(int index) {
+    const colors = [
+      Colors.red, Colors.orange, Colors.amber, Colors.green, Colors.teal,
+      Colors.blue, Colors.indigo, Colors.purple, Colors.pink, Colors.grey,
+    ];
+    return colors[index % colors.length];
   }
 }
 

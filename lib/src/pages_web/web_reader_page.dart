@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -28,6 +30,8 @@ class WebReaderController extends GetxController {
 
   List<String>? localImages;
 
+  Timer? _saveProgressTimer;
+
   @override
   void onInit() {
     super.onInit();
@@ -43,21 +47,67 @@ class WebReaderController extends GetxController {
     };
 
     pageController = PageController();
+    _loadSavedDirection();
     _loadGallery();
   }
 
   @override
   void onClose() {
+    _saveProgressTimer?.cancel();
+    _saveProgressNow();
     pageController.dispose();
     scrollController.dispose();
     focusNode.dispose();
     super.onClose();
   }
 
+  Future<void> _loadSavedDirection() async {
+    try {
+      final saved = await backendApiClient.getSetting('web_read_direction');
+      if (saved != null) {
+        final idx = int.tryParse(saved);
+        if (idx != null && idx >= 0 && idx < ReadDirection.values.length) {
+          readDirection.value = ReadDirection.values[idx];
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _restoreProgress() async {
+    if (gid == 0) return;
+    try {
+      final saved = await backendApiClient.getSetting('read_progress_$gid');
+      if (saved != null) {
+        final page = int.tryParse(saved) ?? 0;
+        if (page > 0 && page < totalPages.value) {
+          currentPage.value = page;
+          if (readDirection.value == ReadDirection.vertical) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              // Rough scroll for vertical mode
+            });
+          } else {
+            pageController = PageController(initialPage: page);
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  void _scheduleSaveProgress() {
+    _saveProgressTimer?.cancel();
+    _saveProgressTimer = Timer(const Duration(seconds: 2), _saveProgressNow);
+  }
+
+  void _saveProgressNow() {
+    if (gid == 0) return;
+    backendApiClient.putSetting('read_progress_$gid', currentPage.value).catchError((_) {});
+  }
+
   Future<void> _loadGallery() async {
     isLoading.value = true;
     errorMessage.value = '';
     try {
+      await _restoreProgress();
       switch (mode) {
         case ReaderMode.online:
           await _loadOnline();
@@ -147,6 +197,7 @@ class WebReaderController extends GetxController {
     if (mode == ReaderMode.online) {
       _preloadImages(page);
     }
+    _scheduleSaveProgress();
   }
 
   void goToPage(int page) {
@@ -167,6 +218,7 @@ class WebReaderController extends GetxController {
     final values = ReadDirection.values;
     final next = (readDirection.value.index + 1) % values.length;
     readDirection.value = values[next];
+    backendApiClient.putSetting('web_read_direction', next).catchError((_) {});
     if (values[next] != ReadDirection.vertical) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentPage.value < totalPages.value) {

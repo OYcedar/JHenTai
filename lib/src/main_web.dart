@@ -21,7 +21,89 @@ void main() async {
 
   backendApiClient.init(baseUrl: serverUrl, token: savedToken);
 
+  Get.put(ThemeController());
+
   runApp(const JHenTaiWebApp());
+}
+
+class ThemeController extends GetxController {
+  final themeMode = ThemeMode.system.obs;
+  final Rx<Color> seedColor = Rx<Color>(Colors.deepPurple);
+
+  static const _themeModeKey = 'jh_theme_mode';
+  static const _seedColorKey = 'jh_seed_color';
+
+  static const seedColors = <Color>[
+    Colors.deepPurple,
+    Colors.blue,
+    Colors.teal,
+    Colors.green,
+    Colors.orange,
+    Colors.red,
+    Colors.pink,
+    Colors.indigo,
+    Colors.brown,
+    Colors.grey,
+  ];
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadFromStorage();
+  }
+
+  void _loadFromStorage() {
+    final modeStr = web.window.localStorage.getItem(_themeModeKey);
+    if (modeStr != null) {
+      themeMode.value = switch (modeStr) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
+    }
+    final colorStr = web.window.localStorage.getItem(_seedColorKey);
+    if (colorStr != null) {
+      final colorVal = int.tryParse(colorStr);
+      if (colorVal != null) {
+        seedColor.value = Color(colorVal);
+      }
+    }
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    themeMode.value = mode;
+    web.window.localStorage.setItem(_themeModeKey, switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      _ => 'system',
+    });
+    Get.changeThemeMode(mode);
+  }
+
+  void setSeedColor(Color color) {
+    seedColor.value = color;
+    web.window.localStorage.setItem(_seedColorKey, color.toARGB32().toString());
+    Get.changeTheme(_buildTheme(Brightness.light, color));
+    Get.changeTheme(_buildTheme(Brightness.dark, color));
+    Get.forceAppUpdate();
+  }
+
+  static ThemeData _buildTheme(Brightness brightness, Color seed) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: seed,
+      brightness: brightness,
+    );
+    return ThemeData(
+      colorScheme: colorScheme,
+      useMaterial3: true,
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        backgroundColor: colorScheme.surface,
+      ),
+    );
+  }
 }
 
 class JHenTaiWebApp extends StatelessWidget {
@@ -30,12 +112,13 @@ class JHenTaiWebApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final locale = _detectLocale();
+    final tc = Get.find<ThemeController>();
 
-    return GetMaterialApp(
+    return Obx(() => GetMaterialApp(
       title: 'JHenTai',
-      themeMode: ThemeMode.system,
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
+      themeMode: tc.themeMode.value,
+      theme: ThemeController._buildTheme(Brightness.light, tc.seedColor.value),
+      darkTheme: ThemeController._buildTheme(Brightness.dark, tc.seedColor.value),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -52,7 +135,7 @@ class JHenTaiWebApp extends StatelessWidget {
       fallbackLocale: const Locale('en', 'US'),
       getPages: _webRoutes,
       initialRoute: backendApiClient.hasToken ? '/web/home' : '/web/setup',
-    );
+    ));
   }
 
   Locale _detectLocale() {
@@ -73,23 +156,6 @@ class JHenTaiWebApp extends StatelessWidget {
       if (loc.languageCode == platformLocale.languageCode) return loc;
     }
     return const Locale('en', 'US');
-  }
-
-  ThemeData _buildTheme(Brightness brightness) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.deepPurple,
-      brightness: brightness,
-    );
-    return ThemeData(
-      colorScheme: colorScheme,
-      useMaterial3: true,
-      appBarTheme: AppBarTheme(
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        backgroundColor: colorScheme.surface,
-      ),
-    );
   }
 }
 
