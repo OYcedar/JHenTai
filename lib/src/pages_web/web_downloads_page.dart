@@ -72,9 +72,7 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
           debugPrint('WebSocket error: $e');
           _scheduleReconnect();
         },
-        onDone: () {
-          _scheduleReconnect();
-        },
+        onDone: () => _scheduleReconnect(),
       );
     } catch (e) {
       debugPrint('WebSocket connect failed: $e');
@@ -86,7 +84,6 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
     if (isClosed) return;
     _reconnectAttempts++;
     final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(1, 30));
-    debugPrint('WebSocket reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)');
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, _connectWebSocket);
   }
@@ -170,8 +167,7 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 const SizedBox(height: 12),
-                Text(controller.errorMessage.value,
-                    textAlign: TextAlign.center),
+                Text(controller.errorMessage.value, textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   icon: const Icon(Icons.refresh),
@@ -193,6 +189,8 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
     );
   }
 }
+
+// --- Gallery Tasks ---
 
 class _GalleryTaskList extends StatelessWidget {
   final WebDownloadsController controller;
@@ -226,39 +224,117 @@ class _GalleryTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gid = task['gid'] as int;
+    final token = task['token'] as String? ?? '';
     final title = task['title'] as String? ?? '';
+    final category = task['category'] as String? ?? '';
+    final uploader = task['uploader'] as String? ?? '';
+    final coverUrl = task['coverUrl'] as String? ?? '';
     final status = task['status'] as int? ?? 0;
     final completed = task['completedCount'] as int? ?? 0;
     final total = task['pageCount'] as int? ?? 0;
     final progress = total > 0 ? completed / total : 0.0;
     final statusName = status < _statusNames.length ? _statusNames[status] : 'Unknown';
+    final isCompleted = status == 3;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Column(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: isCompleted
+            ? () => Get.toNamed('/web/reader/$gid/$token?mode=downloaded')
+            : null,
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$statusName - $completed / $total'),
-            const SizedBox(height: 4),
-            LinearProgressIndicator(value: progress),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (status == 1)
-              IconButton(icon: const Icon(Icons.pause), onPressed: () => controller.pauseGallery(gid)),
-            if (status == 2 || status == 4)
-              IconButton(icon: const Icon(Icons.play_arrow), onPressed: () => controller.resumeGallery(gid)),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _confirmDelete(context, gid),
+            // Cover
+            SizedBox(
+              width: 80,
+              height: 110,
+              child: coverUrl.isNotEmpty
+                  ? Image.network(
+                      backendApiClient.proxyImageUrl(coverUrl),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: const Icon(Icons.photo_library, color: Colors.grey),
+                      ),
+                    )
+                  : Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.photo_library, color: Colors.grey),
+                    ),
+            ),
+            // Info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (category.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: _categoryColor(category),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(category,
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (uploader.isNotEmpty)
+                          Flexible(
+                            child: Text(uploader,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        _StatusBadge(status: statusName, isCompleted: isCompleted),
+                        const SizedBox(width: 8),
+                        Text('$completed / $total', style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(value: progress),
+                  ],
+                ),
+              ),
+            ),
+            // Actions
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isCompleted)
+                  IconButton(
+                    icon: const Icon(Icons.menu_book, color: Colors.green),
+                    tooltip: 'Read',
+                    onPressed: () => Get.toNamed('/web/reader/$gid/$token?mode=downloaded'),
+                  ),
+                if (status == 1)
+                  IconButton(icon: const Icon(Icons.pause), tooltip: 'Pause',
+                      onPressed: () => controller.pauseGallery(gid)),
+                if (status == 2 || status == 4)
+                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'Resume',
+                      onPressed: () => controller.resumeGallery(gid)),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete',
+                  onPressed: () => _confirmDelete(context, gid),
+                ),
+              ],
             ),
           ],
         ),
-        isThreeLine: true,
       ),
     );
   }
@@ -272,10 +348,7 @@ class _GalleryTaskCard extends StatelessWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.deleteGallery(gid);
-            },
+            onPressed: () { Navigator.pop(ctx); controller.deleteGallery(gid); },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -283,6 +356,8 @@ class _GalleryTaskCard extends StatelessWidget {
     );
   }
 }
+
+// --- Archive Tasks ---
 
 class _ArchiveTaskList extends StatelessWidget {
   final WebDownloadsController controller;
@@ -319,48 +394,121 @@ class _ArchiveTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gid = task['gid'] as int;
+    final token = task['token'] as String? ?? '';
     final title = task['title'] as String? ?? '';
+    final category = task['category'] as String? ?? '';
+    final uploader = task['uploader'] as String? ?? '';
+    final coverUrl = task['coverUrl'] as String? ?? '';
     final status = task['status'] as int? ?? 0;
     final downloaded = task['downloadedBytes'] as int? ?? 0;
     final total = task['totalBytes'] as int? ?? 0;
     final progress = total > 0 ? downloaded / total : 0.0;
     final statusName = status < _statusNames.length ? _statusNames[status] : 'Unknown';
+    final isCompleted = status == 6;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        subtitle: Column(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: isCompleted
+            ? () => Get.toNamed('/web/reader/$gid/$token?mode=archive')
+            : null,
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('$statusName${total > 0 ? ' - ${_formatBytes(downloaded)} / ${_formatBytes(total)}' : ''}'),
-            const SizedBox(height: 4),
-            LinearProgressIndicator(value: status == 3 ? progress : null),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (status == 3)
-              IconButton(icon: const Icon(Icons.pause), onPressed: () => controller.pauseArchive(gid)),
-            if (status == 7 || status == 8)
-              IconButton(icon: const Icon(Icons.play_arrow), onPressed: () => controller.resumeArchive(gid)),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _confirmDelete(context, gid),
+            // Cover
+            SizedBox(
+              width: 80,
+              height: 110,
+              child: coverUrl.isNotEmpty
+                  ? Image.network(
+                      backendApiClient.proxyImageUrl(coverUrl),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: const Icon(Icons.archive, color: Colors.grey),
+                      ),
+                    )
+                  : Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.archive, color: Colors.grey),
+                    ),
+            ),
+            // Info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (category.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: _categoryColor(category),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(category,
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (uploader.isNotEmpty)
+                          Flexible(
+                            child: Text(uploader,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        _StatusBadge(status: statusName, isCompleted: isCompleted),
+                        const SizedBox(width: 8),
+                        if (total > 0)
+                          Text('${_formatBytes(downloaded)} / ${_formatBytes(total)}',
+                              style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(value: status == 3 ? progress : (isCompleted ? 1.0 : null)),
+                  ],
+                ),
+              ),
+            ),
+            // Actions
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isCompleted)
+                  IconButton(
+                    icon: const Icon(Icons.menu_book, color: Colors.green),
+                    tooltip: 'Read',
+                    onPressed: () => Get.toNamed('/web/reader/$gid/$token?mode=archive'),
+                  ),
+                if (status == 3)
+                  IconButton(icon: const Icon(Icons.pause), tooltip: 'Pause',
+                      onPressed: () => controller.pauseArchive(gid)),
+                if (status == 7 || status == 8)
+                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'Resume',
+                      onPressed: () => controller.resumeArchive(gid)),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Delete',
+                  onPressed: () => _confirmDelete(context, gid),
+                ),
+              ],
             ),
           ],
         ),
-        isThreeLine: true,
       ),
     );
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1073741824) return '${(bytes / 1048576).toStringAsFixed(1)} MB';
-    return '${(bytes / 1073741824).toStringAsFixed(1)} GB';
   }
 
   void _confirmDelete(BuildContext context, int gid) {
@@ -372,14 +520,62 @@ class _ArchiveTaskCard extends StatelessWidget {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.deleteArchive(gid);
-            },
+            onPressed: () { Navigator.pop(ctx); controller.deleteArchive(gid); },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
   }
+}
+
+// --- Shared widgets ---
+
+class _StatusBadge extends StatelessWidget {
+  final String status;
+  final bool isCompleted;
+  const _StatusBadge({required this.status, required this.isCompleted});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isCompleted
+        ? Colors.green
+        : status == 'Downloading' ? Colors.blue
+        : status == 'Paused' ? Colors.orange
+        : status == 'Failed' ? Colors.red
+        : Colors.grey;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(status, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+Color _categoryColor(String category) {
+  return switch (category.toLowerCase()) {
+    'doujinshi' => Colors.red.shade700,
+    'manga' => Colors.orange.shade700,
+    'artist cg' => Colors.amber.shade700,
+    'game cg' => Colors.green.shade700,
+    'western' => Colors.teal.shade700,
+    'non-h' => Colors.blue.shade700,
+    'image set' => Colors.indigo.shade700,
+    'cosplay' => Colors.purple.shade700,
+    'asian porn' => Colors.pink.shade700,
+    'misc' => Colors.grey.shade700,
+    _ => Colors.grey.shade700,
+  };
+}
+
+String _formatBytes(int bytes) {
+  if (bytes < 1024) return '$bytes B';
+  if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+  if (bytes < 1073741824) return '${(bytes / 1048576).toStringAsFixed(1)} MB';
+  return '${(bytes / 1073741824).toStringAsFixed(1)} GB';
 }

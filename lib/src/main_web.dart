@@ -116,7 +116,12 @@ final _webRoutes = [
     name: '/web/reader/:gid/:token',
     page: () => const WebReaderPage(),
     binding: BindingsBuilder(() {
-      Get.lazyPut(() => WebReaderController());
+      final controller = WebReaderController();
+      final args = Get.arguments;
+      if (args is Map<String, dynamic> && args['images'] is List<String>) {
+        controller.localImages = args['images'] as List<String>;
+      }
+      Get.lazyPut(() => controller);
     }),
   ),
   GetPage(
@@ -133,10 +138,7 @@ final _webRoutes = [
       Get.lazyPut(() => WebLocalController());
     }),
   ),
-  GetPage(
-    name: '/web/local/viewer',
-    page: () => const WebLocalViewerPage(),
-  ),
+  
   GetPage(
     name: '/web/settings',
     page: () => const WebSettingsPage(),

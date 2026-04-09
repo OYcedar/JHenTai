@@ -224,6 +224,17 @@ class EHClient {
       result.archiverUrl = urlMatch?.group(1);
     }
 
+    // Parse tags grouped by namespace (#taglist tr)
+    for (final tr in doc.querySelectorAll('#taglist tr')) {
+      final tdNamespace = tr.querySelector('td.tc');
+      final namespace = tdNamespace?.text.replaceAll(':', '').trim() ?? 'misc';
+      final tagElements = tr.querySelectorAll('td:not(.tc) a, td:not(.tc) div a');
+      final tagValues = tagElements.map((a) => a.text.trim()).where((t) => t.isNotEmpty).toList();
+      if (tagValues.isNotEmpty) {
+        result.tags[namespace] = tagValues;
+      }
+    }
+
     result.thumbnailUrls = doc.querySelectorAll('#gdt a')
         .map((a) => a.attributes['href'] ?? '')
         .where((href) => href.isNotEmpty)
@@ -314,6 +325,7 @@ class GalleryDetailResult {
   String? archiverUrl;
   List<String> thumbnailUrls = [];
   List<String> imagePageUrls = [];
+  Map<String, List<String>> tags = {};
 }
 
 class ImagePageResult {

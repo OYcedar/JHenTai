@@ -248,6 +248,18 @@ class BackendApiClient {
     return ((response.data['images'] as List?) ?? []).cast<String>();
   }
 
+  // --- Downloaded image listing ---
+
+  Future<List<String>> getGalleryDownloadImages(int gid) async {
+    final response = await _dio.get('/api/download/gallery/$gid/images');
+    return ((response.data['images'] as List?) ?? []).cast<String>();
+  }
+
+  Future<List<String>> getArchiveDownloadImages(int gid) async {
+    final response = await _dio.get('/api/download/archive/$gid/images');
+    return ((response.data['images'] as List?) ?? []).cast<String>();
+  }
+
   // --- Image URL helpers ---
 
   String galleryImageUrl(int gid, String filename) {

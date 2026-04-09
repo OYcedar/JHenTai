@@ -1,16 +1,20 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../config/server_config.dart';
 import '../service/gallery_download_service.dart';
 import '../service/archive_download_service.dart';
 
 class DownloadRoutes {
   final GalleryDownloadService _galleryService;
   final ArchiveDownloadService _archiveService;
+  final ServerConfig _config;
 
-  DownloadRoutes(this._galleryService, this._archiveService);
+  DownloadRoutes(this._galleryService, this._archiveService, this._config);
 
   Router get router {
     final router = Router();
@@ -21,6 +25,7 @@ class DownloadRoutes {
     router.post('/gallery/<gid>/pause', _pauseGalleryDownload);
     router.post('/gallery/<gid>/resume', _resumeGalleryDownload);
     router.delete('/gallery/<gid>', _deleteGalleryDownload);
+    router.get('/gallery/<gid>/images', _listGalleryImages);
 
     // Archive downloads
     router.get('/archive/list', _listArchiveDownloads);
@@ -28,6 +33,7 @@ class DownloadRoutes {
     router.post('/archive/<gid>/pause', _pauseArchiveDownload);
     router.post('/archive/<gid>/resume', _resumeArchiveDownload);
     router.delete('/archive/<gid>', _deleteArchiveDownload);
+    router.get('/archive/<gid>/images', _listArchiveImages);
 
     return router;
   }
@@ -170,5 +176,36 @@ class DownloadRoutes {
     final deleteFiles = request.url.queryParameters['deleteFiles'] != 'false';
     await _archiveService.deleteDownload(id, deleteFiles: deleteFiles);
     return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+  }
+
+  Future<Response> _listGalleryImages(Request request, String gid) async {
+    final dir = Directory(p.join(_config.downloadDir, 'gallery', gid));
+    return _listImageFiles(dir);
+  }
+
+  Future<Response> _listArchiveImages(Request request, String gid) async {
+    final dir = Directory(p.join(_config.downloadDir, 'archive', gid));
+    return _listImageFiles(dir);
+  }
+
+  Future<Response> _listImageFiles(Directory dir) async {
+    if (!dir.existsSync()) {
+      return Response.ok(
+        jsonEncode({'images': <String>[]}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final imageExtensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'};
+    final files = dir.listSync()
+        .whereType<File>()
+        .where((f) => imageExtensions.contains(p.extension(f.path).toLowerCase()))
+        .toList();
+    files.sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
+
+    return Response.ok(
+      jsonEncode({'images': files.map((f) => p.basename(f.path)).toList()}),
+      headers: {'Content-Type': 'application/json'},
+    );
   }
 }
