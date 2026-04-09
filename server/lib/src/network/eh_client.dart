@@ -210,6 +210,63 @@ class EHClient {
     }
   }
 
+  // --- Comments ---
+
+  Future<Map<String, dynamic>> postComment(int gid, String token, String comment) async {
+    try {
+      await _dio.post(
+        '$baseUrl/g/$gid/$token/',
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+        data: {'commenttext_new': comment},
+      );
+      return {'success': true};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Failed to post comment'};
+    }
+  }
+
+  Future<Map<String, dynamic>> voteComment(int apiuid, String apikey, int gid, String token, int commentId, int vote) async {
+    try {
+      final response = await _dio.post(
+        apiUrl,
+        options: Options(contentType: Headers.jsonContentType),
+        data: {
+          'method': 'votecomment',
+          'apiuid': apiuid,
+          'apikey': apikey,
+          'gid': gid,
+          'token': token,
+          'comment_id': commentId,
+          'comment_vote': vote,
+        },
+      );
+      return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Failed to vote'};
+    }
+  }
+
+  // --- Favorite names ---
+
+  Future<List<String>> fetchFavoriteNames() async {
+    try {
+      final response = await _dio.get('$baseUrl/favorites.php');
+      final body = response.data.toString();
+      final doc = html_parser.parse(body);
+      final options = doc.querySelectorAll('.fp a.i');
+      if (options.length >= 10) {
+        return options.take(10).map((e) => e.text.trim()).toList();
+      }
+      final inputs = doc.querySelectorAll('input[name^="favorite_"]');
+      if (inputs.length >= 10) {
+        return inputs.take(10).map((e) => e.attributes['value'] ?? 'Favorites ${inputs.indexOf(e)}').toList();
+      }
+      return List.generate(10, (i) => 'Favorites $i');
+    } catch (_) {
+      return List.generate(10, (i) => 'Favorites $i');
+    }
+  }
+
   // --- Rating ---
 
   Future<Map<String, dynamic>> rateGallery(int gid, String token, int apiuid, String apikey, double rating) async {

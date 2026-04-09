@@ -339,6 +339,76 @@ class BackendApiClient {
     return response.data;
   }
 
+  // --- History ---
+
+  Future<Map<String, dynamic>> fetchHistory({int limit = 50, int offset = 0}) async {
+    final response = await _dio.get('/api/history/list', queryParameters: {'limit': limit, 'offset': offset});
+    return response.data;
+  }
+
+  Future<void> recordHistory({required int gid, String token = '', String title = '', String coverUrl = '', String category = ''}) async {
+    await _dio.post('/api/history/record', data: {
+      'gid': gid, 'token': token, 'title': title, 'coverUrl': coverUrl, 'category': category,
+    });
+  }
+
+  Future<void> clearHistory() async {
+    await _dio.delete('/api/history/clear');
+  }
+
+  Future<void> deleteHistoryItem(int gid) async {
+    await _dio.delete('/api/history/$gid');
+  }
+
+  // --- Search history ---
+
+  Future<List<dynamic>> fetchSearchHistory({int limit = 20}) async {
+    final response = await _dio.get('/api/search-history/list', queryParameters: {'limit': limit});
+    return (response.data['items'] as List?) ?? [];
+  }
+
+  Future<void> recordSearchHistory(String keyword) async {
+    await _dio.post('/api/search-history/record', data: {'keyword': keyword});
+  }
+
+  Future<void> clearSearchHistory() async {
+    await _dio.delete('/api/search-history/clear');
+  }
+
+  Future<void> deleteSearchHistoryItem(String keyword) async {
+    await _dio.delete('/api/search-history/${Uri.encodeComponent(keyword)}');
+  }
+
+  // --- Comments ---
+
+  Future<Map<String, dynamic>> postComment({required int gid, required String token, required String comment}) async {
+    final response = await _dio.post('/api/comment/post', data: {
+      'gid': gid, 'token': token, 'comment': comment,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> voteComment({
+    required int gid,
+    required String token,
+    required int apiuid,
+    required String apikey,
+    required int commentId,
+    required int vote,
+  }) async {
+    final response = await _dio.post('/api/comment/vote', data: {
+      'gid': gid, 'token': token, 'apiuid': apiuid, 'apikey': apikey, 'commentId': commentId, 'vote': vote,
+    });
+    return response.data;
+  }
+
+  // --- Favorite names ---
+
+  Future<List<String>> fetchFavoriteNames() async {
+    final response = await _dio.get('/api/favorite/names');
+    return ((response.data['names'] as List?) ?? []).cast<String>();
+  }
+
   // --- Settings ---
 
   Future<Map<String, dynamic>> getSettings() async {

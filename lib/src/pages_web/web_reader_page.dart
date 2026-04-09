@@ -450,6 +450,12 @@ class _TopOverlay extends StatelessWidget {
                     textAlign: TextAlign.center,
                   )),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.grid_view, color: Colors.white),
+                  tooltip: 'thumbnails.grid'.tr,
+                  onPressed: () => Get.toNamed(
+                      '/web/thumbnails/${controller.gid}/${controller.token}'),
+                ),
                 Obx(() {
                   final icon = switch (controller.readDirection.value) {
                     ReadDirection.ltr => Icons.arrow_forward,

@@ -7,10 +7,12 @@ import 'package:jhentai/src/l18n/web_locale_text.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
+import 'package:jhentai/src/pages_web/web_history_page.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_local_page.dart';
 import 'package:jhentai/src/pages_web/web_reader_page.dart';
 import 'package:jhentai/src/pages_web/web_settings_page.dart';
+import 'package:jhentai/src/pages_web/web_thumbnails_page.dart';
 import 'package:web/web.dart' as web;
 
 void main() async {
@@ -141,6 +143,11 @@ class JHenTaiWebApp extends StatelessWidget {
   }
 
   Locale _detectLocale() {
+    final saved = web.window.localStorage.getItem('jh_web_locale');
+    if (saved != null && saved.contains('_')) {
+      final parts = saved.split('_');
+      return Locale(parts[0], parts.length > 1 ? parts[1] : '');
+    }
     final platformLocale = PlatformDispatcher.instance.locale;
     const supported = [
       Locale('en', 'US'),
@@ -212,6 +219,20 @@ final _webRoutes = [
     page: () => const WebSettingsPage(),
     binding: BindingsBuilder(() {
       Get.lazyPut(() => WebSettingsController());
+    }),
+  ),
+  GetPage(
+    name: '/web/history',
+    page: () => const WebHistoryPage(),
+    binding: BindingsBuilder(() {
+      Get.lazyPut(() => WebHistoryController());
+    }),
+  ),
+  GetPage(
+    name: '/web/thumbnails/:gid/:token',
+    page: () => const WebThumbnailsPage(),
+    binding: BindingsBuilder(() {
+      Get.lazyPut(() => WebThumbnailsController());
     }),
   ),
 ];

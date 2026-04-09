@@ -181,6 +181,42 @@ class WebZhCN {
       'settings.localGalleryDir': '本地画廊目录',
       'settings.extraScanPaths': '额外扫描路径',
       'settings.switchSiteFailed': '切换站点失败: @error',
+      'settings.language': '语言',
+
+      // history
+      'history.title': '浏览记录',
+      'history.empty': '暂无浏览记录',
+      'history.clearAll': '清空全部',
+      'history.clearTitle': '清空浏览记录',
+      'history.clearConfirm': '确定要清空所有浏览记录吗？',
+      'history.loadFailed': '加载浏览记录失败: @error',
+
+      // search history
+      'searchHistory.clearAll': '清除搜索记录',
+
+      // comment
+      'comment.placeholder': '写下评论...',
+      'comment.send': '发送',
+      'comment.posted': '评论已发送',
+      'comment.postedMsg': '你的评论已发布',
+      'comment.postFailed': '发送评论失败: @error',
+      'comment.voteFailed': '投票失败: @error',
+
+      // ranklist
+      'ranklist.title': '排行榜',
+      'ranklist.allTime': '历史总榜',
+      'ranklist.year': '年度',
+      'ranklist.month': '月度',
+      'ranklist.yesterday': '昨日',
+
+      // thumbnails
+      'thumbnails.title': '缩略图 (@count)',
+      'thumbnails.grid': '缩略图网格',
+      'thumbnails.loadFailed': '加载缩略图失败: @error',
+
+      // home additions
+      'home.history': '浏览记录',
+      'home.ranklist': '排行榜',
     };
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:web/web.dart' as web;
 
 class WebSettingsController extends GetxController {
   final isLoggedIn = false.obs;
@@ -135,6 +136,8 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   _buildSiteSection(context),
                   const SizedBox(height: 24),
                   _buildAppearanceSection(context),
+                  const SizedBox(height: 24),
+                  _buildLanguageSection(context),
                   const SizedBox(height: 24),
                   _buildServerInfoSection(context),
                 ],
@@ -310,6 +313,41 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                 );
               }).toList(),
             )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageSection(BuildContext context) {
+    final currentLocale = Get.locale ?? const Locale('en', 'US');
+    final options = <MapEntry<Locale, String>>[
+      MapEntry(const Locale('en', 'US'), 'English'),
+      MapEntry(const Locale('zh', 'CN'), '简体中文'),
+      MapEntry(const Locale('ko', 'KR'), '한국어'),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('settings.language'.tr, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            ...options.map((entry) {
+              return RadioListTile<String>(
+                title: Text(entry.value),
+                value: '${entry.key.languageCode}_${entry.key.countryCode}',
+                groupValue: '${currentLocale.languageCode}_${currentLocale.countryCode}',
+                onChanged: (v) {
+                  Get.updateLocale(entry.key);
+                  web.window.localStorage.setItem('jh_web_locale',
+                      '${entry.key.languageCode}_${entry.key.countryCode}');
+                },
+                dense: true,
+              );
+            }),
           ],
         ),
       ),

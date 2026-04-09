@@ -26,16 +26,23 @@ class GalleryRoutes {
     final search = request.url.queryParameters['f_search'];
     final section = request.url.queryParameters['section'] ?? 'home';
 
+    final tl = request.url.queryParameters['tl'];
+
     final url = switch (section) {
       'popular' => '${_client.baseUrl}/popular',
       'favorites' => '${_client.baseUrl}/favorites.php',
       'watched' => '${_client.baseUrl}/watched',
+      'ranklist' => '${_client.baseUrl}/toplist.php',
       _ => _client.baseUrl,
     };
 
     final queryParams = <String, dynamic>{};
     if (page != null) queryParams['page'] = page;
     if (search != null && search.isNotEmpty) queryParams['f_search'] = search;
+
+    if (section == 'ranklist' && tl != null) {
+      queryParams['tl'] = tl;
+    }
 
     // Forward advanced search parameters
     for (final key in ['f_cats', 'f_sname', 'f_stags', 'f_sdesc', 'f_sh', 'advsearch', 'f_srdd', 'f_sr']) {
