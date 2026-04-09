@@ -65,9 +65,11 @@ class AuthMiddleware {
     }
     if (path == 'api/health') return true;
     if (path == 'api/auth/token/verify') return true;
-    if (path.startsWith('ws/')) {
-      final wsToken = request.url.queryParameters['token'];
-      return wsToken == _token;
+    if (path.startsWith('ws/') ||
+        path.startsWith('api/proxy/image') ||
+        path.startsWith('api/image/')) {
+      final qToken = request.url.queryParameters['token'];
+      return qToken == _token;
     }
     return false;
   }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:html/parser.dart' as html_parser;
 
@@ -57,9 +59,14 @@ class EHClient {
 
   Future<Map<String, dynamic>> login(String userName, String passWord) async {
     try {
+      // Disable redirect-following so we can capture Set-Cookie from the 302
       final response = await _dio.post(
         ehForums,
-        options: Options(contentType: Headers.formUrlEncodedContentType),
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+          followRedirects: false,
+          validateStatus: (status) => status != null && status < 400,
+        ),
         queryParameters: {'act': 'Login', 'CODE': '01'},
         data: {
           'referer': 'https://forums.e-hentai.org/index.php?',
@@ -77,6 +84,14 @@ class EHClient {
         final hashMatch = RegExp(r'ipb_pass_hash=(\w+);')
             .firstMatch(setCookies.firstWhere((h) => h.contains('ipb_pass_hash'), orElse: () => ''));
         if (idMatch != null && hashMatch != null) {
+          // Manually store the login cookies since the interceptor only
+          // fires after the response is fully processed.
+          final parsed = setCookies
+              .map(Cookie.fromSetCookieValue)
+              .map((c) => Cookie(c.name, c.value))
+              .toList();
+          await cookieManager.storeCookies(parsed);
+
           return {
             'success': true,
             'ipbMemberId': int.parse(idMatch.group(1)!),
