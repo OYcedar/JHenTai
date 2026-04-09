@@ -1,5 +1,5 @@
 # Stage 1: Build Flutter Web frontend
-FROM ghcr.io/cirruslabs/flutter:stable AS web-build
+FROM ghcr.io/cirruslabs/flutter:3.41.6 AS web-build
 
 WORKDIR /app
 COPY pubspec.yaml pubspec.lock ./
@@ -12,8 +12,7 @@ RUN flutter config --no-analytics && \
 
 RUN flutter build web \
     --release \
-    --target lib/src/main_web.dart \
-    --web-renderer html
+    --target lib/src/main_web.dart
 
 # Stage 2: Build Dart backend server (AOT compiled)
 FROM dart:stable AS server-build
