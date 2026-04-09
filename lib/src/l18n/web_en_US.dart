@@ -217,6 +217,31 @@ class WebEnUS {
       // home additions
       'home.history': 'History',
       'home.ranklist': 'Ranklist',
+
+      // tag translation
+      'tagTranslation.title': 'Tag Translation',
+      'tagTranslation.loaded': '@count tags loaded',
+      'tagTranslation.notLoaded': 'Tag database not loaded',
+      'tagTranslation.lastUpdate': 'Last update: @time',
+      'tagTranslation.refresh': 'Refresh Tag Database',
+      'tagTranslation.refreshSuccess': '@count tags updated',
+      'tagTranslation.refreshFailed': 'Failed to refresh: @error',
+
+      // list mode
+      'listMode.toggle': 'Toggle view mode',
+      'listMode.grid': 'Grid',
+      'listMode.list': 'List',
+      'listMode.listCompact': 'Compact List',
+
+      // quick search
+      'quickSearch.title': 'Quick Search',
+      'quickSearch.empty': 'No saved searches',
+      'quickSearch.saveCurrent': 'Save current search',
+      'quickSearch.saveTitle': 'Save Quick Search',
+      'quickSearch.nameLabel': 'Name',
+
+      // tag suggest
+      'tagSuggest.tag': 'Tag',
     };
   }
 }

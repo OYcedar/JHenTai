@@ -217,6 +217,31 @@ class WebZhCN {
       // home additions
       'home.history': '浏览记录',
       'home.ranklist': '排行榜',
+
+      // tag translation
+      'tagTranslation.title': '标签翻译',
+      'tagTranslation.loaded': '已加载 @count 个标签',
+      'tagTranslation.notLoaded': '标签数据库未加载',
+      'tagTranslation.lastUpdate': '最后更新: @time',
+      'tagTranslation.refresh': '更新标签数据库',
+      'tagTranslation.refreshSuccess': '已更新 @count 个标签',
+      'tagTranslation.refreshFailed': '更新失败: @error',
+
+      // list mode
+      'listMode.toggle': '切换显示模式',
+      'listMode.grid': '网格',
+      'listMode.list': '列表',
+      'listMode.listCompact': '紧凑列表',
+
+      // quick search
+      'quickSearch.title': '快速搜索',
+      'quickSearch.empty': '没有已保存的搜索',
+      'quickSearch.saveCurrent': '保存当前搜索',
+      'quickSearch.saveTitle': '保存快速搜索',
+      'quickSearch.nameLabel': '名称',
+
+      // tag suggest
+      'tagSuggest.tag': '标签',
     };
   }
 }
