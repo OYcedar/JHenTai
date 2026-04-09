@@ -1,4 +1,5 @@
-![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux-brightgreen)
+![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux%20%7C%20Docker-brightgreen)
+[![docker](https://img.shields.io/docker/pulls/hemumoe/jhentai)](https://hub.docker.com/r/hemumoe/jhentai)
 ![last-commit](https://img.shields.io/github/last-commit/jiangtian616/JHenTai)
 [![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/total)](https://github.com/jiangtian616/JHenTai/releases)
 [![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/latest/total)](https://github.com/jiangtian616/JHenTai/releases)
@@ -8,14 +9,14 @@
 
 # JHenTai
 
-[English](https://github.com/jiangtian616/JHenTai/blob/master/README.md) | 简体中文
-| [한국어](https://github.com/jiangtian616/JHenTai/blob/master/README_kr.md)
+[English](https://github.com/OYcedar/JHenTai/blob/master/README.md) | 简体中文
+| [한국어](https://github.com/OYcedar/JHenTai/blob/master/README_kr.md)
 
 [常见问题，提问前必看](https://github.com/jiangtian616/JHenTai/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
 
 ## 定位
 
-E-hentai 的一个多端app，现支持Android、iOS、Windows、MacOS和Linux系统。
+E-hentai 的一个多端app，现支持Android、iOS、Windows、MacOS、Linux系统以及 **Docker（Web）** 部署。
 
 仍在发展阶段，十分欢迎提交各种bug反馈或Feature Request。
 
@@ -63,6 +64,44 @@ MacOS安装（不维护）： 下载dmg后安装即可。
 Linux安装（不维护）：根据你的系统选择 Linux-amd64.deb 或 Linux-x86_64.AppImage，下载后安装运行即可。(视需要你可能需要安装webkit2gtk-4.1)
 
 - 如果你使用了代理服务器，在网络设置里配置代理地址。
+
+## Docker / Web 部署
+
+JHenTai 支持通过 **Docker 容器** 部署，使用任意设备的 Web 浏览器进行访问。适用于 NAS（Unraid、群晖等）、无界面服务器或长期运行的自托管环境。支持 **AMD64** 和 **ARM64** 架构。
+
+```bash
+docker pull hemumoe/jhentai:latest
+```
+
+**使用 docker-compose 快速启动：**
+
+```yaml
+services:
+  jhentai:
+    image: hemumoe/jhentai:latest
+    container_name: jhentai
+    ports:
+      - "8080:8080"
+    volumes:
+      - jhentai-data:/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+    restart: unless-stopped
+
+volumes:
+  jhentai-data:
+```
+
+```bash
+docker-compose up -d
+```
+
+在浏览器中打开 `http://<服务器IP>:8080`，输入 `docker logs jhentai` 中显示的 API Token 即可使用。
+
+**详细的 Docker 部署文档**（配置、备份、反向代理、CI/CD、安全、常见问题）请参阅：
+
+> **[Docker 部署指南（简体中文）](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md)** | [English](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md) | [한국어](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)
 
 ## 更新
 
@@ -161,6 +200,7 @@ App翻译：
 - [x] Tag翻译、Tag投票、关注Tag、隐藏Tag
 - [x] 评论、评论投票
 - [x] 指纹解锁
+- [x] Docker 部署 + Web UI —— 通过浏览器访问，支持 Unraid/NAS
 
 ## 国际化步骤
 

@@ -180,6 +180,58 @@ class EHClient {
     return archiveLink;
   }
 
+  // --- Favorites ---
+
+  Future<Map<String, dynamic>> addFavorite(int gid, String token, {int favcat = 0, String favnote = ''}) async {
+    try {
+      await _dio.post(
+        '$baseUrl/gallerypopups.php',
+        queryParameters: {'gid': gid, 't': token, 'act': 'addfav'},
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+        data: {'favcat': favcat.toString(), 'favnote': favnote, 'apply': 'Add to Favorites', 'update': '1'},
+      );
+      return {'success': true};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Failed to add favorite'};
+    }
+  }
+
+  Future<Map<String, dynamic>> removeFavorite(int gid, String token) async {
+    try {
+      await _dio.post(
+        '$baseUrl/gallerypopups.php',
+        queryParameters: {'gid': gid, 't': token, 'act': 'addfav'},
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+        data: {'favcat': 'favdel', 'favnote': '', 'apply': 'Apply Changes', 'update': '1'},
+      );
+      return {'success': true};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Failed to remove favorite'};
+    }
+  }
+
+  // --- Rating ---
+
+  Future<Map<String, dynamic>> rateGallery(int gid, String token, int apiuid, String apikey, double rating) async {
+    try {
+      final response = await _dio.post(
+        apiUrl,
+        options: Options(contentType: Headers.jsonContentType),
+        data: {
+          'method': 'rategallery',
+          'apiuid': apiuid,
+          'apikey': apikey,
+          'gid': gid,
+          'token': token,
+          'rating': (rating * 2).round(),
+        },
+      );
+      return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Failed to rate'};
+    }
+  }
+
   // --- Gallery API ---
 
   Future<Map<String, dynamic>> fetchGalleryMetadata(int gid, String token) async {
@@ -233,6 +285,53 @@ class EHClient {
       if (tagValues.isNotEmpty) {
         result.tags[namespace] = tagValues;
       }
+    }
+
+    // Parse apiuid / apikey from inline script
+    for (final script in doc.querySelectorAll('script')) {
+      final text = script.text;
+      final uidMatch = RegExp(r'var apiuid\s*=\s*(\d+)').firstMatch(text);
+      final keyMatch = RegExp(r'var apikey\s*=\s*"(\w+)"').firstMatch(text);
+      if (uidMatch != null) result.apiuid = int.tryParse(uidMatch.group(1)!);
+      if (keyMatch != null) result.apikey = keyMatch.group(1);
+    }
+
+    // Parse favorite status
+    final favDiv = doc.querySelector('#fav .i');
+    if (favDiv != null) {
+      final style = favDiv.attributes['style'] ?? '';
+      final posMatch = RegExp(r'background-position:0px -(\d+)px').firstMatch(style);
+      if (posMatch != null) {
+        final yOffset = int.tryParse(posMatch.group(1)!) ?? 0;
+        result.favoriteSlot = yOffset ~/ 19;
+      }
+    }
+    final favName = doc.querySelector('#fav .fn')?.text;
+    if (favName != null && favName.isNotEmpty) {
+      result.favoriteName = favName;
+    }
+
+    // Parse comments
+    for (final c in doc.querySelectorAll('#cdiv .c1')) {
+      final header = c.querySelector('.c3')?.text ?? '';
+      final authorEl = c.querySelector('.c3 a');
+      final author = authorEl?.text ?? 'Anonymous';
+      final dateMatch = RegExp(r'Posted on (.+?) by').firstMatch(header);
+      final date = dateMatch?.group(1) ?? '';
+      final scoreEl = c.querySelector('.c5 span');
+      final score = scoreEl?.text ?? '';
+      final bodyEl = c.querySelector('.c6');
+      final body = bodyEl?.innerHtml ?? '';
+      final idAttr = c.parent?.attributes['id'] ?? '';
+      final commentId = RegExp(r'comment_(\d+)').firstMatch(idAttr)?.group(1) ?? '';
+
+      result.comments.add({
+        'id': commentId,
+        'author': author,
+        'date': date,
+        'score': score,
+        'body': body,
+      });
     }
 
     result.thumbnailUrls = doc.querySelectorAll('#gdt a')
@@ -326,6 +425,11 @@ class GalleryDetailResult {
   List<String> thumbnailUrls = [];
   List<String> imagePageUrls = [];
   Map<String, List<String>> tags = {};
+  int? apiuid;
+  String? apikey;
+  int? favoriteSlot;
+  String? favoriteName;
+  List<Map<String, dynamic>> comments = [];
 }
 
 class ImagePageResult {

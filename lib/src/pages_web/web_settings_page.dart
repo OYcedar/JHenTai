@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 
 class WebSettingsController extends GetxController {
@@ -133,6 +134,8 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   const SizedBox(height: 24),
                   _buildSiteSection(context),
                   const SizedBox(height: 24),
+                  _buildAppearanceSection(context),
+                  const SizedBox(height: 24),
                   _buildServerInfoSection(context),
                 ],
               ),
@@ -259,6 +262,55 @@ class WebSettingsPage extends GetView<WebSettingsController> {
               ],
               selected: {controller.site.value},
               onSelectionChanged: (selected) => controller.switchSite(selected.first),
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppearanceSection(BuildContext context) {
+    final tc = Get.find<ThemeController>();
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Appearance', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Text('Theme Mode', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Obx(() => SegmentedButton<ThemeMode>(
+              segments: const [
+                ButtonSegment(value: ThemeMode.system, label: Text('System'), icon: Icon(Icons.settings_brightness)),
+                ButtonSegment(value: ThemeMode.light, label: Text('Light'), icon: Icon(Icons.light_mode)),
+                ButtonSegment(value: ThemeMode.dark, label: Text('Dark'), icon: Icon(Icons.dark_mode)),
+              ],
+              selected: {tc.themeMode.value},
+              onSelectionChanged: (selected) => tc.setThemeMode(selected.first),
+            )),
+            const SizedBox(height: 16),
+            Text('Accent Color', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Obx(() => Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ThemeController.seedColors.map((color) {
+                final isSelected = tc.seedColor.value.toARGB32() == color.toARGB32();
+                return GestureDetector(
+                  onTap: () => tc.setSeedColor(color),
+                  child: Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: isSelected ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3) : null,
+                    ),
+                    child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
+                  ),
+                );
+              }).toList(),
             )),
           ],
         ),

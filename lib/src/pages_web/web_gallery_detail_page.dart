@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 
@@ -19,6 +20,14 @@ class WebGalleryDetailController extends GetxController {
   final archiverUrl = ''.obs;
   final imagePageUrls = <String>[].obs;
   final tags = <String, List<String>>{}.obs;
+  final comments = <Map<String, dynamic>>[].obs;
+
+  final favoriteSlot = Rxn<int>();
+  final favoriteName = Rxn<String>();
+  final isFavLoading = false.obs;
+
+  int? apiuid;
+  String? apikey;
 
   @override
   void onInit() {
@@ -49,10 +58,66 @@ class WebGalleryDetailController extends GetxController {
       if (rawTags != null) {
         tags.value = rawTags.map((k, v) => MapEntry(k, (v as List).cast<String>()));
       }
+
+      apiuid = result['apiuid'] as int?;
+      apikey = result['apikey'] as String?;
+
+      favoriteSlot.value = result['favoriteSlot'] as int?;
+      favoriteName.value = result['favoriteName'] as String?;
+
+      final rawComments = result['comments'] as List?;
+      if (rawComments != null) {
+        comments.value = rawComments.cast<Map<String, dynamic>>();
+      }
     } catch (e) {
       errorMessage.value = 'Failed to load gallery detail: $e';
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> toggleFavorite(int? favcat) async {
+    isFavLoading.value = true;
+    try {
+      if (favoriteSlot.value != null && favcat == null) {
+        await backendApiClient.removeFavorite(gid, token);
+        favoriteSlot.value = null;
+        favoriteName.value = null;
+        Get.snackbar('Removed', 'Removed from favorites', snackPosition: SnackPosition.BOTTOM);
+      } else {
+        final slot = favcat ?? 0;
+        await backendApiClient.addFavorite(gid, token, favcat: slot);
+        favoriteSlot.value = slot;
+        favoriteName.value = _favCategoryNames[slot];
+        Get.snackbar('Added', 'Added to ${_favCategoryNames[slot]}', snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Favorite operation failed: $e',
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+    } finally {
+      isFavLoading.value = false;
+    }
+  }
+
+  Future<void> submitRating(double newRating) async {
+    if (apiuid == null || apikey == null) {
+      Get.snackbar('Error', 'Cannot rate — login required', snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    try {
+      final result = await backendApiClient.rateGallery(
+        gid: gid,
+        token: token,
+        apiuid: apiuid!,
+        apikey: apikey!,
+        rating: newRating,
+      );
+      final avg = result['rating_avg'] as num?;
+      if (avg != null) rating.value = avg.toDouble();
+      Get.snackbar('Rated', 'Your rating: ${newRating.toStringAsFixed(1)}', snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('Error', 'Rating failed: $e',
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
@@ -101,6 +166,11 @@ class WebGalleryDetailController extends GetxController {
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
+
+  static const _favCategoryNames = [
+    'Favorites 0', 'Favorites 1', 'Favorites 2', 'Favorites 3', 'Favorites 4',
+    'Favorites 5', 'Favorites 6', 'Favorites 7', 'Favorites 8', 'Favorites 9',
+  ];
 }
 
 class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
@@ -111,6 +181,38 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
     return Scaffold(
       appBar: AppBar(
         title: Obx(() => Text(controller.title.value, overflow: TextOverflow.ellipsis)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.copy),
+            tooltip: 'Copy gallery URL',
+            onPressed: () {
+              final url = 'https://e-hentai.org/g/${controller.gid}/${controller.token}/';
+              Clipboard.setData(ClipboardData(text: url));
+              Get.snackbar('Copied', url, snackPosition: SnackPosition.BOTTOM);
+            },
+          ),
+          Obx(() {
+            if (controller.isFavLoading.value) {
+              return const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            }
+            final isFav = controller.favoriteSlot.value != null;
+            return IconButton(
+              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
+                  color: isFav ? _favSlotColor(controller.favoriteSlot.value ?? 0) : null),
+              tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
+              onPressed: () {
+                if (isFav) {
+                  controller.toggleFavorite(null);
+                } else {
+                  _showFavoritePicker(context);
+                }
+              },
+            );
+          }),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -121,6 +223,30 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
         }
         return _buildDetail(context);
       }),
+    );
+  }
+
+  void _showFavoritePicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Add to favorites'),
+        children: List.generate(10, (i) {
+          return SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(ctx);
+              controller.toggleFavorite(i);
+            },
+            child: Row(
+              children: [
+                Icon(Icons.favorite, size: 18, color: _favSlotColor(i)),
+                const SizedBox(width: 12),
+                Text('Favorites $i'),
+              ],
+            ),
+          );
+        }),
+      ),
     );
   }
 
@@ -143,6 +269,8 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
               _buildActionButtons(context),
               const SizedBox(height: 24),
               _buildTags(context),
+              const SizedBox(height: 24),
+              _buildComments(context),
             ],
           ),
         ),
@@ -226,14 +354,82 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
               label: Text('${controller.pageCount.value} pages'),
               visualDensity: VisualDensity.compact,
             )),
-            Obx(() => Chip(
-              avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
-              label: Text(controller.rating.value.toStringAsFixed(1)),
-              visualDensity: VisualDensity.compact,
+            Obx(() => InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _showRatingDialog(context),
+              child: Chip(
+                avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
+                label: Text(controller.rating.value.toStringAsFixed(1)),
+                visualDensity: VisualDensity.compact,
+              ),
             )),
+            Obx(() {
+              final fav = controller.favoriteName.value;
+              if (fav == null) return const SizedBox.shrink();
+              return Chip(
+                avatar: Icon(Icons.favorite, size: 16, color: _favSlotColor(controller.favoriteSlot.value ?? 0)),
+                label: Text(fav),
+                visualDensity: VisualDensity.compact,
+              );
+            }),
           ],
         ),
       ],
+    );
+  }
+
+  void _showRatingDialog(BuildContext context) {
+    double selected = controller.rating.value;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Rate this gallery'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (i) {
+                  final starVal = (i + 1).toDouble();
+                  final halfVal = i + 0.5;
+                  return GestureDetector(
+                    onTapDown: (details) {
+                      final box = context.findRenderObject() as RenderBox?;
+                      if (box != null) {
+                        final localX = details.localPosition.dx;
+                        setState(() => selected = localX < 16 ? halfVal : starVal);
+                      }
+                    },
+                    onTap: () => setState(() => selected = starVal),
+                    child: Icon(
+                      selected >= starVal
+                          ? Icons.star
+                          : selected >= halfVal
+                              ? Icons.star_half
+                              : Icons.star_border,
+                      color: Colors.amber,
+                      size: 40,
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 8),
+              Text('${selected.toStringAsFixed(1)} / 5.0'),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                controller.submitRating(selected);
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -307,7 +503,10 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
                         label: Text(tag, style: const TextStyle(fontSize: 12)),
                         visualDensity: VisualDensity.compact,
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        onPressed: () {},
+                        onPressed: () {
+                          final query = '${entry.key}:"$tag\$"';
+                          Get.toNamed('/web/home', arguments: {'search': query});
+                        },
                       )).toList(),
                     ),
                   ),
@@ -318,6 +517,76 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
         ],
       );
     });
+  }
+
+  Widget _buildComments(BuildContext context) {
+    return Obx(() {
+      if (controller.comments.isEmpty) return const SizedBox.shrink();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Comments (${controller.comments.length})',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ...controller.comments.map((c) => _CommentCard(comment: c)),
+        ],
+      );
+    });
+  }
+}
+
+class _CommentCard extends StatelessWidget {
+  final Map<String, dynamic> comment;
+  const _CommentCard({required this.comment});
+
+  @override
+  Widget build(BuildContext context) {
+    final author = comment['author'] as String? ?? 'Anonymous';
+    final date = comment['date'] as String? ?? '';
+    final score = comment['score'] as String? ?? '';
+    final body = comment['body'] as String? ?? '';
+    final plainBody = body
+        .replaceAll(RegExp(r'<br\s*/?>'), '\n')
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .trim();
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(author, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (score.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: score.startsWith('-') ? Colors.red.shade100 : Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(score, style: TextStyle(
+                      fontSize: 12,
+                      color: score.startsWith('-') ? Colors.red.shade800 : Colors.green.shade800,
+                    )),
+                  ),
+              ],
+            ),
+            if (date.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(date, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+              ),
+            const SizedBox(height: 8),
+            SelectableText(plainBody, style: Theme.of(context).textTheme.bodyMedium),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -368,4 +637,12 @@ Color _namespaceColor(String namespace) {
     'other' => Colors.grey,
     _ => Colors.grey.shade600,
   };
+}
+
+Color _favSlotColor(int slot) {
+  const colors = [
+    Colors.red, Colors.orange, Colors.amber, Colors.green, Colors.teal,
+    Colors.blue, Colors.indigo, Colors.purple, Colors.pink, Colors.brown,
+  ];
+  return colors[slot % colors.length];
 }
