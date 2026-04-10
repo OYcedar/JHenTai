@@ -301,6 +301,14 @@ class WebEnUS {
       'settings.cookieStatusNoIgneous': 'Cookies set but missing igneous — EX may not work',
       'settings.cookieStatusNone': 'No login cookies set',
       'settings.siteSwitched': 'Switched to @site',
+
+      // download progress in detail
+      'detail.completed': 'Completed',
+      'detail.retryDownload': 'Retry',
+      'detail.readDownloaded': 'Read Downloaded',
+      'detail.deleteDownload': 'Delete Download',
+      'detail.deleteDownloadConfirm': 'Delete this download and its files?',
+      'detail.archiveCompleted': 'Archive Ready',
     };
   }
 }
