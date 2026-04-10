@@ -21,6 +21,10 @@ class WebZhCN {
       'setup.connect': '连接',
       'setup.emptyToken': '请输入 Token',
       'setup.invalidToken': 'Token 无效，请查看服务器日志获取正确的 Token。',
+      'setup.tokenHint': 'Token 为一行共 64 位十六进制字符，请完整复制日志中的整行，不要只复制前半段。',
+      'setup.tokenPasteHint': '请粘贴日志中的完整 64 位 Token',
+      'setup.tokenCharCount': '已输入 @current / @total 位',
+      'setup.tokenWrongLength': 'Token 必须为 64 位十六进制字符（请从 docker logs 完整复制一行）。',
 
       // home
       'home.title': 'JHenTai',
