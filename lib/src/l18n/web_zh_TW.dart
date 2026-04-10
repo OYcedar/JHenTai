@@ -284,6 +284,19 @@ class WebZhTW {
       'tagVote.votedUp': '已為 "@tag" 投贊成票',
       'tagVote.votedDown': '已為 "@tag" 投反對票',
       'tagVote.failed': '投票失敗: @error',
+
+      // responsive layout
+      'home.selectGallery': '選擇一個畫廊查看詳情',
+
+      // gallery detail extras
+      'detail.parentGallery': '父畫廊',
+      'detail.newerVersion': '有更新版本',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可存取 EX）',
+      'settings.cookieStatusNoIgneous': 'Cookie 已設定但缺少 igneous — EX 可能無法使用',
+      'settings.cookieStatusNone': '未設定登入 Cookie',
+      'settings.siteSwitched': '已切換到 @site',
     };
   }
 }

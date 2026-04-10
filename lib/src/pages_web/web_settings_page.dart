@@ -38,6 +38,7 @@ class WebSettingsController extends GetxController {
           userName.value = user['userName'] as String? ?? '';
         }
       }
+      loadCookieStatus();
     } catch (e) {
       debugPrint('Failed to load settings: $e');
     } finally {
@@ -102,10 +103,37 @@ class WebSettingsController extends GetxController {
     }
   }
 
+  final cookieStatus = ''.obs;
+
+  Future<void> loadCookieStatus() async {
+    try {
+      final cookies = await backendApiClient.getCookies();
+      final list = cookies['cookies'] as List? ?? [];
+      final names = list.map((c) => (c as Map)['name']?.toString() ?? '').where((n) => n.isNotEmpty).toList();
+      final hasIgneous = names.contains('igneous');
+      final hasMemberId = names.contains('ipb_member_id');
+      final hasPassHash = names.contains('ipb_pass_hash');
+      if (hasMemberId && hasPassHash) {
+        cookieStatus.value = hasIgneous ? 'settings.cookieStatusFull'.tr : 'settings.cookieStatusNoIgneous'.tr;
+      } else {
+        cookieStatus.value = 'settings.cookieStatusNone'.tr;
+      }
+    } catch (_) {
+      cookieStatus.value = '';
+    }
+  }
+
   Future<void> switchSite(String newSite) async {
     try {
-      await backendApiClient.setSite(newSite);
-      site.value = newSite;
+      final result = await backendApiClient.setSite(newSite);
+      if (result['success'] == true) {
+        site.value = newSite;
+        Get.snackbar('common.success'.tr, 'settings.siteSwitched'.trParams({'site': newSite}), snackPosition: SnackPosition.BOTTOM);
+      } else {
+        final error = result['error']?.toString() ?? 'settings.switchSiteFailed'.tr;
+        Get.snackbar('common.error'.tr, error,
+            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      }
     } catch (e) {
       Get.snackbar('common.error'.tr, 'settings.switchSiteFailed'.trParams({'error': '$e'}), snackPosition: SnackPosition.BOTTOM);
     }
@@ -268,6 +296,26 @@ class WebSettingsPage extends GetView<WebSettingsController> {
               selected: {controller.site.value},
               onSelectionChanged: (selected) => controller.switchSite(selected.first),
             )),
+            const SizedBox(height: 8),
+            Obx(() {
+              final status = controller.cookieStatus.value;
+              if (status.isEmpty) return const SizedBox.shrink();
+              return Row(
+                children: [
+                  Icon(
+                    status.contains('igneous') || status == 'settings.cookieStatusFull'.tr
+                        ? Icons.check_circle
+                        : Icons.warning_amber,
+                    size: 16,
+                    color: status.contains('igneous') || status == 'settings.cookieStatusFull'.tr
+                        ? Colors.green
+                        : Colors.orange,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(status, style: Theme.of(context).textTheme.bodySmall)),
+                ],
+              );
+            }),
           ],
         ),
       ),

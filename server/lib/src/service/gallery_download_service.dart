@@ -314,7 +314,7 @@ class GalleryDownloadService {
           log.warning('Failed to download image $i after $maxRetries retries, marking gallery ${task.gid} as failed');
           task.status = GalleryDownloadStatus.failed;
           db.updateGalleryDownloadStatus(task.gid, GalleryDownloadStatus.failed.index);
-          _notifyProgress(task);
+          _notifyProgress(task, error: 'Failed to download image ${i + 1} after $maxRetries retries');
           return;
         }
       }
@@ -329,7 +329,7 @@ class GalleryDownloadService {
       log.error('Gallery download failed for ${task.gid}', e, s);
       task.status = GalleryDownloadStatus.failed;
       db.updateGalleryDownloadStatus(task.gid, GalleryDownloadStatus.failed.index);
-      _notifyProgress(task);
+      _notifyProgress(task, error: '$e');
     } finally {
       _activeDownloads.remove(task.gid);
       _processQueue();
@@ -388,7 +388,9 @@ class GalleryDownloadService {
     return 'jpg';
   }
 
-  void _notifyProgress(GalleryDownloadTask task) {
-    _eventBus.fire('gallery_download_progress', task.toJson());
+  void _notifyProgress(GalleryDownloadTask task, {String? error}) {
+    final data = task.toJson();
+    if (error != null) data['error'] = error;
+    _eventBus.fire('gallery_download_progress', data);
   }
 }

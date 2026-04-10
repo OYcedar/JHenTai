@@ -199,9 +199,29 @@ class WebReaderController extends GetxController {
       final result = await backendApiClient.proxyGet(url: _imagePageUrls[index]);
       final html = (result as Map<String, dynamic>)['data']?.toString() ?? '';
 
-      final imgMatch = RegExp(r'id="img"[^>]+src="([^"]+)"').firstMatch(html);
-      if (imgMatch != null) {
-        final imageUrl = imgMatch.group(1)!;
+      String? imageUrl;
+      // Try multiple patterns to robustly extract the image URL
+      final patterns = [
+        RegExp(r'id="img"\s[^>]*src="([^"]+)"'),
+        RegExp(r'src="([^"]+)"\s[^>]*id="img"'),
+        RegExp(r'<img[^>]+id="img"[^>]+src="([^"]+)"'),
+        RegExp(r'<img[^>]+src="([^"]+)"[^>]+id="img"'),
+        RegExp(r'id="img"[^>]+src="([^"]+)"'),
+      ];
+      for (final pattern in patterns) {
+        final match = pattern.firstMatch(html);
+        if (match != null) {
+          imageUrl = match.group(1);
+          break;
+        }
+      }
+      // Fallback: find any large image URL (hentai CDN pattern)
+      if (imageUrl == null) {
+        final cdnMatch = RegExp(r'"(https?://[^"]+\.(jpg|png|gif|webp))"', caseSensitive: false).firstMatch(html);
+        if (cdnMatch != null) imageUrl = cdnMatch.group(1);
+      }
+
+      if (imageUrl != null) {
         final proxiedUrl = backendApiClient.proxyImageUrl(imageUrl);
         _loadedImageUrls[index] = proxiedUrl;
         if (index < imageUrls.length) {

@@ -288,6 +288,19 @@ class WebKoKR {
       'tagVote.votedUp': '"@tag"에 추천했습니다',
       'tagVote.votedDown': '"@tag"에 비추천했습니다',
       'tagVote.failed': '투표 실패: @error',
+
+      // responsive layout
+      'home.selectGallery': '세부 정보를 보려면 갤러리를 선택하세요',
+
+      // gallery detail extras
+      'detail.parentGallery': '상위 갤러리',
+      'detail.newerVersion': '새 버전 사용 가능',
+
+      // settings extras
+      'settings.cookieStatusFull': '쿠키 정상 (igneous 포함 — EX 사용 가능)',
+      'settings.cookieStatusNoIgneous': '쿠키가 설정되었지만 igneous 누락 — EX가 작동하지 않을 수 있음',
+      'settings.cookieStatusNone': '로그인 쿠키가 설정되지 않음',
+      'settings.siteSwitched': '@site로 전환되었습니다',
     };
   }
 }

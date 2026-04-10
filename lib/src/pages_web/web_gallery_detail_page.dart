@@ -7,6 +7,13 @@ class WebGalleryDetailController extends GetxController {
   late int gid;
   late String token;
 
+  final int? _paramGid;
+  final String? _paramToken;
+
+  WebGalleryDetailController({int? gid, String? token})
+      : _paramGid = gid,
+        _paramToken = token;
+
   final title = ''.obs;
   final titleJpn = ''.obs;
   final category = ''.obs;
@@ -28,6 +35,12 @@ class WebGalleryDetailController extends GetxController {
   final isFavLoading = false.obs;
   final site = 'EH'.obs;
   final favoriteNames = <String>[].obs;
+  final publishDate = ''.obs;
+  final fileSize = ''.obs;
+  final language = ''.obs;
+  final parentUrl = Rxn<String>();
+  final ratingCount = 0.obs;
+  final newerVersionUrl = Rxn<String>();
 
   int? apiuid;
   String? apikey;
@@ -35,8 +48,8 @@ class WebGalleryDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    gid = int.tryParse(Get.parameters['gid'] ?? '') ?? 0;
-    token = Get.parameters['token'] ?? '';
+    gid = _paramGid ?? (int.tryParse(Get.parameters['gid'] ?? '') ?? 0);
+    token = _paramToken ?? (Get.parameters['token'] ?? '');
     _loadDetail();
     _loadSiteAndFavNames();
   }
@@ -83,6 +96,13 @@ class WebGalleryDetailController extends GetxController {
       if (rawComments != null) {
         comments.value = rawComments.cast<Map<String, dynamic>>();
       }
+
+      publishDate.value = result['publishDate'] as String? ?? '';
+      fileSize.value = result['fileSize'] as String? ?? '';
+      language.value = result['language'] as String? ?? '';
+      parentUrl.value = result['parentUrl'] as String?;
+      ratingCount.value = result['ratingCount'] as int? ?? 0;
+      newerVersionUrl.value = result['newerVersionUrl'] as String?;
 
       backendApiClient.recordHistory(
         gid: gid,
@@ -255,8 +275,12 @@ class WebGalleryDetailController extends GetxController {
   static String favSlotName(int i) => 'detail.favSlot'.trParams({'n': '$i'});
 }
 
-class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
-  const WebGalleryDetailPage({super.key});
+class WebGalleryDetailPage extends StatelessWidget {
+  final String? controllerTag;
+  const WebGalleryDetailPage({super.key, this.controllerTag});
+
+  WebGalleryDetailController get controller =>
+      Get.find<WebGalleryDetailController>(tag: controllerTag);
 
   @override
   Widget build(BuildContext context) {
@@ -465,8 +489,66 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
                 visualDensity: VisualDensity.compact,
               );
             }),
+            Obx(() => controller.language.value.isNotEmpty
+              ? Chip(
+                  avatar: const Icon(Icons.language, size: 16),
+                  label: Text(controller.language.value),
+                  visualDensity: VisualDensity.compact,
+                )
+              : const SizedBox.shrink()),
+            Obx(() => controller.fileSize.value.isNotEmpty
+              ? Chip(
+                  avatar: const Icon(Icons.storage, size: 16),
+                  label: Text(controller.fileSize.value),
+                  visualDensity: VisualDensity.compact,
+                )
+              : const SizedBox.shrink()),
           ],
         ),
+        Obx(() => controller.publishDate.value.isNotEmpty
+          ? Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(controller.publishDate.value,
+                      style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                ],
+              ),
+            )
+          : const SizedBox.shrink()),
+        Obx(() {
+          final parent = controller.parentUrl.value;
+          final newer = controller.newerVersionUrl.value;
+          if (parent == null && newer == null) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              spacing: 12,
+              children: [
+                if (parent != null)
+                  InkWell(
+                    onTap: () {
+                      final m = RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(parent);
+                      if (m != null) Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
+                    },
+                    child: Text('detail.parentGallery'.tr,
+                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline)),
+                  ),
+                if (newer != null)
+                  InkWell(
+                    onTap: () {
+                      final m = RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(newer);
+                      if (m != null) Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
+                    },
+                    child: Text('detail.newerVersion'.tr,
+                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline)),
+                  ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
@@ -531,14 +613,12 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
       spacing: 12,
       runSpacing: 12,
       children: [
-        Obx(() => controller.pageCount.value > 0
-            ? FilledButton.icon(
-                icon: const Icon(Icons.menu_book),
-                label: Text('detail.readOnline'.tr),
-                style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
-                onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
-              )
-            : const SizedBox.shrink()),
+        FilledButton.icon(
+          icon: const Icon(Icons.menu_book),
+          label: Text('detail.readOnline'.tr),
+          style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
+          onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
+        ),
         FilledButton.tonalIcon(
           icon: const Icon(Icons.download),
           label: Text('detail.downloadGallery'.tr),
@@ -610,7 +690,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               onPressed: () {
                                 final query = '${entry.key}:"$tag\$"';
-                                Get.toNamed('/web/home', arguments: {'search': query});
+                                Get.offAllNamed('/web/home', arguments: {'search': query});
                               },
                             ),
                           ),
@@ -640,7 +720,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
           ),
           onTap: () {
             final query = '$namespace:"$tag\$"';
-            Get.toNamed('/web/home', arguments: {'search': query});
+            Get.offAllNamed('/web/home', arguments: {'search': query});
           },
         ),
         if (controller.apiuid != null && controller.apikey != null) ...[
@@ -684,7 +764,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
             title: Text('tagVote.searchUploader'.tr, style: const TextStyle(fontSize: 14)),
             dense: true, contentPadding: EdgeInsets.zero,
           ),
-          onTap: () => Get.toNamed('/web/home', arguments: {'search': 'uploader:$uploader'}),
+          onTap: () => Get.offAllNamed('/web/home', arguments: {'search': 'uploader:$uploader'}),
         ),
         PopupMenuItem(
           child: ListTile(

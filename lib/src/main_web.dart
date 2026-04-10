@@ -26,8 +26,24 @@ void main() async {
   backendApiClient.init(baseUrl: serverUrl, token: savedToken);
 
   Get.put(ThemeController());
+  Get.put(WebLayoutController());
 
   runApp(const JHenTaiWebApp());
+}
+
+class WebLayoutController extends GetxController {
+  final selectedGid = Rxn<int>();
+  final selectedToken = Rxn<String>();
+
+  void selectGallery(int gid, String token) {
+    selectedGid.value = gid;
+    selectedToken.value = token;
+  }
+
+  void clearSelection() {
+    selectedGid.value = null;
+    selectedToken.value = null;
+  }
 }
 
 class ThemeController extends GetxController {

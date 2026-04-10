@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../core/database.dart';
 import '../network/eh_client.dart';
 
 class AuthRoutes {
@@ -118,7 +119,35 @@ class AuthRoutes {
       return Response.badRequest(body: jsonEncode({'error': 'site must be EH or EX'}));
     }
 
+    if (site == 'EX') {
+      // Validate EX access by making a test request
+      try {
+        final result = await _client.proxyGet('https://exhentai.org/');
+        final data = result['data']?.toString() ?? '';
+        final statusCode = result['statusCode'] as int? ?? 0;
+        // Sad panda: empty body or very small page, or blank image
+        if (statusCode != 200 || data.length < 200 || data.contains('sadpanda')) {
+          return Response.ok(
+            jsonEncode({
+              'success': false,
+              'error': 'EX access denied. Make sure you have valid cookies including igneous.',
+            }),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
+      } catch (e) {
+        return Response.ok(
+          jsonEncode({
+            'success': false,
+            'error': 'Failed to verify EX access: $e',
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+    }
+
     _client.site = site!;
+    db.writeConfig('site', site);
     return Response.ok(
       jsonEncode({'success': true, 'site': site}),
       headers: {'Content-Type': 'application/json'},

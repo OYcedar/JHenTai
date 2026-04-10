@@ -354,9 +354,37 @@ class EHClient {
     final ratingMatch = RegExp(r'[\d.]+').firstMatch(ratingText);
     result.rating = double.tryParse(ratingMatch?.group(0) ?? '') ?? 0;
 
-    final pageCountText = doc.querySelector('#gdd .gdt2')?.text ?? '';
-    final pageMatch = RegExp(r'(\d+) pages').firstMatch(pageCountText);
-    result.pageCount = int.tryParse(pageMatch?.group(1) ?? '') ?? 0;
+    // Parse all #gdd metadata rows
+    final gddRows = doc.querySelectorAll('#gdd tr');
+    for (final tr in gddRows) {
+      final label = tr.querySelector('.gdt1')?.text.trim().toLowerCase() ?? '';
+      final value = tr.querySelector('.gdt2')?.text.trim() ?? '';
+      if (label.contains('posted')) {
+        result.publishDate = value;
+      } else if (label.contains('file size')) {
+        result.fileSize = value;
+      } else if (label.contains('length')) {
+        final pageMatch = RegExp(r'(\d+) pages?').firstMatch(value);
+        result.pageCount = int.tryParse(pageMatch?.group(1) ?? '') ?? 0;
+      } else if (label.contains('language')) {
+        result.language = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+      } else if (label.contains('parent')) {
+        final parentLink = tr.querySelector('.gdt2 a');
+        if (parentLink != null) {
+          result.parentUrl = parentLink.attributes['href'];
+        }
+      }
+    }
+
+    // Rating count
+    final ratingCountText = doc.querySelector('#rating_count')?.text ?? '';
+    result.ratingCount = int.tryParse(ratingCountText) ?? 0;
+
+    // Newer version
+    final newerEl = doc.querySelector('#gnd a');
+    if (newerEl != null) {
+      result.newerVersionUrl = newerEl.attributes['href'];
+    }
 
     final archiveLink = doc.querySelector('a[onclick*="archiver"]')?.attributes['onclick'];
     if (archiveLink != null) {
@@ -454,6 +482,29 @@ class EHClient {
     final imgElement = doc.querySelector('#img');
     result.imageUrl = imgElement?.attributes['src'] ?? '';
 
+    // Fallback: try regex patterns if DOM query missed it
+    if (result.imageUrl.isEmpty) {
+      final patterns = [
+        RegExp(r'id="img"\s[^>]*src="([^"]+)"'),
+        RegExp(r'src="([^"]+)"\s[^>]*id="img"'),
+        RegExp(r'<img[^>]+id="img"[^>]+src="([^"]+)"'),
+        RegExp(r'<img[^>]+src="([^"]+)"[^>]+id="img"'),
+      ];
+      for (final pattern in patterns) {
+        final match = pattern.firstMatch(html);
+        if (match != null) {
+          result.imageUrl = match.group(1)!;
+          break;
+        }
+      }
+    }
+
+    // Last resort: find any CDN image URL
+    if (result.imageUrl.isEmpty) {
+      final cdnMatch = RegExp(r'"(https?://[^"]+\.(jpg|png|gif|webp))"', caseSensitive: false).firstMatch(html);
+      if (cdnMatch != null) result.imageUrl = cdnMatch.group(1)!;
+    }
+
     final nl = doc.querySelector('#loadfail')?.attributes['onclick'];
     if (nl != null) {
       final nlMatch = RegExp(r"nl\('([^']+)'\)").firstMatch(nl);
@@ -518,6 +569,12 @@ class GalleryDetailResult {
   int? favoriteSlot;
   String? favoriteName;
   List<Map<String, dynamic>> comments = [];
+  String publishDate = '';
+  String fileSize = '';
+  String language = '';
+  String? parentUrl;
+  int ratingCount = 0;
+  String? newerVersionUrl;
 }
 
 class ImagePageResult {

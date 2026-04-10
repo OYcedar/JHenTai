@@ -288,6 +288,19 @@ class WebZhCN {
       'tagVote.votedUp': '已为 "@tag" 投赞成票',
       'tagVote.votedDown': '已为 "@tag" 投反对票',
       'tagVote.failed': '投票失败: @error',
+
+      // responsive layout
+      'home.selectGallery': '选择一个画廊查看详情',
+
+      // gallery detail extras
+      'detail.parentGallery': '父画廊',
+      'detail.newerVersion': '有更新版本',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可访问 EX）',
+      'settings.cookieStatusNoIgneous': 'Cookie 已设置但缺少 igneous — EX 可能无法使用',
+      'settings.cookieStatusNone': '未设置登录 Cookie',
+      'settings.siteSwitched': '已切换到 @site',
     };
   }
 }
