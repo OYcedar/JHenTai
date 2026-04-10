@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
+
+Map<String, dynamic> _thumbMapForThumbsPage(WebThumbnailsController c, int index) {
+  if (index < c.galleryThumbnails.length) {
+    return Map<String, dynamic>.from(c.galleryThumbnails[index]);
+  }
+  if (index < c.thumbnailImageUrls.length) {
+    final u = c.thumbnailImageUrls[index];
+    if (u.isNotEmpty) {
+      return {'thumbUrl': u, 'isLarge': true};
+    }
+  }
+  final cover = c.coverUrl.value;
+  if (cover.isNotEmpty) {
+    return {'thumbUrl': cover, 'isLarge': true};
+  }
+  return {'thumbUrl': '', 'isLarge': true};
+}
 
 class WebThumbnailsController extends GetxController {
   late int gid;
   late String token;
 
   final imagePageUrls = <String>[].obs;
-  final thumbnailUrls = <String>[].obs;
+  final thumbnailImageUrls = <String>[].obs;
+  final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final coverUrl = ''.obs;
   final isLoading = true.obs;
   final errorMessage = ''.obs;
@@ -30,11 +49,18 @@ class WebThumbnailsController extends GetxController {
       final result = await backendApiClient.fetchGalleryImagePages(gid, token);
       final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
       imagePageUrls.value = pages;
-
-      thumbnailUrls.value = List.generate(pages.length, (i) {
-        if (i < pages.length) return pages[i];
-        return '';
-      });
+      final thumbs = (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
+      thumbnailImageUrls.value = thumbs.length == pages.length
+          ? thumbs
+          : List<String>.filled(pages.length, '');
+      final gt = result['galleryThumbnails'] as List?;
+      if (gt != null && gt.length == pages.length) {
+        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      } else if (gt != null) {
+        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      } else {
+        galleryThumbnails.value = [];
+      }
     } catch (e) {
       errorMessage.value = 'thumbnails.loadFailed'.trParams({'error': '$e'});
     } finally {
@@ -99,11 +125,11 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
         itemCount: controller.imagePageUrls.length,
         itemBuilder: (context, index) {
           return Obx(() => _ThumbnailCell(
-            index: index,
-            gid: controller.gid,
-            token: controller.token,
-            coverUrl: controller.coverUrl.value,
-          ));
+                index: index,
+                gid: controller.gid,
+                token: controller.token,
+                thumbData: _thumbMapForThumbsPage(controller, index),
+              ));
         },
       );
     });
@@ -114,9 +140,14 @@ class _ThumbnailCell extends StatelessWidget {
   final int index;
   final int gid;
   final String token;
-  final String coverUrl;
+  final Map<String, dynamic> thumbData;
 
-  const _ThumbnailCell({required this.index, required this.gid, required this.token, this.coverUrl = ''});
+  const _ThumbnailCell({
+    required this.index,
+    required this.gid,
+    required this.token,
+    required this.thumbData,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -133,24 +164,12 @@ class _ThumbnailCell extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (coverUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: ColorFiltered(
-                  colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.4), BlendMode.darken),
-                  child: Image.network(
-                    backendApiClient.proxyImageUrl(coverUrl),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Center(
-                      child: Icon(Icons.image, color: Colors.grey, size: 32),
-                    ),
-                  ),
-                ),
-              )
-            else
-              const Center(
-                child: Icon(Icons.image, color: Colors.grey, size: 32),
-              ),
+            WebEhThumbnail(
+              data: thumbData,
+              height: double.infinity,
+              width: double.infinity,
+              borderRadius: BorderRadius.circular(6),
+            ),
             Center(
               child: Text(
                 '${index + 1}',

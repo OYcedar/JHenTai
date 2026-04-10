@@ -3,7 +3,21 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:web/web.dart' as web;
+
+Map<String, dynamic> _thumbMapForDetail(WebGalleryDetailController c, int index) {
+  if (index < c.galleryThumbnails.length) {
+    return Map<String, dynamic>.from(c.galleryThumbnails[index]);
+  }
+  if (index < c.thumbnailImageUrls.length) {
+    final u = c.thumbnailImageUrls[index];
+    if (u.isNotEmpty) {
+      return {'thumbUrl': u, 'isLarge': true};
+    }
+  }
+  return {'thumbUrl': '', 'isLarge': true};
+}
 
 class WebGalleryDetailController extends GetxController {
   late int gid;
@@ -28,6 +42,8 @@ class WebGalleryDetailController extends GetxController {
   final galleryUrl = ''.obs;
   final archiverUrl = ''.obs;
   final imagePageUrls = <String>[].obs;
+  final thumbnailImageUrls = <String>[].obs;
+  final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final tags = <String, List<String>>{}.obs;
   final translatedTags = <String, String>{}.obs;
   final comments = <Map<String, dynamic>>[].obs;
@@ -85,6 +101,14 @@ class WebGalleryDetailController extends GetxController {
       galleryUrl.value = result['galleryUrl'] as String? ?? '';
       final pages = result['imagePageUrls'] as List?;
       imagePageUrls.value = pages?.cast<String>() ?? [];
+      final thumbs = result['thumbnailImageUrls'] as List?;
+      thumbnailImageUrls.value = thumbs?.cast<String>() ?? [];
+      final gt = result['galleryThumbnails'] as List?;
+      if (gt != null) {
+        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      } else {
+        galleryThumbnails.value = [];
+      }
 
       final rawTags = result['tags'] as Map<String, dynamic>?;
       if (rawTags != null) {
@@ -1187,19 +1211,34 @@ class WebGalleryDetailPage extends StatelessWidget {
               return InkWell(
                 borderRadius: BorderRadius.circular(8),
                 onTap: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?startPage=$index'),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.image, size: 28, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      const SizedBox(height: 4),
-                      Text('${index + 1}', style: Theme.of(context).textTheme.bodySmall),
-                    ],
-                  ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ColoredBox(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    ),
+                    Positioned.fill(
+                      child: WebEhThumbnail(
+                        data: _thumbMapForDetail(controller, index),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 4,
+                      right: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '${index + 1}',
+                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },

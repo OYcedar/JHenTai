@@ -1,11 +1,28 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:web/web.dart' as web;
+
+/// Same drag devices as UIConfig.scrollBehaviourWithoutScrollBarWithMouse but
+/// defined here so web does not import ui_config → style_setting → drift/sqlite3.
+final ScrollBehavior _webReaderStripScrollBehavior =
+    const MaterialScrollBehavior().copyWith(
+  dragDevices: {
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.touch,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.invertedStylus,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.unknown,
+  },
+  scrollbars: false,
+);
 
 enum ReaderMode { online, downloaded, archive, local }
 enum ReadDirection { ltr, rtl, vertical, fitWidth, doubleColumn }
@@ -16,6 +33,7 @@ class WebReaderController extends GetxController {
   late ReaderMode mode;
 
   final imageUrls = <String>[].obs;
+  final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final currentPage = 0.obs;
   final totalPages = 0.obs;
   final isLoading = true.obs;
@@ -32,6 +50,8 @@ class WebReaderController extends GetxController {
 
   late PageController pageController;
   final scrollController = ScrollController();
+  /// Horizontal thumbnail strip at bottom (mouse drag + wheel).
+  final stripScrollController = ScrollController();
   final focusNode = FocusNode();
 
   List<String>? localImages;
@@ -66,6 +86,7 @@ class WebReaderController extends GetxController {
     _saveProgressNow();
     pageController.dispose();
     scrollController.dispose();
+    stripScrollController.dispose();
     focusNode.dispose();
     super.onClose();
   }
@@ -153,6 +174,12 @@ class WebReaderController extends GetxController {
     _imagePageUrls.addAll(pages);
     totalPages.value = total;
     imageUrls.value = List.filled(_imagePageUrls.length, '');
+    final gt = result['galleryThumbnails'] as List?;
+    if (gt != null) {
+      galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } else {
+      galleryThumbnails.value = [];
+    }
     _preloadAround(0);
   }
 
@@ -818,30 +845,57 @@ class _TopOverlay extends StatelessWidget {
   }
 }
 
+Widget _readerStripThumb(WebReaderController controller, int pageIndex, String proxiedFullImageUrl) {
+  if (pageIndex < controller.galleryThumbnails.length) {
+    final m = controller.galleryThumbnails[pageIndex];
+    final u = m['thumbUrl'] as String? ?? '';
+    if (u.isNotEmpty) {
+      return WebEhThumbnail(
+        data: Map<String, dynamic>.from(m),
+        height: 40,
+        width: 40,
+        borderRadius: BorderRadius.circular(3),
+      );
+    }
+  }
+  if (proxiedFullImageUrl.isNotEmpty) {
+    return Image.network(
+      proxiedFullImageUrl,
+      fit: BoxFit.cover,
+      width: 40,
+      height: 40,
+      errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.white24, size: 16),
+    );
+  }
+  return const Center(child: Icon(Icons.image, color: Colors.white24, size: 16));
+}
+
 class _BottomOverlay extends StatelessWidget {
   final WebReaderController controller;
   const _BottomOverlay({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() => AnimatedPositioned(
-      duration: const Duration(milliseconds: 200),
-      bottom: controller.showOverlay.value ? 0 : -140,
-      left: 0, right: 0,
-      child: Container(
-        padding: EdgeInsets.only(
-          left: 16, right: 16,
-          bottom: MediaQuery.of(context).padding.bottom + 8, top: 8,
-        ),
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter, end: Alignment.topCenter,
-            colors: [Colors.black87, Colors.transparent],
+    return Obx(() => IgnorePointer(
+      ignoring: !controller.showOverlay.value,
+      child: AnimatedPositioned(
+        duration: const Duration(milliseconds: 200),
+        bottom: controller.showOverlay.value ? 0 : -140,
+        left: 0, right: 0,
+        child: Container(
+          padding: EdgeInsets.only(
+            left: 16, right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 8, top: 8,
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomCenter, end: Alignment.topCenter,
+              colors: [Colors.black87, Colors.transparent],
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Obx(() => controller.totalPages.value > 1
                 ? Slider(
                     value: controller.currentPage.value.toDouble().clamp(0, (controller.totalPages.value - 1).toDouble()),
@@ -876,6 +930,7 @@ class _BottomOverlay extends StatelessWidget {
           ],
         ),
       ),
+    ),
     ));
   }
 
@@ -889,36 +944,48 @@ class _BottomOverlay extends StatelessWidget {
 
       return SizedBox(
         height: 52,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          itemCount: maxThumbs,
-          itemBuilder: (context, i) {
-            final pageIndex = (i * step).floor().clamp(0, controller.totalPages.value - 1);
-            final url = pageIndex < controller.imageUrls.length ? controller.imageUrls[pageIndex] : '';
-            final isActive = controller.currentPage.value == pageIndex;
-
-            return GestureDetector(
-              onTap: () => controller.goToPage(pageIndex),
-              child: Container(
-                width: 40,
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isActive ? Colors.white : Colors.white24,
-                    width: isActive ? 2 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: url.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
-                        child: Image.network(url, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.white24, size: 16)),
-                      )
-                    : const Center(child: Icon(Icons.image, color: Colors.white24, size: 16)),
-              ),
-            );
+        child: Listener(
+          onPointerSignal: (signal) {
+            if (signal is! PointerScrollEvent) return;
+            final c = controller.stripScrollController;
+            if (!c.hasClients) return;
+            final delta = signal.scrollDelta.dy;
+            final max = c.position.maxScrollExtent;
+            c.jumpTo((c.offset + delta).clamp(0.0, max));
           },
+          child: ScrollConfiguration(
+            behavior: _webReaderStripScrollBehavior,
+            child: ListView.builder(
+              controller: controller.stripScrollController,
+              scrollDirection: Axis.horizontal,
+              itemCount: maxThumbs,
+              itemBuilder: (context, i) {
+                final pageIndex = (i * step).floor().clamp(0, controller.totalPages.value - 1);
+                final url = pageIndex < controller.imageUrls.length ? controller.imageUrls[pageIndex] : '';
+                final isActive = controller.currentPage.value == pageIndex;
+
+                return GestureDetector(
+                  onTap: () => controller.goToPage(pageIndex),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: isActive ? Colors.white : Colors.white24,
+                        width: isActive ? 2 : 1,
+                      ),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: _readerStripThumb(controller, pageIndex, url),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       );
     });

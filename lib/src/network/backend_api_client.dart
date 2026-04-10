@@ -326,14 +326,16 @@ class BackendApiClient {
     return response.data;
   }
 
+  /// Detail includes `thumbnailImageUrls` and `galleryThumbnails` (per-page thumb metadata for sprites).
   Future<Map<String, dynamic>> fetchGalleryDetail(int gid, String token) async {
     final response = await _dio.get('/api/gallery/detail/$gid/$token');
     return response.data;
   }
 
+  /// Returns `imagePageUrls`, `thumbnailImageUrls`, `galleryThumbnails` (sprite metadata), and `totalPages`.
   Future<Map<String, dynamic>> fetchGalleryImagePages(int gid, String token) async {
     final response = await _dio.get('/api/gallery/images/$gid/$token');
-    return response.data;
+    return response.data as Map<String, dynamic>;
   }
 
   // --- Favorites ---

@@ -95,6 +95,8 @@ class GalleryRoutes {
           'pageCount': detail.pageCount,
           'archiverUrl': detail.archiverUrl,
           'imagePageUrls': detail.imagePageUrls,
+          'thumbnailImageUrls': detail.thumbnailImageUrls,
+          'galleryThumbnails': detail.galleryThumbnails,
           'galleryUrl': galleryUrl,
           'tags': detail.tags,
           'apiuid': detail.apiuid,
@@ -123,6 +125,8 @@ class GalleryRoutes {
 
     try {
       final allPageUrls = <String>[];
+      final allThumbUrls = <String>[];
+      final allGalleryThumbs = <Map<String, dynamic>>[];
       var pageUrl = galleryUrl;
       int totalPages = 0;
 
@@ -137,13 +141,7 @@ class GalleryRoutes {
           totalPages = int.tryParse(countMatch?.group(1) ?? '') ?? 0;
         }
 
-        final links = doc.querySelectorAll('#gdt a');
-        for (final a in links) {
-          final href = a.attributes['href'] ?? '';
-          if (href.contains('/s/')) {
-            allPageUrls.add(href);
-          }
-        }
+        _client.appendGalleryThumbPageData(html, pageUrl, allPageUrls, allThumbUrls, allGalleryThumbs);
 
         final nextLink = doc.querySelector('.ptt td:last-child a');
         final nextHref = nextLink?.attributes['href'];
@@ -155,6 +153,8 @@ class GalleryRoutes {
       return Response.ok(
         jsonEncode({
           'imagePageUrls': allPageUrls,
+          'thumbnailImageUrls': allThumbUrls,
+          'galleryThumbnails': allGalleryThumbs,
           'totalPages': totalPages > 0 ? totalPages : allPageUrls.length,
         }),
         headers: {'Content-Type': 'application/json'},
