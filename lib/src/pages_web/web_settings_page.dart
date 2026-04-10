@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsController extends GetxController {
@@ -187,28 +188,147 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   _buildAccountSection(context),
                   const SizedBox(height: 24),
                   _buildSiteSection(context),
-                  const SizedBox(height: 24),
+                  _buildSectionHeader(context, 'settings.sectionData', first: true),
+                  _buildDataToolsSection(context),
+                  _buildSectionHeader(context, 'settings.sectionStyle'),
                   _buildAppearanceSection(context),
-                  const SizedBox(height: 24),
+                  _buildSectionHeader(context, 'settings.sectionRead'),
                   _buildReaderSettingsSection(context),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
                   _buildFavoriteDefaultsSection(context),
-                  const SizedBox(height: 24),
-                  _buildLanguageSection(context),
-                  const SizedBox(height: 24),
+                  _buildSectionHeader(context, 'settings.sectionTags'),
+                  _buildTagsAndFilteringSection(context),
+                  const SizedBox(height: 8),
                   _buildTagTranslationSection(context),
-                  const SizedBox(height: 24),
-                  _buildUsertagsSection(context),
-                  const SizedBox(height: 24),
-                  _buildBlockRuleSection(context),
-                  const SizedBox(height: 24),
+                  _buildSectionHeader(context, 'settings.sectionOther'),
+                  _buildLanguageSection(context),
+                  const SizedBox(height: 8),
+                  _buildNetworkNoteSection(context),
+                  const SizedBox(height: 8),
                   _buildServerInfoSection(context),
+                  const SizedBox(height: 8),
+                  _buildAboutSection(context),
                 ],
               ),
             ),
           ),
         );
       }),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String trKey, {bool first = false}) {
+    return Padding(
+      padding: EdgeInsets.only(top: first ? 0 : 20, bottom: 8),
+      child: Text(
+        trKey.tr,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildDataToolsSection(BuildContext context) {
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.download_outlined),
+            title: Text('settings.openDownloads'.tr),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Get.toNamed('/web/downloads'),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: Text('settings.openHistory'.tr),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Get.toNamed('/web/history'),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.folder_open_outlined),
+            title: Text('settings.openLocal'.tr),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Get.toNamed('/web/local'),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.bolt_outlined),
+            title: Text('settings.openQuickSearch'.tr),
+            subtitle: Text('quickSearch.title'.tr, style: Theme.of(context).textTheme.bodySmall),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Get.toNamed('/web/quick-search'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTagsAndFilteringSection(BuildContext context) {
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.label_outline),
+            title: Text('settings.usertags'.tr),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Get.toNamed('/web/tag-sets'),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.block),
+            title: Text('blockRule.title'.tr),
+            subtitle: Text('blockRule.manage'.tr, style: Theme.of(context).textTheme.bodySmall),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Get.toNamed('/web/block-rules'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNetworkNoteSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.wifi_tethering, color: Theme.of(context).colorScheme.primary, size: 22),
+                const SizedBox(width: 8),
+                Text('settings.networkNote'.tr, style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'settings.networkWebBody'.tr,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAboutSection(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snap) {
+        final v = snap.data?.version ?? '—';
+        final b = snap.data?.buildNumber ?? '—';
+        return Card(
+          child: ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text('settings.about'.tr),
+            subtitle: Text('settings.appVersion'.trParams({'version': v, 'build': b})),
+          ),
+        );
+      },
     );
   }
 
@@ -399,8 +519,6 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('settings.appearance'.tr, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
             Text('settings.themeMode'.tr, style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             Obx(() => SegmentedButton<ThemeMode>(
@@ -473,9 +591,7 @@ class WebSettingsPage extends GetView<WebSettingsController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('settings.readerSettings'.tr, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: 12),
-                const Center(child: CircularProgressIndicator()),
+                const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
               ],
             ),
           ),
@@ -487,8 +603,6 @@ class WebSettingsPage extends GetView<WebSettingsController> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('settings.readerSettings'.tr, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
               Text('settings.defaultDirection'.tr, style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
               Obx(() => Wrap(
@@ -666,41 +780,6 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         ),
       ),
     ));
-  }
-
-  Widget _buildUsertagsSection(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.label_outline),
-        title: Text('settings.usertags'.tr),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => Get.toNamed('/web/tag-sets'),
-      ),
-    );
-  }
-
-  Widget _buildBlockRuleSection(BuildContext context) {
-    final ruleCount = 0.obs;
-    backendApiClient.listBlockRules().then((rules) => ruleCount.value = rules.length).catchError((_) => 0);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('blockRule.title'.tr, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 12),
-            Obx(() => Text('blockRule.ruleCount'.trParams({'count': '${ruleCount.value}'}))),
-            const SizedBox(height: 12),
-            FilledButton.tonalIcon(
-              icon: const Icon(Icons.block),
-              label: Text('blockRule.manage'.tr),
-              onPressed: () => Get.toNamed('/web/block-rules'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildServerInfoSection(BuildContext context) {

@@ -4,6 +4,7 @@ class WebZhCN {
       // common
       'common.cancel': '取消',
       'common.ok': '确定',
+      'common.confirm': '确定',
       'common.error': '错误',
       'common.success': '成功',
       'common.failed': '失败',
@@ -204,6 +205,19 @@ class WebZhCN {
       'settings.extraScanPaths': '额外扫描路径',
       'settings.switchSiteFailed': '切换站点失败: @error',
       'settings.language': '语言',
+      'settings.sectionData': '数据与工具',
+      'settings.sectionStyle': '样式',
+      'settings.sectionRead': '阅读',
+      'settings.sectionTags': '标签与过滤',
+      'settings.sectionOther': '其他',
+      'settings.openDownloads': '下载任务',
+      'settings.openHistory': '浏览记录',
+      'settings.openLocal': '本地画廊',
+      'settings.openQuickSearch': '快速搜索',
+      'settings.networkNote': '网络与代理',
+      'settings.networkWebBody': '代理等网络选项在服务器或 Docker 环境中配置，不在此网页内设置。部署说明见文档（反向代理、HTTPS、Cookie 登录等）。',
+      'settings.about': '关于',
+      'settings.appVersion': '版本 @version（@build）',
 
       // history
       'history.title': '浏览记录',
@@ -261,6 +275,13 @@ class WebZhCN {
       'quickSearch.saveCurrent': '保存当前搜索',
       'quickSearch.saveTitle': '保存快速搜索',
       'quickSearch.nameLabel': '名称',
+      'quickSearch.addNew': '添加快速搜索',
+      'quickSearch.keywordLabel': '关键词',
+      'quickSearch.keywordHint': '与首页搜索栏相同',
+      'quickSearch.saved': '已保存',
+      'quickSearch.deleted': '已删除',
+      'quickSearch.deleteTitle': '删除快速搜索',
+      'quickSearch.deleteConfirm': '确定删除「@name」？',
 
       // tag suggest
       'tagSuggest.tag': '标签',

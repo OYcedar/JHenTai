@@ -14,6 +14,7 @@ import 'package:jhentai/src/pages_web/web_history_page.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_local_page.dart';
 import 'package:jhentai/src/pages_web/web_reader_page.dart';
+import 'package:jhentai/src/pages_web/web_quick_search_manage_page.dart';
 import 'package:jhentai/src/pages_web/web_settings_page.dart';
 import 'package:jhentai/src/pages_web/web_stats_page.dart';
 import 'package:jhentai/src/pages_web/web_tag_sets_page.dart';
@@ -378,6 +379,10 @@ final _webRoutes = [
     binding: BindingsBuilder(() {
       Get.lazyPut(() => WebSettingsController());
     }),
+  ),
+  GetPage(
+    name: '/web/quick-search',
+    page: () => const WebQuickSearchManagePage(),
   ),
   GetPage(
     name: '/web/history',

@@ -9,9 +9,9 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:web/web.dart' as web;
 
-/// Same drag devices as UIConfig.scrollBehaviourWithoutScrollBarWithMouse but
-/// defined here so web does not import ui_config → style_setting → drift/sqlite3.
-final ScrollBehavior _webReaderStripScrollBehavior =
+/// Same intent as UIConfig.scrollBehaviourWithoutScrollBarWithMouse: PageView /
+/// ListView / thumbnail strip accept mouse drag on web (default Material omits mouse).
+final ScrollBehavior _webReaderScrollBehavior =
     const MaterialScrollBehavior().copyWith(
   dragDevices: {
     PointerDeviceKind.mouse,
@@ -23,6 +23,22 @@ final ScrollBehavior _webReaderStripScrollBehavior =
   },
   scrollbars: false,
 );
+
+/// Start decoding network images into GPU cache (aligned with native reader preload).
+void _precacheNetworkImage(String url) {
+  final provider = NetworkImage(url);
+  final stream = provider.resolve(const ImageConfiguration());
+  late ImageStreamListener listener;
+  listener = ImageStreamListener(
+    (ImageInfo image, bool synchronousCall) {
+      stream.removeListener(listener);
+    },
+    onError: (Object exception, StackTrace? stackTrace) {
+      stream.removeListener(listener);
+    },
+  );
+  stream.addListener(listener);
+}
 
 enum ReaderMode { online, downloaded, archive, local }
 enum ReadDirection { ltr, rtl, vertical, fitWidth, doubleColumn }
@@ -170,14 +186,21 @@ class WebReaderController extends GetxController {
       switch (mode) {
         case ReaderMode.online:
           await _loadOnline();
+          break;
         case ReaderMode.downloaded:
           await _loadDownloaded();
+          break;
         case ReaderMode.archive:
           await _loadArchive();
+          break;
         case ReaderMode.local:
           _loadLocal();
+          break;
       }
       await _restoreProgress();
+      if (mode == ReaderMode.online) {
+        _preloadAround(currentPage.value);
+      }
     } catch (e) {
       errorMessage.value = 'reader.loadFailed'.trParams({'error': '$e'});
     } finally {
@@ -230,9 +253,17 @@ class WebReaderController extends GetxController {
         .toList();
   }
 
+  /// Online preload window: similar spirit to read_setting.preloadPageCount / preloadDistance
+  /// (native reader), but fixed for web so EH pages resolve ahead of the visible page.
+  static const int _preloadBehindPages = 2;
+  static const int _preloadAheadPages = 12;
+
   void _preloadAround(int center) {
     if (mode != ReaderMode.online) return;
-    for (int i = math.max(0, center - 1); i < _imagePageUrls.length && i <= center + 5; i++) {
+    if (_imagePageUrls.isEmpty) return;
+    final start = math.max(0, center - _preloadBehindPages);
+    final end = math.min(_imagePageUrls.length - 1, center + _preloadAheadPages);
+    for (int i = start; i <= end; i++) {
       if (!_loadedImageUrls.containsKey(i)) {
         _loadImageAtIndex(i);
       }
@@ -276,6 +307,7 @@ class WebReaderController extends GetxController {
           imageUrls[index] = proxiedUrl;
           imageUrls.refresh();
         }
+        _precacheNetworkImage(proxiedUrl);
       }
     } catch (e) {
       debugPrint('Failed to load image $index: $e');
@@ -545,13 +577,18 @@ class _ReaderBody extends StatelessWidget {
   }
 
   Widget _buildPageReader(BuildContext context) {
-    return Obx(() => PageView.builder(
-      controller: controller.pageController,
-      reverse: controller.readDirection.value == ReadDirection.rtl,
-      itemCount: controller.totalPages.value,
-      onPageChanged: controller.onPageChanged,
-      itemBuilder: (context, index) => _DoubleTapZoomImage(controller: controller, index: index),
-    ));
+    return Obx(() => ScrollConfiguration(
+          behavior: _webReaderScrollBehavior,
+          child: PageView.builder(
+            controller: controller.pageController,
+            reverse: controller.readDirection.value == ReadDirection.rtl,
+            itemCount: controller.totalPages.value,
+            onPageChanged: controller.onPageChanged,
+            allowImplicitScrolling: true,
+            padEnds: false,
+            itemBuilder: (context, index) => _DoubleTapZoomImage(controller: controller, index: index),
+          ),
+        ));
   }
 
   Widget _buildVerticalReader(BuildContext context) {
@@ -571,10 +608,14 @@ class _ReaderBody extends StatelessWidget {
         }
         return false;
       },
-      child: ListView.builder(
-        controller: controller.scrollController,
-        itemCount: controller.totalPages.value,
-        itemBuilder: (context, index) => _ImagePage(controller: controller, index: index, isVertical: true),
+      child: ScrollConfiguration(
+        behavior: _webReaderScrollBehavior,
+        child: ListView.builder(
+          controller: controller.scrollController,
+          itemCount: controller.totalPages.value,
+          cacheExtent: math.max(1200, MediaQuery.sizeOf(context).height * 2),
+          itemBuilder: (context, index) => _ImagePage(controller: controller, index: index, isVertical: true),
+        ),
       ),
     ));
   }
@@ -596,10 +637,14 @@ class _ReaderBody extends StatelessWidget {
         }
         return false;
       },
-      child: ListView.builder(
-        controller: controller.scrollController,
-        itemCount: controller.totalPages.value,
-        itemBuilder: (context, index) => _ImagePage(controller: controller, index: index, isVertical: true, fitWidth: true),
+      child: ScrollConfiguration(
+        behavior: _webReaderScrollBehavior,
+        child: ListView.builder(
+          controller: controller.scrollController,
+          itemCount: controller.totalPages.value,
+          cacheExtent: math.max(1200, MediaQuery.sizeOf(context).height * 2),
+          itemBuilder: (context, index) => _ImagePage(controller: controller, index: index, isVertical: true, fitWidth: true),
+        ),
       ),
     ));
   }
@@ -607,24 +652,29 @@ class _ReaderBody extends StatelessWidget {
   Widget _buildDoubleColumnReader(BuildContext context) {
     final total = controller.totalPages.value;
     final pageCount = (total / 2).ceil();
-    return Obx(() => PageView.builder(
-      controller: controller.pageController,
-      itemCount: pageCount,
-      onPageChanged: controller.onPageChanged,
-      itemBuilder: (context, pairIndex) {
-        final leftIdx = pairIndex * 2;
-        final rightIdx = leftIdx + 1;
-        return Row(
-          children: [
-            Expanded(child: _DoubleTapZoomImage(controller: controller, index: leftIdx)),
-            if (rightIdx < total)
-              Expanded(child: _DoubleTapZoomImage(controller: controller, index: rightIdx))
-            else
-              const Expanded(child: SizedBox.shrink()),
-          ],
-        );
-      },
-    ));
+    return Obx(() => ScrollConfiguration(
+          behavior: _webReaderScrollBehavior,
+          child: PageView.builder(
+            controller: controller.pageController,
+            itemCount: pageCount,
+            onPageChanged: controller.onPageChanged,
+            allowImplicitScrolling: true,
+            padEnds: false,
+            itemBuilder: (context, pairIndex) {
+              final leftIdx = pairIndex * 2;
+              final rightIdx = leftIdx + 1;
+              return Row(
+                children: [
+                  Expanded(child: _DoubleTapZoomImage(controller: controller, index: leftIdx)),
+                  if (rightIdx < total)
+                    Expanded(child: _DoubleTapZoomImage(controller: controller, index: rightIdx))
+                  else
+                    const Expanded(child: SizedBox.shrink()),
+                ],
+              );
+            },
+          ),
+        ));
   }
 }
 
@@ -642,18 +692,29 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
   late AnimationController _animController;
   Animation<Matrix4>? _animation;
   TapDownDetails? _doubleTapDetails;
+  /// When false, [InteractiveViewer] does not pan so mouse drags reach the parent [PageView].
+  bool _pannable = false;
 
   @override
   void initState() {
     super.initState();
+    _transformationController.addListener(_onTransformChanged);
     _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200))
       ..addListener(() {
         if (_animation != null) _transformationController.value = _animation!.value;
       });
   }
 
+  void _onTransformChanged() {
+    final zoomed = _transformationController.value.getMaxScaleOnAxis() > 1.02;
+    if (zoomed != _pannable) {
+      setState(() => _pannable = zoomed);
+    }
+  }
+
   @override
   void dispose() {
+    _transformationController.removeListener(_onTransformChanged);
     _animController.dispose();
     _transformationController.dispose();
     super.dispose();
@@ -681,6 +742,7 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
       onDoubleTap: _handleDoubleTap,
       child: InteractiveViewer(
         transformationController: _transformationController,
+        panEnabled: _pannable,
         minScale: 0.5,
         maxScale: 4.0,
         child: Center(child: _ImageContent(controller: widget.controller, index: widget.index)),
@@ -979,7 +1041,7 @@ class _BottomOverlay extends StatelessWidget {
             c.jumpTo((c.offset + delta).clamp(0.0, max));
           },
           child: ScrollConfiguration(
-            behavior: _webReaderStripScrollBehavior,
+            behavior: _webReaderScrollBehavior,
             child: ListView.builder(
               controller: controller.stripScrollController,
               scrollDirection: Axis.horizontal,

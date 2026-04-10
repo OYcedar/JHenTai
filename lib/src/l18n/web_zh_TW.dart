@@ -4,6 +4,7 @@ class WebZhTW {
       // common
       'common.cancel': '取消',
       'common.ok': '確定',
+      'common.confirm': '確定',
       'common.error': '錯誤',
       'common.success': '成功',
       'common.failed': '失敗',
@@ -204,6 +205,19 @@ class WebZhTW {
       'settings.extraScanPaths': '額外掃描路徑',
       'settings.switchSiteFailed': '切換站點失敗: @error',
       'settings.language': '語言',
+      'settings.sectionData': '資料與工具',
+      'settings.sectionStyle': '樣式',
+      'settings.sectionRead': '閱讀',
+      'settings.sectionTags': '標籤與過濾',
+      'settings.sectionOther': '其他',
+      'settings.openDownloads': '下載任務',
+      'settings.openHistory': '瀏覽記錄',
+      'settings.openLocal': '本機畫廊',
+      'settings.openQuickSearch': '快速搜尋',
+      'settings.networkNote': '網路與代理',
+      'settings.networkWebBody': '代理等網路選項在伺服器或 Docker 環境中設定，不在此網頁內。部署說明見文件（反向代理、HTTPS、Cookie 登入等）。',
+      'settings.about': '關於',
+      'settings.appVersion': '版本 @version（@build）',
 
       // history
       'history.title': '瀏覽記錄',
@@ -257,6 +271,13 @@ class WebZhTW {
       'quickSearch.saveCurrent': '儲存目前搜尋',
       'quickSearch.saveTitle': '儲存快速搜尋',
       'quickSearch.nameLabel': '名稱',
+      'quickSearch.addNew': '新增快速搜尋',
+      'quickSearch.keywordLabel': '關鍵字',
+      'quickSearch.keywordHint': '與首頁搜尋欄相同',
+      'quickSearch.saved': '已儲存',
+      'quickSearch.deleted': '已刪除',
+      'quickSearch.deleteTitle': '刪除快速搜尋',
+      'quickSearch.deleteConfirm': '確定刪除「@name」？',
 
       // tag suggest
       'tagSuggest.tag': '標籤',
