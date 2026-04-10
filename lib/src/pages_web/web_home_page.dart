@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -591,7 +592,7 @@ class WebHomePage extends GetView<WebHomeController> {
                     }
                     return IconButton(
                       icon: const Icon(Icons.tune),
-                      tooltip: 'home.advancedSearch'.tr,
+                      tooltip: 'home.searchFilterSheetTitle'.tr,
                       onPressed: () => _showAdvancedSearchStatic(context, controller),
                     );
                   }),
@@ -829,7 +830,7 @@ class WebHomePage extends GetView<WebHomeController> {
     return LayoutBuilder(builder: (context, constraints) {
       return Obx(() {
         final mode = controller.listMode.value;
-        if (mode == 'list' || mode == 'listCompact' || isLeftPane) {
+        if (mode == 'list' || mode == 'listCompact') {
           return ListView.builder(
             controller: controller.scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
@@ -840,15 +841,21 @@ class WebHomePage extends GetView<WebHomeController> {
               return _GalleryListTile(
                 gallery: gallery,
                 homeController: controller,
-                compact: mode == 'listCompact' || isLeftPane,
+                compact: mode == 'listCompact',
                 isLeftPane: isLeftPane,
               );
             },
           );
         }
-        final crossAxisCount = constraints.maxWidth > 1200 ? 4
-            : constraints.maxWidth > 800 ? 3
-            : constraints.maxWidth > 500 ? 2 : 1;
+        final crossAxisCount = isLeftPane
+            ? (constraints.maxWidth >= 420 ? 2 : 1)
+            : constraints.maxWidth > 1200
+                ? 4
+                : constraints.maxWidth > 800
+                    ? 3
+                    : constraints.maxWidth > 500
+                        ? 2
+                        : 1;
         return GridView.builder(
           controller: controller.scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -862,7 +869,11 @@ class WebHomePage extends GetView<WebHomeController> {
           itemCount: controller.galleries.length,
           itemBuilder: (context, index) {
             final gallery = controller.galleries[index];
-            return _GalleryCard(gallery: gallery, homeController: controller);
+            return _GalleryCard(
+              gallery: gallery,
+              homeController: controller,
+              isLeftPane: isLeftPane,
+            );
           },
         );
       });
@@ -1006,26 +1017,100 @@ class _SinglePaneHome extends StatelessWidget {
   }
 }
 
-class _TwoPaneHome extends StatelessWidget {
+class _TwoPaneHome extends StatefulWidget {
   final WebHomeController controller;
   const _TwoPaneHome({required this.controller});
 
   @override
+  State<_TwoPaneHome> createState() => _TwoPaneHomeState();
+}
+
+class _TwoPaneHomeState extends State<_TwoPaneHome> {
+  static const _leftWidthStorageKey = 'jh_web_two_pane_left_width';
+  late double _leftPaneWidth;
+  bool _didInitWidth = false;
+
+  WebHomeController get controller => widget.controller;
+
+  static double _clampLeftWidth(double v, double screenW) {
+    const minW = 260.0;
+    final maxW = math.max(minW, screenW - 300.0);
+    return v.clamp(minW, maxW);
+  }
+
+  /// Default left column width (same rule as first launch without saved prefs).
+  static double defaultLeftPaneWidthForScreen(double screenW) {
+    return _clampLeftWidth((screenW * 0.382).clamp(320.0, 480.0), screenW);
+  }
+
+  void _persistLeftWidth() {
+    web.window.localStorage.setItem(_leftWidthStorageKey, _leftPaneWidth.round().toString());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInitWidth) return;
+    _didInitWidth = true;
+    final sw = MediaQuery.sizeOf(context).width;
+    final raw = web.window.localStorage.getItem(_leftWidthStorageKey);
+    final parsed = double.tryParse(raw ?? '');
+    if (parsed != null && parsed.isFinite) {
+      _leftPaneWidth = _clampLeftWidth(parsed, sw);
+    } else {
+      _leftPaneWidth = defaultLeftPaneWidthForScreen(sw);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final layoutCtrl = Get.find<WebLayoutController>();
-    final width = MediaQuery.of(context).size.width;
-    final leftWidth = (width * 0.382).clamp(320.0, 480.0);
+    final screenW = MediaQuery.sizeOf(context).width;
+    final clamped = _clampLeftWidth(_leftPaneWidth, screenW);
+    if (clamped != _leftPaneWidth) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _leftPaneWidth = clamped);
+      });
+    }
+
+    final dividerColor = Theme.of(context).dividerColor;
 
     return Scaffold(
       drawer: _HomeDrawer(controller: controller),
       appBar: AppBar(
-        title: Text('home.title'.tr),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                'home.title'.tr,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'home.leftPaneWidthPx'.trParams({'w': '${clamped.round()}'}),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
         actions: [
           Obx(() => IconButton(
             icon: Icon(controller.listModeIcon),
             onPressed: controller.cycleListMode,
             tooltip: 'listMode.toggle'.tr,
           )),
+          Obx(() {
+            if (controller.currentSection.value != 'home') {
+              return const SizedBox.shrink();
+            }
+            return IconButton(
+              icon: const Icon(Icons.tune),
+              tooltip: 'home.searchFilterSheetTitle'.tr,
+              onPressed: () => WebHomePage._showAdvancedSearchStatic(context, controller),
+            );
+          }),
           IconButton(
             icon: const Icon(Icons.image_search),
             onPressed: controller.pickImageAndSearch,
@@ -1036,15 +1121,53 @@ class _TwoPaneHome extends StatelessWidget {
             onPressed: () => Get.toNamed('/web/history'),
             tooltip: 'home.history'.tr,
           ),
+          IconButton(
+            icon: const Icon(Icons.folder),
+            onPressed: () => Get.toNamed('/web/local'),
+            tooltip: 'home.localGalleries'.tr,
+          ),
         ],
       ),
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: leftWidth,
+            width: clamped,
             child: WebHomePage.buildHomeContent(context, controller, isLeftPane: true),
           ),
-          const VerticalDivider(width: 1),
+          Tooltip(
+            message: 'home.twoPaneDividerTooltip'.trParams({'w': '${clamped.round()}'}),
+            waitDuration: const Duration(milliseconds: 400),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.resizeColumn,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onDoubleTap: () {
+                  setState(() {
+                    _leftPaneWidth = defaultLeftPaneWidthForScreen(screenW);
+                  });
+                  _persistLeftWidth();
+                },
+                onHorizontalDragUpdate: (details) {
+                  setState(() {
+                    _leftPaneWidth = _clampLeftWidth(
+                      _leftPaneWidth + details.delta.dx,
+                      screenW,
+                    );
+                  });
+                },
+                onHorizontalDragEnd: (_) => _persistLeftWidth(),
+                child: SizedBox(
+                  width: 8,
+                  child: VerticalDivider(
+                    width: 8,
+                    thickness: 2,
+                    color: dividerColor,
+                  ),
+                ),
+              ),
+            ),
+          ),
           Expanded(
             child: Obx(() {
               final gid = layoutCtrl.selectedGid.value;
@@ -1279,13 +1402,18 @@ class _AdvancedSearchSheet extends StatelessWidget {
               Center(
                 child: Container(
                   width: 40, height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade400,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
+              Text(
+                'home.searchFilterSheetTitle'.tr,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
               Text('home.categoryFilter'.tr, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Obx(() => Wrap(
@@ -1306,6 +1434,40 @@ class _AdvancedSearchSheet extends StatelessWidget {
                   );
                 }),
               )),
+              const SizedBox(height: 12),
+              Text('home.language'.tr, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 6),
+              Obx(() => DropdownButtonFormField<String?>(
+                    value: controller.filterLanguage.value,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(value: null, child: Text('home.languageNone'.tr)),
+                      ...WebHomeController.searchLanguageKeys.map((k) => DropdownMenuItem<String?>(
+                            value: k,
+                            child: Text(
+                              k.isEmpty ? k : '${k[0].toUpperCase()}${k.substring(1)}',
+                            ),
+                          )),
+                    ],
+                    onChanged: (v) {
+                      controller.filterLanguage.value = v;
+                      controller.persistAdvancedSearchSettings();
+                    },
+                  )),
+              const SizedBox(height: 2),
+              Obx(() => SwitchListTile(
+                    title: Text('home.disableFilterForLanguage'.tr),
+                    value: controller.disableFilterForLanguage.value,
+                    onChanged: (v) {
+                      controller.disableFilterForLanguage.value = v;
+                      controller.persistAdvancedSearchSettings();
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
               const SizedBox(height: 20),
               Text('home.minimumRating'.tr, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
@@ -1333,40 +1495,6 @@ class _AdvancedSearchSheet extends StatelessWidget {
                   ),
                 ],
               )),
-              const SizedBox(height: 20),
-              Text('home.language'.tr, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Obx(() => DropdownButtonFormField<String?>(
-                    value: controller.filterLanguage.value,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: [
-                      DropdownMenuItem<String?>(value: null, child: Text('home.languageNone'.tr)),
-                      ...WebHomeController.searchLanguageKeys.map((k) => DropdownMenuItem<String?>(
-                            value: k,
-                            child: Text(
-                              k.isEmpty ? k : '${k[0].toUpperCase()}${k.substring(1)}',
-                            ),
-                          )),
-                    ],
-                    onChanged: (v) {
-                      controller.filterLanguage.value = v;
-                      controller.persistAdvancedSearchSettings();
-                    },
-                  )),
-              const SizedBox(height: 4),
-              Obx(() => SwitchListTile(
-                    title: Text('home.disableFilterForLanguage'.tr),
-                    value: controller.disableFilterForLanguage.value,
-                    onChanged: (v) {
-                      controller.disableFilterForLanguage.value = v;
-                      controller.persistAdvancedSearchSettings();
-                    },
-                    contentPadding: EdgeInsets.zero,
-                  )),
               const SizedBox(height: 16),
               Text('home.searchIn'.tr, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
@@ -1896,8 +2024,13 @@ class _GalleryListTile extends StatelessWidget {
 class _GalleryCard extends StatelessWidget {
   final Map<String, dynamic> gallery;
   final WebHomeController homeController;
+  final bool isLeftPane;
 
-  const _GalleryCard({required this.gallery, required this.homeController});
+  const _GalleryCard({
+    required this.gallery,
+    required this.homeController,
+    this.isLeftPane = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1911,7 +2044,13 @@ class _GalleryCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Get.toNamed('/web/gallery/$gid/$token'),
+        onTap: () {
+          if (isLeftPane) {
+            Get.find<WebLayoutController>().selectGallery(gid as int, token as String);
+          } else {
+            Get.toNamed('/web/gallery/$gid/$token');
+          }
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
