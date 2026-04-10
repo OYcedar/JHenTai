@@ -305,6 +305,38 @@ class WebPtBR {
       'detail.deleteDownload': 'Excluir download',
       'detail.deleteDownloadConfirm': 'Excluir este download e seus arquivos?',
       'detail.archiveCompleted': 'Arquivo pronto',
+
+      // detail enhancements
+      'detail.share': 'Compartilhar',
+      'detail.jumpToPage': 'Ir para Página',
+      'detail.similarSearch': 'Pesquisa Similar',
+      'detail.blockGallery': 'Bloquear Galeria',
+      'detail.allComments': 'Todos os Comentários',
+      'detail.thumbnails': 'Miniaturas (@count)',
+      'detail.viewAllThumbnails': 'Ver Todas as Miniaturas',
+      'detail.galleryBlocked': 'Galeria foi bloqueada',
+      'detail.jumpPageHint': 'Insira o número da página (1-@max)',
+
+      // reader enhancements
+      'reader.saveImage': 'Salvar Imagem',
+      'reader.openInNewTab': 'Abrir em Nova Aba',
+      'reader.reloadImage': 'Recarregar Imagem',
+      'reader.interval': 'Intervalo',
+      'reader.preload': 'Pré-carregar',
+      'reader.imageSpacing': 'Espaçamento de Imagem',
+      'reader.autoInterval': 'Intervalo Auto-leitura',
+      'reader.startAutoMode': 'Iniciar',
+
+      // settings reader
+      'settings.readerSettings': 'Configurações do Leitor',
+      'settings.defaultDirection': 'Direção Padrão',
+      'settings.imageSpacing': 'Espaçamento de Imagem',
+      'settings.preloadPages': 'Páginas Pré-carregadas',
+      'settings.autoInterval': 'Intervalo Auto-leitura',
+      'settings.fitWidth': 'Ajustar Largura',
+
+      // home enhancements
+      'home.scrollToTop': 'Voltar ao Topo',
     };
   }
 }
