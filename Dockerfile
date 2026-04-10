@@ -44,7 +44,8 @@ COPY --from=server-build /app/server/bin/server /app/server
 COPY --from=web-build /app/build/web /app/web
 
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-RUN chmod +x /app/docker-entrypoint.sh
+# Strip Windows CRLF so the script runs on Linux (avoids "no such file or directory" on exec).
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 
 RUN mkdir -p /data && chown jhentai:jhentai /data
 
@@ -62,4 +63,4 @@ VOLUME ["/data"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:8080/api/health || exit 1
 
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/app/docker-entrypoint.sh"]
