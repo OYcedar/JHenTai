@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 
 import '../core/log.dart';
@@ -19,6 +20,158 @@ class EHClient {
   String get apiUrl => _site == 'EX' ? 'https://exhentai.org/api.php' : 'https://api.e-hentai.org/api.php';
 
   static const String ehForums = 'https://forums.e-hentai.org/index.php';
+
+  /// CDN thumbnail URL for one `#gdt` link to a `/s/` viewer page (EH/EX layouts).
+  static String extractThumbnailImageUrlFromGdtAnchor(Element a, String siteOrigin) {
+    final parsed = parseGdtAnchorThumbnail(a, siteOrigin);
+    if (parsed != null) {
+      final u = parsed['thumbUrl'] as String? ?? '';
+      if (u.isNotEmpty) return u;
+    }
+    return '';
+  }
+
+  /// Aligns with [GalleryThumbnail] / eh_spider_parser: large = one image URL; small = sprite sheet + crop.
+  static Map<String, dynamic>? parseGdtAnchorThumbnail(Element a, String siteOrigin) {
+    final div = a.querySelector('div[style]');
+    if (div != null) {
+      final style = div.attributes['style'] ?? '';
+      final urlMatch = RegExp(r'url\(([^)]+)\)').firstMatch(style);
+      if (urlMatch != null) {
+        var thumbUrl = urlMatch.group(1)!.trim();
+        if (thumbUrl.length >= 2 &&
+            ((thumbUrl.startsWith('"') && thumbUrl.endsWith('"')) || (thumbUrl.startsWith("'") && thumbUrl.endsWith("'")))) {
+          thumbUrl = thumbUrl.substring(1, thumbUrl.length - 1);
+        }
+        thumbUrl = _makeAbsoluteThumbUrl(thumbUrl, siteOrigin);
+
+        final offsetMatch = RegExp(r'\)\s*-(\d+)px').firstMatch(style);
+        final offsetVal = offsetMatch != null ? double.tryParse(offsetMatch.group(1)!) : null;
+
+        final wMatch = RegExp(r'width:\s*(\d+)px').firstMatch(style);
+        final hMatch = RegExp(r'height:\s*(\d+)px').firstMatch(style);
+        final tw = double.tryParse(wMatch?.group(1) ?? '0') ?? 0;
+        var th = double.tryParse(hMatch?.group(1) ?? '0') ?? 0;
+        if (th > 0) th -= 1;
+
+        final isLarge = offsetVal == null;
+        final out = <String, dynamic>{
+          'thumbUrl': thumbUrl,
+          'isLarge': isLarge,
+        };
+        if (!isLarge) {
+          out['offSet'] = offsetVal;
+          out['thumbWidth'] = tw;
+          out['thumbHeight'] = th;
+        }
+        final oh = div.attributes['data-orghash'];
+        if (oh != null && oh.isNotEmpty) out['originImageHash'] = oh;
+        return out;
+      }
+    }
+
+    final img = a.querySelector('img');
+    if (img != null) {
+      final src = img.attributes['src'] ?? '';
+      if (src.isNotEmpty) {
+        final thumbUrl = _makeAbsoluteThumbUrl(src, siteOrigin);
+        final parts = thumbUrl.split('-');
+        double? tw;
+        double? th;
+        if (parts.length >= 4) {
+          tw = double.tryParse(parts[parts.length - 3]);
+          th = double.tryParse(parts[parts.length - 2]);
+        }
+        final out = <String, dynamic>{
+          'thumbUrl': thumbUrl,
+          'isLarge': true,
+        };
+        if (tw != null) out['thumbWidth'] = tw;
+        if (th != null) out['thumbHeight'] = th;
+        return out;
+      }
+    }
+
+    for (Element? el = a.parent; el != null; el = el.parent) {
+      final st = el.attributes['style'] ?? '';
+      if (!st.contains('url(')) continue;
+      final urlMatch = RegExp(r'url\(([^)]+)\)').firstMatch(st);
+      if (urlMatch == null) continue;
+      var thumbUrl = urlMatch.group(1)!.trim();
+      if (thumbUrl.length >= 2 &&
+          ((thumbUrl.startsWith('"') && thumbUrl.endsWith('"')) || (thumbUrl.startsWith("'") && thumbUrl.endsWith("'")))) {
+        thumbUrl = thumbUrl.substring(1, thumbUrl.length - 1);
+      }
+      thumbUrl = _makeAbsoluteThumbUrl(thumbUrl, siteOrigin);
+      final offsetMatch = RegExp(r'\)\s*-(\d+)px').firstMatch(st);
+      final off = offsetMatch != null ? double.tryParse(offsetMatch.group(1)!) : null;
+      final wMatch = RegExp(r'width:\s*(\d+)px').firstMatch(st);
+      final hMatch = RegExp(r'height:\s*(\d+)px').firstMatch(st);
+      final tw = double.tryParse(wMatch?.group(1) ?? '0') ?? 0;
+      var th = double.tryParse(hMatch?.group(1) ?? '0') ?? 0;
+      if (th > 0) th -= 1;
+      if (off != null) {
+        return {
+          'thumbUrl': thumbUrl,
+          'isLarge': false,
+          'offSet': off,
+          'thumbWidth': tw,
+          'thumbHeight': th,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  static String _makeAbsoluteThumbUrl(String url, String siteOrigin) {
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('//')) return 'https:$url';
+    if (url.startsWith('/')) return '$siteOrigin$url';
+    return url;
+  }
+
+  /// Appends aligned viewer page URLs, legacy [thumbnailImageUrls], and full [galleryThumbnails] maps.
+  void appendGalleryThumbPageData(
+    String html,
+    String pageUrl,
+    List<String> pageUrls,
+    List<String> thumbnailImageUrls,
+    List<Map<String, dynamic>> galleryThumbnails,
+  ) {
+    final doc = html_parser.parse(html);
+    final siteOrigin = Uri.parse(pageUrl).origin;
+
+    void appendForAnchor(Element a, {required bool requireS}) {
+      final href = a.attributes['href'] ?? '';
+      if (href.isEmpty) return;
+      if (requireS && !href.contains('/s/')) return;
+      pageUrls.add(href);
+      final parsed = parseGdtAnchorThumbnail(a, siteOrigin);
+      if (parsed != null) {
+        galleryThumbnails.add(parsed);
+        thumbnailImageUrls.add(parsed['thumbUrl'] as String? ?? '');
+      } else {
+        final fallback = extractThumbnailImageUrlFromGdtAnchor(a, siteOrigin);
+        thumbnailImageUrls.add(fallback);
+        galleryThumbnails.add({
+          'thumbUrl': fallback,
+          'isLarge': true,
+        });
+      }
+    }
+
+    final pageLinks = doc.querySelectorAll('.gdtl a, .gdtm a');
+    if (pageLinks.isNotEmpty) {
+      for (final a in pageLinks) {
+        appendForAnchor(a, requireS: false);
+      }
+    } else {
+      for (final a in doc.querySelectorAll('#gdt a')) {
+        appendForAnchor(a, requireS: true);
+      }
+    }
+  }
 
   Future<void> init(ServerCookieManager cm, {int connectTimeout = 6000, int receiveTimeout = 6000}) async {
     cookieManager = cm;
@@ -450,27 +603,13 @@ class EHClient {
       });
     }
 
-    result.thumbnailUrls = doc.querySelectorAll('#gdt a')
-        .map((a) => a.attributes['href'] ?? '')
-        .where((href) => href.isNotEmpty)
-        .toList();
-
-    final pageLinks = doc.querySelectorAll('.gdtl a, .gdtm a');
-    for (final a in pageLinks) {
-      final href = a.attributes['href'] ?? '';
-      if (href.isNotEmpty) {
-        result.imagePageUrls.add(href);
-      }
-    }
-
-    if (result.imagePageUrls.isEmpty) {
-      for (final a in doc.querySelectorAll('#gdt a')) {
-        final href = a.attributes['href'] ?? '';
-        if (href.contains('/s/')) {
-          result.imagePageUrls.add(href);
-        }
-      }
-    }
+    appendGalleryThumbPageData(
+      html,
+      galleryUrl,
+      result.imagePageUrls,
+      result.thumbnailImageUrls,
+      result.galleryThumbnails,
+    );
 
     return result;
   }
@@ -561,8 +700,9 @@ class GalleryDetailResult {
   double rating = 0;
   int pageCount = 0;
   String? archiverUrl;
-  List<String> thumbnailUrls = [];
   List<String> imagePageUrls = [];
+  List<String> thumbnailImageUrls = [];
+  List<Map<String, dynamic>> galleryThumbnails = [];
   Map<String, List<String>> tags = {};
   int? apiuid;
   String? apikey;
