@@ -18,6 +18,7 @@ on:
       - 'Dockerfile'
       - 'docker-entrypoint.sh'
       - 'docker-compose.yml'
+      - 'docker/fork_revision'
       - '.github/workflows/docker-publish.yml'
   workflow_dispatch:
 
@@ -36,11 +37,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Get version from pubspec
+      - name: Image tag (x.y.z-hhh, hhh = 3-digit fork rev hex)
         id: version
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d+ -f1)
+          FULL=$(grep '^version:' pubspec.yaml | head -1 | awk '{print $2}')
+          VERSION=$(echo "$FULL" | cut -d+ -f1)
+          if [ -f docker/fork_revision ]; then
+            RAW=$(head -n1 docker/fork_revision | tr -d '[:space:]')
+          else
+            RAW=$(echo "$FULL" | cut -s -d+ -f2)
+            [ -z "$RAW" ] && RAW=0
+          fi
+          case "$RAW" in ''|*[!0-9]*) echo "::error::docker/fork_revision (or pubspec +build) must be a decimal integer 0–4095, got: $RAW"; exit 1 ;; esac
+          FORK_DEC=$((10#$RAW))
+          if [ "$FORK_DEC" -gt 4095 ] || [ "$FORK_DEC" -lt 0 ]; then
+            echo "::error::Fork revision must be 0–4095 (maps to 3 hex digits), got: $FORK_DEC"
+            exit 1
+          fi
+          FORK_HEX=$(printf '%03x' "$FORK_DEC")
+          IMAGE_TAG="${VERSION}-${FORK_HEX}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "fork_hex=$FORK_HEX" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Will push ${IMAGE_TAG} to Docker Hub"
 
       - name: Docker meta
         id: meta
@@ -48,11 +67,7 @@ jobs:
         with:
           images: ${{ env.DOCKERHUB_REPO }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=ref,event=branch
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ steps.version.outputs.version }},enable={{is_default_branch}}
+            type=raw,value=${{ steps.version.outputs.image_tag }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

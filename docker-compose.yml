@@ -2,8 +2,8 @@ services:
   jhentai:
     build: .
     # To pull from Docker Hub instead of building locally, comment out 'build' above
-    # and uncomment the 'image' line below:
-    # image: hemumoe/jhentai:latest
+    # and uncomment 'image' (tag format x.y.z-hhh, e.g. 8.0.12-135 — see docker/fork_revision):
+    # image: hemumoe/jhentai:8.0.12-135
     container_name: jhentai
     ports:
       - "8080:8080"

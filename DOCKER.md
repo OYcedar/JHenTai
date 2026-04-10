@@ -22,8 +22,17 @@ English | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_c
 
 ### Pull from Docker Hub
 
+Images are tagged **`x.y.z-hhh`** only:
+
+- **`x.y.z`** — app semver from `pubspec.yaml` (`version:` before `+`).
+- **`hhh`** — **three lowercase hex digits** (000–fff) for this Docker fork’s revision, decimal **0–4095** (see `docker/fork_revision`).
+
+Example: `8.0.12+309` with fork revision `309` → **`8.0.12-135`** (`309` = `0x135`).
+
+There is **no `latest`** tag; pin an explicit tag in compose or Unraid.
+
 ```bash
-docker pull hemumoe/jhentai:latest
+docker pull hemumoe/jhentai:8.0.12-135
 ```
 
 **docker-compose.yml** (recommended):
@@ -31,7 +40,7 @@ docker pull hemumoe/jhentai:latest
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:latest
+    image: hemumoe/jhentai:8.0.12-135
     container_name: jhentai
     ports:
       - "8080:8080"
@@ -219,10 +228,20 @@ To create a Docker Hub token: Docker Hub → Account Settings → Security → N
 
 | Tag | When |
 |---|---|
-| `latest` | Every push to `master` |
-| `x.y.z` | On version tag, e.g. `v8.0.12` |
-| `x.y` | On version tag (minor alias) |
-| `master` | Every push to `master` branch |
+| `x.y.z-hhh` | Every workflow run; `hhh` = hex of fork revision (file `docker/fork_revision`, or else `pubspec` `+` build number) |
+
+**Fork revision:** Edit **`docker/fork_revision`** (one line, decimal **0–4095**) when you release this fork’s Docker image. If the file is missing, the number after **`+`** in `pubspec.yaml` `version:` is used instead.
+
+**Removing old Hub tags** (`latest`, bare `8.0.12`, `8.0`, `*-web`, `docker-web-*`, etc.):
+
+```bash
+export DOCKERHUB_USERNAME=hemumoe
+export DOCKERHUB_TOKEN=your_hub_access_token
+chmod +x scripts/dockerhub-delete-tags.sh
+./scripts/dockerhub-delete-tags.sh latest 8.0.12 8.0 8.0.12-web 8.0-web docker-web-48f728fb
+```
+
+Adjust the tag list to match what still exists on [Docker Hub](https://hub.docker.com/r/hemumoe/jhentai/tags). You can also delete tags in the Hub UI.
 
 ---
 
