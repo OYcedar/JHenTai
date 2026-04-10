@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
+import 'package:jhentai/src/pages_web/web_settings_page.dart';
 import 'package:web/web.dart' as web;
 
 class WebHomeController extends GetxController {
@@ -26,6 +28,10 @@ class WebHomeController extends GetxController {
 
   // List mode: grid, list, listCompact
   final listMode = 'grid'.obs;
+
+  // Scroll-to-top FAB
+  final scrollController = ScrollController();
+  final showFab = false.obs;
 
   // Quick search
   final quickSearches = <Map<String, dynamic>>[].obs;
@@ -52,12 +58,19 @@ class WebHomeController extends GetxController {
     _loadHomePage();
     loadSearchHistory();
     loadQuickSearches();
+    scrollController.addListener(_onScroll);
   }
 
   @override
   void onClose() {
+    scrollController.removeListener(_onScroll);
+    scrollController.dispose();
     searchController.dispose();
     super.onClose();
+  }
+
+  void _onScroll() {
+    showFab.value = scrollController.hasClients && scrollController.offset > 300;
   }
 
   String _currentSection = 'home';
@@ -247,61 +260,84 @@ class WebHomePage extends GetView<WebHomeController> {
   }
 
   static Widget buildHomeContent(BuildContext context, WebHomeController controller, {bool isLeftPane = false}) {
-    return Column(
+    return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              Expanded(child: _SearchField(controller: controller)),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.tune),
-                tooltip: 'home.advancedSearch'.tr,
-                onPressed: () => _showAdvancedSearchStatic(context, controller),
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(child: _SearchField(controller: controller)),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.tune),
+                    tooltip: 'home.advancedSearch'.tr,
+                    onPressed: () => _showAdvancedSearchStatic(context, controller),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () => controller.refresh(),
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: () => controller.refresh(),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Obx(() {
-            if (controller.isLoading.value) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (controller.errorMessage.isNotEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    const SizedBox(height: 12),
-                    Text(controller.errorMessage.value,
-                        style: Theme.of(context).textTheme.bodyLarge),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: () => controller.refresh(),
-                      label: Text('common.retry'.tr),
+            ),
+            Expanded(
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (controller.errorMessage.isNotEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 12),
+                        Text(controller.errorMessage.value,
+                            style: Theme.of(context).textTheme.bodyLarge),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          icon: const Icon(Icons.refresh),
+                          onPressed: () => controller.refresh(),
+                          label: Text('common.retry'.tr),
+                        ),
+                      ],
                     ),
+                  );
+                }
+                if (controller.galleries.isEmpty) {
+                  return Center(child: Text('home.noGalleries'.tr));
+                }
+                return Column(
+                  children: [
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: () => controller.refresh(),
+                        child: _buildGalleryGridStatic(context, controller, isLeftPane: isLeftPane),
+                      ),
+                    ),
+                    _buildPaginationBarStatic(context, controller),
                   ],
-                ),
-              );
-            }
-            if (controller.galleries.isEmpty) {
-              return Center(child: Text('home.noGalleries'.tr));
-            }
-            return Column(
-              children: [
-                Expanded(child: _buildGalleryGridStatic(context, controller, isLeftPane: isLeftPane)),
-                _buildPaginationBarStatic(context, controller),
-              ],
-            );
-          }),
+                );
+              }),
+            ),
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: Obx(() => controller.showFab.value
+              ? FloatingActionButton.small(
+                  onPressed: () => controller.scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeOut,
+                  ),
+                  child: const Icon(Icons.arrow_upward),
+                )
+              : const SizedBox.shrink()),
         ),
       ],
     );
@@ -352,6 +388,8 @@ class WebHomePage extends GetView<WebHomeController> {
         final mode = controller.listMode.value;
         if (mode == 'list' || mode == 'listCompact' || isLeftPane) {
           return ListView.builder(
+            controller: controller.scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(12),
             itemCount: controller.galleries.length,
             itemBuilder: (context, index) {
@@ -364,6 +402,8 @@ class WebHomePage extends GetView<WebHomeController> {
             : constraints.maxWidth > 800 ? 3
             : constraints.maxWidth > 500 ? 2 : 1;
         return GridView.builder(
+          controller: controller.scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(12),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
@@ -389,45 +429,68 @@ class _SinglePaneHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: _HomeDrawer(controller: controller),
-      appBar: AppBar(
-        title: Text('home.title'.tr),
-        actions: [
-          Obx(() => IconButton(
-            icon: Icon(controller.listModeIcon),
-            onPressed: controller.cycleListMode,
-            tooltip: 'listMode.toggle'.tr,
-          )),
-          IconButton(
-            icon: const Icon(Icons.bookmark),
-            onPressed: () => _showQuickSearchDialog(context),
-            tooltip: 'quickSearch.title'.tr,
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Get.toNamed('/web/history'),
-            tooltip: 'home.history'.tr,
-          ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: () => Get.toNamed('/web/downloads'),
-            tooltip: 'home.downloads'.tr,
-          ),
-          IconButton(
-            icon: const Icon(Icons.folder),
-            onPressed: () => Get.toNamed('/web/local'),
-            tooltip: 'home.localGalleries'.tr,
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Get.toNamed('/web/settings'),
-            tooltip: 'home.settings'.tr,
-          ),
-        ],
-      ),
-      body: WebHomePage.buildHomeContent(context, controller),
-    );
+    final layoutCtrl = Get.find<WebLayoutController>();
+    return Obx(() {
+      final idx = layoutCtrl.leftPaneIndex.value;
+      return Scaffold(
+        drawer: idx == 0 ? _HomeDrawer(controller: controller) : null,
+        appBar: idx == 0
+            ? AppBar(
+                title: Text('home.title'.tr),
+                actions: [
+                  Obx(() => IconButton(
+                    icon: Icon(controller.listModeIcon),
+                    onPressed: controller.cycleListMode,
+                    tooltip: 'listMode.toggle'.tr,
+                  )),
+                  IconButton(
+                    icon: const Icon(Icons.bookmark),
+                    onPressed: () => _showQuickSearchDialog(context),
+                    tooltip: 'quickSearch.title'.tr,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.history),
+                    onPressed: () => Get.toNamed('/web/history'),
+                    tooltip: 'home.history'.tr,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.folder),
+                    onPressed: () => Get.toNamed('/web/local'),
+                    tooltip: 'home.localGalleries'.tr,
+                  ),
+                ],
+              )
+            : null,
+        body: switch (idx) {
+          1 => _buildDownloadsInline(),
+          2 => _buildSettingsInline(),
+          _ => WebHomePage.buildHomeContent(context, controller),
+        },
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: idx,
+          onDestinationSelected: (i) => layoutCtrl.leftPaneIndex.value = i,
+          destinations: [
+            NavigationDestination(icon: const Icon(Icons.home), label: 'home.home'.tr),
+            NavigationDestination(icon: const Icon(Icons.download), label: 'home.downloads'.tr),
+            NavigationDestination(icon: const Icon(Icons.settings), label: 'home.settings'.tr),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildDownloadsInline() {
+    if (!Get.isRegistered<WebDownloadsController>()) {
+      Get.put(WebDownloadsController());
+    }
+    return const WebDownloadsPage();
+  }
+
+  Widget _buildSettingsInline() {
+    if (!Get.isRegistered<WebSettingsController>()) {
+      Get.put(WebSettingsController());
+    }
+    return const WebSettingsPage();
   }
 
   void _showQuickSearchDialog(BuildContext context) {
@@ -553,23 +616,34 @@ class _TwoPaneHome extends StatelessWidget {
             onPressed: () => Get.toNamed('/web/history'),
             tooltip: 'home.history'.tr,
           ),
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: () => Get.toNamed('/web/downloads'),
-            tooltip: 'home.downloads'.tr,
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Get.toNamed('/web/settings'),
-            tooltip: 'home.settings'.tr,
-          ),
         ],
       ),
       body: Row(
         children: [
           SizedBox(
             width: leftWidth,
-            child: WebHomePage.buildHomeContent(context, controller, isLeftPane: true),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Obx(() => switch (layoutCtrl.leftPaneIndex.value) {
+                    1 => _buildDownloadsInline(),
+                    2 => _buildSettingsInline(),
+                    _ => WebHomePage.buildHomeContent(context, controller, isLeftPane: true),
+                  }),
+                ),
+                Obx(() => NavigationBar(
+                  selectedIndex: layoutCtrl.leftPaneIndex.value,
+                  onDestinationSelected: (i) => layoutCtrl.leftPaneIndex.value = i,
+                  labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+                  height: 56,
+                  destinations: [
+                    NavigationDestination(icon: const Icon(Icons.home), label: 'home.home'.tr),
+                    NavigationDestination(icon: const Icon(Icons.download), label: 'home.downloads'.tr),
+                    NavigationDestination(icon: const Icon(Icons.settings), label: 'home.settings'.tr),
+                  ],
+                )),
+              ],
+            ),
           ),
           const VerticalDivider(width: 1),
           Expanded(
@@ -595,6 +669,20 @@ class _TwoPaneHome extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildDownloadsInline() {
+    if (!Get.isRegistered<WebDownloadsController>()) {
+      Get.put(WebDownloadsController());
+    }
+    return const WebDownloadsPage();
+  }
+
+  Widget _buildSettingsInline() {
+    if (!Get.isRegistered<WebSettingsController>()) {
+      Get.put(WebSettingsController());
+    }
+    return const WebSettingsPage();
   }
 }
 

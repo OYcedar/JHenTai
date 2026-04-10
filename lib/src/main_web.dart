@@ -38,6 +38,7 @@ void main() async {
 class WebLayoutController extends GetxController {
   final selectedGid = Rxn<int>();
   final selectedToken = Rxn<String>();
+  final leftPaneIndex = 0.obs;
 
   void selectGallery(int gid, String token) {
     selectedGid.value = gid;

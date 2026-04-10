@@ -309,6 +309,38 @@ class WebEnUS {
       'detail.deleteDownload': 'Delete Download',
       'detail.deleteDownloadConfirm': 'Delete this download and its files?',
       'detail.archiveCompleted': 'Archive Ready',
+
+      // detail enhancements
+      'detail.share': 'Share',
+      'detail.jumpToPage': 'Jump to Page',
+      'detail.similarSearch': 'Similar Search',
+      'detail.blockGallery': 'Block Gallery',
+      'detail.allComments': 'All Comments',
+      'detail.thumbnails': 'Thumbnails (@count)',
+      'detail.viewAllThumbnails': 'View All Thumbnails',
+      'detail.galleryBlocked': 'Gallery has been blocked',
+      'detail.jumpPageHint': 'Enter page number (1-@max)',
+
+      // reader enhancements
+      'reader.saveImage': 'Save Image',
+      'reader.openInNewTab': 'Open in New Tab',
+      'reader.reloadImage': 'Reload Image',
+      'reader.interval': 'Interval',
+      'reader.preload': 'Preload',
+      'reader.imageSpacing': 'Image Spacing',
+      'reader.autoInterval': 'Auto-mode Interval',
+      'reader.startAutoMode': 'Start',
+
+      // settings reader
+      'settings.readerSettings': 'Reader Settings',
+      'settings.defaultDirection': 'Default Direction',
+      'settings.imageSpacing': 'Image Spacing',
+      'settings.preloadPages': 'Preload Pages',
+      'settings.autoInterval': 'Auto-mode Interval',
+      'settings.fitWidth': 'Fit Width',
+
+      // home enhancements
+      'home.scrollToTop': 'Scroll to Top',
     };
   }
 }
