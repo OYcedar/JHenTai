@@ -27,12 +27,12 @@ Images are tagged **`x.y.z-hhh`** only:
 - **`x.y.z`** — app semver from `pubspec.yaml` (`version:` before `+`).
 - **`hhh`** — **three lowercase hex digits** (000–fff) for this Docker fork’s revision, decimal **0–4095** (see `docker/fork_revision`).
 
-Example: `8.0.12+309` with fork revision `309` → **`8.0.12-135`** (`309` = `0x135`).
+Example: `8.0.12+309` with fork revision `310` → **`8.0.12-136`** (`310` = `0x136`).
 
 There is **no `latest`** tag; pin an explicit tag in compose or Unraid.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-135
+docker pull hemumoe/jhentai:8.0.12-136
 ```
 
 **docker-compose.yml** (recommended):
@@ -40,7 +40,7 @@ docker pull hemumoe/jhentai:8.0.12-135
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-135
+    image: hemumoe/jhentai:8.0.12-136
     container_name: jhentai
     ports:
       - "8080:8080"

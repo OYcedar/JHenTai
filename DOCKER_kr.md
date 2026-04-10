@@ -27,12 +27,12 @@
 - **`x.y.z`**: `pubspec.yaml`의 `version:`에서 `+` 앞 semver.
 - **`hhh`**: fork 전용 십진수 **0–4095**를 **소문자 16진수 3자리**로 표시(`docker/fork_revision` 참고).
 
-예: fork 버전 `309` → `309` = `0x135` → **`8.0.12-135`**.
+예: fork 버전 `310` → `310` = `0x136` → **`8.0.12-136`**.
 
 **`latest` 태그는 없습니다.** compose/Unraid에서 위와 같이 명시하세요.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-135
+docker pull hemumoe/jhentai:8.0.12-136
 ```
 
 **docker-compose.yml**（권장）:
@@ -40,7 +40,7 @@ docker pull hemumoe/jhentai:8.0.12-135
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-135
+    image: hemumoe/jhentai:8.0.12-136
     container_name: jhentai
     ports:
       - "8080:8080"
