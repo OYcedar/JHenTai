@@ -25,6 +25,11 @@ class WebRuRU {
       'setup.tokenPasteHint': 'Вставьте полный 64-символьный токен из логов',
       'setup.tokenCharCount': '@current / @total символов',
       'setup.tokenWrongLength': 'Токен должен быть ровно из 64 шестнадцатеричных символов (полная строка из docker logs).',
+      'setup.tokenHelpTitle': 'Как найти токен в логах',
+      'setup.tokenHelpP1': 'На хосте с Docker откройте терминал и выполните:',
+      'setup.tokenHelpP2':
+          'Найдите строку, начинающуюся с [JHenTai] API token for web UI. Скопируйте 64 шестнадцатеричных символа после двоеточия (весь токен в одной строке). Если имя контейнера не jhentai, замените его в командах ниже.',
+      'setup.tokenHelpAlt': 'Если такой строки нет, прочитайте токен из базы (имя контейнера по умолчанию jhentai, каталог данных /data):',
 
       // home
       'home.title': 'JHenTai',

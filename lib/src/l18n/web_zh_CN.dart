@@ -25,6 +25,11 @@ class WebZhCN {
       'setup.tokenPasteHint': '请粘贴日志中的完整 64 位 Token',
       'setup.tokenCharCount': '已输入 @current / @total 位',
       'setup.tokenWrongLength': 'Token 必须为 64 位十六进制字符（请从 docker logs 完整复制一行）。',
+      'setup.tokenHelpTitle': '如何从日志中查找 Token',
+      'setup.tokenHelpP1': '在运行 Docker 的主机上打开终端，执行：',
+      'setup.tokenHelpP2':
+          '找到以 [JHenTai] API token for web UI 开头的行，复制冒号后的 64 位十六进制字符（整段 Token，不要截断）。若容器名不是 jhentai，请将下方命令中的名称改为你的容器名。',
+      'setup.tokenHelpAlt': '若没有该行，可从服务端数据库读取（默认容器名 jhentai，数据目录 /data）：',
 
       // home
       'home.title': 'JHenTai',

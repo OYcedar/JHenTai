@@ -25,6 +25,11 @@ class WebZhTW {
       'setup.tokenPasteHint': '請貼上記錄中的完整 64 位 Token',
       'setup.tokenCharCount': '已輸入 @current / @total 位',
       'setup.tokenWrongLength': 'Token 必須為 64 位十六進位字元（請從 docker logs 完整複製一行）。',
+      'setup.tokenHelpTitle': '如何從記錄中查找 Token',
+      'setup.tokenHelpP1': '在執行 Docker 的主機上開啟終端機，執行：',
+      'setup.tokenHelpP2':
+          '找到以 [JHenTai] API token for web UI 開頭的那一行，複製冒號後的 64 位十六進位字元（整段 Token，不要截斷）。若容器名稱不是 jhentai，請將下方指令中的名稱改為你的容器名稱。',
+      'setup.tokenHelpAlt': '若沒有該行，可從伺服器資料庫讀取（預設容器名 jhentai，資料目錄 /data）：',
 
       // home
       'home.title': 'JHenTai',

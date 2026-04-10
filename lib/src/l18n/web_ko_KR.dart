@@ -25,6 +25,11 @@ class WebKoKR {
       'setup.tokenPasteHint': '로그의 전체 64자 토큰을 붙여넣으세요',
       'setup.tokenCharCount': '@current / @total자',
       'setup.tokenWrongLength': '토큰은 정확히 64자리 16진수여야 합니다(docker logs 한 줄 전체).',
+      'setup.tokenHelpTitle': '로그에서 토큰 찾는 방법',
+      'setup.tokenHelpP1': 'Docker가 실행 중인 호스트에서 터미널을 열고 다음을 실행하세요.',
+      'setup.tokenHelpP2':
+          '[JHenTai] API token for web UI 로 시작하는 줄을 찾아 콜론 뒤의 64자리 16진수를 복사하세요(한 줄 전체). 컨테이너 이름이 jhentai가 아니면 아래 명령의 이름을 바꾸세요.',
+      'setup.tokenHelpAlt': '해당 줄이 없으면 서버 DB에서 읽을 수 있습니다(기본 컨테이너 이름 jhentai, 데이터 디렉터리 /data):',
 
       // home
       'home.title': 'JHenTai',
