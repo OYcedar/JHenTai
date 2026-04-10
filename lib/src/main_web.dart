@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import 'package:jhentai/src/pages_web/web_reader_page.dart';
 import 'package:jhentai/src/pages_web/web_settings_page.dart';
 import 'package:jhentai/src/pages_web/web_thumbnails_page.dart';
 import 'package:web/web.dart' as web;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +30,7 @@ void main() async {
 
   Get.put(ThemeController());
   Get.put(WebLayoutController());
+  Get.put(WebDownloadService());
 
   runApp(const JHenTaiWebApp());
 }
@@ -44,6 +48,139 @@ class WebLayoutController extends GetxController {
     selectedGid.value = null;
     selectedToken.value = null;
   }
+}
+
+class WebDownloadService extends GetxController {
+  final galleryTasks = <int, Map<String, dynamic>>{}.obs;
+  final archiveTasks = <int, Map<String, dynamic>>{}.obs;
+  final isLoaded = false.obs;
+
+  WebSocketChannel? _wsChannel;
+  StreamSubscription? _wsSubscription;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+
+  @override
+  void onInit() {
+    super.onInit();
+    if (backendApiClient.hasToken) {
+      _loadTasks();
+      _connectWebSocket();
+    }
+  }
+
+  @override
+  void onClose() {
+    _reconnectTimer?.cancel();
+    _wsSubscription?.cancel();
+    _wsChannel?.sink.close();
+    super.onClose();
+  }
+
+  void activate() {
+    if (isLoaded.value) return;
+    _loadTasks();
+    _connectWebSocket();
+  }
+
+  Future<void> _loadTasks() async {
+    try {
+      final gTasks = await backendApiClient.listGalleryDownloads();
+      final gMap = <int, Map<String, dynamic>>{};
+      for (final t in gTasks) {
+        final task = t as Map<String, dynamic>;
+        final gid = task['gid'] as int;
+        gMap[gid] = task;
+      }
+      galleryTasks.value = gMap;
+
+      final aTasks = await backendApiClient.listArchiveDownloads();
+      final aMap = <int, Map<String, dynamic>>{};
+      for (final t in aTasks) {
+        final task = t as Map<String, dynamic>;
+        final gid = task['gid'] as int;
+        aMap[gid] = task;
+      }
+      archiveTasks.value = aMap;
+      isLoaded.value = true;
+    } catch (e) {
+      debugPrint('WebDownloadService load failed: $e');
+    }
+  }
+
+  void _connectWebSocket() {
+    if (isClosed) return;
+    _wsSubscription?.cancel();
+    _wsChannel?.sink.close();
+
+    try {
+      final wsUrl = backendApiClient.baseUrl.replaceFirst('http', 'ws');
+      final wsToken = backendApiClient.currentToken ?? '';
+      _wsChannel = WebSocketChannel.connect(
+        Uri.parse('$wsUrl/ws/events?token=$wsToken'),
+      );
+      _reconnectAttempts = 0;
+
+      _wsSubscription = _wsChannel!.stream.listen(
+        (data) => _handleWsMessage(data.toString()),
+        onError: (e) {
+          debugPrint('WDS WebSocket error: $e');
+          _scheduleReconnect();
+        },
+        onDone: () => _scheduleReconnect(),
+      );
+    } catch (e) {
+      debugPrint('WDS WebSocket connect failed: $e');
+      _scheduleReconnect();
+    }
+  }
+
+  void _scheduleReconnect() {
+    if (isClosed) return;
+    _reconnectAttempts++;
+    final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(1, 30));
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(delay, _connectWebSocket);
+  }
+
+  void _handleWsMessage(String message) {
+    try {
+      final event = jsonDecode(message) as Map<String, dynamic>;
+      final eventType = event['event'] as String?;
+      final data = event['data'] as Map<String, dynamic>?;
+      if (data == null) return;
+
+      if (eventType == 'gallery_download_progress') {
+        final gid = data['gid'] as int;
+        galleryTasks[gid] = data;
+      } else if (eventType == 'archive_download_progress') {
+        final gid = data['gid'] as int;
+        archiveTasks[gid] = data;
+      } else if (eventType == 'download_removed') {
+        _loadTasks();
+      }
+    } catch (e) {
+      debugPrint('WDS WS parse error: $e');
+    }
+  }
+
+  Map<String, dynamic>? getGalleryTask(int gid) => galleryTasks[gid];
+  Map<String, dynamic>? getArchiveTask(int gid) => archiveTasks[gid];
+
+  int? getGalleryStatus(int gid) => galleryTasks[gid]?['status'] as int?;
+  int? getArchiveStatus(int gid) => archiveTasks[gid]?['status'] as int?;
+
+  bool isGalleryDownloaded(int gid) => getGalleryStatus(gid) == 3;
+  bool isGalleryDownloading(int gid) => getGalleryStatus(gid) == 1;
+
+  Future<void> pauseGallery(int gid) => backendApiClient.pauseGalleryDownload(gid);
+  Future<void> resumeGallery(int gid) => backendApiClient.resumeGalleryDownload(gid);
+  Future<void> deleteGallery(int gid) => backendApiClient.deleteGalleryDownload(gid);
+  Future<void> pauseArchive(int gid) => backendApiClient.pauseArchiveDownload(gid);
+  Future<void> resumeArchive(int gid) => backendApiClient.resumeArchiveDownload(gid);
+  Future<void> deleteArchive(int gid) => backendApiClient.deleteArchiveDownload(gid);
+
+  Future<void> refresh() => _loadTasks();
 }
 
 class ThemeController extends GetxController {

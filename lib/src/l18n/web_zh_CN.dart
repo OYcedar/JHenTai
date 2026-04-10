@@ -301,6 +301,14 @@ class WebZhCN {
       'settings.cookieStatusNoIgneous': 'Cookie 已设置但缺少 igneous — EX 可能无法使用',
       'settings.cookieStatusNone': '未设置登录 Cookie',
       'settings.siteSwitched': '已切换到 @site',
+
+      // download progress in detail
+      'detail.completed': '已完成',
+      'detail.retryDownload': '重试',
+      'detail.readDownloaded': '阅读已下载',
+      'detail.deleteDownload': '删除下载',
+      'detail.deleteDownloadConfirm': '删除此下载及其文件？',
+      'detail.archiveCompleted': '归档就绪',
     };
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 
 class WebGalleryDetailController extends GetxController {
@@ -609,37 +610,229 @@ class WebGalleryDetailPage extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        FilledButton.icon(
-          icon: const Icon(Icons.menu_book),
-          label: Text('detail.readOnline'.tr),
-          style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
-          onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
+    final svc = Get.find<WebDownloadService>();
+    return Obx(() {
+      // Touch the maps to ensure reactivity
+      final _ = svc.galleryTasks.length + svc.archiveTasks.length;
+      final gTask = svc.getGalleryTask(controller.gid);
+      final aTask = svc.getArchiveTask(controller.gid);
+      final gStatus = gTask?['status'] as int?;
+      final aStatus = aTask?['status'] as int?;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.menu_book),
+                label: Text('detail.readOnline'.tr),
+                style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
+                onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
+              ),
+              _buildGalleryDownloadButton(context, gTask, gStatus),
+              if (gStatus == 3)
+                FilledButton.icon(
+                  icon: const Icon(Icons.menu_book),
+                  label: Text('detail.readDownloaded'.tr),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(160, 44),
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=downloaded'),
+                ),
+              _buildArchiveButton(context, aTask, aStatus),
+              if (gTask != null || aTask != null)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  label: Text('detail.deleteDownload'.tr, style: const TextStyle(color: Colors.red)),
+                  onPressed: () => _confirmDeleteDownload(context, gTask != null, aTask != null),
+                ),
+            ],
+          ),
+          if (gStatus == 1 || gStatus == 2 || gStatus == 4)
+            _buildProgressBar(context, gTask!),
+          if (aStatus != null && aStatus >= 1 && aStatus <= 5)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Text('downloads.aStatus$aStatus'.tr,
+                      style: TextStyle(fontSize: 13, color: Colors.blue.shade700)),
+                  const SizedBox(width: 8),
+                  const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                ],
+              ),
+            ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildGalleryDownloadButton(BuildContext context, Map<String, dynamic>? task, int? status) {
+    if (task == null || status == null || status == 0) {
+      return FilledButton.tonalIcon(
+        icon: const Icon(Icons.download),
+        label: Text('detail.downloadGallery'.tr),
+        style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
+        onPressed: controller.startGalleryDownload,
+      );
+    }
+    final svc = Get.find<WebDownloadService>();
+    switch (status) {
+      case 1: // Downloading
+        final completed = task['completedCount'] as int? ?? 0;
+        final total = task['pageCount'] as int? ?? 0;
+        return FilledButton.tonalIcon(
+          icon: const Icon(Icons.pause_circle_outline),
+          label: Text('${'downloads.pause'.tr}  $completed/$total'),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(160, 44),
+            backgroundColor: Colors.blue.shade100,
+          ),
+          onPressed: () => svc.pauseGallery(controller.gid),
+        );
+      case 2: // Paused
+        final completed = task['completedCount'] as int? ?? 0;
+        final total = task['pageCount'] as int? ?? 0;
+        return FilledButton.tonalIcon(
+          icon: const Icon(Icons.play_circle_outline),
+          label: Text('${'downloads.resume'.tr}  $completed/$total'),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(160, 44),
+            backgroundColor: Colors.orange.shade100,
+          ),
+          onPressed: () => svc.resumeGallery(controller.gid),
+        );
+      case 3: // Completed
+        return FilledButton.tonalIcon(
+          icon: const Icon(Icons.check_circle, color: Colors.green),
+          label: Text('detail.completed'.tr),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(160, 44),
+            backgroundColor: Colors.green.shade100,
+          ),
+          onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=downloaded'),
+        );
+      case 4: // Failed
+        return FilledButton.tonalIcon(
+          icon: const Icon(Icons.refresh, color: Colors.red),
+          label: Text('detail.retryDownload'.tr),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(160, 44),
+            backgroundColor: Colors.red.shade100,
+          ),
+          onPressed: () => svc.resumeGallery(controller.gid),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildArchiveButton(BuildContext context, Map<String, dynamic>? task, int? status) {
+    if (task == null || status == null) {
+      return Obx(() => controller.archiverUrl.isNotEmpty
+          ? Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.archive),
+                  label: Text('detail.archiveResample'.tr),
+                  onPressed: () => controller.startArchiveDownload(isOriginal: false),
+                ),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.archive_outlined),
+                  label: Text('detail.archiveOriginal'.tr),
+                  onPressed: () => controller.startArchiveDownload(isOriginal: true),
+                ),
+              ],
+            )
+          : const SizedBox.shrink());
+    }
+    final svc = Get.find<WebDownloadService>();
+    if (status == 6) {
+      return FilledButton.tonalIcon(
+        icon: const Icon(Icons.check_circle, color: Colors.green),
+        label: Text('detail.archiveCompleted'.tr),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(160, 44),
+          backgroundColor: Colors.green.shade100,
         ),
-        FilledButton.tonalIcon(
-          icon: const Icon(Icons.download),
-          label: Text('detail.downloadGallery'.tr),
-          style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
-          onPressed: controller.startGalleryDownload,
-        ),
-        Obx(() => controller.archiverUrl.isNotEmpty
-            ? OutlinedButton.icon(
-                icon: const Icon(Icons.archive),
-                label: Text('detail.archiveResample'.tr),
-                onPressed: () => controller.startArchiveDownload(isOriginal: false),
-              )
-            : const SizedBox.shrink()),
-        Obx(() => controller.archiverUrl.isNotEmpty
-            ? OutlinedButton.icon(
-                icon: const Icon(Icons.archive_outlined),
-                label: Text('detail.archiveOriginal'.tr),
-                onPressed: () => controller.startArchiveDownload(isOriginal: true),
-              )
-            : const SizedBox.shrink()),
-      ],
+        onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=archive'),
+      );
+    }
+    if (status == 7) {
+      return OutlinedButton.icon(
+        icon: const Icon(Icons.play_circle_outline, color: Colors.orange),
+        label: Text('downloads.resume'.tr),
+        onPressed: () => svc.resumeArchive(controller.gid),
+      );
+    }
+    if (status == 8) {
+      return OutlinedButton.icon(
+        icon: const Icon(Icons.refresh, color: Colors.red),
+        label: Text('detail.retryDownload'.tr),
+        onPressed: () => svc.resumeArchive(controller.gid),
+      );
+    }
+    return OutlinedButton.icon(
+      icon: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+      label: Text('downloads.aStatus$status'.tr),
+      onPressed: null,
+    );
+  }
+
+  Widget _buildProgressBar(BuildContext context, Map<String, dynamic> task) {
+    final completed = task['completedCount'] as int? ?? 0;
+    final total = task['pageCount'] as int? ?? 0;
+    final progress = total > 0 ? completed / total : 0.0;
+    final error = task['error'] as String?;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: LinearProgressIndicator(value: progress)),
+              const SizedBox(width: 12),
+              Text('$completed / $total',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+            ],
+          ),
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(error, style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteDownload(BuildContext context, bool hasGallery, bool hasArchive) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('detail.deleteDownload'.tr),
+        content: Text('detail.deleteDownloadConfirm'.tr),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              final svc = Get.find<WebDownloadService>();
+              if (hasGallery) svc.deleteGallery(controller.gid);
+              if (hasArchive) svc.deleteArchive(controller.gid);
+            },
+            child: Text('common.delete'.tr, style: const TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 

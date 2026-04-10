@@ -297,6 +297,14 @@ class WebRuRU {
       'settings.cookieStatusNoIgneous': 'Cookies установлены, но нет igneous — EX может не работать',
       'settings.cookieStatusNone': 'Cookies для входа не установлены',
       'settings.siteSwitched': 'Переключено на @site',
+
+      // download progress in detail
+      'detail.completed': 'Завершено',
+      'detail.retryDownload': 'Повторить',
+      'detail.readDownloaded': 'Читать загруженное',
+      'detail.deleteDownload': 'Удалить загрузку',
+      'detail.deleteDownloadConfirm': 'Удалить эту загрузку и файлы?',
+      'detail.archiveCompleted': 'Архив готов',
     };
   }
 }

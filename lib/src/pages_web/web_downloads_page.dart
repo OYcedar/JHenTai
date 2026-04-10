@@ -1,28 +1,18 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 class WebDownloadsController extends GetxController with GetSingleTickerProviderStateMixin {
   late TabController tabController;
 
-  final galleryTasks = <Map<String, dynamic>>[].obs;
-  final archiveTasks = <Map<String, dynamic>>[].obs;
-  final isLoading = true.obs;
-  final errorMessage = ''.obs;
-
   final searchQuery = ''.obs;
   final selectedGroup = Rxn<String>();
 
-  WebSocketChannel? _wsChannel;
-  StreamSubscription? _wsSubscription;
-  Timer? _reconnectTimer;
+  WebDownloadService get _svc => Get.find<WebDownloadService>();
 
   List<Map<String, dynamic>> get filteredGalleryTasks {
-    var list = galleryTasks.toList();
+    var list = _svc.galleryTasks.values.toList();
     final group = selectedGroup.value;
     if (group != null) {
       list = list.where((t) => (t['group_name'] ?? t['groupName'] ?? 'default') == group).toList();
@@ -40,7 +30,7 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
   }
 
   List<Map<String, dynamic>> get filteredArchiveTasks {
-    var list = archiveTasks.toList();
+    var list = _svc.archiveTasks.values.toList();
     final group = selectedGroup.value;
     if (group != null) {
       list = list.where((t) => (t['group_name'] ?? t['groupName'] ?? 'default') == group).toList();
@@ -59,10 +49,10 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
 
   Set<String> get allGroups {
     final groups = <String>{};
-    for (final t in galleryTasks) {
+    for (final t in _svc.galleryTasks.values) {
       groups.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
     }
-    for (final t in archiveTasks) {
+    for (final t in _svc.archiveTasks.values) {
       groups.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
     }
     return groups;
@@ -72,119 +62,22 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
   void onInit() {
     super.onInit();
     tabController = TabController(length: 2, vsync: this);
-    _loadTasks();
-    _connectWebSocket();
   }
 
   @override
   void onClose() {
-    _reconnectTimer?.cancel();
     tabController.dispose();
-    _wsSubscription?.cancel();
-    _wsChannel?.sink.close();
     super.onClose();
   }
 
-  Future<void> _loadTasks() async {
-    isLoading.value = true;
-    errorMessage.value = '';
-    try {
-      final gTasks = await backendApiClient.listGalleryDownloads();
-      galleryTasks.value = gTasks.cast<Map<String, dynamic>>();
+  Future<void> pauseGallery(int gid) => _svc.pauseGallery(gid);
+  Future<void> resumeGallery(int gid) => _svc.resumeGallery(gid);
+  Future<void> deleteGallery(int gid) => _svc.deleteGallery(gid);
+  Future<void> pauseArchive(int gid) => _svc.pauseArchive(gid);
+  Future<void> resumeArchive(int gid) => _svc.resumeArchive(gid);
+  Future<void> deleteArchive(int gid) => _svc.deleteArchive(gid);
 
-      final aTasks = await backendApiClient.listArchiveDownloads();
-      archiveTasks.value = aTasks.cast<Map<String, dynamic>>();
-    } catch (e) {
-      errorMessage.value = 'downloads.loadFailed'.trParams({'error': '$e'});
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  int _reconnectAttempts = 0;
-
-  void _connectWebSocket() {
-    if (isClosed) return;
-    _wsSubscription?.cancel();
-    _wsChannel?.sink.close();
-
-    try {
-      final wsUrl = backendApiClient.baseUrl.replaceFirst('http', 'ws');
-      final wsToken = backendApiClient.currentToken ?? '';
-      _wsChannel = WebSocketChannel.connect(
-        Uri.parse('$wsUrl/ws/events?token=$wsToken'),
-      );
-      _reconnectAttempts = 0;
-
-      _wsSubscription = _wsChannel!.stream.listen(
-        (data) => _handleWsMessage(data.toString()),
-        onError: (e) {
-          debugPrint('WebSocket error: $e');
-          _scheduleReconnect();
-        },
-        onDone: () => _scheduleReconnect(),
-      );
-    } catch (e) {
-      debugPrint('WebSocket connect failed: $e');
-      _scheduleReconnect();
-    }
-  }
-
-  void _scheduleReconnect() {
-    if (isClosed) return;
-    _reconnectAttempts++;
-    final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(1, 30));
-    _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(delay, _connectWebSocket);
-  }
-
-  void _handleWsMessage(String message) {
-    try {
-      final event = jsonDecode(message) as Map<String, dynamic>;
-      final eventType = event['event'] as String?;
-      final data = event['data'] as Map<String, dynamic>?;
-      if (data == null) return;
-
-      if (eventType == 'gallery_download_progress') {
-        _updateGalleryTask(data);
-      } else if (eventType == 'archive_download_progress') {
-        _updateArchiveTask(data);
-      } else if (eventType == 'download_removed') {
-        _loadTasks();
-      }
-    } catch (e) {
-      debugPrint('WS message parse error: $e');
-    }
-  }
-
-  void _updateGalleryTask(Map<String, dynamic> data) {
-    final gid = data['gid'];
-    final index = galleryTasks.indexWhere((t) => t['gid'] == gid);
-    if (index >= 0) {
-      galleryTasks[index] = data;
-    } else {
-      galleryTasks.insert(0, data);
-    }
-  }
-
-  void _updateArchiveTask(Map<String, dynamic> data) {
-    final gid = data['gid'];
-    final index = archiveTasks.indexWhere((t) => t['gid'] == gid);
-    if (index >= 0) {
-      archiveTasks[index] = data;
-    } else {
-      archiveTasks.insert(0, data);
-    }
-  }
-
-  Future<void> pauseGallery(int gid) => backendApiClient.pauseGalleryDownload(gid);
-  Future<void> resumeGallery(int gid) => backendApiClient.resumeGalleryDownload(gid);
-  Future<void> deleteGallery(int gid) => backendApiClient.deleteGalleryDownload(gid);
-  Future<void> pauseArchive(int gid) => backendApiClient.pauseArchiveDownload(gid);
-  Future<void> resumeArchive(int gid) => backendApiClient.resumeArchiveDownload(gid);
-  Future<void> deleteArchive(int gid) => backendApiClient.deleteArchiveDownload(gid);
-
-  Future<void> refresh() => _loadTasks();
+  Future<void> refresh() => _svc.refresh();
 }
 
 class WebDownloadsPage extends GetView<WebDownloadsController> {
@@ -207,26 +100,9 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         ),
       ),
       body: Obx(() {
-        if (controller.isLoading.value) {
+        final svc = Get.find<WebDownloadService>();
+        if (!svc.isLoaded.value) {
           return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.errorMessage.isNotEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                const SizedBox(height: 12),
-                Text(controller.errorMessage.value, textAlign: TextAlign.center),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: controller.refresh,
-                  label: Text('common.retry'.tr),
-                ),
-              ],
-            ),
-          );
         }
         return Column(
           children: [
@@ -253,7 +129,9 @@ class _DownloadFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final svc = Get.find<WebDownloadService>();
     return Obx(() {
+      final _ = svc.galleryTasks.length + svc.archiveTasks.length;
       final groups = controller.allGroups;
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -300,7 +178,10 @@ class _GalleryTaskList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final svc = Get.find<WebDownloadService>();
     return Obx(() {
+      // Touch the reactive map to ensure rebuild on changes
+      final _ = svc.galleryTasks.length;
       final tasks = controller.filteredGalleryTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noGallery'.tr));
@@ -477,7 +358,9 @@ class _ArchiveTaskList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final svc = Get.find<WebDownloadService>();
     return Obx(() {
+      final _ = svc.archiveTasks.length;
       final tasks = controller.filteredArchiveTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noArchive'.tr));
