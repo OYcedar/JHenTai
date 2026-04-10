@@ -16,6 +16,7 @@ import 'package:jhentai_server/src/service/archive_download_service.dart';
 import 'package:jhentai_server/src/service/event_bus.dart';
 import 'package:jhentai_server/src/service/gallery_download_service.dart';
 import 'package:jhentai_server/src/service/local_gallery_service.dart';
+import 'package:jhentai_server/src/service/tag_translation_service.dart';
 
 Future<void> main(List<String> args) async {
   final parser = ArgParser()
@@ -51,6 +52,13 @@ Future<void> main(List<String> args) async {
   final ehClient = EHClient();
   await ehClient.init(cookieManager);
 
+  // Restore persisted site preference
+  final savedSite = db.readConfig('site');
+  if (savedSite == 'EX' || savedSite == 'EH') {
+    ehClient.site = savedSite!;
+    log.info('Restored site preference: $savedSite');
+  }
+
   final eventBus = EventBus();
 
   final galleryDownloadService = GalleryDownloadService(ehClient, config, eventBus);
@@ -62,6 +70,13 @@ Future<void> main(List<String> args) async {
   final localGalleryService = LocalGalleryService(config);
   await localGalleryService.init();
 
+  final tagTranslationService = TagTranslationService();
+  // Trigger background download of tag translations on startup
+  tagTranslationService.refresh().catchError((e) {
+    log.warning('Background tag translation download failed: $e');
+    return <String, dynamic>{'success': false, 'message': '$e'};
+  });
+
   final appRouter = AppRouter(
     ehClient: ehClient,
     galleryDownloadService: galleryDownloadService,
@@ -70,6 +85,7 @@ Future<void> main(List<String> args) async {
     config: config,
     eventBus: eventBus,
     authToken: authMiddleware.token,
+    tagTranslationService: tagTranslationService,
   );
 
   final pipeline = const Pipeline()

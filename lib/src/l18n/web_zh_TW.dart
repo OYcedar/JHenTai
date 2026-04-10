@@ -1,0 +1,302 @@
+class WebZhTW {
+  static Map<String, String> keys() {
+    return {
+      // common
+      'common.cancel': '取消',
+      'common.ok': '確定',
+      'common.error': '錯誤',
+      'common.success': '成功',
+      'common.failed': '失敗',
+      'common.retry': '重試',
+      'common.delete': '刪除',
+      'common.reset': '重設',
+      'common.unknown': '未知',
+      'common.images': '@count 張圖片',
+      'common.pages': '@count 頁',
+
+      // setup
+      'setup.title': 'JHenTai 伺服器設定',
+      'setup.description': '請輸入伺服器記錄中顯示的 API Token 以連線。',
+      'setup.tokenLabel': 'API Token',
+      'setup.connect': '連線',
+      'setup.emptyToken': '請輸入 Token',
+      'setup.invalidToken': 'Token 無效，請查看伺服器記錄取得正確的 Token。',
+
+      // home
+      'home.title': 'JHenTai',
+      'home.search': '搜尋畫廊...',
+      'home.advancedSearch': '進階搜尋',
+      'home.downloads': '下載',
+      'home.localGalleries': '本機畫廊',
+      'home.settings': '設定',
+      'home.subtitle': 'E-Hentai 客戶端',
+      'home.home': '首頁',
+      'home.popular': '熱門',
+      'home.favorites': '收藏',
+      'home.watched': '關注',
+      'home.noGalleries': '未找到畫廊',
+      'home.previous': '上一頁',
+      'home.next': '下一頁',
+      'home.page': '第 @page 頁',
+      'home.loadFailed': '載入失敗: @error',
+      'home.categoryFilter': '分類篩選',
+      'home.minimumRating': '最低評分',
+      'home.ratingAny': '不限',
+      'home.searchIn': '搜尋範圍',
+      'home.galleryName': '畫廊名稱',
+      'home.tags': '標籤',
+      'home.description': '描述',
+      'home.showExpunged': '顯示已刪除',
+      'home.applySearch': '套用並搜尋',
+      'home.history': '瀏覽記錄',
+      'home.ranklist': '排行榜',
+
+      // category names
+      'category.doujinshi': '同人誌',
+      'category.manga': '漫畫',
+      'category.artistCg': '插畫',
+      'category.gameCg': '遊戲CG',
+      'category.western': '西方',
+      'category.nonH': '非H',
+      'category.imageSet': '圖集',
+      'category.cosplay': 'Cosplay',
+      'category.asianPorn': '亞洲',
+      'category.misc': '雜項',
+
+      // gallery detail
+      'detail.copyUrl': '複製畫廊連結',
+      'detail.copied': '已複製',
+      'detail.removeFromFav': '從收藏中移除',
+      'detail.addToFav': '新增至收藏',
+      'detail.addToFavTitle': '新增至收藏',
+      'detail.favRemoved': '已移除',
+      'detail.favRemovedMsg': '已從收藏中移除',
+      'detail.favAdded': '已新增',
+      'detail.favAddedMsg': '已新增至 @name',
+      'detail.favError': '收藏操作失敗: @error',
+      'detail.favSlot': '收藏夾 @n',
+      'detail.rateTitle': '為畫廊評分',
+      'detail.rateSubmit': '提交',
+      'detail.rated': '已評分',
+      'detail.ratedMsg': '你的評分: @rating',
+      'detail.rateFailed': '評分失敗: @error',
+      'detail.rateLoginRequired': '無法評分 — 需要登入',
+      'detail.readOnline': '線上閱讀',
+      'detail.downloadGallery': '下載畫廊',
+      'detail.archiveResample': '封存（壓縮）',
+      'detail.archiveOriginal': '封存（原圖）',
+      'detail.downloadStarted': '下載已開始',
+      'detail.galleryQueued': '畫廊下載已加入佇列',
+      'detail.archiveQueued': '封存下載已加入佇列',
+      'detail.downloadFailed': '下載失敗: @error',
+      'detail.archiveFailed': '封存下載失敗: @error',
+      'detail.noArchive': '沒有可用的封存',
+      'detail.tags': '標籤',
+      'detail.comments': '評論 (@count)',
+      'detail.anonymous': '匿名',
+      'detail.loadFailed': '載入畫廊詳情失敗: @error',
+
+      // reader
+      'reader.loading': '載入畫廊中...',
+      'reader.loadingImage': '載入圖片中...',
+      'reader.loadFailed': '載入畫廊失敗: @error',
+      'reader.imageFailed': '圖片載入失敗',
+      'reader.noImages': '沒有提供圖片',
+      'reader.directionLabel': '閱讀方向: @dir',
+      'reader.ltr': '從左到右',
+      'reader.rtl': '從右到左',
+      'reader.vertical': '上下捲動',
+
+      // downloads
+      'downloads.title': '下載',
+      'downloads.gallery': '畫廊',
+      'downloads.archive': '封存',
+      'downloads.noGallery': '沒有畫廊下載',
+      'downloads.noArchive': '沒有封存下載',
+      'downloads.read': '閱讀',
+      'downloads.pause': '暫停',
+      'downloads.resume': '繼續',
+      'downloads.deleteTitle': '刪除下載',
+      'downloads.deleteConfirm': '刪除此下載及其檔案？',
+      'downloads.loadFailed': '載入任務失敗: @error',
+      'downloads.gStatus0': '無',
+      'downloads.gStatus1': '下載中',
+      'downloads.gStatus2': '已暫停',
+      'downloads.gStatus3': '已完成',
+      'downloads.gStatus4': '失敗',
+      'downloads.aStatus0': '無',
+      'downloads.aStatus1': '解鎖中',
+      'downloads.aStatus2': '解析連結',
+      'downloads.aStatus3': '下載中',
+      'downloads.aStatus4': '已下載',
+      'downloads.aStatus5': '解壓中',
+      'downloads.aStatus6': '已完成',
+      'downloads.aStatus7': '已暫停',
+      'downloads.aStatus8': '失敗',
+
+      // local
+      'local.title': '本機畫廊',
+      'local.noGalleries': '未找到本機畫廊',
+      'local.helpText': '將目錄掛載到 Docker 容器中\n或將畫廊放入 local_gallery 資料夾',
+      'local.scanNow': '立即掃描',
+      'local.empty': '空',
+      'local.noImages': '此畫廊中沒有圖片',
+      'local.loadFailed': '載入畫廊圖片失敗: @error',
+      'local.loadListFailed': '載入本機畫廊失敗: @error',
+
+      // settings
+      'settings.title': '設定',
+      'settings.account': '帳號',
+      'settings.loggedIn': '已登入: @user',
+      'settings.logout': '登出',
+      'settings.logoutSuccess': '已登出',
+      'settings.logoutFailed': '登出失敗: @error',
+      'settings.cookieLogin': '使用 Cookie 登入（建議）',
+      'settings.cookieHint': 'EH 論壇登入在伺服器環境中被 Cloudflare 攔截。'
+          '請在瀏覽器中登入後複製 Cookie 到此處。\n'
+          '步驟: 登入 e-hentai.org → F12 → 應用程式 → Cookie → 複製以下值。',
+      'settings.cookiePlaceholder': 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+      'settings.setCookies': '設定 Cookie',
+      'settings.cookieSuccess': 'Cookie 設定成功',
+      'settings.cookieFailed': '設定 Cookie 失敗: @error',
+      'settings.cookieEmpty': '請貼上 Cookie',
+      'settings.credentialLogin': '使用帳號密碼登入（可能因 Cloudflare 失敗）',
+      'settings.username': '使用者名稱',
+      'settings.password': '密碼',
+      'settings.login': '登入',
+      'settings.loginSuccess': '登入成功',
+      'settings.loginFailed': '登入失敗',
+      'settings.loginError': '登入失敗: @error',
+      'settings.emptyCredentials': '請輸入使用者名稱和密碼',
+      'settings.site': '站點',
+      'settings.appearance': '外觀',
+      'settings.themeMode': '主題模式',
+      'settings.system': '跟隨系統',
+      'settings.light': '淺色',
+      'settings.dark': '深色',
+      'settings.accentColor': '主題色',
+      'settings.serverInfo': '伺服器資訊',
+      'settings.dataDir': '資料目錄',
+      'settings.downloadDir': '下載目錄',
+      'settings.localGalleryDir': '本機畫廊目錄',
+      'settings.extraScanPaths': '額外掃描路徑',
+      'settings.switchSiteFailed': '切換站點失敗: @error',
+      'settings.language': '語言',
+
+      // history
+      'history.title': '瀏覽記錄',
+      'history.empty': '暫無瀏覽記錄',
+      'history.clearAll': '清除全部',
+      'history.clearTitle': '清除瀏覽記錄',
+      'history.clearConfirm': '確定要清除所有瀏覽記錄嗎？',
+      'history.loadFailed': '載入瀏覽記錄失敗: @error',
+
+      // search history
+      'searchHistory.clearAll': '清除搜尋記錄',
+
+      // comment
+      'comment.placeholder': '寫下評論...',
+      'comment.send': '傳送',
+      'comment.posted': '評論已傳送',
+      'comment.postedMsg': '你的評論已發佈',
+      'comment.postFailed': '傳送評論失敗: @error',
+      'comment.voteFailed': '投票失敗: @error',
+
+      // ranklist
+      'ranklist.title': '排行榜',
+      'ranklist.allTime': '歷史總榜',
+      'ranklist.year': '年度',
+      'ranklist.month': '月度',
+      'ranklist.yesterday': '昨日',
+
+      // thumbnails
+      'thumbnails.title': '縮圖 (@count)',
+      'thumbnails.grid': '縮圖網格',
+      'thumbnails.loadFailed': '載入縮圖失敗: @error',
+
+      // tag translation
+      'tagTranslation.title': '標籤翻譯',
+      'tagTranslation.loaded': '已載入 @count 個標籤',
+      'tagTranslation.notLoaded': '標籤資料庫未載入',
+      'tagTranslation.lastUpdate': '最後更新: @time',
+      'tagTranslation.refresh': '更新標籤資料庫',
+      'tagTranslation.refreshSuccess': '已更新 @count 個標籤',
+      'tagTranslation.refreshFailed': '更新失敗: @error',
+
+      // list mode
+      'listMode.toggle': '切換顯示模式',
+      'listMode.grid': '網格',
+      'listMode.list': '列表',
+      'listMode.listCompact': '緊湊列表',
+
+      // quick search
+      'quickSearch.title': '快速搜尋',
+      'quickSearch.empty': '沒有已儲存的搜尋',
+      'quickSearch.saveCurrent': '儲存目前搜尋',
+      'quickSearch.saveTitle': '儲存快速搜尋',
+      'quickSearch.nameLabel': '名稱',
+
+      // tag suggest
+      'tagSuggest.tag': '標籤',
+
+      // common extras
+      'common.save': '儲存',
+
+      // reader enhancements
+      'reader.fitWidth': '適應寬度',
+      'reader.doubleColumn': '雙頁模式',
+      'reader.autoStart': '自動閱讀',
+      'reader.autoStop': '停止自動閱讀',
+
+      // block rules
+      'blockRule.title': '封鎖規則',
+      'blockRule.empty': '沒有設定封鎖規則',
+      'blockRule.add': '新增規則',
+      'blockRule.edit': '編輯規則',
+      'blockRule.manage': '管理封鎖規則',
+      'blockRule.ruleCount': '@count 條規則',
+      'blockRule.ungrouped': '未分組',
+      'blockRule.deleteGroup': '刪除分組',
+      'blockRule.target': '目標',
+      'blockRule.attribute': '屬性',
+      'blockRule.pattern': '匹配模式',
+      'blockRule.expression': '運算式',
+      'blockRule.expressionHint': '要匹配的值',
+      'blockRule.groupId': '分組 ID',
+      'blockRule.groupIdHint': '選填的分組名稱',
+      'blockRule.blocked': '已封鎖',
+      'blockRule.tagBlocked': '標籤 "@tag" 已被封鎖',
+      'blockRule.uploaderBlocked': '上傳者 "@uploader" 已被封鎖',
+      'blockRule.blockTag': '封鎖此標籤',
+      'blockRule.blockUploader': '封鎖此上傳者',
+
+      // download enhancements
+      'downloads.search': '搜尋下載...',
+      'downloads.allGroups': '所有分組',
+      'downloads.group': '分組',
+
+      // tag voting
+      'tagVote.search': '搜尋',
+      'tagVote.searchUploader': '搜尋上傳者',
+      'tagVote.voteUp': '投贊成票',
+      'tagVote.voteDown': '投反對票',
+      'tagVote.success': '已投票',
+      'tagVote.votedUp': '已為 "@tag" 投贊成票',
+      'tagVote.votedDown': '已為 "@tag" 投反對票',
+      'tagVote.failed': '投票失敗: @error',
+
+      // responsive layout
+      'home.selectGallery': '選擇一個畫廊查看詳情',
+
+      // gallery detail extras
+      'detail.parentGallery': '父畫廊',
+      'detail.newerVersion': '有更新版本',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可存取 EX）',
+      'settings.cookieStatusNoIgneous': 'Cookie 已設定但缺少 igneous — EX 可能無法使用',
+      'settings.cookieStatusNone': '未設定登入 Cookie',
+      'settings.siteSwitched': '已切換到 @site',
+    };
+  }
+}

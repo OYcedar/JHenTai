@@ -7,6 +7,13 @@ class WebGalleryDetailController extends GetxController {
   late int gid;
   late String token;
 
+  final int? _paramGid;
+  final String? _paramToken;
+
+  WebGalleryDetailController({int? gid, String? token})
+      : _paramGid = gid,
+        _paramToken = token;
+
   final title = ''.obs;
   final titleJpn = ''.obs;
   final category = ''.obs;
@@ -20,11 +27,20 @@ class WebGalleryDetailController extends GetxController {
   final archiverUrl = ''.obs;
   final imagePageUrls = <String>[].obs;
   final tags = <String, List<String>>{}.obs;
+  final translatedTags = <String, String>{}.obs;
   final comments = <Map<String, dynamic>>[].obs;
 
   final favoriteSlot = Rxn<int>();
   final favoriteName = Rxn<String>();
   final isFavLoading = false.obs;
+  final site = 'EH'.obs;
+  final favoriteNames = <String>[].obs;
+  final publishDate = ''.obs;
+  final fileSize = ''.obs;
+  final language = ''.obs;
+  final parentUrl = Rxn<String>();
+  final ratingCount = 0.obs;
+  final newerVersionUrl = Rxn<String>();
 
   int? apiuid;
   String? apikey;
@@ -32,9 +48,20 @@ class WebGalleryDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    gid = int.tryParse(Get.parameters['gid'] ?? '') ?? 0;
-    token = Get.parameters['token'] ?? '';
+    gid = _paramGid ?? (int.tryParse(Get.parameters['gid'] ?? '') ?? 0);
+    token = _paramToken ?? (Get.parameters['token'] ?? '');
     _loadDetail();
+    _loadSiteAndFavNames();
+  }
+
+  Future<void> _loadSiteAndFavNames() async {
+    try {
+      final status = await backendApiClient.getAuthStatus();
+      site.value = status['site'] as String? ?? 'EH';
+    } catch (_) {}
+    try {
+      favoriteNames.value = await backendApiClient.fetchFavoriteNames();
+    } catch (_) {}
   }
 
   Future<void> _loadDetail() async {
@@ -69,11 +96,47 @@ class WebGalleryDetailController extends GetxController {
       if (rawComments != null) {
         comments.value = rawComments.cast<Map<String, dynamic>>();
       }
+
+      publishDate.value = result['publishDate'] as String? ?? '';
+      fileSize.value = result['fileSize'] as String? ?? '';
+      language.value = result['language'] as String? ?? '';
+      parentUrl.value = result['parentUrl'] as String?;
+      ratingCount.value = result['ratingCount'] as int? ?? 0;
+      newerVersionUrl.value = result['newerVersionUrl'] as String?;
+
+      backendApiClient.recordHistory(
+        gid: gid,
+        token: token,
+        title: title.value,
+        coverUrl: coverUrl.value,
+        category: category.value,
+      ).catchError((_) {});
+
+      _loadTagTranslations();
     } catch (e) {
       errorMessage.value = 'detail.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<void> _loadTagTranslations() async {
+    try {
+      final tagList = <Map<String, String>>[];
+      for (final entry in tags.entries) {
+        for (final tag in entry.value) {
+          tagList.add({'namespace': entry.key, 'key': tag});
+        }
+      }
+      if (tagList.isEmpty) return;
+      final translations = await backendApiClient.translateTags(tagList);
+      translatedTags.value = translations;
+    } catch (_) {}
+  }
+
+  String getTranslatedTag(String namespace, String tag) {
+    final key = '$namespace:$tag';
+    return translatedTags[key] ?? tag;
   }
 
   Future<void> toggleFavorite(int? favcat) async {
@@ -168,11 +231,56 @@ class WebGalleryDetailController extends GetxController {
     }
   }
 
+  Future<void> postComment(String text) async {
+    if (text.trim().isEmpty) return;
+    try {
+      await backendApiClient.postComment(gid: gid, token: token, comment: text);
+      Get.snackbar('comment.posted'.tr, 'comment.postedMsg'.tr, snackPosition: SnackPosition.BOTTOM);
+      _loadDetail();
+    } catch (e) {
+      Get.snackbar('common.error'.tr, 'comment.postFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+    }
+  }
+
+  Future<void> voteComment(int commentId, int vote) async {
+    if (apiuid == null || apikey == null) {
+      Get.snackbar('common.error'.tr, 'detail.rateLoginRequired'.tr, snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    try {
+      final result = await backendApiClient.voteComment(
+        gid: gid, token: token, apiuid: apiuid!, apikey: apikey!, commentId: commentId, vote: vote,
+      );
+      final newScore = result['comment_score'];
+      if (newScore != null) {
+        final idx = comments.indexWhere((c) => c['id'] == commentId.toString());
+        if (idx >= 0) {
+          comments[idx] = {...comments[idx], 'score': '$newScore'};
+        }
+      }
+    } catch (e) {
+      Get.snackbar('common.error'.tr, 'comment.voteFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  String getFavSlotName(int i) {
+    if (i < favoriteNames.length && favoriteNames[i].isNotEmpty) {
+      return favoriteNames[i];
+    }
+    return 'detail.favSlot'.trParams({'n': '$i'});
+  }
+
   static String favSlotName(int i) => 'detail.favSlot'.trParams({'n': '$i'});
 }
 
-class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
-  const WebGalleryDetailPage({super.key});
+class WebGalleryDetailPage extends StatelessWidget {
+  final String? controllerTag;
+  const WebGalleryDetailPage({super.key, this.controllerTag});
+
+  WebGalleryDetailController get controller =>
+      Get.find<WebGalleryDetailController>(tag: controllerTag);
 
   @override
   Widget build(BuildContext context) {
@@ -180,15 +288,18 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
       appBar: AppBar(
         title: Obx(() => Text(controller.title.value, overflow: TextOverflow.ellipsis)),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.copy),
-            tooltip: 'detail.copyUrl'.tr,
-            onPressed: () {
-              final url = 'https://e-hentai.org/g/${controller.gid}/${controller.token}/';
-              Clipboard.setData(ClipboardData(text: url));
-              Get.snackbar('detail.copied'.tr, url, snackPosition: SnackPosition.BOTTOM);
-            },
-          ),
+          Obx(() {
+            final domain = controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
+            return IconButton(
+              icon: const Icon(Icons.copy),
+              tooltip: 'detail.copyUrl'.tr,
+              onPressed: () {
+                final url = 'https://$domain/g/${controller.gid}/${controller.token}/';
+                Clipboard.setData(ClipboardData(text: url));
+                Get.snackbar('detail.copied'.tr, url, snackPosition: SnackPosition.BOTTOM);
+              },
+            );
+          }),
           Obx(() {
             if (controller.isFavLoading.value) {
               return const Padding(
@@ -239,7 +350,7 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
               children: [
                 Icon(Icons.favorite, size: 18, color: _favSlotColor(i)),
                 const SizedBox(width: 12),
-                Text('detail.favSlot'.trParams({'n': '$i'})),
+                Text(controller.getFavSlotName(i)),
               ],
             ),
           );
@@ -342,10 +453,18 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
           runSpacing: 8,
           children: [
             Obx(() => _CategoryChip(category: controller.category.value)),
-            Obx(() => Chip(
-              avatar: const Icon(Icons.person, size: 16),
-              label: Text(controller.uploader.value),
-              visualDensity: VisualDensity.compact,
+            Obx(() => GestureDetector(
+              onSecondaryTapUp: (details) {
+                _showUploaderContextMenu(context, details.globalPosition, controller.uploader.value);
+              },
+              onLongPressStart: (details) {
+                _showUploaderContextMenu(context, details.globalPosition, controller.uploader.value);
+              },
+              child: Chip(
+                avatar: const Icon(Icons.person, size: 16),
+                label: Text(controller.uploader.value),
+                visualDensity: VisualDensity.compact,
+              ),
             )),
             Obx(() => Chip(
               avatar: const Icon(Icons.photo_library, size: 16),
@@ -370,8 +489,66 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
                 visualDensity: VisualDensity.compact,
               );
             }),
+            Obx(() => controller.language.value.isNotEmpty
+              ? Chip(
+                  avatar: const Icon(Icons.language, size: 16),
+                  label: Text(controller.language.value),
+                  visualDensity: VisualDensity.compact,
+                )
+              : const SizedBox.shrink()),
+            Obx(() => controller.fileSize.value.isNotEmpty
+              ? Chip(
+                  avatar: const Icon(Icons.storage, size: 16),
+                  label: Text(controller.fileSize.value),
+                  visualDensity: VisualDensity.compact,
+                )
+              : const SizedBox.shrink()),
           ],
         ),
+        Obx(() => controller.publishDate.value.isNotEmpty
+          ? Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(controller.publishDate.value,
+                      style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                ],
+              ),
+            )
+          : const SizedBox.shrink()),
+        Obx(() {
+          final parent = controller.parentUrl.value;
+          final newer = controller.newerVersionUrl.value;
+          if (parent == null && newer == null) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              spacing: 12,
+              children: [
+                if (parent != null)
+                  InkWell(
+                    onTap: () {
+                      final m = RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(parent);
+                      if (m != null) Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
+                    },
+                    child: Text('detail.parentGallery'.tr,
+                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline)),
+                  ),
+                if (newer != null)
+                  InkWell(
+                    onTap: () {
+                      final m = RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(newer);
+                      if (m != null) Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
+                    },
+                    child: Text('detail.newerVersion'.tr,
+                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline)),
+                  ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
@@ -436,14 +613,12 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
       spacing: 12,
       runSpacing: 12,
       children: [
-        Obx(() => controller.pageCount.value > 0
-            ? FilledButton.icon(
-                icon: const Icon(Icons.menu_book),
-                label: Text('detail.readOnline'.tr),
-                style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
-                onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
-              )
-            : const SizedBox.shrink()),
+        FilledButton.icon(
+          icon: const Icon(Icons.menu_book),
+          label: Text('detail.readOnline'.tr),
+          style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
+          onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
+        ),
         FilledButton.tonalIcon(
           icon: const Icon(Icons.download),
           label: Text('detail.downloadGallery'.tr),
@@ -497,15 +672,30 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
                     child: Wrap(
                       spacing: 4,
                       runSpacing: 4,
-                      children: entry.value.map((tag) => ActionChip(
-                        label: Text(tag, style: const TextStyle(fontSize: 12)),
-                        visualDensity: VisualDensity.compact,
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        onPressed: () {
-                          final query = '${entry.key}:"$tag\$"';
-                          Get.toNamed('/web/home', arguments: {'search': query});
-                        },
-                      )).toList(),
+                      children: entry.value.map((tag) {
+                        final translated = controller.getTranslatedTag(entry.key, tag);
+                        final showTranslated = translated != tag;
+                        return GestureDetector(
+                          onSecondaryTapUp: (details) {
+                            _showTagContextMenu(context, details.globalPosition, entry.key, tag);
+                          },
+                          onLongPressStart: (details) {
+                            _showTagContextMenu(context, details.globalPosition, entry.key, tag);
+                          },
+                          child: Tooltip(
+                            message: showTranslated ? tag : '',
+                            child: ActionChip(
+                              label: Text(showTranslated ? translated : tag, style: const TextStyle(fontSize: 12)),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              onPressed: () {
+                                final query = '${entry.key}:"$tag\$"';
+                                Get.offAllNamed('/web/home', arguments: {'search': query});
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
                 ],
@@ -517,26 +707,203 @@ class WebGalleryDetailPage extends GetView<WebGalleryDetailController> {
     });
   }
 
+  void _showTagContextMenu(BuildContext context, Offset position, String namespace, String tag) {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
+      items: [
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.search, size: 20),
+            title: Text('tagVote.search'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () {
+            final query = '$namespace:"$tag\$"';
+            Get.offAllNamed('/web/home', arguments: {'search': query});
+          },
+        ),
+        if (controller.apiuid != null && controller.apikey != null) ...[
+          PopupMenuItem(
+            child: ListTile(
+              leading: const Icon(Icons.thumb_up, size: 20, color: Colors.green),
+              title: Text('tagVote.voteUp'.tr, style: const TextStyle(fontSize: 14)),
+              dense: true, contentPadding: EdgeInsets.zero,
+            ),
+            onTap: () => _voteTag(namespace, tag, 1),
+          ),
+          PopupMenuItem(
+            child: ListTile(
+              leading: const Icon(Icons.thumb_down, size: 20, color: Colors.red),
+              title: Text('tagVote.voteDown'.tr, style: const TextStyle(fontSize: 14)),
+              dense: true, contentPadding: EdgeInsets.zero,
+            ),
+            onTap: () => _voteTag(namespace, tag, -1),
+          ),
+        ],
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.block, size: 20, color: Colors.orange),
+            title: Text('blockRule.blockTag'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _quickBlockTag(namespace, tag),
+        ),
+      ],
+    );
+  }
+
+  void _showUploaderContextMenu(BuildContext context, Offset position, String uploader) {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
+      items: [
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.search, size: 20),
+            title: Text('tagVote.searchUploader'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => Get.offAllNamed('/web/home', arguments: {'search': 'uploader:$uploader'}),
+        ),
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.block, size: 20, color: Colors.orange),
+            title: Text('blockRule.blockUploader'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true, contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _quickBlockUploader(uploader),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _voteTag(String namespace, String tag, int vote) async {
+    try {
+      await backendApiClient.voteTag(
+        gid: controller.gid, token: controller.token,
+        apiuid: controller.apiuid!, apikey: controller.apikey!,
+        namespace: namespace, tag: tag, vote: vote,
+      );
+      Get.snackbar(
+        'tagVote.success'.tr,
+        vote > 0 ? 'tagVote.votedUp'.trParams({'tag': tag}) : 'tagVote.votedDown'.trParams({'tag': tag}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar('common.error'.tr, 'tagVote.failed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+    }
+  }
+
+  Future<void> _quickBlockTag(String namespace, String tag) async {
+    try {
+      await backendApiClient.saveBlockRule(
+        target: 'gallery', attribute: 'tag', pattern: 'like',
+        expression: '$namespace:$tag',
+      );
+      Get.snackbar('blockRule.blocked'.tr, 'blockRule.tagBlocked'.trParams({'tag': '$namespace:$tag'}),
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> _quickBlockUploader(String uploader) async {
+    try {
+      await backendApiClient.saveBlockRule(
+        target: 'gallery', attribute: 'uploader', pattern: 'equal',
+        expression: uploader,
+      );
+      Get.snackbar('blockRule.blocked'.tr, 'blockRule.uploaderBlocked'.trParams({'uploader': uploader}),
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   Widget _buildComments(BuildContext context) {
     return Obx(() {
-      if (controller.comments.isEmpty) return const SizedBox.shrink();
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('detail.comments'.trParams({'count': '${controller.comments.length}'}),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ...controller.comments.map((c) => _CommentCard(comment: c)),
+          _CommentInput(controller: controller),
+          const SizedBox(height: 8),
+          ...controller.comments.map((c) => _CommentCard(
+            comment: c,
+            onVote: (commentId, vote) => controller.voteComment(commentId, vote),
+          )),
         ],
       );
     });
   }
 }
 
+class _CommentInput extends StatefulWidget {
+  final WebGalleryDetailController controller;
+  const _CommentInput({required this.controller});
+
+  @override
+  State<_CommentInput> createState() => _CommentInputState();
+}
+
+class _CommentInputState extends State<_CommentInput> {
+  final _textController = TextEditingController();
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _textController,
+            decoration: InputDecoration(
+              hintText: 'comment.placeholder'.tr,
+              border: const OutlineInputBorder(),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              isDense: true,
+            ),
+            maxLines: 2,
+            minLines: 1,
+            onSubmitted: (_) => _send(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: _sending
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.send),
+          onPressed: _sending ? null : _send,
+          tooltip: 'comment.send'.tr,
+        ),
+      ],
+    );
+  }
+
+  Future<void> _send() async {
+    final text = _textController.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _sending = true);
+    await widget.controller.postComment(text);
+    _textController.clear();
+    setState(() => _sending = false);
+  }
+}
+
 class _CommentCard extends StatelessWidget {
   final Map<String, dynamic> comment;
-  const _CommentCard({required this.comment});
+  final void Function(int commentId, int vote)? onVote;
+  const _CommentCard({required this.comment, this.onVote});
 
   @override
   Widget build(BuildContext context) {
@@ -544,6 +911,7 @@ class _CommentCard extends StatelessWidget {
     final date = comment['date'] as String? ?? '';
     final score = comment['score'] as String? ?? '';
     final body = comment['body'] as String? ?? '';
+    final commentId = int.tryParse(comment['id']?.toString() ?? '');
     final plainBody = body
         .replaceAll(RegExp(r'<br\s*/?>'), '\n')
         .replaceAll(RegExp(r'<[^>]+>'), '')
@@ -572,6 +940,25 @@ class _CommentCard extends StatelessWidget {
                       color: score.startsWith('-') ? Colors.red.shade800 : Colors.green.shade800,
                     )),
                   ),
+                if (commentId != null && onVote != null) ...[
+                  const SizedBox(width: 4),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => onVote!(commentId, 1),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.thumb_up_outlined, size: 16),
+                    ),
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => onVote!(commentId, -1),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.thumb_down_outlined, size: 16),
+                    ),
+                  ),
+                ],
               ],
             ),
             if (date.isNotEmpty)

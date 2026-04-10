@@ -181,6 +181,126 @@ class WebKoKR {
       'settings.localGalleryDir': '로컬 갤러리 디렉토리',
       'settings.extraScanPaths': '추가 스캔 경로',
       'settings.switchSiteFailed': '사이트 전환 실패: @error',
+      'settings.language': '언어',
+
+      // history
+      'history.title': '방문 기록',
+      'history.empty': '방문 기록 없음',
+      'history.clearAll': '전체 삭제',
+      'history.clearTitle': '방문 기록 삭제',
+      'history.clearConfirm': '모든 방문 기록을 삭제하시겠습니까?',
+      'history.loadFailed': '방문 기록 로드 실패: @error',
+
+      // search history
+      'searchHistory.clearAll': '검색 기록 삭제',
+
+      // comment
+      'comment.placeholder': '댓글 작성...',
+      'comment.send': '전송',
+      'comment.posted': '댓글 게시됨',
+      'comment.postedMsg': '댓글이 게시되었습니다',
+      'comment.postFailed': '댓글 게시 실패: @error',
+      'comment.voteFailed': '투표 실패: @error',
+
+      // ranklist
+      'ranklist.title': '랭킹',
+      'ranklist.allTime': '역대',
+      'ranklist.year': '연간',
+      'ranklist.month': '월간',
+      'ranklist.yesterday': '어제',
+
+      // thumbnails
+      'thumbnails.title': '썸네일 (@count)',
+      'thumbnails.grid': '썸네일 그리드',
+      'thumbnails.loadFailed': '썸네일 로드 실패: @error',
+
+      // home additions
+      'home.history': '방문 기록',
+      'home.ranklist': '랭킹',
+
+      // tag translation
+      'tagTranslation.title': '태그 번역',
+      'tagTranslation.loaded': '@count개 태그 로드됨',
+      'tagTranslation.notLoaded': '태그 데이터베이스가 로드되지 않음',
+      'tagTranslation.lastUpdate': '마지막 업데이트: @time',
+      'tagTranslation.refresh': '태그 데이터베이스 새로고침',
+      'tagTranslation.refreshSuccess': '@count개 태그 업데이트됨',
+      'tagTranslation.refreshFailed': '새로고침 실패: @error',
+
+      // list mode
+      'listMode.toggle': '보기 모드 전환',
+      'listMode.grid': '그리드',
+      'listMode.list': '목록',
+      'listMode.listCompact': '간략 목록',
+
+      // quick search
+      'quickSearch.title': '빠른 검색',
+      'quickSearch.empty': '저장된 검색 없음',
+      'quickSearch.saveCurrent': '현재 검색 저장',
+      'quickSearch.saveTitle': '빠른 검색 저장',
+      'quickSearch.nameLabel': '이름',
+
+      // tag suggest
+      'tagSuggest.tag': '태그',
+
+      // common extras
+      'common.save': '저장',
+
+      // reader enhancements
+      'reader.fitWidth': '너비 맞춤',
+      'reader.doubleColumn': '두 페이지 보기',
+      'reader.autoStart': '자동 넘기기',
+      'reader.autoStop': '자동 넘기기 중지',
+
+      // block rules
+      'blockRule.title': '차단 규칙',
+      'blockRule.empty': '차단 규칙이 없습니다',
+      'blockRule.add': '규칙 추가',
+      'blockRule.edit': '규칙 편집',
+      'blockRule.manage': '차단 규칙 관리',
+      'blockRule.ruleCount': '@count개 규칙',
+      'blockRule.ungrouped': '그룹 없음',
+      'blockRule.deleteGroup': '그룹 삭제',
+      'blockRule.target': '대상',
+      'blockRule.attribute': '속성',
+      'blockRule.pattern': '패턴',
+      'blockRule.expression': '표현식',
+      'blockRule.expressionHint': '일치할 값',
+      'blockRule.groupId': '그룹 ID',
+      'blockRule.groupIdHint': '선택적 그룹 이름',
+      'blockRule.blocked': '차단됨',
+      'blockRule.tagBlocked': '태그 "@tag"가 차단되었습니다',
+      'blockRule.uploaderBlocked': '업로더 "@uploader"가 차단되었습니다',
+      'blockRule.blockTag': '이 태그 차단',
+      'blockRule.blockUploader': '이 업로더 차단',
+
+      // download enhancements
+      'downloads.search': '다운로드 검색...',
+      'downloads.allGroups': '모든 그룹',
+      'downloads.group': '그룹',
+
+      // tag voting
+      'tagVote.search': '검색',
+      'tagVote.searchUploader': '업로더 검색',
+      'tagVote.voteUp': '추천',
+      'tagVote.voteDown': '비추천',
+      'tagVote.success': '투표 완료',
+      'tagVote.votedUp': '"@tag"에 추천했습니다',
+      'tagVote.votedDown': '"@tag"에 비추천했습니다',
+      'tagVote.failed': '투표 실패: @error',
+
+      // responsive layout
+      'home.selectGallery': '세부 정보를 보려면 갤러리를 선택하세요',
+
+      // gallery detail extras
+      'detail.parentGallery': '상위 갤러리',
+      'detail.newerVersion': '새 버전 사용 가능',
+
+      // settings extras
+      'settings.cookieStatusFull': '쿠키 정상 (igneous 포함 — EX 사용 가능)',
+      'settings.cookieStatusNoIgneous': '쿠키가 설정되었지만 igneous 누락 — EX가 작동하지 않을 수 있음',
+      'settings.cookieStatusNone': '로그인 쿠키가 설정되지 않음',
+      'settings.siteSwitched': '@site로 전환되었습니다',
     };
   }
 }
