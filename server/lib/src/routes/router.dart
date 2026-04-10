@@ -27,6 +27,7 @@ import 'rating_routes.dart';
 import 'search_history_routes.dart';
 import 'setting_routes.dart';
 import 'tag_routes.dart';
+import 'usertag_routes.dart';
 
 class AppRouter {
   final EHClient ehClient;
@@ -65,6 +66,7 @@ class AppRouter {
     router.mount('/api/search-history/', SearchHistoryRoutes().router.call);
     router.mount('/api/comment/', CommentRoutes(ehClient).router.call);
     router.mount('/api/tag/', TagRoutes(tagTranslationService, ehClient).router.call);
+    router.mount('/api/usertags/', UsertagRoutes(ehClient).router.call);
     router.mount('/api/quick-search/', QuickSearchRoutes().router.call);
     router.mount('/api/block-rule/', BlockRuleRoutes().router.call);
 

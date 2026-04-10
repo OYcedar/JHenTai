@@ -10,7 +10,26 @@ class ServerDatabase {
   Future<void> init(String dbPath) async {
     _db = sqlite3.open(dbPath);
     _createTables();
+    _migrateSchema();
     log.info('Database opened at $dbPath');
+  }
+
+  void _migrateSchema() {
+    _addColumnIfMissing('gallery_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
+    _addColumnIfMissing('gallery_download', 'supersedes_gid', 'INTEGER');
+    _addColumnIfMissing('gallery_download', 'superseded_by_gid', 'INTEGER');
+    _addColumnIfMissing('archive_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
+  }
+
+  void _addColumnIfMissing(String table, String column, String columnDef) {
+    final rows = _db.select('PRAGMA table_info($table)');
+    if (rows.any((r) => r['name'] == column)) return;
+    try {
+      _db.execute('ALTER TABLE $table ADD COLUMN $column $columnDef');
+      log.info('Migration: added $table.$column');
+    } catch (e) {
+      log.warning('Migration skip $table.$column: $e');
+    }
   }
 
   void _createTables() {
@@ -38,7 +57,10 @@ class ServerDatabase {
         download_status INTEGER NOT NULL DEFAULT 0,
         insert_time TEXT NOT NULL,
         completed_count INTEGER NOT NULL DEFAULT 0,
-        group_name TEXT NOT NULL DEFAULT 'default'
+        group_name TEXT NOT NULL DEFAULT 'default',
+        priority INTEGER NOT NULL DEFAULT 0,
+        supersedes_gid INTEGER,
+        superseded_by_gid INTEGER
       )
     ''');
 
@@ -76,7 +98,8 @@ class ServerDatabase {
         insert_time TEXT NOT NULL,
         group_name TEXT NOT NULL DEFAULT 'default',
         downloaded_bytes INTEGER NOT NULL DEFAULT 0,
-        total_bytes INTEGER NOT NULL DEFAULT 0
+        total_bytes INTEGER NOT NULL DEFAULT 0,
+        priority INTEGER NOT NULL DEFAULT 0
       )
     ''');
 
@@ -182,15 +205,30 @@ class ServerDatabase {
   void insertGalleryDownload(Map<String, dynamic> data) {
     _db.execute('''
       INSERT OR REPLACE INTO gallery_download 
-      (gid, token, title, category, page_count, gallery_url, cover_url, uploader, publish_time, download_status, insert_time, completed_count, group_name)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (gid, token, title, category, page_count, gallery_url, cover_url, uploader, publish_time, download_status, insert_time, completed_count, group_name, priority, supersedes_gid, superseded_by_gid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
       data['gid'], data['token'], data['title'], data['category'],
       data['page_count'], data['gallery_url'], data['cover_url'] ?? '',
       data['uploader'] ?? '', data['publish_time'], data['download_status'] ?? 0,
       data['insert_time'] ?? DateTime.now().toIso8601String(),
       data['completed_count'] ?? 0, data['group_name'] ?? 'default',
+      data['priority'] ?? 0,
+      data['supersedes_gid'],
+      data['superseded_by_gid'],
     ]);
+  }
+
+  void updateGalleryDownloadMeta(int gid, {int? priority, String? groupName, int? supersededByGid}) {
+    if (priority != null) {
+      _db.execute('UPDATE gallery_download SET priority = ? WHERE gid = ?', [priority, gid]);
+    }
+    if (groupName != null) {
+      _db.execute('UPDATE gallery_download SET group_name = ? WHERE gid = ?', [groupName, gid]);
+    }
+    if (supersededByGid != null) {
+      _db.execute('UPDATE gallery_download SET superseded_by_gid = ? WHERE gid = ?', [supersededByGid, gid]);
+    }
   }
 
   void updateGalleryDownloadStatus(int gid, int status, {int? completedCount}) {
@@ -246,8 +284,8 @@ class ServerDatabase {
       INSERT OR REPLACE INTO archive_download
       (gid, token, title, category, page_count, gallery_url, cover_url, uploader, size,
        publish_time, archive_status, archive_page_url, download_page_url, download_url,
-       is_original, insert_time, group_name, downloaded_bytes, total_bytes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       is_original, insert_time, group_name, downloaded_bytes, total_bytes, priority)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
       data['gid'], data['token'], data['title'], data['category'],
       data['page_count'], data['gallery_url'], data['cover_url'] ?? '',
@@ -257,7 +295,17 @@ class ServerDatabase {
       data['is_original'] ?? 0, data['insert_time'] ?? DateTime.now().toIso8601String(),
       data['group_name'] ?? 'default', data['downloaded_bytes'] ?? 0,
       data['total_bytes'] ?? 0,
+      data['priority'] ?? 0,
     ]);
+  }
+
+  void updateArchiveDownloadMeta(int gid, {int? priority, String? groupName}) {
+    if (priority != null) {
+      _db.execute('UPDATE archive_download SET priority = ? WHERE gid = ?', [priority, gid]);
+    }
+    if (groupName != null) {
+      _db.execute('UPDATE archive_download SET group_name = ? WHERE gid = ?', [groupName, gid]);
+    }
   }
 
   void updateArchiveDownloadStatus(int gid, int status, {int? downloadedBytes, int? totalBytes}) {

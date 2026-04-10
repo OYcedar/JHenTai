@@ -15,6 +15,8 @@ import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_local_page.dart';
 import 'package:jhentai/src/pages_web/web_reader_page.dart';
 import 'package:jhentai/src/pages_web/web_settings_page.dart';
+import 'package:jhentai/src/pages_web/web_stats_page.dart';
+import 'package:jhentai/src/pages_web/web_tag_sets_page.dart';
 import 'package:jhentai/src/pages_web/web_thumbnails_page.dart';
 import 'package:web/web.dart' as web;
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -38,7 +40,6 @@ void main() async {
 class WebLayoutController extends GetxController {
   final selectedGid = Rxn<int>();
   final selectedToken = Rxn<String>();
-  final leftPaneIndex = 0.obs;
 
   void selectGallery(int gid, String token) {
     selectedGid.value = gid;
@@ -398,6 +399,14 @@ final _webRoutes = [
     binding: BindingsBuilder(() {
       Get.lazyPut(() => WebBlockRulesController());
     }),
+  ),
+  GetPage(
+    name: '/web/stats/:gid/:token',
+    page: () => const WebStatsPage(),
+  ),
+  GetPage(
+    name: '/web/tag-sets',
+    page: () => const WebTagSetsPage(),
   ),
 ];
 

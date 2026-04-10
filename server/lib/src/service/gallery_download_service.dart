@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:collection/collection.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
@@ -9,6 +10,7 @@ import '../config/server_config.dart';
 import '../core/database.dart';
 import '../core/log.dart';
 import '../network/eh_client.dart';
+import '../network/jh_public_client.dart';
 import '../service/event_bus.dart';
 
 T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
@@ -34,7 +36,11 @@ class GalleryDownloadTask {
   final String uploader;
   GalleryDownloadStatus status;
   int completedCount;
-  final String group;
+  String group;
+  int priority;
+  final String insertTime;
+  int? supersedesGid;
+  int? supersededByGid;
   CancelToken? _cancelToken;
 
   GalleryDownloadTask({
@@ -49,6 +55,10 @@ class GalleryDownloadTask {
     this.status = GalleryDownloadStatus.none,
     this.completedCount = 0,
     this.group = 'default',
+    this.priority = 0,
+    required this.insertTime,
+    this.supersedesGid,
+    this.supersededByGid,
   });
 
   Map<String, dynamic> toJson() => {
@@ -63,7 +73,23 @@ class GalleryDownloadTask {
     'status': status.index,
     'completedCount': completedCount,
     'group': group,
+    'group_name': group,
+    'priority': priority,
+    'insertTime': insertTime,
+    if (supersedesGid != null) 'supersedesGid': supersedesGid,
+    if (supersededByGid != null) 'supersededByGid': supersededByGid,
   };
+}
+
+/// Parses `/g/{gid}/{token}/` from absolute or site-relative URL.
+({int gid, String token})? parseGalleryGidToken(String raw, String siteOrigin) {
+  var s = raw.trim();
+  if (s.startsWith('/')) s = '$siteOrigin$s';
+  final m = RegExp(r'/g/(\d+)/([^/]+)').firstMatch(s);
+  if (m == null) return null;
+  final gid = int.tryParse(m.group(1)!);
+  if (gid == null) return null;
+  return (gid: gid, token: m.group(2)!);
 }
 
 class GalleryDownloadService {
@@ -73,7 +99,8 @@ class GalleryDownloadService {
 
   final Map<int, GalleryDownloadTask> _tasks = {};
   final Set<int> _activeDownloads = {};
-  static const int _maxConcurrent = 3;
+
+  int get _maxConcurrent => _config.maxConcurrentGalleryDownloads;
 
   List<GalleryDownloadTask> get tasks => _tasks.values.toList();
 
@@ -94,21 +121,23 @@ class GalleryDownloadService {
         status: _safeEnum(GalleryDownloadStatus.values, row['download_status'] as int, GalleryDownloadStatus.failed),
         completedCount: row['completed_count'] as int? ?? 0,
         group: row['group_name'] as String? ?? 'default',
+        priority: row['priority'] as int? ?? 0,
+        insertTime: row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
+        supersedesGid: row['supersedes_gid'] as int?,
+        supersededByGid: row['superseded_by_gid'] as int?,
       );
       _tasks[task.gid] = task;
     }
     log.info('Loaded ${_tasks.length} gallery download tasks');
 
-    // Resume interrupted downloads
     final toResume = _tasks.values
         .where((t) => t.status == GalleryDownloadStatus.downloading)
         .toList();
     for (final task in toResume) {
       log.info('Resuming gallery download: ${task.gid} (${task.title})');
-      _scheduleDownload(task);
     }
     if (toResume.isNotEmpty) {
-      log.info('Resumed ${toResume.length} gallery downloads');
+      _processQueue();
     }
   }
 
@@ -122,17 +151,20 @@ class GalleryDownloadService {
     String coverUrl = '',
     String uploader = '',
     String group = 'default',
+    int priority = 0,
+    int? supersedesGid,
   }) async {
     if (_tasks.containsKey(gid)) {
       final existing = _tasks[gid]!;
       if (existing.status == GalleryDownloadStatus.paused || existing.status == GalleryDownloadStatus.failed) {
         existing.status = GalleryDownloadStatus.downloading;
         db.updateGalleryDownloadStatus(gid, GalleryDownloadStatus.downloading.index);
-        _scheduleDownload(existing);
+        _processQueue();
       }
       return;
     }
 
+    final now = DateTime.now().toIso8601String();
     final task = GalleryDownloadTask(
       gid: gid,
       token: token,
@@ -144,6 +176,9 @@ class GalleryDownloadService {
       uploader: uploader,
       status: GalleryDownloadStatus.downloading,
       group: group,
+      priority: priority,
+      insertTime: now,
+      supersedesGid: supersedesGid,
     );
 
     _tasks[gid] = task;
@@ -156,13 +191,88 @@ class GalleryDownloadService {
       'gallery_url': galleryUrl,
       'cover_url': coverUrl,
       'uploader': uploader,
-      'publish_time': DateTime.now().toIso8601String(),
+      'publish_time': now,
       'download_status': GalleryDownloadStatus.downloading.index,
+      'insert_time': now,
       'group_name': group,
+      'priority': priority,
+      'supersedes_gid': supersedesGid,
     });
 
     _notifyProgress(task);
-    _scheduleDownload(task);
+    _processQueue();
+  }
+
+  /// When [fromGid] is completed, start download for newer gallery URL; link rows in DB.
+  Future<({bool ok, String? error, int? newGid})> upgradeFromCompleted({
+    required int fromGid,
+    required String newerVersionUrl,
+  }) async {
+    final old = _tasks[fromGid];
+    if (old == null) {
+      return (ok: false, error: 'Unknown gallery task', newGid: null);
+    }
+    if (old.status != GalleryDownloadStatus.completed) {
+      return (ok: false, error: 'Only completed downloads can be upgraded', newGid: null);
+    }
+
+    final resolved = newerVersionUrl.startsWith('http')
+        ? newerVersionUrl
+        : '${_client.baseUrl}${newerVersionUrl.startsWith('/') ? '' : '/'}$newerVersionUrl';
+    final parsed = parseGalleryGidToken(resolved, _client.baseUrl);
+    if (parsed == null) {
+      return (ok: false, error: 'Could not parse newer gallery URL', newGid: null);
+    }
+    final newGid = parsed.gid;
+    final newToken = parsed.token;
+    if (newGid == fromGid) {
+      return (ok: false, error: 'New URL points to same gallery', newGid: null);
+    }
+    if (_tasks.containsKey(newGid)) {
+      return (ok: false, error: 'New gallery already in download list', newGid: null);
+    }
+
+    final galleryUrl = '${_client.baseUrl}/g/$newGid/$newToken/';
+    GalleryDetailResult detail;
+    try {
+      detail = await _client.fetchGalleryDetail(galleryUrl);
+    } catch (e) {
+      return (ok: false, error: 'Failed to fetch new gallery: $e', newGid: null);
+    }
+
+    db.updateGalleryDownloadMeta(fromGid, supersededByGid: newGid);
+    old.supersededByGid = newGid;
+    _notifyProgress(old);
+
+    await startDownload(
+      gid: newGid,
+      token: newToken,
+      title: detail.title,
+      category: detail.category,
+      pageCount: detail.pageCount,
+      galleryUrl: galleryUrl,
+      coverUrl: detail.coverUrl,
+      uploader: detail.uploader,
+      group: old.group,
+      priority: old.priority,
+      supersedesGid: fromGid,
+    );
+
+    return (ok: true, error: null, newGid: newGid);
+  }
+
+  void updateTaskMeta(int gid, {int? priority, String? group}) {
+    final task = _tasks[gid];
+    if (task == null) return;
+    if (priority != null) {
+      task.priority = priority;
+      db.updateGalleryDownloadMeta(gid, priority: priority);
+    }
+    if (group != null) {
+      task.group = group;
+      db.updateGalleryDownloadMeta(gid, groupName: group);
+    }
+    _notifyProgress(task);
   }
 
   void pauseDownload(int gid) {
@@ -173,6 +283,7 @@ class GalleryDownloadService {
     _activeDownloads.remove(gid);
     db.updateGalleryDownloadStatus(gid, GalleryDownloadStatus.paused.index);
     _notifyProgress(task);
+    _processQueue();
   }
 
   void resumeDownload(int gid) {
@@ -182,7 +293,7 @@ class GalleryDownloadService {
     task.status = GalleryDownloadStatus.downloading;
     db.updateGalleryDownloadStatus(gid, GalleryDownloadStatus.downloading.index);
     _notifyProgress(task);
-    _scheduleDownload(task);
+    _processQueue();
   }
 
   Future<void> deleteDownload(int gid, {bool deleteFiles = true}) async {
@@ -198,13 +309,29 @@ class GalleryDownloadService {
       }
     }
     _eventBus.fire('download_removed', {'type': 'gallery', 'gid': gid});
+    _processQueue();
   }
 
-  void _scheduleDownload(GalleryDownloadTask task) {
-    if (_activeDownloads.length >= _maxConcurrent) return;
-    if (_activeDownloads.contains(task.gid)) return;
-    _activeDownloads.add(task.gid);
-    _doDownload(task);
+  GalleryDownloadTask? _nextQueuedTask() {
+    final candidates = _tasks.values
+        .where((t) => t.status == GalleryDownloadStatus.downloading && !_activeDownloads.contains(t.gid))
+        .toList();
+    if (candidates.isEmpty) return null;
+    candidates.sort((a, b) {
+      final c = b.priority.compareTo(a.priority);
+      if (c != 0) return c;
+      return a.insertTime.compareTo(b.insertTime);
+    });
+    return candidates.first;
+  }
+
+  void _processQueue() {
+    while (_activeDownloads.length < _maxConcurrent) {
+      final next = _nextQueuedTask();
+      if (next == null) break;
+      _activeDownloads.add(next.gid);
+      _doDownload(next);
+    }
   }
 
   Future<void> _doDownload(GalleryDownloadTask task) async {
@@ -235,6 +362,8 @@ class GalleryDownloadService {
       task.coverUrl = detail.coverUrl.isNotEmpty ? detail.coverUrl : task.coverUrl;
 
       _saveMetadata(task, imagePageUrls);
+
+      await _tryCopyPagesFromSupersededGallery(task, imagePageUrls);
 
       for (int i = 0; i < imagePageUrls.length; i++) {
         if (task.status != GalleryDownloadStatus.downloading) break;
@@ -280,7 +409,9 @@ class GalleryDownloadService {
             db.upsertGalleryImage({
               'gid': task.gid,
               'serial_no': i,
+              'url': '',
               'image_url': imagePage.imageUrl,
+              'image_hash': imagePage.imageHash,
               'path': savePath,
               'download_status': 1,
               'image_page_url': imagePageUrls[i],
@@ -336,16 +467,86 @@ class GalleryDownloadService {
     }
   }
 
-  void _processQueue() {
-    for (final task in _tasks.values) {
-      if (task.status == GalleryDownloadStatus.downloading && !_activeDownloads.contains(task.gid)) {
-        _scheduleDownload(task);
-        if (_activeDownloads.length >= _maxConcurrent) break;
+  String _galleryDir(int gid) => p.join(_config.downloadDir, 'gallery', gid.toString());
+
+  /// Align with native [GalleryDownloadService._tryCopyImageInfosFromImageHashes]: JHenTai public hashes + old dir files.
+  Future<void> _tryCopyPagesFromSupersededGallery(
+    GalleryDownloadTask task,
+    List<String> imagePageUrls,
+  ) async {
+    final oldGid = task.supersedesGid;
+    if (oldGid == null) return;
+    if (!_config.galleryUpgradeReuseImages) return;
+    if (_config.jhApiSecret.isEmpty) {
+      log.debug('JH_JHENTAI_API_SECRET unset: skip upgrade hash reuse for gid ${task.gid}');
+      return;
+    }
+
+    final jh = JhPublicClient(_config);
+    final hashes = await jh.fetchGalleryImageHashes(gid: task.gid, token: task.token);
+    if (hashes == null) return;
+    if (hashes.length != imagePageUrls.length) {
+      log.warning(
+        'JH image hashes length ${hashes.length} != page count ${imagePageUrls.length} for gid ${task.gid}',
+      );
+      return;
+    }
+
+    final oldRows = db.selectGalleryImages(oldGid);
+    final hashToSerial = <String, int>{};
+    for (final row in oldRows) {
+      final h = (row['image_hash'] as String?) ?? '';
+      if (h.isEmpty) continue;
+      hashToSerial.putIfAbsent(h, () => row['serial_no'] as int);
+    }
+    if (hashToSerial.isEmpty) {
+      log.info(
+        'Upgrade reuse: old gallery $oldGid has no image_hash in DB; skipped. '
+        'Complete a fresh download of the old version to store per-page hashes.',
+      );
+      return;
+    }
+
+    final newDir = Directory(_galleryDir(task.gid));
+    await newDir.create(recursive: true);
+
+    var copied = 0;
+    for (var i = 0; i < imagePageUrls.length; i++) {
+      if (task.status != GalleryDownloadStatus.downloading) return;
+      final h = hashes[i];
+      final oldSerial = hashToSerial[h];
+      if (oldSerial == null) continue;
+
+      final oldFile = _findExistingImage(oldGid, oldSerial);
+      if (oldFile == null || !oldFile.existsSync()) continue;
+
+      var ext = p.extension(oldFile.path).replaceFirst('.', '');
+      if (ext.isEmpty) ext = 'jpg';
+      final savePath = p.join(newDir.path, '${i.toString().padLeft(5, '0')}.$ext');
+
+      try {
+        await oldFile.copy(savePath);
+      } catch (e) {
+        log.warning('Upgrade reuse copy failed $oldGid#$oldSerial -> ${task.gid}#$i: $e');
+        continue;
       }
+
+      db.upsertGalleryImage({
+        'gid': task.gid,
+        'serial_no': i,
+        'url': '',
+        'image_url': '',
+        'image_hash': h,
+        'path': savePath,
+        'download_status': 1,
+        'image_page_url': imagePageUrls[i],
+      });
+      copied++;
+    }
+    if (copied > 0) {
+      log.info('Upgrade reuse: copied $copied / ${imagePageUrls.length} pages from gid $oldGid -> ${task.gid}');
     }
   }
-
-  String _galleryDir(int gid) => p.join(_config.downloadDir, 'gallery', gid.toString());
 
   File? _findExistingImage(int gid, int index) {
     final dir = Directory(_galleryDir(gid));

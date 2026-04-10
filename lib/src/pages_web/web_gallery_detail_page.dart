@@ -275,7 +275,7 @@ class WebGalleryDetailController extends GetxController {
     }
   }
 
-  Future<void> startGalleryDownload() async {
+  Future<void> startGalleryDownload({String group = 'default', int priority = 0}) async {
     try {
       await backendApiClient.startGalleryDownload(
         gid: gid,
@@ -286,11 +286,33 @@ class WebGalleryDetailController extends GetxController {
         pageCount: pageCount.value,
         coverUrl: coverUrl.value,
         uploader: uploader.value,
+        group: group,
+        priority: priority,
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.galleryQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
+      await Get.find<WebDownloadService>().refresh();
     } catch (e) {
       Get.snackbar('common.error'.tr, 'detail.downloadFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+    }
+  }
+
+  Future<void> upgradeToNewVersion() async {
+    final url = newerVersionUrl.value;
+    if (url == null || url.isEmpty) return;
+    try {
+      final r = await backendApiClient.upgradeGalleryDownload(fromGid: gid, newerVersionUrl: url);
+      if (r['success'] != true) {
+        final err = r['error']?.toString() ?? 'unknown';
+        Get.snackbar('common.error'.tr, 'detail.upgradeFailed'.trParams({'error': err}),
+            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+        return;
+      }
+      await Get.find<WebDownloadService>().refresh();
+      Get.snackbar('common.success'.tr, 'detail.upgradeOk'.tr, snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, 'detail.upgradeFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
@@ -411,7 +433,8 @@ class WebGalleryDetailPage extends StatelessWidget {
             itemBuilder: (ctx) => [
               PopupMenuItem(value: 'share', child: ListTile(leading: const Icon(Icons.share, size: 20), title: Text('detail.shareUrl'.tr), dense: true, contentPadding: EdgeInsets.zero)),
               PopupMenuItem(value: 'jumpToPage', child: ListTile(leading: const Icon(Icons.format_list_numbered, size: 20), title: Text('detail.jumpToPage'.tr), dense: true, contentPadding: EdgeInsets.zero)),
-              PopupMenuItem(value: 'similarSearch', child: ListTile(leading: const Icon(Icons.search, size: 20), title: Text('detail.similarSearch'.tr), dense: true, contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(value: 'stats', child: ListTile(leading: const Icon(Icons.bar_chart, size: 20), title: Text('detail.stats'.tr), dense: true, contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(value: 'similarSearch', child: ListTile(leading: const Icon(Icons.title, size: 20), title: Text('detail.similarByTitle'.tr), dense: true, contentPadding: EdgeInsets.zero)),
               PopupMenuItem(value: 'blockGallery', child: ListTile(leading: const Icon(Icons.block, size: 20, color: Colors.orange), title: Text('detail.blockGallery'.tr), dense: true, contentPadding: EdgeInsets.zero)),
             ],
           ),
@@ -426,6 +449,50 @@ class WebGalleryDetailPage extends StatelessWidget {
         }
         return _buildDetail(context);
       }),
+    );
+  }
+
+  void _showStartGalleryDownloadDialog(BuildContext context) {
+    final groupCtrl = TextEditingController(text: 'default');
+    final priorityCtrl = TextEditingController(text: '0');
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('detail.startDownloadTitle'.tr),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: groupCtrl,
+              decoration: InputDecoration(
+                labelText: 'detail.downloadGroup'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priorityCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'detail.downloadPriority'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final g = groupCtrl.text.trim().isEmpty ? 'default' : groupCtrl.text.trim();
+              final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
+              await controller.startGalleryDownload(group: g, priority: p);
+            },
+            child: Text('common.ok'.tr),
+          ),
+        ],
+      ),
     );
   }
 
@@ -460,6 +527,9 @@ class WebGalleryDetailPage extends StatelessWidget {
         break;
       case 'jumpToPage':
         _showJumpToPageDialog(context);
+        break;
+      case 'stats':
+        Get.toNamed('/web/stats/${controller.gid}/${controller.token}');
         break;
       case 'similarSearch':
         Get.offAllNamed('/web/home', arguments: {'search': controller.title.value});
@@ -822,6 +892,27 @@ class WebGalleryDetailPage extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Obx(() {
+            final newer = controller.newerVersionUrl.value;
+            if (newer == null || !svc.isGalleryDownloaded(controller.gid)) {
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Material(
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(8),
+                child: ListTile(
+                  leading: Icon(Icons.system_update_alt, color: Theme.of(context).colorScheme.primary),
+                  title: Text('detail.upgradeDownload'.tr),
+                  trailing: FilledButton(
+                    onPressed: controller.upgradeToNewVersion,
+                    child: Text('common.ok'.tr),
+                  ),
+                ),
+              ),
+            );
+          }),
           Wrap(
             spacing: 12,
             runSpacing: 12,
@@ -887,7 +978,7 @@ class WebGalleryDetailPage extends StatelessWidget {
         icon: const Icon(Icons.download),
         label: Text('detail.downloadGallery'.tr),
         style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
-        onPressed: controller.startGalleryDownload,
+        onPressed: () => _showStartGalleryDownloadDialog(context),
       );
     }
     final svc = Get.find<WebDownloadService>();
@@ -943,23 +1034,40 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   Widget _buildArchiveButton(BuildContext context, Map<String, dynamic>? task, int? status) {
     if (task == null || status == null) {
-      return Obx(() => controller.archiverUrl.isNotEmpty
-          ? Wrap(
-              spacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.archive),
-                  label: Text('detail.archiveResample'.tr),
-                  onPressed: () => controller.startArchiveDownload(isOriginal: false),
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.archive_outlined),
-                  label: Text('detail.archiveOriginal'.tr),
-                  onPressed: () => controller.startArchiveDownload(isOriginal: true),
-                ),
-              ],
-            )
-          : const SizedBox.shrink());
+      return Obx(() {
+        final newer = controller.newerVersionUrl.value;
+        final m = newer != null ? RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(newer) : null;
+        final buttons = controller.archiverUrl.isNotEmpty
+            ? Wrap(
+                spacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.archive),
+                    label: Text('detail.archiveResample'.tr),
+                    onPressed: () => controller.startArchiveDownload(isOriginal: false),
+                  ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.archive_outlined),
+                    label: Text('detail.archiveOriginal'.tr),
+                    onPressed: () => controller.startArchiveDownload(isOriginal: true),
+                  ),
+                ],
+              )
+            : const SizedBox.shrink();
+        if (m == null) return buttons;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('detail.archiveNewVersionHint'.tr,
+                style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            TextButton(
+              onPressed: () => Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}'),
+              child: Text('detail.openNewVersion'.tr),
+            ),
+            buttons,
+          ],
+        );
+      });
     }
     final svc = Get.find<WebDownloadService>();
     if (status == 6) {

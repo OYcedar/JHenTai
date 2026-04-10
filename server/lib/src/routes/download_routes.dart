@@ -22,6 +22,8 @@ class DownloadRoutes {
     // Gallery downloads
     router.get('/gallery/list', _listGalleryDownloads);
     router.post('/gallery/start', _startGalleryDownload);
+    router.post('/gallery/upgrade', _upgradeGalleryDownload);
+    router.patch('/gallery/<gid>', _patchGalleryDownload);
     router.post('/gallery/<gid>/pause', _pauseGalleryDownload);
     router.post('/gallery/<gid>/resume', _resumeGalleryDownload);
     router.delete('/gallery/<gid>', _deleteGalleryDownload);
@@ -30,6 +32,7 @@ class DownloadRoutes {
     // Archive downloads
     router.get('/archive/list', _listArchiveDownloads);
     router.post('/archive/start', _startArchiveDownload);
+    router.patch('/archive/<gid>', _patchArchiveDownload);
     router.post('/archive/<gid>/pause', _pauseArchiveDownload);
     router.post('/archive/<gid>/resume', _resumeArchiveDownload);
     router.delete('/archive/<gid>', _deleteArchiveDownload);
@@ -75,12 +78,60 @@ class DownloadRoutes {
       coverUrl: body['coverUrl'] as String? ?? '',
       uploader: body['uploader'] as String? ?? '',
       group: body['group'] as String? ?? 'default',
+      priority: (body['priority'] as num?)?.toInt() ?? 0,
     );
 
     return Response.ok(
       jsonEncode({'success': true, 'gid': gid}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _upgradeGalleryDownload(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+    }
+    final fromGid = (body['fromGid'] as num?)?.toInt();
+    final newerVersionUrl = body['newerVersionUrl'] as String?;
+    if (fromGid == null || newerVersionUrl == null || newerVersionUrl.isEmpty) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Missing fromGid or newerVersionUrl'}),
+      );
+    }
+    final r = await _galleryService.upgradeFromCompleted(fromGid: fromGid, newerVersionUrl: newerVersionUrl);
+    if (!r.ok) {
+      return Response(
+        400,
+        body: jsonEncode({'success': false, 'error': r.error}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    return Response.ok(
+      jsonEncode({'success': true, 'newGid': r.newGid}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _patchGalleryDownload(Request request, String gid) async {
+    final id = int.tryParse(gid);
+    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+    }
+    final priority = body['priority'];
+    final group = body['group'] as String?;
+    _galleryService.updateTaskMeta(
+      id,
+      priority: priority is num ? priority.toInt() : null,
+      group: group,
+    );
+    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _pauseGalleryDownload(Request request, String gid) async {
@@ -148,12 +199,32 @@ class DownloadRoutes {
       size: body['size'] as String? ?? '',
       isOriginal: body['isOriginal'] as bool? ?? false,
       group: body['group'] as String? ?? 'default',
+      priority: (body['priority'] as num?)?.toInt() ?? 0,
     );
 
     return Response.ok(
       jsonEncode({'success': true, 'gid': gid}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _patchArchiveDownload(Request request, String gid) async {
+    final id = int.tryParse(gid);
+    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+    }
+    final priority = body['priority'];
+    final group = body['group'] as String?;
+    _archiveService.updateTaskMeta(
+      id,
+      priority: priority is num ? priority.toInt() : null,
+      group: group,
+    );
+    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _pauseArchiveDownload(Request request, String gid) async {

@@ -63,6 +63,9 @@ class WebEnUS {
       'home.tags': 'Tags',
       'home.description': 'Description',
       'home.showExpunged': 'Show Expunged',
+      'home.language': 'Language',
+      'home.languageNone': 'None',
+      'home.disableFilterForLanguage': 'Disable language filter',
       'home.applySearch': 'Apply & Search',
       // category names
       'category.doujinshi': 'Doujinshi',
@@ -351,6 +354,7 @@ class WebEnUS {
       // settings reader
       'settings.defaultFavoriteSlot': 'Default favorite folder',
       'settings.defaultFavoriteNone': 'None (always ask)',
+      'settings.usertags': 'Watched / hidden tags',
       'settings.readerSettings': 'Reader Settings',
       'settings.defaultDirection': 'Default Direction',
       'settings.imageSpacing': 'Image Spacing',
@@ -360,6 +364,57 @@ class WebEnUS {
 
       // home enhancements
       'home.scrollToTop': 'Scroll to Top',
+      'home.imageSearch': 'Search by image',
+      'home.imageSearchFailed': 'Image search failed: @error',
+      'home.imageSearchMode': 'Image search results',
+
+      'stats.title': 'Visitor statistics',
+      'stats.totalVisits': 'Total visits: @n',
+      'stats.allTime': 'All time',
+      'stats.year': 'Year',
+      'stats.month': 'Month',
+      'stats.day': 'Day',
+      'stats.period': 'Period',
+      'stats.ranking': 'Ranking',
+      'stats.score': 'Score',
+      'stats.visits': 'Visits',
+      'stats.hits': 'Hits',
+      'stats.noSeries': 'No chart data',
+
+      'usertags.title': 'Watched / hidden tags',
+      'usertags.loadFailed': 'Load failed: @error',
+      'usertags.add': 'Add tag',
+      'usertags.tagHint': 'Format namespace:key',
+      'usertags.watch': 'Watch',
+      'usertags.hidden': 'Hidden',
+      'usertags.delete': 'Delete',
+      'usertags.added': 'Added',
+      'usertags.deleted': 'Deleted',
+      'usertags.currentList': 'Configured tags',
+
+      'downloads.sortBy': 'Sort',
+      'downloads.sortPriority': 'Priority',
+      'downloads.sortTime': 'Time',
+      'downloads.sortTitle': 'Title',
+      'downloads.sortStatus': 'Status',
+      'downloads.setPriority': 'Priority',
+      'downloads.setGroup': 'Group',
+      'downloads.priorityLabel': 'Priority @n',
+      'downloads.groupLabel': 'Group',
+      'downloads.superseded': 'Upgraded to gid @gid',
+      'downloads.editTask': 'Edit task',
+
+      'detail.startDownloadTitle': 'Start download',
+      'detail.downloadGroup': 'Group',
+      'detail.downloadPriority': 'Priority (higher runs first)',
+      'detail.stats': 'Statistics',
+      'detail.similarByTitle': 'Similar title',
+      'detail.upgradeDownload': 'Update to new version',
+      'detail.upgradeOk': 'New version download started',
+      'detail.upgradeFailed': 'Upgrade failed: @error',
+      'detail.archiveNewVersionHint':
+          'A newer gallery version exists. Download archive from the new gallery page.',
+      'detail.openNewVersion': 'Open new version',
     };
   }
 }

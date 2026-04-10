@@ -3,11 +3,15 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 
+enum WebDownloadSort { priorityDesc, timeDesc, title, status }
+
 class WebDownloadsController extends GetxController with GetSingleTickerProviderStateMixin {
   late TabController tabController;
 
   final searchQuery = ''.obs;
   final selectedGroup = Rxn<String>();
+  final gallerySort = WebDownloadSort.priorityDesc.obs;
+  final archiveSort = WebDownloadSort.priorityDesc.obs;
 
   WebDownloadService get _svc => Get.find<WebDownloadService>();
 
@@ -29,6 +33,61 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
     return list;
   }
 
+  static int _cmpInsertTime(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final ta = a['insertTime'] as String? ?? '';
+    final tb = b['insertTime'] as String? ?? '';
+    return ta.compareTo(tb);
+  }
+
+  static int _galleryStatusRank(int s) => switch (s) {
+        3 => 0,
+        1 => 1,
+        2 => 2,
+        4 => 3,
+        _ => 9,
+      };
+
+  static int _archiveStatusRank(int s) => switch (s) {
+        6 => 0,
+        3 => 1,
+        7 => 2,
+        8 => 3,
+        _ => 9,
+      };
+
+  List<Map<String, dynamic>> get sortedFilteredGalleryTasks {
+    final list = List<Map<String, dynamic>>.from(filteredGalleryTasks);
+    switch (gallerySort.value) {
+      case WebDownloadSort.priorityDesc:
+        list.sort((a, b) {
+          final pa = (a['priority'] as num?)?.toInt() ?? 0;
+          final pb = (b['priority'] as num?)?.toInt() ?? 0;
+          if (pa != pb) return pb.compareTo(pa);
+          return _cmpInsertTime(a, b);
+        });
+        break;
+      case WebDownloadSort.timeDesc:
+        list.sort((a, b) => _cmpInsertTime(b, a));
+        break;
+      case WebDownloadSort.title:
+        list.sort((a, b) => (a['title'] as String? ?? '')
+            .toLowerCase()
+            .compareTo((b['title'] as String? ?? '').toLowerCase()));
+        break;
+      case WebDownloadSort.status:
+        list.sort((a, b) {
+          final sa = a['status'] as int? ?? 0;
+          final sb = b['status'] as int? ?? 0;
+          final ra = _galleryStatusRank(sa);
+          final rb = _galleryStatusRank(sb);
+          if (ra != rb) return ra.compareTo(rb);
+          return _cmpInsertTime(b, a);
+        });
+        break;
+    }
+    return list;
+  }
+
   List<Map<String, dynamic>> get filteredArchiveTasks {
     var list = _svc.archiveTasks.values.toList();
     final group = selectedGroup.value;
@@ -43,6 +102,39 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
         final category = (t['category'] as String? ?? '').toLowerCase();
         return title.contains(q) || uploader.contains(q) || category.contains(q);
       }).toList();
+    }
+    return list;
+  }
+
+  List<Map<String, dynamic>> get sortedFilteredArchiveTasks {
+    final list = List<Map<String, dynamic>>.from(filteredArchiveTasks);
+    switch (archiveSort.value) {
+      case WebDownloadSort.priorityDesc:
+        list.sort((a, b) {
+          final pa = (a['priority'] as num?)?.toInt() ?? 0;
+          final pb = (b['priority'] as num?)?.toInt() ?? 0;
+          if (pa != pb) return pb.compareTo(pa);
+          return _cmpInsertTime(a, b);
+        });
+        break;
+      case WebDownloadSort.timeDesc:
+        list.sort((a, b) => _cmpInsertTime(b, a));
+        break;
+      case WebDownloadSort.title:
+        list.sort((a, b) => (a['title'] as String? ?? '')
+            .toLowerCase()
+            .compareTo((b['title'] as String? ?? '').toLowerCase()));
+        break;
+      case WebDownloadSort.status:
+        list.sort((a, b) {
+          final sa = a['status'] as int? ?? 0;
+          final sb = b['status'] as int? ?? 0;
+          final ra = _archiveStatusRank(sa);
+          final rb = _archiveStatusRank(sb);
+          if (ra != rb) return ra.compareTo(rb);
+          return _cmpInsertTime(b, a);
+        });
+        break;
     }
     return list;
   }
@@ -78,6 +170,16 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
   Future<void> deleteArchive(int gid) => _svc.deleteArchive(gid);
 
   Future<void> refresh() => _svc.refresh();
+
+  Future<void> patchGalleryTask(int gid, {int? priority, String? group}) async {
+    await backendApiClient.patchGalleryDownload(gid, priority: priority, group: group);
+    await _svc.refresh();
+  }
+
+  Future<void> patchArchiveTask(int gid, {int? priority, String? group}) async {
+    await backendApiClient.patchArchiveDownload(gid, priority: priority, group: group);
+    await _svc.refresh();
+  }
 }
 
 class WebDownloadsPage extends GetView<WebDownloadsController> {
@@ -135,39 +237,183 @@ class _DownloadFilterBar extends StatelessWidget {
       final groups = controller.allGroups;
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'downloads.search'.tr,
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  border: const OutlineInputBorder(),
-                ),
-                onChanged: (v) => controller.searchQuery.value = v,
-              ),
-            ),
-            if (groups.length > 1) ...[
-              const SizedBox(width: 8),
-              Obx(() => DropdownButton<String?>(
-                value: controller.selectedGroup.value,
-                hint: Text('downloads.allGroups'.tr),
-                items: [
-                  DropdownMenuItem<String?>(value: null, child: Text('downloads.allGroups'.tr)),
-                  ...groups.map((g) => DropdownMenuItem(value: g, child: Text(g))),
+        child: AnimatedBuilder(
+          animation: controller.tabController,
+          builder: (context, _) {
+            final galleryTab = controller.tabController.index == 0;
+            return Obx(() {
+              final sort = galleryTab ? controller.gallerySort.value : controller.archiveSort.value;
+              return Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'downloads.search'.tr,
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (v) => controller.searchQuery.value = v,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 150,
+                    child: DropdownButtonFormField<WebDownloadSort>(
+                      value: sort,
+                      isDense: true,
+                      decoration: InputDecoration(
+                        labelText: 'downloads.sortBy'.tr,
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: WebDownloadSort.priorityDesc,
+                          child: Text('downloads.sortPriority'.tr, overflow: TextOverflow.ellipsis),
+                        ),
+                        DropdownMenuItem(
+                          value: WebDownloadSort.timeDesc,
+                          child: Text('downloads.sortTime'.tr, overflow: TextOverflow.ellipsis),
+                        ),
+                        DropdownMenuItem(
+                          value: WebDownloadSort.title,
+                          child: Text('downloads.sortTitle'.tr, overflow: TextOverflow.ellipsis),
+                        ),
+                        DropdownMenuItem(
+                          value: WebDownloadSort.status,
+                          child: Text('downloads.sortStatus'.tr, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v == null) return;
+                        if (galleryTab) {
+                          controller.gallerySort.value = v;
+                        } else {
+                          controller.archiveSort.value = v;
+                        }
+                      },
+                    ),
+                  ),
+                  if (groups.length > 1) ...[
+                    const SizedBox(width: 8),
+                    DropdownButton<String?>(
+                      value: controller.selectedGroup.value,
+                      hint: Text('downloads.allGroups'.tr),
+                      items: [
+                        DropdownMenuItem<String?>(value: null, child: Text('downloads.allGroups'.tr)),
+                        ...groups.map((g) => DropdownMenuItem(value: g, child: Text(g))),
+                      ],
+                      onChanged: (v) => controller.selectedGroup.value = v,
+                      underline: const SizedBox.shrink(),
+                      isDense: true,
+                    ),
+                  ],
                 ],
-                onChanged: (v) => controller.selectedGroup.value = v,
-                underline: const SizedBox.shrink(),
-                isDense: true,
-              )),
-            ],
-          ],
+              );
+            });
+          },
         ),
       );
     });
   }
+}
+
+void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl, Map<String, dynamic> task) {
+  final gid = task['gid'] as int;
+  final priCtrl = TextEditingController(text: '${(task['priority'] as num?)?.toInt() ?? 0}');
+  final grpCtrl = TextEditingController(text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('downloads.editTask'.tr),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: priCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'downloads.setPriority'.tr,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: grpCtrl,
+            decoration: InputDecoration(
+              labelText: 'downloads.setGroup'.tr,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+        FilledButton(
+          onPressed: () async {
+            Navigator.pop(ctx);
+            final g = grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
+            await ctrl.patchGalleryTask(
+              gid,
+              priority: int.tryParse(priCtrl.text.trim()),
+              group: g,
+            );
+          },
+          child: Text('common.ok'.tr),
+        ),
+      ],
+    ),
+  );
+}
+
+void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl, Map<String, dynamic> task) {
+  final gid = task['gid'] as int;
+  final priCtrl = TextEditingController(text: '${(task['priority'] as num?)?.toInt() ?? 0}');
+  final grpCtrl = TextEditingController(text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('downloads.editTask'.tr),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: priCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'downloads.setPriority'.tr,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: grpCtrl,
+            decoration: InputDecoration(
+              labelText: 'downloads.setGroup'.tr,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+        FilledButton(
+          onPressed: () async {
+            Navigator.pop(ctx);
+            final g = grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
+            await ctrl.patchArchiveTask(
+              gid,
+              priority: int.tryParse(priCtrl.text.trim()),
+              group: g,
+            );
+          },
+          child: Text('common.ok'.tr),
+        ),
+      ],
+    ),
+  );
 }
 
 // --- Gallery Tasks ---
@@ -182,7 +428,7 @@ class _GalleryTaskList extends StatelessWidget {
     return Obx(() {
       // Touch the reactive map to ensure rebuild on changes
       final _ = svc.galleryTasks.length;
-      final tasks = controller.filteredGalleryTasks;
+      final tasks = controller.sortedFilteredGalleryTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noGallery'.tr));
       }
@@ -212,6 +458,8 @@ class _GalleryTaskCard extends StatelessWidget {
     final uploader = task['uploader'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
     final groupName = (task['group_name'] ?? task['groupName'] ?? 'default') as String;
+    final priority = (task['priority'] as num?)?.toInt() ?? 0;
+    final supersededBy = task['supersededByGid'] as int?;
     final status = task['status'] as int? ?? 0;
     final completed = task['completedCount'] as int? ?? 0;
     final total = task['pageCount'] as int? ?? 0;
@@ -284,6 +532,18 @@ class _GalleryTaskCard extends StatelessWidget {
                       children: [
                         _StatusBadge(statusIndex: status, statusName: statusName, isCompleted: isCompleted),
                         const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'downloads.priorityLabel'.trParams({'n': '$priority'}),
+                            style: const TextStyle(fontSize: 10, color: Colors.purple),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         if (groupName != 'default') ...[
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -298,6 +558,14 @@ class _GalleryTaskCard extends StatelessWidget {
                         Text('$completed / $total', style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
+                    if (supersededBy != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          'downloads.superseded'.trParams({'gid': '$supersededBy'}),
+                          style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
+                        ),
+                      ),
                     const SizedBox(height: 4),
                     LinearProgressIndicator(value: progress),
                   ],
@@ -307,6 +575,11 @@ class _GalleryTaskCard extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.tune, size: 20),
+                  tooltip: 'downloads.editTask'.tr,
+                  onPressed: () => _showGalleryPatchDialog(context, controller, task),
+                ),
                 if (isCompleted)
                   IconButton(
                     icon: const Icon(Icons.menu_book, color: Colors.green),
@@ -361,7 +634,7 @@ class _ArchiveTaskList extends StatelessWidget {
     final svc = Get.find<WebDownloadService>();
     return Obx(() {
       final _ = svc.archiveTasks.length;
-      final tasks = controller.filteredArchiveTasks;
+      final tasks = controller.sortedFilteredArchiveTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noArchive'.tr));
       }
@@ -390,6 +663,8 @@ class _ArchiveTaskCard extends StatelessWidget {
     final category = task['category'] as String? ?? '';
     final uploader = task['uploader'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
+    final priority = (task['priority'] as num?)?.toInt() ?? 0;
+    final groupName = (task['group_name'] ?? task['groupName'] ?? 'default') as String;
     final status = task['status'] as int? ?? 0;
     final downloaded = task['downloadedBytes'] as int? ?? 0;
     final total = task['totalBytes'] as int? ?? 0;
@@ -462,9 +737,34 @@ class _ArchiveTaskCard extends StatelessWidget {
                       children: [
                         _StatusBadge(statusIndex: status, statusName: statusName, isCompleted: isCompleted, isArchive: true),
                         const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'downloads.priorityLabel'.trParams({'n': '$priority'}),
+                            style: const TextStyle(fontSize: 10, color: Colors.purple),
+                          ),
+                        ),
+                        if (groupName != 'default') ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.blueGrey.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(groupName, style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
+                          ),
+                        ],
+                        const SizedBox(width: 8),
                         if (total > 0)
-                          Text('${_formatBytes(downloaded)} / ${_formatBytes(total)}',
-                              style: Theme.of(context).textTheme.bodySmall),
+                          Flexible(
+                            child: Text('${_formatBytes(downloaded)} / ${_formatBytes(total)}',
+                                style: Theme.of(context).textTheme.bodySmall, overflow: TextOverflow.ellipsis),
+                          ),
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -477,6 +777,11 @@ class _ArchiveTaskCard extends StatelessWidget {
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.tune, size: 20),
+                  tooltip: 'downloads.editTask'.tr,
+                  onPressed: () => _showArchivePatchDialog(context, controller, task),
+                ),
                 if (isCompleted)
                   IconButton(
                     icon: const Icon(Icons.menu_book, color: Colors.green),

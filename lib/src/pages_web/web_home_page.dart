@@ -1,17 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
-import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
-import 'package:jhentai/src/pages_web/web_settings_page.dart';
 import 'package:web/web.dart' as web;
 
 class WebHomeController extends GetxController {
   final searchController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
+  /// Keys `namespace:tagKey` → translated name (from `/api/tag/batch`, same as gallery detail).
+  final tagTranslations = <String, String>{}.obs;
   final isLoading = false.obs;
   final errorMessage = ''.obs;
   final currentPage = 0.obs;
@@ -25,6 +28,14 @@ class WebHomeController extends GetxController {
   final searchInTags = true.obs;
   final searchInDesc = false.obs;
   final showExpunged = false.obs;
+
+  /// EH `language:"..."` tag keys (same as native [SearchConfig.language]), excluding `japanese` from picker.
+  final filterLanguage = Rxn<String>();
+  final disableFilterForLanguage = false.obs;
+
+  static final List<String> searchLanguageKeys = LocaleConsts.language2Abbreviation.keys
+      .where((k) => k != 'japanese')
+      .toList();
 
   // List mode: grid, list, listCompact
   final listMode = 'grid'.obs;
@@ -85,6 +96,9 @@ class WebHomeController extends GetxController {
       searchInTags.value = m['searchInTags'] as bool? ?? true;
       searchInDesc.value = m['searchInDesc'] as bool? ?? false;
       showExpunged.value = m['showExpunged'] as bool? ?? false;
+      final lang = m['filterLanguage'] as String?;
+      filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
+      disableFilterForLanguage.value = m['disableFilterForLanguage'] as bool? ?? false;
     } catch (_) {}
   }
 
@@ -99,6 +113,8 @@ class WebHomeController extends GetxController {
         'searchInTags': searchInTags.value,
         'searchInDesc': searchInDesc.value,
         'showExpunged': showExpunged.value,
+        'filterLanguage': filterLanguage.value,
+        'disableFilterForLanguage': disableFilterForLanguage.value,
       }),
     );
   }
@@ -119,6 +135,83 @@ class WebHomeController extends GetxController {
   final currentSection = 'home'.obs;
   String _currentSearch = '';
   String _ranklistTl = '15';
+
+  /// EH file lookup → [fetchGalleryListByUrl] pagination chain.
+  final listByUrlMode = false.obs;
+  final listByUrlHumanPage = 1.obs;
+  String? _listByUrlActiveUrl;
+  String? _listByUrlNextUrl;
+  String? _listByUrlPrevUrl;
+
+  void _exitListByUrlMode() {
+    listByUrlMode.value = false;
+    _listByUrlActiveUrl = null;
+    _listByUrlNextUrl = null;
+    _listByUrlPrevUrl = null;
+    listByUrlHumanPage.value = 1;
+  }
+
+  Future<void> exitImageSearchMode() async {
+    if (!listByUrlMode.value) return;
+    _exitListByUrlMode();
+    currentPage.value = 0;
+    await _fetchGalleryList();
+  }
+
+  Future<void> pickImageAndSearch() async {
+    final r = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (r == null || r.files.isEmpty) return;
+    final f = r.files.first;
+    final bytes = f.bytes;
+    if (bytes == null || bytes.isEmpty) {
+      Get.snackbar('common.error'.tr, 'home.imageSearchFailed'.trParams({'error': 'empty file'}),
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    isLoading.value = true;
+    errorMessage.value = '';
+    try {
+      final b64 = base64Encode(bytes);
+      final redirect = await backendApiClient.imageLookupBase64(b64, filename: f.name);
+      if (redirect == null || redirect.isEmpty) {
+        Get.snackbar('common.error'.tr, 'home.imageSearchFailed'.trParams({'error': 'no redirect'}),
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+      listByUrlMode.value = true;
+      currentPage.value = 0;
+      listByUrlHumanPage.value = 1;
+      _currentSearch = '';
+      searchController.clear();
+      currentSection.value = 'home';
+      await _fetchListByUrl(redirect);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, 'home.imageSearchFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> _fetchListByUrl(String url) async {
+    errorMessage.value = '';
+    try {
+      final result = await backendApiClient.fetchGalleryListByUrl(url);
+      final galleryList = (result['galleries'] as List?) ?? [];
+      galleries.value = galleryList.cast<Map<String, dynamic>>();
+      unawaited(_fetchGalleryListTagTranslations());
+      _listByUrlActiveUrl = url;
+      _listByUrlNextUrl = result['nextUrl'] as String?;
+      _listByUrlPrevUrl = result['prevUrl'] as String?;
+      hasNextPage.value = (_listByUrlNextUrl ?? '').isNotEmpty;
+      hasPrevPage.value = (_listByUrlPrevUrl ?? '').isNotEmpty;
+    } catch (e) {
+      errorMessage.value = 'home.loadFailed'.trParams({'error': '$e'});
+    }
+  }
 
   /// Favorites list only: `true` = fs_f (by favorited time), `false` = fs_p (by published time).
   final favoriteSortFavoritedFirst = true.obs;
@@ -179,12 +272,14 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> _loadHomePage() async {
+    _exitListByUrlMode();
     currentSection.value = 'home';
     if (_currentSearch.isEmpty) _currentSearch = '';
     await _fetchGalleryList();
   }
 
   Future<void> search(String keyword) async {
+    _exitListByUrlMode();
     _currentSearch = keyword;
     currentSection.value = 'home';
     currentPage.value = 0;
@@ -196,18 +291,54 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> nextPage() async {
+    if (listByUrlMode.value) {
+      final next = _listByUrlNextUrl;
+      if (next == null || next.isEmpty) return;
+      listByUrlHumanPage.value++;
+      isLoading.value = true;
+      try {
+        await _fetchListByUrl(next);
+      } finally {
+        isLoading.value = false;
+      }
+      return;
+    }
     currentPage.value++;
     await _fetchGalleryList();
   }
 
   Future<void> prevPage() async {
+    if (listByUrlMode.value) {
+      final prev = _listByUrlPrevUrl;
+      if (prev == null || prev.isEmpty) return;
+      if (listByUrlHumanPage.value > 1) listByUrlHumanPage.value--;
+      isLoading.value = true;
+      try {
+        await _fetchListByUrl(prev);
+      } finally {
+        isLoading.value = false;
+      }
+      return;
+    }
     if (currentPage.value > 0) currentPage.value--;
     await _fetchGalleryList();
   }
 
-  Future<void> refresh() => _fetchGalleryList();
+  Future<void> refresh() async {
+    if (listByUrlMode.value) {
+      final u = _listByUrlActiveUrl;
+      if (u != null && u.isNotEmpty) {
+        isLoading.value = true;
+        await _fetchListByUrl(u);
+        isLoading.value = false;
+      }
+      return;
+    }
+    await _fetchGalleryList();
+  }
 
   Future<void> loadUrl(String section, {String? tl}) async {
+    _exitListByUrlMode();
     currentSection.value = section;
     _currentSearch = '';
     currentPage.value = 0;
@@ -215,7 +346,19 @@ class WebHomeController extends GetxController {
     await _fetchGalleryList();
   }
 
+  /// Native [SearchConfig.toQueryParameters]: append ` language:"$key"` to `f_search`.
+  String _composeFSearch(String keyword) {
+    final base = keyword.trim();
+    final lang = filterLanguage.value;
+    if (lang == null || lang.isEmpty) return base;
+    return '${base.isEmpty ? '' : base} language:"$lang"';
+  }
+
   Map<String, dynamic>? _buildAdvancedParams() {
+    if (currentSection.value == 'watched') {
+      if (!disableFilterForLanguage.value) return null;
+      return {'f_sfl': 'on'};
+    }
     if (currentSection.value != 'home') return null;
 
     final params = <String, dynamic>{};
@@ -238,11 +381,28 @@ class WebHomeController extends GetxController {
       if (searchInDesc.value) params['f_sdesc'] = 'on';
       if (showExpunged.value) params['f_sh'] = 'on';
     }
+    if (disableFilterForLanguage.value) {
+      params['f_sfl'] = 'on';
+    }
 
     return params.isNotEmpty ? params : null;
   }
 
   Future<void> _fetchGalleryList() async {
+    if (listByUrlMode.value) {
+      final u = _listByUrlActiveUrl;
+      if (u != null && u.isNotEmpty) {
+        isLoading.value = true;
+        errorMessage.value = '';
+        try {
+          await _fetchListByUrl(u);
+        } finally {
+          isLoading.value = false;
+        }
+      }
+      return;
+    }
+
     isLoading.value = true;
     errorMessage.value = '';
     try {
@@ -259,10 +419,11 @@ class WebHomeController extends GetxController {
         favSort = favoriteSortFavoritedFirst.value ? 'fs_f' : 'fs_p';
         favcat = favoriteCategoryFilter.value;
       }
+      final composedSearch = _composeFSearch(_currentSearch);
       final result = await backendApiClient.fetchGalleryList(
         section: currentSection.value,
         page: currentPage.value > 0 ? currentPage.value.toString() : null,
-        search: _currentSearch.isNotEmpty ? _currentSearch : null,
+        search: composedSearch.isNotEmpty ? composedSearch : null,
         advancedParams: advParams.isNotEmpty ? advParams : null,
         favSort: favSort,
         favcat: favcat,
@@ -270,6 +431,7 @@ class WebHomeController extends GetxController {
 
       final galleryList = (result['galleries'] as List?) ?? [];
       galleries.value = galleryList.cast<Map<String, dynamic>>();
+      unawaited(_fetchGalleryListTagTranslations());
 
       final nextUrl = result['nextUrl'] as String? ?? '';
       // Do not rely only on parsed prevUrl — on many EH layouts the < link is easy to miss;
@@ -280,6 +442,40 @@ class WebHomeController extends GetxController {
       errorMessage.value = 'home.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> _fetchGalleryListTagTranslations() async {
+    final pending = <String, Map<String, String>>{};
+    for (final g in galleries) {
+      final rawTags = g['tags'] as Map<String, dynamic>?;
+      if (rawTags == null) continue;
+      for (final e in rawTags.entries) {
+        final ns = e.key.toString();
+        final list = e.value;
+        if (list is! List) continue;
+        for (final item in list) {
+          final key = _parseTagListEntryKey(item);
+          if (key.isEmpty) continue;
+          final mk = '$ns:$key';
+          if (tagTranslations.containsKey(mk)) continue;
+          pending[mk] = {'namespace': ns, 'key': key};
+        }
+      }
+    }
+    if (pending.isEmpty) return;
+    final batch = pending.values.toList();
+    const chunkSize = 120;
+    for (var i = 0; i < batch.length; i += chunkSize) {
+      final end = i + chunkSize > batch.length ? batch.length : i + chunkSize;
+      final slice = batch.sublist(i, end);
+      try {
+        final tr = await backendApiClient.translateTags(slice);
+        if (tr.isNotEmpty) {
+          tagTranslations.addAll(tr);
+          tagTranslations.refresh();
+        }
+      } catch (_) {}
     }
   }
 
@@ -322,6 +518,8 @@ class WebHomeController extends GetxController {
       'searchInTags': searchInTags.value,
       'searchInDesc': searchInDesc.value,
       'showExpunged': showExpunged.value,
+      'filterLanguage': filterLanguage.value,
+      'disableFilterForLanguage': disableFilterForLanguage.value,
     });
     await backendApiClient.saveQuickSearch(name, config);
     loadQuickSearches();
@@ -329,6 +527,7 @@ class WebHomeController extends GetxController {
 
   void applyQuickSearch(Map<String, dynamic> item) {
     try {
+      _exitListByUrlMode();
       final config = jsonDecode(item['config'] as String? ?? '{}') as Map<String, dynamic>;
       final keyword = config['keyword'] as String? ?? '';
       searchController.text = keyword;
@@ -339,6 +538,9 @@ class WebHomeController extends GetxController {
       searchInTags.value = config['searchInTags'] as bool? ?? true;
       searchInDesc.value = config['searchInDesc'] as bool? ?? false;
       showExpunged.value = config['showExpunged'] as bool? ?? false;
+      final lang = config['filterLanguage'] as String?;
+      filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
+      disableFilterForLanguage.value = config['disableFilterForLanguage'] as bool? ?? false;
       currentPage.value = 0;
       currentSection.value = 'home';
       persistAdvancedSearchSettings();
@@ -378,6 +580,11 @@ class WebHomePage extends GetView<WebHomeController> {
                 children: [
                   Expanded(child: _SearchField(controller: controller)),
                   const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.image_search),
+                    tooltip: 'home.imageSearch'.tr,
+                    onPressed: controller.pickImageAndSearch,
+                  ),
                   Obx(() {
                     if (controller.currentSection.value != 'home') {
                       return const SizedBox.shrink();
@@ -396,6 +603,20 @@ class WebHomePage extends GetView<WebHomeController> {
                 ],
               ),
             ),
+            Obx(() {
+              if (!controller.listByUrlMode.value) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: InputChip(
+                    avatar: const Icon(Icons.image_search, size: 18),
+                    label: Text('home.imageSearchMode'.tr),
+                    onDeleted: () => controller.exitImageSearchMode(),
+                  ),
+                ),
+              );
+            }),
             Obx(() {
               if (controller.currentSection.value != 'favorites') {
                 return const SizedBox.shrink();
@@ -587,7 +808,10 @@ class WebHomePage extends GetView<WebHomeController> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('home.page'.trParams({'page': '${controller.currentPage.value + 1}'}),
+              child: Text(
+                  'home.page'.trParams({
+                    'page': '${controller.listByUrlMode.value ? controller.listByUrlHumanPage.value : controller.currentPage.value + 1}',
+                  }),
                   style: Theme.of(context).textTheme.bodyLarge),
             ),
             TextButton.icon(
@@ -613,7 +837,12 @@ class WebHomePage extends GetView<WebHomeController> {
             itemCount: controller.galleries.length,
             itemBuilder: (context, index) {
               final gallery = controller.galleries[index];
-              return _GalleryListTile(gallery: gallery, compact: mode == 'listCompact' || isLeftPane, isLeftPane: isLeftPane);
+              return _GalleryListTile(
+                gallery: gallery,
+                homeController: controller,
+                compact: mode == 'listCompact' || isLeftPane,
+                isLeftPane: isLeftPane,
+              );
             },
           );
         }
@@ -633,7 +862,7 @@ class WebHomePage extends GetView<WebHomeController> {
           itemCount: controller.galleries.length,
           itemBuilder: (context, index) {
             final gallery = controller.galleries[index];
-            return _GalleryCard(gallery: gallery);
+            return _GalleryCard(gallery: gallery, homeController: controller);
           },
         );
       });
@@ -648,68 +877,35 @@ class _SinglePaneHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final layoutCtrl = Get.find<WebLayoutController>();
-    return Obx(() {
-      final idx = layoutCtrl.leftPaneIndex.value;
-      return Scaffold(
-        drawer: idx == 0 ? _HomeDrawer(controller: controller) : null,
-        appBar: idx == 0
-            ? AppBar(
-                title: Text('home.title'.tr),
-                actions: [
-                  Obx(() => IconButton(
-                    icon: Icon(controller.listModeIcon),
-                    onPressed: controller.cycleListMode,
-                    tooltip: 'listMode.toggle'.tr,
-                  )),
-                  IconButton(
-                    icon: const Icon(Icons.bookmark),
-                    onPressed: () => _showQuickSearchDialog(context),
-                    tooltip: 'quickSearch.title'.tr,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.history),
-                    onPressed: () => Get.toNamed('/web/history'),
-                    tooltip: 'home.history'.tr,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.folder),
-                    onPressed: () => Get.toNamed('/web/local'),
-                    tooltip: 'home.localGalleries'.tr,
-                  ),
-                ],
-              )
-            : null,
-        body: switch (idx) {
-          1 => _buildDownloadsInline(),
-          2 => _buildSettingsInline(),
-          _ => WebHomePage.buildHomeContent(context, controller),
-        },
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: idx,
-          onDestinationSelected: (i) => layoutCtrl.leftPaneIndex.value = i,
-          destinations: [
-            NavigationDestination(icon: const Icon(Icons.home), label: 'home.home'.tr),
-            NavigationDestination(icon: const Icon(Icons.download), label: 'home.downloads'.tr),
-            NavigationDestination(icon: const Icon(Icons.settings), label: 'home.settings'.tr),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget _buildDownloadsInline() {
-    if (!Get.isRegistered<WebDownloadsController>()) {
-      Get.put(WebDownloadsController());
-    }
-    return const WebDownloadsPage();
-  }
-
-  Widget _buildSettingsInline() {
-    if (!Get.isRegistered<WebSettingsController>()) {
-      Get.put(WebSettingsController());
-    }
-    return const WebSettingsPage();
+    return Scaffold(
+      drawer: _HomeDrawer(controller: controller),
+      appBar: AppBar(
+        title: Text('home.title'.tr),
+        actions: [
+          Obx(() => IconButton(
+                icon: Icon(controller.listModeIcon),
+                onPressed: controller.cycleListMode,
+                tooltip: 'listMode.toggle'.tr,
+              )),
+          IconButton(
+            icon: const Icon(Icons.bookmark),
+            onPressed: () => _showQuickSearchDialog(context),
+            tooltip: 'quickSearch.title'.tr,
+          ),
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => Get.toNamed('/web/history'),
+            tooltip: 'home.history'.tr,
+          ),
+          IconButton(
+            icon: const Icon(Icons.folder),
+            onPressed: () => Get.toNamed('/web/local'),
+            tooltip: 'home.localGalleries'.tr,
+          ),
+        ],
+      ),
+      body: WebHomePage.buildHomeContent(context, controller),
+    );
   }
 
   void _showQuickSearchDialog(BuildContext context) {
@@ -831,6 +1027,11 @@ class _TwoPaneHome extends StatelessWidget {
             tooltip: 'listMode.toggle'.tr,
           )),
           IconButton(
+            icon: const Icon(Icons.image_search),
+            onPressed: controller.pickImageAndSearch,
+            tooltip: 'home.imageSearch'.tr,
+          ),
+          IconButton(
             icon: const Icon(Icons.history),
             onPressed: () => Get.toNamed('/web/history'),
             tooltip: 'home.history'.tr,
@@ -841,28 +1042,7 @@ class _TwoPaneHome extends StatelessWidget {
         children: [
           SizedBox(
             width: leftWidth,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Obx(() => switch (layoutCtrl.leftPaneIndex.value) {
-                    1 => _buildDownloadsInline(),
-                    2 => _buildSettingsInline(),
-                    _ => WebHomePage.buildHomeContent(context, controller, isLeftPane: true),
-                  }),
-                ),
-                Obx(() => NavigationBar(
-                  selectedIndex: layoutCtrl.leftPaneIndex.value,
-                  onDestinationSelected: (i) => layoutCtrl.leftPaneIndex.value = i,
-                  labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-                  height: 56,
-                  destinations: [
-                    NavigationDestination(icon: const Icon(Icons.home), label: 'home.home'.tr),
-                    NavigationDestination(icon: const Icon(Icons.download), label: 'home.downloads'.tr),
-                    NavigationDestination(icon: const Icon(Icons.settings), label: 'home.settings'.tr),
-                  ],
-                )),
-              ],
-            ),
+            child: WebHomePage.buildHomeContent(context, controller, isLeftPane: true),
           ),
           const VerticalDivider(width: 1),
           Expanded(
@@ -888,20 +1068,6 @@ class _TwoPaneHome extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Widget _buildDownloadsInline() {
-    if (!Get.isRegistered<WebDownloadsController>()) {
-      Get.put(WebDownloadsController());
-    }
-    return const WebDownloadsPage();
-  }
-
-  Widget _buildSettingsInline() {
-    if (!Get.isRegistered<WebSettingsController>()) {
-      Get.put(WebSettingsController());
-    }
-    return const WebSettingsPage();
   }
 }
 
@@ -1167,6 +1333,40 @@ class _AdvancedSearchSheet extends StatelessWidget {
                   ),
                 ],
               )),
+              const SizedBox(height: 20),
+              Text('home.language'.tr, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Obx(() => DropdownButtonFormField<String?>(
+                    value: controller.filterLanguage.value,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(value: null, child: Text('home.languageNone'.tr)),
+                      ...WebHomeController.searchLanguageKeys.map((k) => DropdownMenuItem<String?>(
+                            value: k,
+                            child: Text(
+                              k.isEmpty ? k : '${k[0].toUpperCase()}${k.substring(1)}',
+                            ),
+                          )),
+                    ],
+                    onChanged: (v) {
+                      controller.filterLanguage.value = v;
+                      controller.persistAdvancedSearchSettings();
+                    },
+                  )),
+              const SizedBox(height: 4),
+              Obx(() => SwitchListTile(
+                    title: Text('home.disableFilterForLanguage'.tr),
+                    value: controller.disableFilterForLanguage.value,
+                    onChanged: (v) {
+                      controller.disableFilterForLanguage.value = v;
+                      controller.persistAdvancedSearchSettings();
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
               const SizedBox(height: 16),
               Text('home.searchIn'.tr, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
@@ -1222,6 +1422,8 @@ class _AdvancedSearchSheet extends StatelessWidget {
                         controller.searchInTags.value = true;
                         controller.searchInDesc.value = false;
                         controller.showExpunged.value = false;
+                        controller.filterLanguage.value = null;
+                        controller.disableFilterForLanguage.value = false;
                         controller.persistAdvancedSearchSettings();
                       },
                       child: Text('common.reset'.tr),
@@ -1480,6 +1682,15 @@ String _parseTagListEntryLabel(dynamic raw) {
   return raw.toString();
 }
 
+/// Tag key for `/api/tag/batch` (matches gallery detail `key` field).
+String _parseTagListEntryKey(dynamic raw) {
+  if (raw is String) return raw;
+  if (raw is Map) {
+    return raw['tag']?.toString() ?? raw['name']?.toString() ?? '';
+  }
+  return raw.toString();
+}
+
 (int?, int?) _parseTagListEntryColors(dynamic raw) {
   if (raw is! Map) return (null, null);
   final c = (raw['color'] as num?)?.toInt();
@@ -1492,7 +1703,11 @@ bool _tagEntryIsWatched(dynamic raw) {
   return c != null || b != null;
 }
 
-List<Widget> _buildHomePageTagChips(Map<String, dynamic> tags, {int maxTags = 12}) {
+List<Widget> _buildHomePageTagChips(
+  Map<String, dynamic> tags, {
+  required RxMap<String, String> tagTranslations,
+  int maxTags = 12,
+}) {
   final entries = <({String namespace, dynamic raw})>[];
   for (final e in tags.entries) {
     final tagList = e.value;
@@ -1512,8 +1727,11 @@ List<Widget> _buildHomePageTagChips(Map<String, dynamic> tags, {int maxTags = 12
   final chips = <Widget>[];
   for (final e in entries) {
     if (chips.length >= maxTags) break;
+    final key = _parseTagListEntryKey(e.raw);
     final label = _parseTagListEntryLabel(e.raw);
     if (label.isEmpty) continue;
+    final display = tagTranslations['${e.namespace}:$key'] ?? label;
+    final showOriginalTooltip = display != key;
     final (cInt, bInt) = _parseTagListEntryColors(e.raw);
     final watched = cInt != null || bInt != null;
 
@@ -1535,7 +1753,7 @@ List<Widget> _buildHomePageTagChips(Map<String, dynamic> tags, {int maxTags = 12
       borderColor = Color(bInt ?? cInt!).withValues(alpha: 0.9);
     }
 
-    chips.add(Container(
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       decoration: BoxDecoration(
         color: fill,
@@ -1543,24 +1761,31 @@ List<Widget> _buildHomePageTagChips(Map<String, dynamic> tags, {int maxTags = 12
         borderRadius: BorderRadius.circular(3),
       ),
       child: Text(
-        label,
+        display,
         style: TextStyle(
           fontSize: 10,
           color: fg,
           fontWeight: watched ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
-    ));
+    );
+    chips.add(showOriginalTooltip ? Tooltip(message: key, child: chip) : chip);
   }
   return chips;
 }
 
 class _GalleryListTile extends StatelessWidget {
   final Map<String, dynamic> gallery;
+  final WebHomeController homeController;
   final bool compact;
   final bool isLeftPane;
 
-  const _GalleryListTile({required this.gallery, this.compact = false, this.isLeftPane = false});
+  const _GalleryListTile({
+    required this.gallery,
+    required this.homeController,
+    this.compact = false,
+    this.isLeftPane = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1631,11 +1856,15 @@ class _GalleryListTile extends StatelessWidget {
                     ),
                     if (!compact && tags != null && tags.isNotEmpty) ...[
                       const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 3,
-                        runSpacing: 3,
-                        children: _buildHomePageTagChips(tags, maxTags: 12),
-                      ),
+                      Obx(() => Wrap(
+                            spacing: 3,
+                            runSpacing: 3,
+                            children: _buildHomePageTagChips(
+                              tags,
+                              tagTranslations: homeController.tagTranslations,
+                              maxTags: 12,
+                            ),
+                          )),
                     ],
                   ],
                 ),
@@ -1666,8 +1895,9 @@ class _GalleryListTile extends StatelessWidget {
 
 class _GalleryCard extends StatelessWidget {
   final Map<String, dynamic> gallery;
+  final WebHomeController homeController;
 
-  const _GalleryCard({required this.gallery});
+  const _GalleryCard({required this.gallery, required this.homeController});
 
   @override
   Widget build(BuildContext context) {
@@ -1740,11 +1970,15 @@ class _GalleryCard extends StatelessWidget {
             if (tags != null && tags.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: Wrap(
-                  spacing: 3,
-                  runSpacing: 3,
-                  children: _buildHomePageTagChips(tags, maxTags: 8),
-                ),
+                child: Obx(() => Wrap(
+                      spacing: 3,
+                      runSpacing: 3,
+                      children: _buildHomePageTagChips(
+                        tags,
+                        tagTranslations: homeController.tagTranslations,
+                        maxTags: 8,
+                      ),
+                    )),
               ),
           ],
         ),

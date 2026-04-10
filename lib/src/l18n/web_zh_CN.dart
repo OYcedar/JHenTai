@@ -62,6 +62,9 @@ class WebZhCN {
       'home.tags': '标签',
       'home.description': '描述',
       'home.showExpunged': '显示已删除',
+      'home.language': '语言',
+      'home.languageNone': '无',
+      'home.disableFilterForLanguage': '禁用语言过滤',
       'home.applySearch': '应用并搜索',
       // category names
       'category.doujinshi': '同人志',
@@ -350,6 +353,7 @@ class WebZhCN {
       // settings reader
       'settings.defaultFavoriteSlot': '默认收藏夹',
       'settings.defaultFavoriteNone': '无（每次询问）',
+      'settings.usertags': '关注 / 隐藏标签',
       'settings.readerSettings': '阅读器设置',
       'settings.defaultDirection': '默认方向',
       'settings.imageSpacing': '图片间距',
@@ -359,6 +363,60 @@ class WebZhCN {
 
       // home enhancements
       'home.scrollToTop': '回到顶部',
+      'home.imageSearch': '以图搜图',
+      'home.imageSearchFailed': '以图搜图失败: @error',
+      'home.imageSearchMode': '图搜结果',
+
+      // stats page
+      'stats.title': '访问统计',
+      'stats.totalVisits': '总访问量: @n',
+      'stats.allTime': '全部',
+      'stats.year': '年',
+      'stats.month': '月',
+      'stats.day': '日',
+      'stats.period': '周期',
+      'stats.ranking': '排名',
+      'stats.score': '分数',
+      'stats.visits': '访问',
+      'stats.hits': '点击',
+      'stats.noSeries': '暂无图表数据',
+
+      // usertags
+      'usertags.title': '关注 / 隐藏标签',
+      'usertags.loadFailed': '加载失败: @error',
+      'usertags.add': '添加标签',
+      'usertags.tagHint': '格式 namespace:key',
+      'usertags.watch': '关注',
+      'usertags.hidden': '隐藏',
+      'usertags.delete': '删除',
+      'usertags.added': '已添加',
+      'usertags.deleted': '已删除',
+      'usertags.currentList': '已配置标签',
+
+      // downloads queue
+      'downloads.sortBy': '排序',
+      'downloads.sortPriority': '优先级',
+      'downloads.sortTime': '时间',
+      'downloads.sortTitle': '标题',
+      'downloads.sortStatus': '状态',
+      'downloads.setPriority': '优先级',
+      'downloads.setGroup': '分组',
+      'downloads.priorityLabel': '优先级 @n',
+      'downloads.groupLabel': '分组',
+      'downloads.superseded': '已升级至 gid @gid',
+      'downloads.editTask': '编辑任务',
+
+      // detail download dialog
+      'detail.startDownloadTitle': '开始下载',
+      'detail.downloadGroup': '分组',
+      'detail.downloadPriority': '优先级（越大越优先）',
+      'detail.stats': '统计',
+      'detail.similarByTitle': '相似标题',
+      'detail.upgradeDownload': '更新到新版本',
+      'detail.upgradeOk': '已开始下载新版本',
+      'detail.upgradeFailed': '升级失败: @error',
+      'detail.archiveNewVersionHint': '存在新版本画廊，请在新版页面重新下载归档。',
+      'detail.openNewVersion': '打开新版本',
     };
   }
 }
