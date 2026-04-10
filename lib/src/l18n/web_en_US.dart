@@ -25,6 +25,12 @@ class WebEnUS {
       'setup.tokenPasteHint': 'Paste the complete 64-character token from logs',
       'setup.tokenCharCount': '@current / @total characters',
       'setup.tokenWrongLength': 'Token must be exactly 64 hexadecimal characters (full line from docker logs).',
+      'setup.tokenHelpTitle': 'How to find the token in logs',
+      'setup.tokenHelpP1': 'On the host running Docker, open a terminal and run:',
+      'setup.tokenHelpP2':
+          'Find the line starting with [JHenTai] API token for web UI. Copy the 64 hexadecimal characters after the colon (the full token on one line). If your container name is not jhentai, replace it in the commands below.',
+      'setup.tokenHelpAlt':
+          'If that line is missing, read the token from the server database (default container name jhentai, data directory /data):',
 
       // home
       'home.title': 'JHenTai',

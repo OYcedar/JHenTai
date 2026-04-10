@@ -401,6 +401,26 @@ final _webRoutes = [
   ),
 ];
 
+Widget _setupCodeBlock(BuildContext context, String text) {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: SelectableText(
+      text,
+      style: TextStyle(
+        fontFamily: 'monospace',
+        fontSize: 12,
+        height: 1.35,
+        color: Theme.of(context).colorScheme.onSurface,
+      ),
+    ),
+  );
+}
+
 class WebSetupPage extends StatefulWidget {
   const WebSetupPage({super.key});
 
@@ -414,6 +434,13 @@ class _WebSetupPageState extends State<WebSetupPage> {
   String? _error;
 
   static const _tokenLen = 64;
+
+  /// Commands are English; shown in monospace for copy-paste.
+  static const _dockerLogsCmd =
+      'docker logs jhentai 2>&1 | grep JHenTai';
+  static const _sqliteCmd =
+      'docker exec jhentai sqlite3 /data/db.sqlite '
+      '"SELECT value FROM config WHERE key=\'api_token\' AND sub_key=\'\';"';
 
   @override
   void initState() {
@@ -461,7 +488,53 @@ class _WebSetupPageState extends State<WebSetupPage> {
                           fontWeight: FontWeight.w500,
                         ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Theme(
+                      data: Theme.of(context).copyWith(
+                        dividerColor: Colors.transparent,
+                      ),
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: Text(
+                          'setup.tokenHelpTitle'.tr,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        childrenPadding: const EdgeInsets.only(bottom: 8),
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'setup.tokenHelpP1'.tr,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _setupCodeBlock(context, _dockerLogsCmd),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'setup.tokenHelpP2'.tr,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'setup.tokenHelpAlt'.tr,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _setupCodeBlock(context, _sqliteCmd),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   TextField(
                     controller: _tokenController,
                     maxLines: 3,

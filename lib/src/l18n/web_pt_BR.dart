@@ -25,6 +25,11 @@ class WebPtBR {
       'setup.tokenPasteHint': 'Cole o token completo de 64 caracteres dos logs',
       'setup.tokenCharCount': '@current / @total caracteres',
       'setup.tokenWrongLength': 'O token deve ter exatamente 64 caracteres hexadecimais (linha completa do docker logs).',
+      'setup.tokenHelpTitle': 'Como encontrar o token nos logs',
+      'setup.tokenHelpP1': 'No host onde o Docker está em execução, abra um terminal e execute:',
+      'setup.tokenHelpP2':
+          'Procure a linha que começa com [JHenTai] API token for web UI. Copie os 64 caracteres hexadecimais após os dois pontos (o token inteiro em uma linha). Se o nome do contêiner não for jhentai, substitua nos comandos abaixo.',
+      'setup.tokenHelpAlt': 'Se essa linha não existir, leia o token no banco de dados do servidor (nome padrão do contêiner jhentai, diretório de dados /data):',
 
       // home
       'home.title': 'JHenTai',
