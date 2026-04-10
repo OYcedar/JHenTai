@@ -16,6 +16,7 @@ class FavoriteRoutes {
     router.post('/add', _addFavorite);
     router.post('/remove', _removeFavorite);
     router.get('/names', _favoriteNames);
+    router.get('/popup', _favoritePopup);
 
     return router;
   }
@@ -45,9 +46,25 @@ class FavoriteRoutes {
   }
 
   Future<Response> _favoriteNames(Request request) async {
-    final names = await _client.fetchFavoriteNames();
+    final folders = await _client.fetchFavoriteFolders();
     return Response.ok(
-      jsonEncode({'names': names}),
+      jsonEncode({
+        'names': folders.names,
+        'counts': folders.counts,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _favoritePopup(Request request) async {
+    final gid = int.tryParse(request.url.queryParameters['gid'] ?? '');
+    final token = request.url.queryParameters['token'];
+    if (gid == null || token == null || token.isEmpty) {
+      return Response.badRequest(body: jsonEncode({'error': 'gid and token are required'}));
+    }
+    final note = await _client.fetchFavoritePopupNote(gid, token);
+    return Response.ok(
+      jsonEncode({'note': note}),
       headers: {'Content-Type': 'application/json'},
     );
   }

@@ -48,6 +48,11 @@ class WebKoKR {
       'home.next': '다음',
       'home.page': '@page 페이지',
       'home.loadFailed': '로드 실패: @error',
+      'home.favSortTitle': '즐겨찾기 정렬',
+      'home.favSortFavorited': '즐겨찾기한 시간순',
+      'home.favSortPublished': '게시 시간순',
+      'home.favAllFolders': '전체',
+      'home.favSlotShort': '폴더 @n',
       // advanced search
       'home.categoryFilter': '카테고리 필터',
       'home.minimumRating': '최소 평점',
@@ -82,6 +87,8 @@ class WebKoKR {
       'detail.favAddedMsg': '@name에 추가되었습니다',
       'detail.favError': '즐겨찾기 작업 실패: @error',
       'detail.favSlot': '즐겨찾기 @n',
+      'detail.favNoteHint': '메모 (선택)',
+      'detail.favQuickAddTooltip': '기본 폴더에 추가 (길게 누르기)',
       'detail.rateTitle': '갤러리 평가',
       'detail.rateSubmit': '제출',
       'detail.rated': '평가됨',
@@ -341,6 +348,8 @@ class WebKoKR {
       'reader.startAutoMode': '시작',
 
       // settings reader
+      'settings.defaultFavoriteSlot': '기본 즐겨찾기 폴더',
+      'settings.defaultFavoriteNone': '없음 (매번 묻기)',
       'settings.readerSettings': '리더 설정',
       'settings.defaultDirection': '기본 방향',
       'settings.imageSpacing': '이미지 간격',

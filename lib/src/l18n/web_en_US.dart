@@ -49,6 +49,11 @@ class WebEnUS {
       'home.next': 'Next',
       'home.page': 'Page @page',
       'home.loadFailed': 'Failed to load: @error',
+      'home.favSortTitle': 'Favorites sort',
+      'home.favSortFavorited': 'By favorited time',
+      'home.favSortPublished': 'By published time',
+      'home.favAllFolders': 'All',
+      'home.favSlotShort': 'Folder @n',
       // advanced search
       'home.categoryFilter': 'Category Filter',
       'home.minimumRating': 'Minimum Rating',
@@ -83,6 +88,8 @@ class WebEnUS {
       'detail.favAddedMsg': 'Added to @name',
       'detail.favError': 'Favorite operation failed: @error',
       'detail.favSlot': 'Favorites @n',
+      'detail.favNoteHint': 'Favorite note (optional)',
+      'detail.favQuickAddTooltip': 'Add to default folder (long-press)',
       'detail.rateTitle': 'Rate this gallery',
       'detail.rateSubmit': 'Submit',
       'detail.rated': 'Rated',
@@ -342,6 +349,8 @@ class WebEnUS {
       'reader.startAutoMode': 'Start',
 
       // settings reader
+      'settings.defaultFavoriteSlot': 'Default favorite folder',
+      'settings.defaultFavoriteNone': 'None (always ask)',
       'settings.readerSettings': 'Reader Settings',
       'settings.defaultDirection': 'Default Direction',
       'settings.imageSpacing': 'Image Spacing',

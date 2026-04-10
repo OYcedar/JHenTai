@@ -40,7 +40,13 @@ class WebHomeController extends GetxController {
     'category.doujinshi', 'category.manga', 'category.artistCg', 'category.gameCg', 'category.western',
     'category.nonH', 'category.imageSet', 'category.cosplay', 'category.asianPorn', 'category.misc',
   ];
-  static const _categoryBits = [2, 4, 8, 16, 512, 256, 32, 64, 1024, 1];
+
+  /// Bit = excluded category. Must match [SearchConfig._computeFCats] / EH (Asian Porn = 128, not 1024).
+  static const _categoryBits = [2, 4, 8, 16, 512, 256, 32, 64, 128, 1];
+
+  static const _advancedSearchStorageKey = 'jh_web_advanced_search';
+  static const _favSortStorageKey = 'jh_web_fav_sort';
+  static const _favCatStorageKey = 'jh_web_fav_cat';
 
   @override
   void onInit() {
@@ -49,6 +55,8 @@ class WebHomeController extends GetxController {
     if (savedMode != null && ['grid', 'list', 'listCompact'].contains(savedMode)) {
       listMode.value = savedMode;
     }
+    _loadAdvancedSearchFromStorage();
+    _loadFavoritesListPrefs();
     final args = Get.arguments;
     if (args is Map<String, dynamic> && args['search'] is String) {
       final searchQuery = args['search'] as String;
@@ -59,6 +67,40 @@ class WebHomeController extends GetxController {
     loadSearchHistory();
     loadQuickSearches();
     scrollController.addListener(_onScroll);
+  }
+
+  void _loadAdvancedSearchFromStorage() {
+    final raw = web.window.localStorage.getItem(_advancedSearchStorageKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      var cf = (m['categoryFilter'] as num?)?.toInt() ?? 0;
+      // Older Web builds used 1024 for Asian Porn; EH uses 128 (see SearchConfig._computeFCats).
+      if ((cf & 1024) != 0) {
+        cf = (cf & ~1024) | 128;
+      }
+      categoryFilter.value = cf;
+      minimumRating.value = (m['minimumRating'] as num?)?.toInt() ?? 0;
+      searchInName.value = m['searchInName'] as bool? ?? true;
+      searchInTags.value = m['searchInTags'] as bool? ?? true;
+      searchInDesc.value = m['searchInDesc'] as bool? ?? false;
+      showExpunged.value = m['showExpunged'] as bool? ?? false;
+    } catch (_) {}
+  }
+
+  /// Persists category bitmask and advanced search toggles across reloads.
+  void persistAdvancedSearchSettings() {
+    web.window.localStorage.setItem(
+      _advancedSearchStorageKey,
+      jsonEncode({
+        'categoryFilter': categoryFilter.value,
+        'minimumRating': minimumRating.value,
+        'searchInName': searchInName.value,
+        'searchInTags': searchInTags.value,
+        'searchInDesc': searchInDesc.value,
+        'showExpunged': showExpunged.value,
+      }),
+    );
   }
 
   @override
@@ -73,11 +115,61 @@ class WebHomeController extends GetxController {
     showFab.value = scrollController.hasClients && scrollController.offset > 300;
   }
 
-  String _currentSection = 'home';
+  /// Gallery list section: `home`, `popular`, `favorites`, etc. Filters apply only on [home].
+  final currentSection = 'home'.obs;
   String _currentSearch = '';
   String _ranklistTl = '15';
 
+  /// Favorites list only: `true` = fs_f (by favorited time), `false` = fs_p (by published time).
+  final favoriteSortFavoritedFirst = true.obs;
+  /// `null` = all folders; `0`–`9` = one EH favorite category.
+  final favoriteCategoryFilter = Rxn<int>();
+  /// Labels for the favorites folder strip (from EH).
+  final favoriteFolderNames = <String>[].obs;
+
   final searchHistory = <String>[].obs;
+
+  void _loadFavoritesListPrefs() {
+    final sort = web.window.localStorage.getItem(_favSortStorageKey);
+    if (sort == 'fs_p') {
+      favoriteSortFavoritedFirst.value = false;
+    }
+    final cat = web.window.localStorage.getItem(_favCatStorageKey);
+    if (cat != null && cat.isNotEmpty) {
+      final n = int.tryParse(cat);
+      if (n != null && n >= 0 && n <= 9) {
+        favoriteCategoryFilter.value = n;
+      }
+    }
+  }
+
+  void persistFavoritesListPrefs() {
+    web.window.localStorage.setItem(
+      _favSortStorageKey,
+      favoriteSortFavoritedFirst.value ? 'fs_f' : 'fs_p',
+    );
+    final c = favoriteCategoryFilter.value;
+    if (c == null) {
+      web.window.localStorage.removeItem(_favCatStorageKey);
+    } else {
+      web.window.localStorage.setItem(_favCatStorageKey, '$c');
+    }
+  }
+
+  Future<void> _ensureFavoriteFolderNames() async {
+    if (favoriteFolderNames.isNotEmpty) return;
+    try {
+      final f = await backendApiClient.fetchFavoriteFolders();
+      favoriteFolderNames.value = List<String>.from(f.names);
+    } catch (_) {}
+  }
+
+  Future<void> reloadFavoriteFolderNames() async {
+    try {
+      final f = await backendApiClient.fetchFavoriteFolders();
+      favoriteFolderNames.value = List<String>.from(f.names);
+    } catch (_) {}
+  }
 
   void loadSearchHistory() async {
     try {
@@ -87,14 +179,14 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> _loadHomePage() async {
-    _currentSection = 'home';
+    currentSection.value = 'home';
     if (_currentSearch.isEmpty) _currentSearch = '';
     await _fetchGalleryList();
   }
 
   Future<void> search(String keyword) async {
     _currentSearch = keyword;
-    _currentSection = 'home';
+    currentSection.value = 'home';
     currentPage.value = 0;
     if (keyword.trim().isNotEmpty) {
       backendApiClient.recordSearchHistory(keyword.trim()).catchError((_) {});
@@ -116,7 +208,7 @@ class WebHomeController extends GetxController {
   Future<void> refresh() => _fetchGalleryList();
 
   Future<void> loadUrl(String section, {String? tl}) async {
-    _currentSection = section;
+    currentSection.value = section;
     _currentSearch = '';
     currentPage.value = 0;
     if (tl != null) _ranklistTl = tl;
@@ -124,6 +216,8 @@ class WebHomeController extends GetxController {
   }
 
   Map<String, dynamic>? _buildAdvancedParams() {
+    if (currentSection.value != 'home') return null;
+
     final params = <String, dynamic>{};
     bool hasAdvanced = false;
 
@@ -152,24 +246,36 @@ class WebHomeController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     try {
+      if (currentSection.value == 'favorites') {
+        await _ensureFavoriteFolderNames();
+      }
       final advParams = _buildAdvancedParams() ?? <String, dynamic>{};
-      if (_currentSection == 'ranklist') {
+      if (currentSection.value == 'ranklist') {
         advParams['tl'] = _ranklistTl;
       }
+      String? favSort;
+      int? favcat;
+      if (currentSection.value == 'favorites') {
+        favSort = favoriteSortFavoritedFirst.value ? 'fs_f' : 'fs_p';
+        favcat = favoriteCategoryFilter.value;
+      }
       final result = await backendApiClient.fetchGalleryList(
-        section: _currentSection,
+        section: currentSection.value,
         page: currentPage.value > 0 ? currentPage.value.toString() : null,
         search: _currentSearch.isNotEmpty ? _currentSearch : null,
         advancedParams: advParams.isNotEmpty ? advParams : null,
+        favSort: favSort,
+        favcat: favcat,
       );
 
       final galleryList = (result['galleries'] as List?) ?? [];
       galleries.value = galleryList.cast<Map<String, dynamic>>();
 
       final nextUrl = result['nextUrl'] as String? ?? '';
-      final prevUrl = result['prevUrl'] as String? ?? '';
+      // Do not rely only on parsed prevUrl — on many EH layouts the < link is easy to miss;
+      // we drive page index ourselves, so "previous" is available whenever not on first page.
       hasNextPage.value = nextUrl.isNotEmpty;
-      hasPrevPage.value = prevUrl.isNotEmpty;
+      hasPrevPage.value = currentPage.value > 0;
     } catch (e) {
       errorMessage.value = 'home.loadFailed'.trParams({'error': '$e'});
     } finally {
@@ -179,6 +285,7 @@ class WebHomeController extends GetxController {
 
   void toggleCategory(int index) {
     categoryFilter.value ^= _categoryBits[index];
+    persistAdvancedSearchSettings();
   }
 
   bool isCategoryEnabled(int index) {
@@ -233,7 +340,8 @@ class WebHomeController extends GetxController {
       searchInDesc.value = config['searchInDesc'] as bool? ?? false;
       showExpunged.value = config['showExpunged'] as bool? ?? false;
       currentPage.value = 0;
-      _currentSection = 'home';
+      currentSection.value = 'home';
+      persistAdvancedSearchSettings();
       _fetchGalleryList();
     } catch (_) {}
   }
@@ -270,11 +378,16 @@ class WebHomePage extends GetView<WebHomeController> {
                 children: [
                   Expanded(child: _SearchField(controller: controller)),
                   const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.tune),
-                    tooltip: 'home.advancedSearch'.tr,
-                    onPressed: () => _showAdvancedSearchStatic(context, controller),
-                  ),
+                  Obx(() {
+                    if (controller.currentSection.value != 'home') {
+                      return const SizedBox.shrink();
+                    }
+                    return IconButton(
+                      icon: const Icon(Icons.tune),
+                      tooltip: 'home.advancedSearch'.tr,
+                      onPressed: () => _showAdvancedSearchStatic(context, controller),
+                    );
+                  }),
                   const SizedBox(width: 4),
                   IconButton(
                     icon: const Icon(Icons.refresh),
@@ -283,6 +396,64 @@ class WebHomePage extends GetView<WebHomeController> {
                 ],
               ),
             ),
+            Obx(() {
+              if (controller.currentSection.value != 'favorites') {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 12, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.sort),
+                      tooltip: 'home.favSortTitle'.tr,
+                      onPressed: () => _showFavoriteSortDialog(context, controller),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Obx(() => Row(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 4),
+                                  child: FilterChip(
+                                    label: Text('home.favAllFolders'.tr),
+                                    selected: controller.favoriteCategoryFilter.value == null,
+                                    onSelected: (_) {
+                                      controller.favoriteCategoryFilter.value = null;
+                                      controller.persistFavoritesListPrefs();
+                                      controller.currentPage.value = 0;
+                                      controller.refresh();
+                                    },
+                                  ),
+                                ),
+                                ...List.generate(10, (i) {
+                                  final name = controller.favoriteFolderNames.length > i
+                                      ? controller.favoriteFolderNames[i]
+                                      : 'home.favSlotShort'.trParams({'n': '$i'});
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 4),
+                                    child: FilterChip(
+                                      label: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      selected: controller.favoriteCategoryFilter.value == i,
+                                      onSelected: (_) {
+                                        controller.favoriteCategoryFilter.value = i;
+                                        controller.persistFavoritesListPrefs();
+                                        controller.currentPage.value = 0;
+                                        controller.refresh();
+                                      },
+                                    ),
+                                  );
+                                }),
+                              ],
+                            )),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
@@ -348,6 +519,54 @@ class WebHomePage extends GetView<WebHomeController> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _AdvancedSearchSheet(controller: controller),
+    );
+  }
+
+  static void _showFavoriteSortDialog(BuildContext context, WebHomeController controller) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        var sortFavoritedFirst = controller.favoriteSortFavoritedFirst.value;
+        return StatefulBuilder(
+          builder: (context, setSt) => AlertDialog(
+            title: Text('home.favSortTitle'.tr),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<bool>(
+                  title: Text('home.favSortFavorited'.tr),
+                  value: true,
+                  groupValue: sortFavoritedFirst,
+                  onChanged: (v) {
+                    if (v != null) setSt(() => sortFavoritedFirst = v);
+                  },
+                ),
+                RadioListTile<bool>(
+                  title: Text('home.favSortPublished'.tr),
+                  value: false,
+                  groupValue: sortFavoritedFirst,
+                  onChanged: (v) {
+                    if (v != null) setSt(() => sortFavoritedFirst = v);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+              FilledButton(
+                onPressed: () {
+                  controller.favoriteSortFavoritedFirst.value = sortFavoritedFirst;
+                  controller.persistFavoritesListPrefs();
+                  controller.currentPage.value = 0;
+                  Navigator.pop(ctx);
+                  controller.refresh();
+                },
+                child: Text('common.ok'.tr),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -751,7 +970,8 @@ class _HomeDrawer extends StatelessWidget {
             title: Text('home.home'.tr),
             onTap: () {
               Navigator.pop(context);
-              controller.refresh();
+              // Must reset section — refresh() alone would keep e.g. favorites and only refetch that list.
+              controller.loadUrl('home');
             },
           ),
           ListTile(
@@ -932,7 +1152,10 @@ class _AdvancedSearchSheet extends StatelessWidget {
                       label: controller.minimumRating.value == 0
                           ? 'home.ratingAny'.tr
                           : '${controller.minimumRating.value}+',
-                      onChanged: (v) => controller.minimumRating.value = v.round(),
+                      onChanged: (v) {
+                        controller.minimumRating.value = v.round();
+                        controller.persistAdvancedSearchSettings();
+                      },
                     ),
                   ),
                   SizedBox(
@@ -952,25 +1175,37 @@ class _AdvancedSearchSheet extends StatelessWidget {
                   CheckboxListTile(
                     title: Text('home.galleryName'.tr),
                     value: controller.searchInName.value,
-                    onChanged: (v) => controller.searchInName.value = v ?? true,
+                    onChanged: (v) {
+                      controller.searchInName.value = v ?? true;
+                      controller.persistAdvancedSearchSettings();
+                    },
                     dense: true,
                   ),
                   CheckboxListTile(
                     title: Text('home.tags'.tr),
                     value: controller.searchInTags.value,
-                    onChanged: (v) => controller.searchInTags.value = v ?? true,
+                    onChanged: (v) {
+                      controller.searchInTags.value = v ?? true;
+                      controller.persistAdvancedSearchSettings();
+                    },
                     dense: true,
                   ),
                   CheckboxListTile(
                     title: Text('home.description'.tr),
                     value: controller.searchInDesc.value,
-                    onChanged: (v) => controller.searchInDesc.value = v ?? false,
+                    onChanged: (v) {
+                      controller.searchInDesc.value = v ?? false;
+                      controller.persistAdvancedSearchSettings();
+                    },
                     dense: true,
                   ),
                   CheckboxListTile(
                     title: Text('home.showExpunged'.tr),
                     value: controller.showExpunged.value,
-                    onChanged: (v) => controller.showExpunged.value = v ?? false,
+                    onChanged: (v) {
+                      controller.showExpunged.value = v ?? false;
+                      controller.persistAdvancedSearchSettings();
+                    },
                     dense: true,
                   ),
                 ],
@@ -987,6 +1222,7 @@ class _AdvancedSearchSheet extends StatelessWidget {
                         controller.searchInTags.value = true;
                         controller.searchInDesc.value = false;
                         controller.showExpunged.value = false;
+                        controller.persistAdvancedSearchSettings();
                       },
                       child: Text('common.reset'.tr),
                     ),
@@ -996,6 +1232,7 @@ class _AdvancedSearchSheet extends StatelessWidget {
                     child: FilledButton(
                       onPressed: () {
                         Navigator.pop(context);
+                        controller.persistAdvancedSearchSettings();
                         controller.search(controller.searchController.text);
                       },
                       child: Text('home.applySearch'.tr),
@@ -1233,6 +1470,91 @@ class _SearchFieldState extends State<_SearchField> {
   }
 }
 
+/// Gallery list API may send `tags[ns]` as `List<String>` (legacy) or
+/// `List<Map>` with `tag`, optional `color` / `backgroundColor` (ARGB ints from EH watched-tag styles).
+String _parseTagListEntryLabel(dynamic raw) {
+  if (raw is String) return raw;
+  if (raw is Map) {
+    return raw['tag']?.toString() ?? raw['name']?.toString() ?? '';
+  }
+  return raw.toString();
+}
+
+(int?, int?) _parseTagListEntryColors(dynamic raw) {
+  if (raw is! Map) return (null, null);
+  final c = (raw['color'] as num?)?.toInt();
+  final b = (raw['backgroundColor'] as num?)?.toInt();
+  return (c, b);
+}
+
+bool _tagEntryIsWatched(dynamic raw) {
+  final (c, b) = _parseTagListEntryColors(raw);
+  return c != null || b != null;
+}
+
+List<Widget> _buildHomePageTagChips(Map<String, dynamic> tags, {int maxTags = 12}) {
+  final entries = <({String namespace, dynamic raw})>[];
+  for (final e in tags.entries) {
+    final tagList = e.value;
+    if (tagList is! List) continue;
+    for (final raw in tagList) {
+      entries.add((namespace: e.key.toString(), raw: raw));
+    }
+  }
+  entries.sort((a, b) {
+    final aw = _tagEntryIsWatched(a.raw);
+    final bw = _tagEntryIsWatched(b.raw);
+    if (aw && !bw) return -1;
+    if (!aw && bw) return 1;
+    return 0;
+  });
+
+  final chips = <Widget>[];
+  for (final e in entries) {
+    if (chips.length >= maxTags) break;
+    final label = _parseTagListEntryLabel(e.raw);
+    if (label.isEmpty) continue;
+    final (cInt, bInt) = _parseTagListEntryColors(e.raw);
+    final watched = cInt != null || bInt != null;
+
+    late final Color fg;
+    late final Color borderColor;
+    Color? fill;
+    if (!watched) {
+      fg = Colors.grey.shade700;
+      borderColor = Colors.grey.shade400;
+      fill = null;
+    } else {
+      final bg = bInt != null ? Color(bInt) : Colors.grey.shade300;
+      fill = bg;
+      final explicitFg = cInt != null ? Color(cInt) : null;
+      fg = explicitFg ??
+          (ThemeData.estimateBrightnessForColor(bg) == Brightness.light
+              ? const Color(0xFF090909)
+              : const Color(0xFFF1F1F1));
+      borderColor = Color(bInt ?? cInt!).withValues(alpha: 0.9);
+    }
+
+    chips.add(Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: fill,
+        border: Border.all(color: borderColor, width: 0.5),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: fg,
+          fontWeight: watched ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    ));
+  }
+  return chips;
+}
+
 class _GalleryListTile extends StatelessWidget {
   final Map<String, dynamic> gallery;
   final bool compact;
@@ -1312,7 +1634,7 @@ class _GalleryListTile extends StatelessWidget {
                       Wrap(
                         spacing: 3,
                         runSpacing: 3,
-                        children: _buildTagChips(tags).take(12).toList(),
+                        children: _buildHomePageTagChips(tags, maxTags: 12),
                       ),
                     ],
                   ],
@@ -1323,26 +1645,6 @@ class _GalleryListTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  List<Widget> _buildTagChips(Map<String, dynamic> tags) {
-    final chips = <Widget>[];
-    for (final entry in tags.entries) {
-      final tagList = entry.value;
-      if (tagList is List) {
-        for (final tag in tagList) {
-          chips.add(Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade400, width: 0.5),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text(tag.toString(), style: const TextStyle(fontSize: 10, color: Colors.grey)),
-          ));
-        }
-      }
-    }
-    return chips;
   }
 
   Color _categoryColor(String category) {
@@ -1374,6 +1676,7 @@ class _GalleryCard extends StatelessWidget {
     final gid = gallery['gid'];
     final token = gallery['token'];
     final coverUrl = gallery['coverUrl'] as String? ?? '';
+    final tags = gallery['tags'] as Map<String, dynamic>?;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -1426,7 +1729,7 @@ class _GalleryCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
               child: Text(
                 title,
                 maxLines: 2,
@@ -1434,6 +1737,15 @@ class _GalleryCard extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
+            if (tags != null && tags.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: Wrap(
+                  spacing: 3,
+                  runSpacing: 3,
+                  children: _buildHomePageTagChips(tags, maxTags: 8),
+                ),
+              ),
           ],
         ),
       ),

@@ -62,17 +62,7 @@ class WebReaderController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    gid = int.tryParse(Get.parameters['gid'] ?? '') ?? 0;
-    token = Get.parameters['token'] ?? '';
-    _startPage = int.tryParse(Get.parameters['startPage'] ?? '');
-
-    final modeParam = Get.parameters['mode'] ?? 'online';
-    mode = switch (modeParam) {
-      'downloaded' => ReaderMode.downloaded,
-      'archive' => ReaderMode.archive,
-      'local' => ReaderMode.local,
-      _ => ReaderMode.online,
-    };
+    _readWebRouteAndQueryParams();
 
     pageController = PageController();
     _loadSavedDirection();
@@ -89,6 +79,35 @@ class WebReaderController extends GetxController {
     stripScrollController.dispose();
     focusNode.dispose();
     super.onClose();
+  }
+
+  /// Reads `?startPage=` / `?mode=` from the browser URL; Get.parameters often omits query on Flutter Web.
+  void _readWebRouteAndQueryParams() {
+    final uri = Uri.parse(web.window.location.href);
+    final q = uri.queryParameters;
+
+    _startPage = int.tryParse(q['startPage'] ?? Get.parameters['startPage'] ?? '');
+
+    final modeParam = q['mode'] ?? Get.parameters['mode'] ?? 'online';
+    mode = switch (modeParam) {
+      'downloaded' => ReaderMode.downloaded,
+      'archive' => ReaderMode.archive,
+      'local' => ReaderMode.local,
+      _ => ReaderMode.online,
+    };
+
+    var gidStr = Get.parameters['gid'] ?? '';
+    var tokenStr = Get.parameters['token'] ?? '';
+    if (gidStr.isEmpty || tokenStr.isEmpty) {
+      final segs = uri.pathSegments;
+      final i = segs.indexOf('reader');
+      if (i >= 0 && i + 2 < segs.length) {
+        gidStr = segs[i + 1];
+        tokenStr = segs[i + 2];
+      }
+    }
+    gid = int.tryParse(gidStr) ?? 0;
+    token = tokenStr;
   }
 
   Future<void> _loadSavedDirection() async {
@@ -181,6 +200,7 @@ class WebReaderController extends GetxController {
       galleryThumbnails.value = [];
     }
     _preloadAround(0);
+    imageUrls.refresh();
   }
 
   Future<void> _loadDownloaded() async {
@@ -254,6 +274,7 @@ class WebReaderController extends GetxController {
         _loadedImageUrls[index] = proxiedUrl;
         if (index < imageUrls.length) {
           imageUrls[index] = proxiedUrl;
+          imageUrls.refresh();
         }
       }
     } catch (e) {
@@ -265,6 +286,7 @@ class WebReaderController extends GetxController {
     if (mode == ReaderMode.online) {
       _loadedImageUrls.remove(index);
       imageUrls[index] = '';
+      imageUrls.refresh();
       _loadImageAtIndex(index);
     }
   }
@@ -488,6 +510,7 @@ class _ReaderBody extends StatelessWidget {
       child: Stack(
         children: [
           GestureDetector(
+            behavior: HitTestBehavior.translucent,
             onTap: controller.toggleOverlay,
             child: Obx(() {
               final dir = controller.readDirection.value;
@@ -876,12 +899,14 @@ class _BottomOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() => IgnorePointer(
-      ignoring: !controller.showOverlay.value,
-      child: AnimatedPositioned(
-        duration: const Duration(milliseconds: 200),
-        bottom: controller.showOverlay.value ? 0 : -140,
-        left: 0, right: 0,
+    // AnimatedPositioned must be a direct Stack child; wrapping it outside IgnorePointer broke layout.
+    return Obx(() => AnimatedPositioned(
+      duration: const Duration(milliseconds: 200),
+      bottom: controller.showOverlay.value ? 0 : -140,
+      left: 0,
+      right: 0,
+      child: IgnorePointer(
+        ignoring: !controller.showOverlay.value,
         child: Container(
           padding: EdgeInsets.only(
             left: 16, right: 16,
