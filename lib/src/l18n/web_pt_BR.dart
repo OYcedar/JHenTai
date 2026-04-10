@@ -4,6 +4,7 @@ class WebPtBR {
       // common
       'common.cancel': 'Cancelar',
       'common.ok': 'OK',
+      'common.confirm': 'Confirmar',
       'common.error': 'Erro',
       'common.success': 'Sucesso',
       'common.failed': 'Falhou',
@@ -204,6 +205,20 @@ class WebPtBR {
       'settings.extraScanPaths': 'Caminhos Extras de Scan',
       'settings.switchSiteFailed': 'Falha ao trocar site: @error',
       'settings.language': 'Idioma',
+      'settings.sectionData': 'Dados e ferramentas',
+      'settings.sectionStyle': 'Estilo',
+      'settings.sectionRead': 'Leitura',
+      'settings.sectionTags': 'Tags e filtros',
+      'settings.sectionOther': 'Outros',
+      'settings.openDownloads': 'Downloads',
+      'settings.openHistory': 'Histórico',
+      'settings.openLocal': 'Galerias locais',
+      'settings.openQuickSearch': 'Busca rápida',
+      'settings.networkNote': 'Rede e proxy',
+      'settings.networkWebBody':
+          'Proxy e rede avançada são configurados no servidor ou Docker, não nesta interface web. Veja a documentação de implantação.',
+      'settings.about': 'Sobre',
+      'settings.appVersion': 'Versão @version (@build)',
 
       // history
       'history.title': 'Histórico',
@@ -257,6 +272,13 @@ class WebPtBR {
       'quickSearch.saveCurrent': 'Salvar pesquisa atual',
       'quickSearch.saveTitle': 'Salvar Pesquisa Rápida',
       'quickSearch.nameLabel': 'Nome',
+      'quickSearch.addNew': 'Adicionar busca rápida',
+      'quickSearch.keywordLabel': 'Palavra-chave',
+      'quickSearch.keywordHint': 'Igual à barra de busca da página inicial',
+      'quickSearch.saved': 'Salvo',
+      'quickSearch.deleted': 'Excluído',
+      'quickSearch.deleteTitle': 'Excluir busca rápida',
+      'quickSearch.deleteConfirm': 'Remover "@name"?',
 
       // tag suggest
       'tagSuggest.tag': 'Tag',

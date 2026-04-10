@@ -4,6 +4,7 @@ class WebRuRU {
       // common
       'common.cancel': 'Отмена',
       'common.ok': 'ОК',
+      'common.confirm': 'Подтвердить',
       'common.error': 'Ошибка',
       'common.success': 'Успех',
       'common.failed': 'Ошибка',
@@ -204,6 +205,20 @@ class WebRuRU {
       'settings.extraScanPaths': 'Доп. пути сканирования',
       'settings.switchSiteFailed': 'Ошибка смены сайта: @error',
       'settings.language': 'Язык',
+      'settings.sectionData': 'Данные и инструменты',
+      'settings.sectionStyle': 'Оформление',
+      'settings.sectionRead': 'Чтение',
+      'settings.sectionTags': 'Теги и фильтры',
+      'settings.sectionOther': 'Прочее',
+      'settings.openDownloads': 'Загрузки',
+      'settings.openHistory': 'История',
+      'settings.openLocal': 'Локальные галереи',
+      'settings.openQuickSearch': 'Быстрый поиск',
+      'settings.networkNote': 'Сеть и прокси',
+      'settings.networkWebBody':
+          'Прокси и сеть настраиваются на сервере или в Docker, а не в этом веб-интерфейсе. См. документацию по развёртыванию.',
+      'settings.about': 'О приложении',
+      'settings.appVersion': 'Версия @version (@build)',
 
       // history
       'history.title': 'История',
@@ -257,6 +272,13 @@ class WebRuRU {
       'quickSearch.saveCurrent': 'Сохранить текущий поиск',
       'quickSearch.saveTitle': 'Сохранить быстрый поиск',
       'quickSearch.nameLabel': 'Название',
+      'quickSearch.addNew': 'Добавить быстрый поиск',
+      'quickSearch.keywordLabel': 'Ключевые слова',
+      'quickSearch.keywordHint': 'Как в строке поиска на главной',
+      'quickSearch.saved': 'Сохранено',
+      'quickSearch.deleted': 'Удалено',
+      'quickSearch.deleteTitle': 'Удалить быстрый поиск',
+      'quickSearch.deleteConfirm': 'Удалить «@name»?',
 
       // tag suggest
       'tagSuggest.tag': 'Тег',

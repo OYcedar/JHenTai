@@ -4,6 +4,7 @@ class WebKoKR {
       // common
       'common.cancel': '취소',
       'common.ok': '확인',
+      'common.confirm': '확인',
       'common.error': '오류',
       'common.success': '성공',
       'common.failed': '실패',
@@ -204,6 +205,20 @@ class WebKoKR {
       'settings.extraScanPaths': '추가 스캔 경로',
       'settings.switchSiteFailed': '사이트 전환 실패: @error',
       'settings.language': '언어',
+      'settings.sectionData': '데이터 및 도구',
+      'settings.sectionStyle': '스타일',
+      'settings.sectionRead': '뷰어',
+      'settings.sectionTags': '태그 및 필터',
+      'settings.sectionOther': '기타',
+      'settings.openDownloads': '다운로드',
+      'settings.openHistory': '방문 기록',
+      'settings.openLocal': '로컬 갤러리',
+      'settings.openQuickSearch': '빠른 검색',
+      'settings.networkNote': '네트워크 및 프록시',
+      'settings.networkWebBody':
+          '프록시 등 네트워크 설정은 이 웹 UI가 아니라 서버(또는 Docker)에서 구성합니다. 배포 문서를 참고하세요.',
+      'settings.about': '정보',
+      'settings.appVersion': '버전 @version (@build)',
 
       // history
       'history.title': '방문 기록',
@@ -261,6 +276,13 @@ class WebKoKR {
       'quickSearch.saveCurrent': '현재 검색 저장',
       'quickSearch.saveTitle': '빠른 검색 저장',
       'quickSearch.nameLabel': '이름',
+      'quickSearch.addNew': '빠른 검색 추가',
+      'quickSearch.keywordLabel': '키워드',
+      'quickSearch.keywordHint': '홈 검색창과 동일',
+      'quickSearch.saved': '저장됨',
+      'quickSearch.deleted': '삭제됨',
+      'quickSearch.deleteTitle': '빠른 검색 삭제',
+      'quickSearch.deleteConfirm': '"@name"을(를) 삭제할까요?',
 
       // tag suggest
       'tagSuggest.tag': '태그',

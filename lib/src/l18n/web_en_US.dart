@@ -4,6 +4,7 @@ class WebEnUS {
       // common
       'common.cancel': 'Cancel',
       'common.ok': 'OK',
+      'common.confirm': 'Confirm',
       'common.error': 'Error',
       'common.success': 'Success',
       'common.failed': 'Failed',
@@ -205,6 +206,21 @@ class WebEnUS {
       'settings.extraScanPaths': 'Extra Scan Paths',
       'settings.switchSiteFailed': 'Failed to switch site: @error',
       'settings.language': 'Language',
+      'settings.sectionData': 'Data & tools',
+      'settings.sectionStyle': 'Style',
+      'settings.sectionRead': 'Reader',
+      'settings.sectionTags': 'Tags & filtering',
+      'settings.sectionOther': 'Other',
+      'settings.openDownloads': 'Downloads',
+      'settings.openHistory': 'Browsing history',
+      'settings.openLocal': 'Local galleries',
+      'settings.openQuickSearch': 'Quick search',
+      'settings.networkNote': 'Network & proxy',
+      'settings.networkWebBody':
+          'Proxy and advanced networking are configured on the server host or Docker environment, not in this web UI. '
+          'See deployment docs for reverse proxy, TLS, and cookie-based login.',
+      'settings.about': 'About',
+      'settings.appVersion': 'Version @version (@build)',
 
       // history
       'history.title': 'History',
@@ -262,6 +278,13 @@ class WebEnUS {
       'quickSearch.saveCurrent': 'Save current search',
       'quickSearch.saveTitle': 'Save Quick Search',
       'quickSearch.nameLabel': 'Name',
+      'quickSearch.addNew': 'Add quick search',
+      'quickSearch.keywordLabel': 'Keyword',
+      'quickSearch.keywordHint': 'Same as the home search bar',
+      'quickSearch.saved': 'Saved',
+      'quickSearch.deleted': 'Deleted',
+      'quickSearch.deleteTitle': 'Delete quick search',
+      'quickSearch.deleteConfirm': 'Remove "@name"?',
 
       // tag suggest
       'tagSuggest.tag': 'Tag',
