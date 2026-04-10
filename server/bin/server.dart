@@ -52,6 +52,13 @@ Future<void> main(List<String> args) async {
   final ehClient = EHClient();
   await ehClient.init(cookieManager);
 
+  // Restore persisted site preference
+  final savedSite = db.readConfig('site');
+  if (savedSite == 'EX' || savedSite == 'EH') {
+    ehClient.site = savedSite!;
+    log.info('Restored site preference: $savedSite');
+  }
+
   final eventBus = EventBus();
 
   final galleryDownloadService = GalleryDownloadService(ehClient, config, eventBus);

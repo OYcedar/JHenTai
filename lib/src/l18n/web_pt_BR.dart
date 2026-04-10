@@ -284,6 +284,19 @@ class WebPtBR {
       'tagVote.votedUp': 'Votou positivo para "@tag"',
       'tagVote.votedDown': 'Votou negativo para "@tag"',
       'tagVote.failed': 'Falha ao votar: @error',
+
+      // responsive layout
+      'home.selectGallery': 'Selecione uma galeria para ver detalhes',
+
+      // gallery detail extras
+      'detail.parentGallery': 'Galeria Pai',
+      'detail.newerVersion': 'Versão Mais Nova Disponível',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookies OK (inclui igneous — EX pronto)',
+      'settings.cookieStatusNoIgneous': 'Cookies definidos mas falta igneous — EX pode não funcionar',
+      'settings.cookieStatusNone': 'Nenhum cookie de login definido',
+      'settings.siteSwitched': 'Alterado para @site',
     };
   }
 }

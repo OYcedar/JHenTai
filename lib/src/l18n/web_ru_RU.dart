@@ -284,6 +284,19 @@ class WebRuRU {
       'tagVote.votedUp': 'Проголосовали за "@tag"',
       'tagVote.votedDown': 'Проголосовали против "@tag"',
       'tagVote.failed': 'Ошибка голосования: @error',
+
+      // responsive layout
+      'home.selectGallery': 'Выберите галерею для просмотра деталей',
+
+      // gallery detail extras
+      'detail.parentGallery': 'Родительская галерея',
+      'detail.newerVersion': 'Доступна новая версия',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookies OK (включая igneous — EX доступен)',
+      'settings.cookieStatusNoIgneous': 'Cookies установлены, но нет igneous — EX может не работать',
+      'settings.cookieStatusNone': 'Cookies для входа не установлены',
+      'settings.siteSwitched': 'Переключено на @site',
     };
   }
 }

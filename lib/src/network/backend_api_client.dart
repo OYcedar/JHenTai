@@ -132,8 +132,14 @@ class BackendApiClient {
     await _dio.post('/api/auth/cookies', data: {'cookies': cookieString});
   }
 
-  Future<void> setSite(String site) async {
-    await _dio.put('/api/auth/site', data: {'site': site});
+  Future<Map<String, dynamic>> getCookies() async {
+    final response = await _dio.get('/api/auth/cookies');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> setSite(String site) async {
+    final response = await _dio.put('/api/auth/site', data: {'site': site});
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
   }
 
   // --- Gallery downloads ---

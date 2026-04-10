@@ -288,6 +288,19 @@ class WebEnUS {
       'tagVote.votedUp': 'Voted up for "@tag"',
       'tagVote.votedDown': 'Voted down for "@tag"',
       'tagVote.failed': 'Vote failed: @error',
+
+      // responsive layout
+      'home.selectGallery': 'Select a gallery to view details',
+
+      // gallery detail extras
+      'detail.parentGallery': 'Parent Gallery',
+      'detail.newerVersion': 'Newer Version Available',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookies OK (includes igneous — EX ready)',
+      'settings.cookieStatusNoIgneous': 'Cookies set but missing igneous — EX may not work',
+      'settings.cookieStatusNone': 'No login cookies set',
+      'settings.siteSwitched': 'Switched to @site',
     };
   }
 }

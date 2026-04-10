@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
 import 'package:web/web.dart' as web;
 
 class WebHomeController extends GetxController {
@@ -234,8 +236,161 @@ class WebHomePage extends GetView<WebHomeController> {
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 900) {
+          return _TwoPaneHome(controller: controller);
+        }
+        return _SinglePaneHome(controller: controller);
+      },
+    );
+  }
+
+  static Widget buildHomeContent(BuildContext context, WebHomeController controller, {bool isLeftPane = false}) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(child: _SearchField(controller: controller)),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.tune),
+                tooltip: 'home.advancedSearch'.tr,
+                onPressed: () => _showAdvancedSearchStatic(context, controller),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () => controller.refresh(),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Obx(() {
+            if (controller.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (controller.errorMessage.isNotEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(controller.errorMessage.value,
+                        style: Theme.of(context).textTheme.bodyLarge),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: () => controller.refresh(),
+                      label: Text('common.retry'.tr),
+                    ),
+                  ],
+                ),
+              );
+            }
+            if (controller.galleries.isEmpty) {
+              return Center(child: Text('home.noGalleries'.tr));
+            }
+            return Column(
+              children: [
+                Expanded(child: _buildGalleryGridStatic(context, controller, isLeftPane: isLeftPane)),
+                _buildPaginationBarStatic(context, controller),
+              ],
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  static void _showAdvancedSearchStatic(BuildContext context, WebHomeController controller) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => _AdvancedSearchSheet(controller: controller),
+    );
+  }
+
+  static Widget _buildPaginationBarStatic(BuildContext context, WebHomeController controller) {
+    return Obx(() {
+      if (!controller.hasPrevPage.value && !controller.hasNextPage.value) {
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton.icon(
+              icon: const Icon(Icons.chevron_left),
+              label: Text('home.previous'.tr),
+              onPressed: controller.hasPrevPage.value ? controller.prevPage : null,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text('home.page'.trParams({'page': '${controller.currentPage.value + 1}'}),
+                  style: Theme.of(context).textTheme.bodyLarge),
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.chevron_right),
+              label: Text('home.next'.tr),
+              onPressed: controller.hasNextPage.value ? controller.nextPage : null,
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  static Widget _buildGalleryGridStatic(BuildContext context, WebHomeController controller, {bool isLeftPane = false}) {
+    return LayoutBuilder(builder: (context, constraints) {
+      return Obx(() {
+        final mode = controller.listMode.value;
+        if (mode == 'list' || mode == 'listCompact' || isLeftPane) {
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: controller.galleries.length,
+            itemBuilder: (context, index) {
+              final gallery = controller.galleries[index];
+              return _GalleryListTile(gallery: gallery, compact: mode == 'listCompact' || isLeftPane, isLeftPane: isLeftPane);
+            },
+          );
+        }
+        final crossAxisCount = constraints.maxWidth > 1200 ? 4
+            : constraints.maxWidth > 800 ? 3
+            : constraints.maxWidth > 500 ? 2 : 1;
+        return GridView.builder(
+          padding: const EdgeInsets.all(12),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+          ),
+          itemCount: controller.galleries.length,
+          itemBuilder: (context, index) {
+            final gallery = controller.galleries[index];
+            return _GalleryCard(gallery: gallery);
+          },
+        );
+      });
+    });
+  }
+
+}
+
+class _SinglePaneHome extends StatelessWidget {
+  final WebHomeController controller;
+  const _SinglePaneHome({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      drawer: _buildDrawer(context),
+      drawer: _HomeDrawer(controller: controller),
       appBar: AppBar(
         title: Text('home.title'.tr),
         actions: [
@@ -271,91 +426,7 @@ class WebHomePage extends GetView<WebHomeController> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(child: _SearchField(controller: controller)),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.tune),
-                  tooltip: 'home.advancedSearch'.tr,
-                  onPressed: () => _showAdvancedSearch(context),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () => controller.refresh(),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (controller.errorMessage.isNotEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                      const SizedBox(height: 12),
-                      Text(controller.errorMessage.value,
-                          style: Theme.of(context).textTheme.bodyLarge),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        icon: const Icon(Icons.refresh),
-                        onPressed: () => controller.refresh(),
-                        label: Text('common.retry'.tr),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              if (controller.galleries.isEmpty) {
-                return Center(child: Text('home.noGalleries'.tr));
-              }
-              return Column(
-                children: [
-                  Expanded(child: _buildGalleryGrid(context)),
-                  _buildPaginationBar(context),
-                ],
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRanklistPicker(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text('ranklist.title'.tr),
-        children: [
-          SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '15'); },
-            child: Text('ranklist.allTime'.tr),
-          ),
-          SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '13'); },
-            child: Text('ranklist.year'.tr),
-          ),
-          SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '12'); },
-            child: Text('ranklist.month'.tr),
-          ),
-          SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '11'); },
-            child: Text('ranklist.yesterday'.tr),
-          ),
-        ],
-      ),
+      body: WebHomePage.buildHomeContent(context, controller),
     );
   }
 
@@ -406,7 +477,7 @@ class WebHomePage extends GetView<WebHomeController> {
                   dense: true,
                   leading: const Icon(Icons.add, size: 20),
                   title: Text('quickSearch.saveCurrent'.tr),
-                  onTap: () => _showSaveQuickSearchDialog(ctx),
+                  onTap: () => _showSaveDialog(ctx),
                 ),
               ],
             ),
@@ -419,7 +490,7 @@ class WebHomePage extends GetView<WebHomeController> {
     );
   }
 
-  void _showSaveQuickSearchDialog(BuildContext parentCtx) {
+  void _showSaveDialog(BuildContext parentCtx) {
     final nameController = TextEditingController();
     showDialog(
       context: parentCtx,
@@ -455,16 +526,118 @@ class WebHomePage extends GetView<WebHomeController> {
       ),
     );
   }
+}
 
-  void _showAdvancedSearch(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => _AdvancedSearchSheet(controller: controller),
+class _TwoPaneHome extends StatelessWidget {
+  final WebHomeController controller;
+  const _TwoPaneHome({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final layoutCtrl = Get.find<WebLayoutController>();
+    final width = MediaQuery.of(context).size.width;
+    final leftWidth = (width * 0.382).clamp(320.0, 480.0);
+
+    return Scaffold(
+      drawer: _HomeDrawer(controller: controller),
+      appBar: AppBar(
+        title: Text('home.title'.tr),
+        actions: [
+          Obx(() => IconButton(
+            icon: Icon(controller.listModeIcon),
+            onPressed: controller.cycleListMode,
+            tooltip: 'listMode.toggle'.tr,
+          )),
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => Get.toNamed('/web/history'),
+            tooltip: 'home.history'.tr,
+          ),
+          IconButton(
+            icon: const Icon(Icons.download),
+            onPressed: () => Get.toNamed('/web/downloads'),
+            tooltip: 'home.downloads'.tr,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Get.toNamed('/web/settings'),
+            tooltip: 'home.settings'.tr,
+          ),
+        ],
+      ),
+      body: Row(
+        children: [
+          SizedBox(
+            width: leftWidth,
+            child: WebHomePage.buildHomeContent(context, controller, isLeftPane: true),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: Obx(() {
+              final gid = layoutCtrl.selectedGid.value;
+              final token = layoutCtrl.selectedToken.value;
+              if (gid == null || token == null) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.touch_app, size: 64, color: Colors.grey.shade400),
+                      const SizedBox(height: 16),
+                      Text('home.selectGallery'.tr,
+                          style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
+                    ],
+                  ),
+                );
+              }
+              return _EmbeddedDetailPanel(key: ValueKey('detail_${gid}_$token'), gid: gid, token: token);
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmbeddedDetailPanel extends StatefulWidget {
+  final int gid;
+  final String token;
+  const _EmbeddedDetailPanel({super.key, required this.gid, required this.token});
+
+  @override
+  State<_EmbeddedDetailPanel> createState() => _EmbeddedDetailPanelState();
+}
+
+class _EmbeddedDetailPanelState extends State<_EmbeddedDetailPanel> {
+  late WebGalleryDetailController _ctrl;
+  final String _tag = 'embedded_detail';
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = Get.put(
+      WebGalleryDetailController(gid: widget.gid, token: widget.token),
+      tag: _tag,
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
+  @override
+  void dispose() {
+    Get.delete<WebGalleryDetailController>(tag: _tag);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WebGalleryDetailPage(controllerTag: _tag);
+  }
+}
+
+class _HomeDrawer extends StatelessWidget {
+  final WebHomeController controller;
+  const _HomeDrawer({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -583,70 +756,31 @@ class WebHomePage extends GetView<WebHomeController> {
     );
   }
 
-  Widget _buildPaginationBar(BuildContext context) {
-    return Obx(() {
-      if (!controller.hasPrevPage.value && !controller.hasNextPage.value) {
-        return const SizedBox.shrink();
-      }
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton.icon(
-              icon: const Icon(Icons.chevron_left),
-              label: Text('home.previous'.tr),
-              onPressed: controller.hasPrevPage.value ? controller.prevPage : null,
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('home.page'.trParams({'page': '${controller.currentPage.value + 1}'}),
-                  style: Theme.of(context).textTheme.bodyLarge),
-            ),
-            TextButton.icon(
-              icon: const Icon(Icons.chevron_right),
-              label: Text('home.next'.tr),
-              onPressed: controller.hasNextPage.value ? controller.nextPage : null,
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  Widget _buildGalleryGrid(BuildContext context) {
-    return LayoutBuilder(builder: (context, constraints) {
-      return Obx(() {
-        final mode = controller.listMode.value;
-        if (mode == 'list' || mode == 'listCompact') {
-          return ListView.builder(
-            padding: const EdgeInsets.all(12),
-            itemCount: controller.galleries.length,
-            itemBuilder: (context, index) {
-              final gallery = controller.galleries[index];
-              return _GalleryListTile(gallery: gallery, compact: mode == 'listCompact');
-            },
-          );
-        }
-        final crossAxisCount = constraints.maxWidth > 1200 ? 4
-            : constraints.maxWidth > 800 ? 3
-            : constraints.maxWidth > 500 ? 2 : 1;
-        return GridView.builder(
-          padding: const EdgeInsets.all(12),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: 0.7,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+  void _showRanklistPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text('ranklist.title'.tr),
+        children: [
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '15'); },
+            child: Text('ranklist.allTime'.tr),
           ),
-          itemCount: controller.galleries.length,
-          itemBuilder: (context, index) {
-            final gallery = controller.galleries[index];
-            return _GalleryCard(gallery: gallery);
-          },
-        );
-      });
-    });
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '13'); },
+            child: Text('ranklist.year'.tr),
+          ),
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '12'); },
+            child: Text('ranklist.month'.tr),
+          ),
+          SimpleDialogOption(
+            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '11'); },
+            child: Text('ranklist.yesterday'.tr),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1014,8 +1148,9 @@ class _SearchFieldState extends State<_SearchField> {
 class _GalleryListTile extends StatelessWidget {
   final Map<String, dynamic> gallery;
   final bool compact;
+  final bool isLeftPane;
 
-  const _GalleryListTile({required this.gallery, this.compact = false});
+  const _GalleryListTile({required this.gallery, this.compact = false, this.isLeftPane = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1033,7 +1168,13 @@ class _GalleryListTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Get.toNamed('/web/gallery/$gid/$token'),
+        onTap: () {
+          if (isLeftPane) {
+            Get.find<WebLayoutController>().selectGallery(gid as int, token as String);
+          } else {
+            Get.toNamed('/web/gallery/$gid/$token');
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.all(8),
           child: Row(
