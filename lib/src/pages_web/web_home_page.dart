@@ -1180,25 +1180,11 @@ class _GalleryListTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: SizedBox(
-                  width: 80,
-                  height: compact ? 80 : 110,
-                  child: coverUrl.isNotEmpty
-                      ? Image.network(
-                          backendApiClient.proxyImageUrl(coverUrl),
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                            child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
-                          ),
-                        )
-                      : Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          child: const Icon(Icons.photo_library, size: 24, color: Colors.grey),
-                        ),
-                ),
+              _CoverWithBadge(
+                coverUrl: coverUrl,
+                gid: gid is int ? gid : 0,
+                width: 80,
+                height: compact ? 80 : 110,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1318,32 +1304,38 @@ class _GalleryCard extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: coverUrl.isNotEmpty
-                  ? Image.network(
-                      backendApiClient.proxyImageUrl(coverUrl),
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  coverUrl.isNotEmpty
+                      ? Image.network(
+                          backendApiClient.proxyImageUrl(coverUrl),
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            );
+                          },
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: Icon(Icons.broken_image, size: 32, color: Colors.grey),
+                            ),
+                          ),
+                        )
+                      : Container(
                           color: Theme.of(context).colorScheme.surfaceContainerHighest,
                           child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: Icon(Icons.photo_library, size: 48, color: Colors.grey),
                           ),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        child: const Center(
-                          child: Icon(Icons.broken_image, size: 32, color: Colors.grey),
                         ),
-                      ),
-                    )
-                  : Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: Icon(Icons.photo_library, size: 48, color: Colors.grey),
-                      ),
-                    ),
+                  _DownloadBadgeOverlay(gid: gid is int ? gid : 0),
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(8),
@@ -1374,5 +1366,101 @@ class _GalleryCard extends StatelessWidget {
       'misc' => Colors.grey.shade700,
       _ => Colors.grey.shade700,
     };
+  }
+}
+
+class _CoverWithBadge extends StatelessWidget {
+  final String coverUrl;
+  final int gid;
+  final double width;
+  final double height;
+
+  const _CoverWithBadge({required this.coverUrl, required this.gid, required this.width, required this.height});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            coverUrl.isNotEmpty
+                ? Image.network(
+                    backendApiClient.proxyImageUrl(coverUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                    ),
+                  )
+                : Container(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.photo_library, size: 24, color: Colors.grey),
+                  ),
+            _DownloadBadgeOverlay(gid: gid),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DownloadBadgeOverlay extends StatelessWidget {
+  final int gid;
+  const _DownloadBadgeOverlay({required this.gid});
+
+  @override
+  Widget build(BuildContext context) {
+    if (gid == 0) return const SizedBox.shrink();
+    final svc = Get.find<WebDownloadService>();
+    return Obx(() {
+      final _ = svc.galleryTasks.length;
+      final status = svc.getGalleryStatus(gid);
+      if (status == null) return const SizedBox.shrink();
+
+      final IconData icon;
+      final Color bgColor;
+      final Color iconColor;
+
+      switch (status) {
+        case 1:
+          icon = Icons.downloading;
+          bgColor = Colors.blue;
+          iconColor = Colors.white;
+        case 2:
+          icon = Icons.pause;
+          bgColor = Colors.orange;
+          iconColor = Colors.white;
+        case 3:
+          icon = Icons.check_circle;
+          bgColor = Colors.green;
+          iconColor = Colors.white;
+        case 4:
+          icon = Icons.error;
+          bgColor = Colors.red;
+          iconColor = Colors.white;
+        default:
+          return const SizedBox.shrink();
+      }
+
+      return Positioned(
+        right: 4,
+        bottom: 4,
+        child: Tooltip(
+          message: 'downloads.gStatus$status'.tr,
+          child: Container(
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: bgColor.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 14, color: iconColor),
+          ),
+        ),
+      );
+    });
   }
 }

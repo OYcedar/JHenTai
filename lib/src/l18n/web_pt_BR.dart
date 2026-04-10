@@ -297,6 +297,14 @@ class WebPtBR {
       'settings.cookieStatusNoIgneous': 'Cookies definidos mas falta igneous — EX pode não funcionar',
       'settings.cookieStatusNone': 'Nenhum cookie de login definido',
       'settings.siteSwitched': 'Alterado para @site',
+
+      // download progress in detail
+      'detail.completed': 'Concluído',
+      'detail.retryDownload': 'Tentar novamente',
+      'detail.readDownloaded': 'Ler baixado',
+      'detail.deleteDownload': 'Excluir download',
+      'detail.deleteDownloadConfirm': 'Excluir este download e seus arquivos?',
+      'detail.archiveCompleted': 'Arquivo pronto',
     };
   }
 }

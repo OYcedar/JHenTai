@@ -301,6 +301,14 @@ class WebKoKR {
       'settings.cookieStatusNoIgneous': '쿠키가 설정되었지만 igneous 누락 — EX가 작동하지 않을 수 있음',
       'settings.cookieStatusNone': '로그인 쿠키가 설정되지 않음',
       'settings.siteSwitched': '@site로 전환되었습니다',
+
+      // download progress in detail
+      'detail.completed': '완료됨',
+      'detail.retryDownload': '재시도',
+      'detail.readDownloaded': '다운로드 읽기',
+      'detail.deleteDownload': '다운로드 삭제',
+      'detail.deleteDownloadConfirm': '이 다운로드와 파일을 삭제하시겠습니까?',
+      'detail.archiveCompleted': '아카이브 준비됨',
     };
   }
 }

@@ -297,6 +297,14 @@ class WebZhTW {
       'settings.cookieStatusNoIgneous': 'Cookie 已設定但缺少 igneous — EX 可能無法使用',
       'settings.cookieStatusNone': '未設定登入 Cookie',
       'settings.siteSwitched': '已切換到 @site',
+
+      // download progress in detail
+      'detail.completed': '已完成',
+      'detail.retryDownload': '重試',
+      'detail.readDownloaded': '閱讀已下載',
+      'detail.deleteDownload': '刪除下載',
+      'detail.deleteDownloadConfirm': '刪除此下載及其檔案？',
+      'detail.archiveCompleted': '歸檔就緒',
     };
   }
 }
