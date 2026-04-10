@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:web/web.dart' as web;
 
 class WebSettingsController extends GetxController {
   final isLoggedIn = false.obs;
@@ -37,6 +38,7 @@ class WebSettingsController extends GetxController {
           userName.value = user['userName'] as String? ?? '';
         }
       }
+      loadCookieStatus();
     } catch (e) {
       debugPrint('Failed to load settings: $e');
     } finally {
@@ -101,10 +103,37 @@ class WebSettingsController extends GetxController {
     }
   }
 
+  final cookieStatus = ''.obs;
+
+  Future<void> loadCookieStatus() async {
+    try {
+      final cookies = await backendApiClient.getCookies();
+      final list = cookies['cookies'] as List? ?? [];
+      final names = list.map((c) => (c as Map)['name']?.toString() ?? '').where((n) => n.isNotEmpty).toList();
+      final hasIgneous = names.contains('igneous');
+      final hasMemberId = names.contains('ipb_member_id');
+      final hasPassHash = names.contains('ipb_pass_hash');
+      if (hasMemberId && hasPassHash) {
+        cookieStatus.value = hasIgneous ? 'settings.cookieStatusFull'.tr : 'settings.cookieStatusNoIgneous'.tr;
+      } else {
+        cookieStatus.value = 'settings.cookieStatusNone'.tr;
+      }
+    } catch (_) {
+      cookieStatus.value = '';
+    }
+  }
+
   Future<void> switchSite(String newSite) async {
     try {
-      await backendApiClient.setSite(newSite);
-      site.value = newSite;
+      final result = await backendApiClient.setSite(newSite);
+      if (result['success'] == true) {
+        site.value = newSite;
+        Get.snackbar('common.success'.tr, 'settings.siteSwitched'.trParams({'site': newSite}), snackPosition: SnackPosition.BOTTOM);
+      } else {
+        final error = result['error']?.toString() ?? 'settings.switchSiteFailed'.tr;
+        Get.snackbar('common.error'.tr, error,
+            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      }
     } catch (e) {
       Get.snackbar('common.error'.tr, 'settings.switchSiteFailed'.trParams({'error': '$e'}), snackPosition: SnackPosition.BOTTOM);
     }
@@ -135,6 +164,12 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   _buildSiteSection(context),
                   const SizedBox(height: 24),
                   _buildAppearanceSection(context),
+                  const SizedBox(height: 24),
+                  _buildLanguageSection(context),
+                  const SizedBox(height: 24),
+                  _buildTagTranslationSection(context),
+                  const SizedBox(height: 24),
+                  _buildBlockRuleSection(context),
                   const SizedBox(height: 24),
                   _buildServerInfoSection(context),
                 ],
@@ -261,6 +296,26 @@ class WebSettingsPage extends GetView<WebSettingsController> {
               selected: {controller.site.value},
               onSelectionChanged: (selected) => controller.switchSite(selected.first),
             )),
+            const SizedBox(height: 8),
+            Obx(() {
+              final status = controller.cookieStatus.value;
+              if (status.isEmpty) return const SizedBox.shrink();
+              return Row(
+                children: [
+                  Icon(
+                    status.contains('igneous') || status == 'settings.cookieStatusFull'.tr
+                        ? Icons.check_circle
+                        : Icons.warning_amber,
+                    size: 16,
+                    color: status.contains('igneous') || status == 'settings.cookieStatusFull'.tr
+                        ? Colors.green
+                        : Colors.orange,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(status, style: Theme.of(context).textTheme.bodySmall)),
+                ],
+              );
+            }),
           ],
         ),
       ),
@@ -310,6 +365,147 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                 );
               }).toList(),
             )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageSection(BuildContext context) {
+    final currentLocale = Get.locale ?? const Locale('en', 'US');
+    final options = <MapEntry<Locale, String>>[
+      MapEntry(const Locale('en', 'US'), 'English'),
+      MapEntry(const Locale('zh', 'CN'), '简体中文'),
+      MapEntry(const Locale('zh', 'TW'), '繁體中文'),
+      MapEntry(const Locale('ko', 'KR'), '한국어'),
+      MapEntry(const Locale('pt', 'BR'), 'Português (BR)'),
+      MapEntry(const Locale('ru', 'RU'), 'Русский'),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('settings.language'.tr, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            ...options.map((entry) {
+              return RadioListTile<String>(
+                title: Text(entry.value),
+                value: '${entry.key.languageCode}_${entry.key.countryCode}',
+                groupValue: '${currentLocale.languageCode}_${currentLocale.countryCode}',
+                onChanged: (v) {
+                  Get.updateLocale(entry.key);
+                  web.window.localStorage.setItem('jh_web_locale',
+                      '${entry.key.languageCode}_${entry.key.countryCode}');
+                },
+                dense: true,
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagTranslationSection(BuildContext context) {
+    final tagStatus = <String, dynamic>{}.obs;
+    final isRefreshing = false.obs;
+
+    void loadStatus() async {
+      try {
+        tagStatus.value = await backendApiClient.getTagTranslationStatus();
+      } catch (_) {}
+    }
+
+    loadStatus();
+
+    return Obx(() => Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('tagTranslation.title'.tr, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  tagStatus['loaded'] == true ? Icons.check_circle : Icons.info_outline,
+                  color: tagStatus['loaded'] == true ? Colors.green : Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    tagStatus['loaded'] == true
+                        ? 'tagTranslation.loaded'.trParams({'count': '${tagStatus['count'] ?? 0}'})
+                        : 'tagTranslation.notLoaded'.tr,
+                  ),
+                ),
+              ],
+            ),
+            if (tagStatus['timestamp'] != null && (tagStatus['timestamp'] as String).isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 28),
+                child: Text(
+                  'tagTranslation.lastUpdate'.trParams({'time': tagStatus['timestamp']?.toString() ?? ''}),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                ),
+              ),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              icon: isRefreshing.value
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.refresh),
+              label: Text('tagTranslation.refresh'.tr),
+              onPressed: isRefreshing.value
+                  ? null
+                  : () async {
+                      isRefreshing.value = true;
+                      try {
+                        final result = await backendApiClient.refreshTagTranslation();
+                        if (result['success'] == true) {
+                          Get.snackbar('common.success'.tr, 'tagTranslation.refreshSuccess'.trParams({'count': '${result['count'] ?? 0}'}),
+                              snackPosition: SnackPosition.BOTTOM);
+                        } else {
+                          Get.snackbar('common.error'.tr, result['message']?.toString() ?? 'common.failed'.tr,
+                              snackPosition: SnackPosition.BOTTOM);
+                        }
+                        loadStatus();
+                      } catch (e) {
+                        Get.snackbar('common.error'.tr, 'tagTranslation.refreshFailed'.trParams({'error': '$e'}),
+                            snackPosition: SnackPosition.BOTTOM);
+                      } finally {
+                        isRefreshing.value = false;
+                      }
+                    },
+            ),
+          ],
+        ),
+      ),
+    ));
+  }
+
+  Widget _buildBlockRuleSection(BuildContext context) {
+    final ruleCount = 0.obs;
+    backendApiClient.listBlockRules().then((rules) => ruleCount.value = rules.length).catchError((_) => 0);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('blockRule.title'.tr, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            Obx(() => Text('blockRule.ruleCount'.trParams({'count': '${ruleCount.value}'}))),
+            const SizedBox(height: 12),
+            FilledButton.tonalIcon(
+              icon: const Icon(Icons.block),
+              label: Text('blockRule.manage'.tr),
+              onPressed: () => Get.toNamed('/web/block-rules'),
+            ),
           ],
         ),
       ),

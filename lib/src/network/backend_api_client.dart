@@ -132,8 +132,14 @@ class BackendApiClient {
     await _dio.post('/api/auth/cookies', data: {'cookies': cookieString});
   }
 
-  Future<void> setSite(String site) async {
-    await _dio.put('/api/auth/site', data: {'site': site});
+  Future<Map<String, dynamic>> getCookies() async {
+    final response = await _dio.get('/api/auth/cookies');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> setSite(String site) async {
+    final response = await _dio.put('/api/auth/site', data: {'site': site});
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
   }
 
   // --- Gallery downloads ---
@@ -335,6 +341,170 @@ class BackendApiClient {
       'apiuid': apiuid,
       'apikey': apikey,
       'rating': rating,
+    });
+    return response.data;
+  }
+
+  // --- History ---
+
+  Future<Map<String, dynamic>> fetchHistory({int limit = 50, int offset = 0}) async {
+    final response = await _dio.get('/api/history/list', queryParameters: {'limit': limit, 'offset': offset});
+    return response.data;
+  }
+
+  Future<void> recordHistory({required int gid, String token = '', String title = '', String coverUrl = '', String category = ''}) async {
+    await _dio.post('/api/history/record', data: {
+      'gid': gid, 'token': token, 'title': title, 'coverUrl': coverUrl, 'category': category,
+    });
+  }
+
+  Future<void> clearHistory() async {
+    await _dio.delete('/api/history/clear');
+  }
+
+  Future<void> deleteHistoryItem(int gid) async {
+    await _dio.delete('/api/history/$gid');
+  }
+
+  // --- Search history ---
+
+  Future<List<dynamic>> fetchSearchHistory({int limit = 20}) async {
+    final response = await _dio.get('/api/search-history/list', queryParameters: {'limit': limit});
+    return (response.data['items'] as List?) ?? [];
+  }
+
+  Future<void> recordSearchHistory(String keyword) async {
+    await _dio.post('/api/search-history/record', data: {'keyword': keyword});
+  }
+
+  Future<void> clearSearchHistory() async {
+    await _dio.delete('/api/search-history/clear');
+  }
+
+  Future<void> deleteSearchHistoryItem(String keyword) async {
+    await _dio.delete('/api/search-history/${Uri.encodeComponent(keyword)}');
+  }
+
+  // --- Comments ---
+
+  Future<Map<String, dynamic>> postComment({required int gid, required String token, required String comment}) async {
+    final response = await _dio.post('/api/comment/post', data: {
+      'gid': gid, 'token': token, 'comment': comment,
+    });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> voteComment({
+    required int gid,
+    required String token,
+    required int apiuid,
+    required String apikey,
+    required int commentId,
+    required int vote,
+  }) async {
+    final response = await _dio.post('/api/comment/vote', data: {
+      'gid': gid, 'token': token, 'apiuid': apiuid, 'apikey': apikey, 'commentId': commentId, 'vote': vote,
+    });
+    return response.data;
+  }
+
+  // --- Favorite names ---
+
+  Future<List<String>> fetchFavoriteNames() async {
+    final response = await _dio.get('/api/favorite/names');
+    return ((response.data['names'] as List?) ?? []).cast<String>();
+  }
+
+  // --- Tag translation ---
+
+  Future<Map<String, dynamic>> refreshTagTranslation() async {
+    final response = await _dio.post('/api/tag/refresh');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getTagTranslationStatus() async {
+    final response = await _dio.get('/api/tag/status');
+    return response.data;
+  }
+
+  Future<Map<String, String>> translateTags(List<Map<String, String>> tags) async {
+    final response = await _dio.post('/api/tag/batch',
+        data: jsonEncode({'tags': tags}),
+        options: Options(headers: {'Content-Type': 'application/json'}));
+    final translations = response.data['translations'] as Map<String, dynamic>? ?? {};
+    return translations.map((k, v) => MapEntry(k, v.toString()));
+  }
+
+  Future<List<dynamic>> searchTags(String query, {int limit = 20}) async {
+    final response = await _dio.get('/api/tag/search', queryParameters: {'q': query, 'limit': limit});
+    return (response.data['results'] as List?) ?? [];
+  }
+
+  // --- Quick search ---
+
+  Future<List<dynamic>> listQuickSearches() async {
+    final response = await _dio.get('/api/quick-search/list');
+    return (response.data['items'] as List?) ?? [];
+  }
+
+  Future<void> saveQuickSearch(String name, String config, {int sortOrder = 0}) async {
+    await _dio.post('/api/quick-search/save', data: {
+      'name': name, 'config': config, 'sortOrder': sortOrder,
+    });
+  }
+
+  Future<void> deleteQuickSearch(String name) async {
+    await _dio.delete('/api/quick-search/${Uri.encodeComponent(name)}');
+  }
+
+  // --- Block rules ---
+
+  Future<List<dynamic>> listBlockRules() async {
+    final response = await _dio.get('/api/block-rule/list');
+    return (response.data['rules'] as List?) ?? [];
+  }
+
+  Future<Map<String, dynamic>> saveBlockRule({
+    int? id,
+    String groupId = '',
+    required String target,
+    required String attribute,
+    required String pattern,
+    required String expression,
+  }) async {
+    final response = await _dio.post('/api/block-rule/save', data: {
+      if (id != null) 'id': id,
+      'group_id': groupId,
+      'target': target,
+      'attribute': attribute,
+      'pattern': pattern,
+      'expression': expression,
+    });
+    return response.data;
+  }
+
+  Future<void> deleteBlockRule(int id) async {
+    await _dio.delete('/api/block-rule/$id');
+  }
+
+  Future<void> deleteBlockRuleGroup(String groupId) async {
+    await _dio.delete('/api/block-rule/group/${Uri.encodeComponent(groupId)}');
+  }
+
+  // --- Tag voting ---
+
+  Future<Map<String, dynamic>> voteTag({
+    required int gid,
+    required String token,
+    required int apiuid,
+    required String apikey,
+    required String namespace,
+    required String tag,
+    required int vote,
+  }) async {
+    final response = await _dio.post('/api/tag/vote', data: {
+      'gid': gid, 'token': token, 'apiuid': apiuid, 'apikey': apikey,
+      'namespace': namespace, 'tag': tag, 'vote': vote,
     });
     return response.data;
   }

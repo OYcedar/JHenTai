@@ -181,6 +181,126 @@ class WebZhCN {
       'settings.localGalleryDir': '本地画廊目录',
       'settings.extraScanPaths': '额外扫描路径',
       'settings.switchSiteFailed': '切换站点失败: @error',
+      'settings.language': '语言',
+
+      // history
+      'history.title': '浏览记录',
+      'history.empty': '暂无浏览记录',
+      'history.clearAll': '清空全部',
+      'history.clearTitle': '清空浏览记录',
+      'history.clearConfirm': '确定要清空所有浏览记录吗？',
+      'history.loadFailed': '加载浏览记录失败: @error',
+
+      // search history
+      'searchHistory.clearAll': '清除搜索记录',
+
+      // comment
+      'comment.placeholder': '写下评论...',
+      'comment.send': '发送',
+      'comment.posted': '评论已发送',
+      'comment.postedMsg': '你的评论已发布',
+      'comment.postFailed': '发送评论失败: @error',
+      'comment.voteFailed': '投票失败: @error',
+
+      // ranklist
+      'ranklist.title': '排行榜',
+      'ranklist.allTime': '历史总榜',
+      'ranklist.year': '年度',
+      'ranklist.month': '月度',
+      'ranklist.yesterday': '昨日',
+
+      // thumbnails
+      'thumbnails.title': '缩略图 (@count)',
+      'thumbnails.grid': '缩略图网格',
+      'thumbnails.loadFailed': '加载缩略图失败: @error',
+
+      // home additions
+      'home.history': '浏览记录',
+      'home.ranklist': '排行榜',
+
+      // tag translation
+      'tagTranslation.title': '标签翻译',
+      'tagTranslation.loaded': '已加载 @count 个标签',
+      'tagTranslation.notLoaded': '标签数据库未加载',
+      'tagTranslation.lastUpdate': '最后更新: @time',
+      'tagTranslation.refresh': '更新标签数据库',
+      'tagTranslation.refreshSuccess': '已更新 @count 个标签',
+      'tagTranslation.refreshFailed': '更新失败: @error',
+
+      // list mode
+      'listMode.toggle': '切换显示模式',
+      'listMode.grid': '网格',
+      'listMode.list': '列表',
+      'listMode.listCompact': '紧凑列表',
+
+      // quick search
+      'quickSearch.title': '快速搜索',
+      'quickSearch.empty': '没有已保存的搜索',
+      'quickSearch.saveCurrent': '保存当前搜索',
+      'quickSearch.saveTitle': '保存快速搜索',
+      'quickSearch.nameLabel': '名称',
+
+      // tag suggest
+      'tagSuggest.tag': '标签',
+
+      // common extras
+      'common.save': '保存',
+
+      // reader enhancements
+      'reader.fitWidth': '适应宽度',
+      'reader.doubleColumn': '双页模式',
+      'reader.autoStart': '自动阅读',
+      'reader.autoStop': '停止自动阅读',
+
+      // block rules
+      'blockRule.title': '屏蔽规则',
+      'blockRule.empty': '没有配置屏蔽规则',
+      'blockRule.add': '添加规则',
+      'blockRule.edit': '编辑规则',
+      'blockRule.manage': '管理屏蔽规则',
+      'blockRule.ruleCount': '@count 条规则',
+      'blockRule.ungrouped': '未分组',
+      'blockRule.deleteGroup': '删除分组',
+      'blockRule.target': '目标',
+      'blockRule.attribute': '属性',
+      'blockRule.pattern': '匹配模式',
+      'blockRule.expression': '表达式',
+      'blockRule.expressionHint': '要匹配的值',
+      'blockRule.groupId': '分组 ID',
+      'blockRule.groupIdHint': '可选的分组名称',
+      'blockRule.blocked': '已屏蔽',
+      'blockRule.tagBlocked': '标签 "@tag" 已被屏蔽',
+      'blockRule.uploaderBlocked': '上传者 "@uploader" 已被屏蔽',
+      'blockRule.blockTag': '屏蔽此标签',
+      'blockRule.blockUploader': '屏蔽此上传者',
+
+      // download enhancements
+      'downloads.search': '搜索下载...',
+      'downloads.allGroups': '所有分组',
+      'downloads.group': '分组',
+
+      // tag voting
+      'tagVote.search': '搜索',
+      'tagVote.searchUploader': '搜索上传者',
+      'tagVote.voteUp': '投赞成票',
+      'tagVote.voteDown': '投反对票',
+      'tagVote.success': '已投票',
+      'tagVote.votedUp': '已为 "@tag" 投赞成票',
+      'tagVote.votedDown': '已为 "@tag" 投反对票',
+      'tagVote.failed': '投票失败: @error',
+
+      // responsive layout
+      'home.selectGallery': '选择一个画廊查看详情',
+
+      // gallery detail extras
+      'detail.parentGallery': '父画廊',
+      'detail.newerVersion': '有更新版本',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可访问 EX）',
+      'settings.cookieStatusNoIgneous': 'Cookie 已设置但缺少 igneous — EX 可能无法使用',
+      'settings.cookieStatusNone': '未设置登录 Cookie',
+      'settings.siteSwitched': '已切换到 @site',
     };
   }
 }

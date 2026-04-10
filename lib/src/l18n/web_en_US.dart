@@ -181,6 +181,126 @@ class WebEnUS {
       'settings.localGalleryDir': 'Local Gallery Dir',
       'settings.extraScanPaths': 'Extra Scan Paths',
       'settings.switchSiteFailed': 'Failed to switch site: @error',
+      'settings.language': 'Language',
+
+      // history
+      'history.title': 'History',
+      'history.empty': 'No browsing history',
+      'history.clearAll': 'Clear All',
+      'history.clearTitle': 'Clear History',
+      'history.clearConfirm': 'Are you sure you want to clear all browsing history?',
+      'history.loadFailed': 'Failed to load history: @error',
+
+      // search history
+      'searchHistory.clearAll': 'Clear search history',
+
+      // comment
+      'comment.placeholder': 'Write a comment...',
+      'comment.send': 'Send',
+      'comment.posted': 'Comment Posted',
+      'comment.postedMsg': 'Your comment has been posted',
+      'comment.postFailed': 'Failed to post comment: @error',
+      'comment.voteFailed': 'Failed to vote: @error',
+
+      // ranklist
+      'ranklist.title': 'Ranklist',
+      'ranklist.allTime': 'All Time',
+      'ranklist.year': 'Past Year',
+      'ranklist.month': 'Past Month',
+      'ranklist.yesterday': 'Yesterday',
+
+      // thumbnails
+      'thumbnails.title': 'Thumbnails (@count)',
+      'thumbnails.grid': 'Thumbnail Grid',
+      'thumbnails.loadFailed': 'Failed to load thumbnails: @error',
+
+      // home additions
+      'home.history': 'History',
+      'home.ranklist': 'Ranklist',
+
+      // tag translation
+      'tagTranslation.title': 'Tag Translation',
+      'tagTranslation.loaded': '@count tags loaded',
+      'tagTranslation.notLoaded': 'Tag database not loaded',
+      'tagTranslation.lastUpdate': 'Last update: @time',
+      'tagTranslation.refresh': 'Refresh Tag Database',
+      'tagTranslation.refreshSuccess': '@count tags updated',
+      'tagTranslation.refreshFailed': 'Failed to refresh: @error',
+
+      // list mode
+      'listMode.toggle': 'Toggle view mode',
+      'listMode.grid': 'Grid',
+      'listMode.list': 'List',
+      'listMode.listCompact': 'Compact List',
+
+      // quick search
+      'quickSearch.title': 'Quick Search',
+      'quickSearch.empty': 'No saved searches',
+      'quickSearch.saveCurrent': 'Save current search',
+      'quickSearch.saveTitle': 'Save Quick Search',
+      'quickSearch.nameLabel': 'Name',
+
+      // tag suggest
+      'tagSuggest.tag': 'Tag',
+
+      // common extras
+      'common.save': 'Save',
+
+      // reader enhancements
+      'reader.fitWidth': 'Fit Width',
+      'reader.doubleColumn': 'Double Column',
+      'reader.autoStart': 'Auto Read',
+      'reader.autoStop': 'Stop Auto Read',
+
+      // block rules
+      'blockRule.title': 'Block Rules',
+      'blockRule.empty': 'No block rules configured',
+      'blockRule.add': 'Add Rule',
+      'blockRule.edit': 'Edit Rule',
+      'blockRule.manage': 'Manage Block Rules',
+      'blockRule.ruleCount': '@count rules',
+      'blockRule.ungrouped': 'Ungrouped',
+      'blockRule.deleteGroup': 'Delete Group',
+      'blockRule.target': 'Target',
+      'blockRule.attribute': 'Attribute',
+      'blockRule.pattern': 'Pattern',
+      'blockRule.expression': 'Expression',
+      'blockRule.expressionHint': 'Value to match against',
+      'blockRule.groupId': 'Group ID',
+      'blockRule.groupIdHint': 'Optional group name',
+      'blockRule.blocked': 'Blocked',
+      'blockRule.tagBlocked': 'Tag "@tag" has been blocked',
+      'blockRule.uploaderBlocked': 'Uploader "@uploader" has been blocked',
+      'blockRule.blockTag': 'Block this tag',
+      'blockRule.blockUploader': 'Block this uploader',
+
+      // download enhancements
+      'downloads.search': 'Search downloads...',
+      'downloads.allGroups': 'All Groups',
+      'downloads.group': 'Group',
+
+      // tag voting
+      'tagVote.search': 'Search',
+      'tagVote.searchUploader': 'Search uploader',
+      'tagVote.voteUp': 'Vote Up',
+      'tagVote.voteDown': 'Vote Down',
+      'tagVote.success': 'Voted',
+      'tagVote.votedUp': 'Voted up for "@tag"',
+      'tagVote.votedDown': 'Voted down for "@tag"',
+      'tagVote.failed': 'Vote failed: @error',
+
+      // responsive layout
+      'home.selectGallery': 'Select a gallery to view details',
+
+      // gallery detail extras
+      'detail.parentGallery': 'Parent Gallery',
+      'detail.newerVersion': 'Newer Version Available',
+
+      // settings extras
+      'settings.cookieStatusFull': 'Cookies OK (includes igneous — EX ready)',
+      'settings.cookieStatusNoIgneous': 'Cookies set but missing igneous — EX may not work',
+      'settings.cookieStatusNone': 'No login cookies set',
+      'settings.siteSwitched': 'Switched to @site',
     };
   }
 }
