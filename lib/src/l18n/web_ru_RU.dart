@@ -305,6 +305,38 @@ class WebRuRU {
       'detail.deleteDownload': 'Удалить загрузку',
       'detail.deleteDownloadConfirm': 'Удалить эту загрузку и файлы?',
       'detail.archiveCompleted': 'Архив готов',
+
+      // detail enhancements
+      'detail.share': 'Поделиться',
+      'detail.jumpToPage': 'Перейти к странице',
+      'detail.similarSearch': 'Похожий поиск',
+      'detail.blockGallery': 'Заблокировать галерею',
+      'detail.allComments': 'Все комментарии',
+      'detail.thumbnails': 'Миниатюры (@count)',
+      'detail.viewAllThumbnails': 'Показать все миниатюры',
+      'detail.galleryBlocked': 'Галерея заблокирована',
+      'detail.jumpPageHint': 'Введите номер страницы (1-@max)',
+
+      // reader enhancements
+      'reader.saveImage': 'Сохранить изображение',
+      'reader.openInNewTab': 'Открыть в новой вкладке',
+      'reader.reloadImage': 'Перезагрузить',
+      'reader.interval': 'Интервал',
+      'reader.preload': 'Предзагрузка',
+      'reader.imageSpacing': 'Отступы изображений',
+      'reader.autoInterval': 'Интервал автопролистывания',
+      'reader.startAutoMode': 'Начать',
+
+      // settings reader
+      'settings.readerSettings': 'Настройки чтения',
+      'settings.defaultDirection': 'Направление по умолчанию',
+      'settings.imageSpacing': 'Отступы изображений',
+      'settings.preloadPages': 'Предзагрузка страниц',
+      'settings.autoInterval': 'Интервал автопролистывания',
+      'settings.fitWidth': 'По ширине',
+
+      // home enhancements
+      'home.scrollToTop': 'Наверх',
     };
   }
 }

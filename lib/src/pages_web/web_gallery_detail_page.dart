@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:web/web.dart' as web;
 
 class WebGalleryDetailController extends GetxController {
   late int gid;
@@ -42,16 +43,19 @@ class WebGalleryDetailController extends GetxController {
   final parentUrl = Rxn<String>();
   final ratingCount = 0.obs;
   final newerVersionUrl = Rxn<String>();
+  final readProgress = 0.obs;
 
   int? apiuid;
   String? apikey;
+
+  Future<void> refreshDetail() => _loadDetail();
 
   @override
   void onInit() {
     super.onInit();
     gid = _paramGid ?? (int.tryParse(Get.parameters['gid'] ?? '') ?? 0);
     token = _paramToken ?? (Get.parameters['token'] ?? '');
-    _loadDetail();
+    _loadDetail().then((_) => _loadReadProgress());
     _loadSiteAndFavNames();
   }
 
@@ -132,6 +136,15 @@ class WebGalleryDetailController extends GetxController {
       if (tagList.isEmpty) return;
       final translations = await backendApiClient.translateTags(tagList);
       translatedTags.value = translations;
+    } catch (_) {}
+  }
+
+  Future<void> _loadReadProgress() async {
+    try {
+      final val = await backendApiClient.getSetting('read_progress_$gid');
+      if (val != null) {
+        readProgress.value = int.tryParse(val) ?? 0;
+      }
     } catch (_) {}
   }
 
@@ -322,6 +335,15 @@ class WebGalleryDetailPage extends StatelessWidget {
               },
             );
           }),
+          PopupMenuButton<String>(
+            onSelected: (value) => _handleOverflowMenu(context, value),
+            itemBuilder: (ctx) => [
+              PopupMenuItem(value: 'share', child: ListTile(leading: const Icon(Icons.share, size: 20), title: Text('detail.shareUrl'.tr), dense: true, contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(value: 'jumpToPage', child: ListTile(leading: const Icon(Icons.format_list_numbered, size: 20), title: Text('detail.jumpToPage'.tr), dense: true, contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(value: 'similarSearch', child: ListTile(leading: const Icon(Icons.search, size: 20), title: Text('detail.similarSearch'.tr), dense: true, contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(value: 'blockGallery', child: ListTile(leading: const Icon(Icons.block, size: 20, color: Colors.orange), title: Text('detail.blockGallery'.tr), dense: true, contentPadding: EdgeInsets.zero)),
+            ],
+          ),
         ],
       ),
       body: Obx(() {
@@ -360,28 +382,111 @@ class WebGalleryDetailPage extends StatelessWidget {
     );
   }
 
+  void _handleOverflowMenu(BuildContext context, String value) {
+    switch (value) {
+      case 'share':
+        final domain = controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
+        final url = 'https://$domain/g/${controller.gid}/${controller.token}/';
+        try {
+          final shareData = web.ShareData(title: controller.title.value, url: url);
+          web.window.navigator.share(shareData);
+        } catch (_) {
+          Clipboard.setData(ClipboardData(text: url));
+          Get.snackbar('detail.copied'.tr, url, snackPosition: SnackPosition.BOTTOM);
+        }
+        break;
+      case 'jumpToPage':
+        _showJumpToPageDialog(context);
+        break;
+      case 'similarSearch':
+        Get.offAllNamed('/web/home', arguments: {'search': controller.title.value});
+        break;
+      case 'blockGallery':
+        _blockGallery();
+        break;
+    }
+  }
+
+  void _showJumpToPageDialog(BuildContext context) {
+    final textCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('detail.jumpToPage'.tr),
+        content: TextField(
+          controller: textCtrl,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            hintText: '1 - ${controller.pageCount.value}',
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+          onSubmitted: (_) {
+            final page = int.tryParse(textCtrl.text);
+            if (page != null && page >= 1 && page <= controller.pageCount.value) {
+              Navigator.pop(ctx);
+              Get.toNamed('/web/reader/${controller.gid}/${controller.token}?startPage=${page - 1}');
+            }
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () {
+              final page = int.tryParse(textCtrl.text);
+              if (page != null && page >= 1 && page <= controller.pageCount.value) {
+                Navigator.pop(ctx);
+                Get.toNamed('/web/reader/${controller.gid}/${controller.token}?startPage=${page - 1}');
+              }
+            },
+            child: Text('common.ok'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _blockGallery() async {
+    try {
+      await backendApiClient.saveBlockRule(
+        target: 'gallery', attribute: 'gid', pattern: 'equal',
+        expression: '${controller.gid}',
+      );
+      Get.snackbar('blockRule.blocked'.tr, 'detail.galleryBlocked'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   Widget _buildDetail(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 700;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isWide)
-                _buildWideHeader(context)
-              else
-                _buildNarrowHeader(context),
-              const SizedBox(height: 20),
-              _buildActionButtons(context),
-              const SizedBox(height: 24),
-              _buildTags(context),
-              const SizedBox(height: 24),
-              _buildComments(context),
-            ],
+    return RefreshIndicator(
+      onRefresh: () => controller.refreshDetail(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 960),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isWide)
+                  _buildWideHeader(context)
+                else
+                  _buildNarrowHeader(context),
+                const SizedBox(height: 20),
+                _buildActionButtons(context),
+                const SizedBox(height: 24),
+                _buildTags(context),
+                const SizedBox(height: 24),
+                _buildComments(context),
+                const SizedBox(height: 24),
+                _buildThumbnails(context),
+              ],
+            ),
           ),
         ),
       ),
@@ -413,27 +518,59 @@ class WebGalleryDetailPage extends StatelessWidget {
   Widget _buildCover(BuildContext context, {required double width, required double height}) {
     return Obx(() {
       final url = controller.coverUrl.value;
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: url.isNotEmpty
-              ? Image.network(
-                  backendApiClient.proxyImageUrl(url),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+      return GestureDetector(
+        onTap: url.isNotEmpty ? () => _showFullCoverDialog(context, url) : null,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: url.isNotEmpty
+                ? Image.network(
+                    backendApiClient.proxyImageUrl(url),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.photo_library, size: 48, color: Colors.grey),
+                    ),
+                  )
+                : Container(
                     color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: const Icon(Icons.photo_library, size: 48, color: Colors.grey),
                   ),
-                )
-              : Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.photo_library, size: 48, color: Colors.grey),
-                ),
+          ),
         ),
       );
     });
+  }
+
+  void _showFullCoverDialog(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Stack(
+          alignment: Alignment.topRight,
+          children: [
+            InteractiveViewer(
+              maxScale: 5.0,
+              child: Image.network(
+                backendApiClient.proxyImageUrl(url),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.broken_image, size: 64, color: Colors.white54),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 28),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildMetadata(BuildContext context) {
@@ -626,12 +763,21 @@ class WebGalleryDetailPage extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              FilledButton.icon(
-                icon: const Icon(Icons.menu_book),
-                label: Text('detail.readOnline'.tr),
-                style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
-                onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}'),
-              ),
+              Obx(() {
+                final progress = controller.readProgress.value;
+                final label = progress > 0
+                    ? '${'detail.readOnline'.tr} (P${progress + 1})'
+                    : 'detail.readOnline'.tr;
+                return FilledButton.icon(
+                  icon: const Icon(Icons.menu_book),
+                  label: Text(label),
+                  style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
+                  onPressed: () {
+                    final startPage = progress > 0 ? '?startPage=$progress' : '';
+                    Get.toNamed('/web/reader/${controller.gid}/${controller.token}$startPage');
+                  },
+                );
+              }),
               _buildGalleryDownloadButton(context, gTask, gStatus),
               if (gStatus == 3)
                 FilledButton.icon(
@@ -1015,23 +1161,150 @@ class WebGalleryDetailPage extends StatelessWidget {
     }
   }
 
+  Widget _buildThumbnails(BuildContext context) {
+    return Obx(() {
+      final total = controller.pageCount.value;
+      if (total <= 0) return const SizedBox.shrink();
+      final displayCount = total > 40 ? 40 : total;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('detail.thumbnails'.trParams({'count': '$total'}),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            itemCount: displayCount,
+            itemBuilder: (ctx, index) {
+              return InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?startPage=$index'),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.image, size: 28, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(height: 4),
+                      Text('${index + 1}', style: Theme.of(context).textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          if (total > 40) ...[
+            const SizedBox(height: 12),
+            Center(
+              child: OutlinedButton(
+                onPressed: () => Get.toNamed('/web/thumbnails/${controller.gid}/${controller.token}'),
+                child: Text('detail.viewAllThumbnails'.tr),
+              ),
+            ),
+          ],
+        ],
+      );
+    });
+  }
+
   Widget _buildComments(BuildContext context) {
     return Obx(() {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('detail.comments'.trParams({'count': '${controller.comments.length}'}),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Expanded(
+                child: Text('detail.comments'.trParams({'count': '${controller.comments.length}'}),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              ),
+              if (controller.comments.isNotEmpty)
+                TextButton(
+                  onPressed: () => _showAllComments(context),
+                  child: Text('detail.allComments'.tr),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           _CommentInput(controller: controller),
           const SizedBox(height: 8),
-          ...controller.comments.map((c) => _CommentCard(
-            comment: c,
-            onVote: (commentId, vote) => controller.voteComment(commentId, vote),
-          )),
+          if (controller.comments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: Text('comment.placeholder'.tr, style: const TextStyle(color: Colors.grey))),
+            )
+          else
+            SizedBox(
+              height: 160,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: controller.comments.length,
+                itemBuilder: (ctx, i) => SizedBox(
+                  width: 280,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _CommentCard(
+                      comment: controller.comments[i],
+                      onVote: (id, vote) => controller.voteComment(id, vote),
+                      compact: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       );
     });
+  }
+
+  void _showAllComments(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (ctx, scrollCtrl) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text('detail.allComments'.tr,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Obx(() => ListView.builder(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: controller.comments.length,
+                itemBuilder: (ctx, i) => _CommentCard(
+                  comment: controller.comments[i],
+                  onVote: (id, vote) => controller.voteComment(id, vote),
+                ),
+              )),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1096,7 +1369,8 @@ class _CommentInputState extends State<_CommentInput> {
 class _CommentCard extends StatelessWidget {
   final Map<String, dynamic> comment;
   final void Function(int commentId, int vote)? onVote;
-  const _CommentCard({required this.comment, this.onVote});
+  final bool compact;
+  const _CommentCard({required this.comment, this.onVote, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1113,14 +1387,17 @@ class _CommentCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(compact ? 10 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Text(author, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                const Spacer(),
+                Expanded(
+                  child: Text(author,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
                 if (score.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1133,7 +1410,7 @@ class _CommentCard extends StatelessWidget {
                       color: score.startsWith('-') ? Colors.red.shade800 : Colors.green.shade800,
                     )),
                   ),
-                if (commentId != null && onVote != null) ...[
+                if (!compact && commentId != null && onVote != null) ...[
                   const SizedBox(width: 4),
                   InkWell(
                     borderRadius: BorderRadius.circular(4),
@@ -1159,8 +1436,13 @@ class _CommentCard extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(date, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
               ),
-            const SizedBox(height: 8),
-            SelectableText(plainBody, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Text(plainBody,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  maxLines: compact ? 4 : 100,
+                  overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
       ),

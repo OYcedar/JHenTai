@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:web/web.dart' as web;
 
 enum ReaderMode { online, downloaded, archive, local }
 enum ReadDirection { ltr, rtl, vertical, fitWidth, doubleColumn }
@@ -184,7 +185,7 @@ class WebReaderController extends GetxController {
 
   void _preloadAround(int center) {
     if (mode != ReaderMode.online) return;
-    for (int i = math.max(0, center - 1); i < _imagePageUrls.length && i <= center + 3; i++) {
+    for (int i = math.max(0, center - 1); i < _imagePageUrls.length && i <= center + 5; i++) {
       if (!_loadedImageUrls.containsKey(i)) {
         _loadImageAtIndex(i);
       }
@@ -308,12 +309,52 @@ class WebReaderController extends GetxController {
   }
 
   void toggleAutoMode() {
-    isAutoMode.value = !isAutoMode.value;
     if (isAutoMode.value) {
-      _startAutoTimer();
-    } else {
+      isAutoMode.value = false;
       _autoTimer?.cancel();
+      return;
     }
+    _showAutoIntervalDialog();
+  }
+
+  void _showAutoIntervalDialog() {
+    double selectedInterval = autoInterval.value;
+    Get.dialog(
+      StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Auto Mode Interval'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${selectedInterval.toStringAsFixed(1)}s'),
+              Slider(
+                value: selectedInterval,
+                min: 2,
+                max: 15,
+                divisions: 26,
+                label: '${selectedInterval.toStringAsFixed(1)}s',
+                onChanged: (v) => setState(() => selectedInterval = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Get.back();
+                autoInterval.value = selectedInterval;
+                isAutoMode.value = true;
+                _startAutoTimer();
+              },
+              child: const Text('Start'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void setAutoInterval(double seconds) {
@@ -433,6 +474,21 @@ class _ReaderBody extends StatelessWidget {
           ),
           _TopOverlay(controller: controller),
           _BottomOverlay(controller: controller),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: Obx(() => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '${controller.currentPage.value + 1} / ${controller.totalPages.value}',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            )),
+          ),
         ],
       ),
     );
@@ -625,38 +681,60 @@ class _ImageContent extends StatelessWidget {
         );
       }
 
-      return Image.network(
-        url,
-        fit: (isVertical || fitWidth) ? BoxFit.fitWidth : BoxFit.contain,
-        width: (isVertical || fitWidth) ? double.infinity : null,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          final total = loadingProgress.expectedTotalBytes;
-          final progress = total != null ? loadingProgress.cumulativeBytesLoaded / total : null;
-          return SizedBox(
-            height: isVertical ? MediaQuery.of(context).size.height * 0.8 : null,
-            child: Center(child: CircularProgressIndicator(value: progress, color: Colors.white54)),
-          );
-        },
-        errorBuilder: (_, error, __) => SizedBox(
-          height: isVertical ? 400 : null,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.broken_image, color: Colors.white54, size: 48),
-                const SizedBox(height: 8),
-                Text('reader.imageFailed'.tr, style: const TextStyle(color: Colors.white54)),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => controller.retryImage(index),
-                  child: Text('common.retry'.tr),
-                ),
-              ],
+      return GestureDetector(
+        onLongPress: () => _showImageContextMenu(context, url),
+        onSecondaryTapUp: (details) => _showImageContextMenu(context, url, position: details.globalPosition),
+        child: Image.network(
+          url,
+          fit: (isVertical || fitWidth) ? BoxFit.fitWidth : BoxFit.contain,
+          width: (isVertical || fitWidth) ? double.infinity : null,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            final total = loadingProgress.expectedTotalBytes;
+            final progress = total != null ? loadingProgress.cumulativeBytesLoaded / total : null;
+            return SizedBox(
+              height: isVertical ? MediaQuery.of(context).size.height * 0.8 : null,
+              child: Center(child: CircularProgressIndicator(value: progress, color: Colors.white54)),
+            );
+          },
+          errorBuilder: (_, error, __) => SizedBox(
+            height: isVertical ? 400 : null,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                  const SizedBox(height: 8),
+                  Text('reader.imageFailed'.tr, style: const TextStyle(color: Colors.white54)),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => controller.retryImage(index),
+                    child: Text('common.retry'.tr),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       );
+    });
+  }
+
+  void _showImageContextMenu(BuildContext context, String url, {Offset? position}) {
+    final pos = position ?? (context.findRenderObject() as RenderBox?)?.localToGlobal(const Offset(100, 100)) ?? Offset.zero;
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(pos.dx, pos.dy, pos.dx, pos.dy),
+      items: [
+        const PopupMenuItem(value: 'save', child: Text('Save Image')),
+        const PopupMenuItem(value: 'reload', child: Text('Reload')),
+      ],
+    ).then((value) {
+      if (value == 'save') {
+        web.window.open(url, '_blank');
+      } else if (value == 'reload') {
+        controller.retryImage(index);
+      }
     });
   }
 }

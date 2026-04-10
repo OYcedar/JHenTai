@@ -165,6 +165,8 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   const SizedBox(height: 24),
                   _buildAppearanceSection(context),
                   const SizedBox(height: 24),
+                  _buildReaderSettingsSection(context),
+                  const SizedBox(height: 24),
                   _buildLanguageSection(context),
                   const SizedBox(height: 24),
                   _buildTagTranslationSection(context),
@@ -369,6 +371,117 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         ),
       ),
     );
+  }
+
+  Widget _buildReaderSettingsSection(BuildContext context) {
+    final direction = 0.obs;
+    final preloadPages = 3.obs;
+    final autoInterval = 5.0.obs;
+    final fitWidth = false.obs;
+    final loaded = false.obs;
+
+    void loadSettings() async {
+      try {
+        final d = await backendApiClient.getSetting('web_read_direction');
+        if (d != null) direction.value = int.tryParse(d) ?? 0;
+        final p = await backendApiClient.getSetting('web_preload_pages');
+        if (p != null) preloadPages.value = int.tryParse(p) ?? 3;
+        final a = await backendApiClient.getSetting('web_auto_interval');
+        if (a != null) autoInterval.value = double.tryParse(a) ?? 5.0;
+        final f = await backendApiClient.getSetting('web_fit_width');
+        if (f != null) fitWidth.value = f == 'true';
+      } catch (_) {}
+      loaded.value = true;
+    }
+
+    loadSettings();
+
+    const dirLabels = ['LTR', 'RTL', 'Vertical', 'Fit Width', 'Double'];
+
+    return Obx(() {
+      if (!loaded.value) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('settings.readerSettings'.tr, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 12),
+                const Center(child: CircularProgressIndicator()),
+              ],
+            ),
+          ),
+        );
+      }
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('settings.readerSettings'.tr, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              Text('settings.defaultDirection'.tr, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Obx(() => Wrap(
+                spacing: 6,
+                children: List.generate(dirLabels.length, (i) => ChoiceChip(
+                  label: Text(dirLabels[i], style: const TextStyle(fontSize: 12)),
+                  selected: direction.value == i,
+                  onSelected: (_) {
+                    direction.value = i;
+                    backendApiClient.putSetting('web_read_direction', i).catchError((_) {});
+                  },
+                )),
+              )),
+              const SizedBox(height: 16),
+              Obx(() => Row(
+                children: [
+                  Expanded(child: Text('settings.preloadPages'.tr)),
+                  Text('${preloadPages.value}'),
+                ],
+              )),
+              Obx(() => Slider(
+                value: preloadPages.value.toDouble(),
+                min: 1, max: 5, divisions: 4,
+                label: '${preloadPages.value}',
+                onChanged: (v) {
+                  preloadPages.value = v.round();
+                  backendApiClient.putSetting('web_preload_pages', v.round()).catchError((_) {});
+                },
+              )),
+              const SizedBox(height: 8),
+              Obx(() => Row(
+                children: [
+                  Expanded(child: Text('settings.autoInterval'.tr)),
+                  Text('${autoInterval.value.toStringAsFixed(1)}s'),
+                ],
+              )),
+              Obx(() => Slider(
+                value: autoInterval.value,
+                min: 2, max: 15, divisions: 26,
+                label: '${autoInterval.value.toStringAsFixed(1)}s',
+                onChanged: (v) {
+                  autoInterval.value = v;
+                  backendApiClient.putSetting('web_auto_interval', v).catchError((_) {});
+                },
+              )),
+              const SizedBox(height: 8),
+              Obx(() => SwitchListTile(
+                title: Text('settings.fitWidth'.tr),
+                value: fitWidth.value,
+                onChanged: (v) {
+                  fitWidth.value = v;
+                  backendApiClient.putSetting('web_fit_width', v).catchError((_) {});
+                },
+                contentPadding: EdgeInsets.zero,
+              )),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
   Widget _buildLanguageSection(BuildContext context) {
