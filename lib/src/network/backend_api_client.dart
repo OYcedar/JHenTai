@@ -189,6 +189,7 @@ class BackendApiClient {
     String coverUrl = '',
     String uploader = '',
     String group = 'default',
+    int priority = 0,
   }) async {
     await _dio.post('/api/download/gallery/start', data: {
       'gid': gid,
@@ -200,7 +201,27 @@ class BackendApiClient {
       'coverUrl': coverUrl,
       'uploader': uploader,
       'group': group,
+      'priority': priority,
     });
+  }
+
+  Future<Map<String, dynamic>> upgradeGalleryDownload({
+    required int fromGid,
+    required String newerVersionUrl,
+  }) async {
+    final response = await _dio.post('/api/download/gallery/upgrade', data: {
+      'fromGid': fromGid,
+      'newerVersionUrl': newerVersionUrl,
+    });
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<void> patchGalleryDownload(int gid, {int? priority, String? group}) async {
+    final body = <String, dynamic>{};
+    if (priority != null) body['priority'] = priority;
+    if (group != null) body['group'] = group;
+    if (body.isEmpty) return;
+    await _dio.patch('/api/download/gallery/$gid', data: body);
   }
 
   Future<void> pauseGalleryDownload(int gid) async {
@@ -237,6 +258,7 @@ class BackendApiClient {
     String size = '',
     bool isOriginal = false,
     String group = 'default',
+    int priority = 0,
   }) async {
     await _dio.post('/api/download/archive/start', data: {
       'gid': gid,
@@ -251,7 +273,16 @@ class BackendApiClient {
       'size': size,
       'isOriginal': isOriginal,
       'group': group,
+      'priority': priority,
     });
+  }
+
+  Future<void> patchArchiveDownload(int gid, {int? priority, String? group}) async {
+    final body = <String, dynamic>{};
+    if (priority != null) body['priority'] = priority;
+    if (group != null) body['group'] = group;
+    if (body.isEmpty) return;
+    await _dio.patch('/api/download/archive/$gid', data: body);
   }
 
   Future<void> pauseArchiveDownload(int gid) async {
@@ -336,6 +367,55 @@ class BackendApiClient {
   Future<Map<String, dynamic>> fetchGalleryDetail(int gid, String token) async {
     final response = await _dio.get('/api/gallery/detail/$gid/$token');
     return response.data;
+  }
+
+  Future<Map<String, dynamic>> fetchGalleryStats(int gid, String token) async {
+    final response = await _dio.get('/api/gallery/stats/$gid/$token');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> fetchGalleryListByUrl(String url) async {
+    final response = await _dio.get('/api/gallery/list-by-url', queryParameters: {'url': url});
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<String?> imageLookupBase64(String imageBase64, {String filename = 'upload.jpg'}) async {
+    final response = await _dio.post('/api/gallery/image-lookup', data: {
+      'imageBase64': imageBase64,
+      'filename': filename,
+    });
+    final m = response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+    return m['redirectUrl'] as String?;
+  }
+
+  Future<Map<String, dynamic>> listUsertags({int tagset = 1}) async {
+    final response = await _dio.get('/api/usertags/list', queryParameters: {'tagset': tagset});
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<void> addUsertag({
+    required String tag,
+    int tagSetNo = 1,
+    bool watch = true,
+    bool hidden = false,
+    int weight = 10,
+    String tagColor = '',
+  }) async {
+    await _dio.post('/api/usertags/add', data: {
+      'tagSetNo': tagSetNo,
+      'tag': tag,
+      'watch': watch,
+      'hidden': hidden,
+      'weight': weight,
+      'tagColor': tagColor,
+    });
+  }
+
+  Future<void> deleteUsertag({required int watchedTagId, int tagSetNo = 1}) async {
+    await _dio.post('/api/usertags/delete', data: {
+      'tagSetNo': tagSetNo,
+      'watchedTagId': watchedTagId,
+    });
   }
 
   /// Returns `imagePageUrls`, `thumbnailImageUrls`, `galleryThumbnails` (sprite metadata), and `totalPages`.

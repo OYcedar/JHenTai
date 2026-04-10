@@ -519,6 +519,66 @@ class EHClient {
     }
   }
 
+  // --- Stats / image lookup / my tags (Web parity with native) ---
+
+  String get statsPageUrl =>
+      _site == 'EX' ? 'https://exhentai.org/stats.php' : 'https://e-hentai.org/stats.php';
+
+  String get imageLookupUrl => _site == 'EX'
+      ? 'https://exhentai.org/upld/image_lookup.php'
+      : 'https://upld.e-hentai.org/image_lookup.php';
+
+  String get myTagsUrl => '$baseUrl/mytags';
+
+  Future<String> fetchStatsPageHtml(int gid, String token) async {
+    final response = await _dio.get<String>(statsPageUrl, queryParameters: {'gid': gid, 't': token});
+    return response.data ?? '';
+  }
+
+  /// Returns absolute or relative Location from EH image lookup (302).
+  Future<String?> postImageLookup(List<int> bytes, String filename) async {
+    try {
+      final response = await _dio.post(
+        imageLookupUrl,
+        data: FormData.fromMap({
+          'sfile': MultipartFile.fromBytes(bytes, filename: filename),
+          'f_sfile': 'File Search',
+          'fs_similar': 'on',
+          'fs_exp': 'on',
+        }),
+        options: Options(
+          followRedirects: false,
+          validateStatus: (status) => status != null && (status == 302 || status == 303 || status == 200),
+        ),
+      );
+      final code = response.statusCode ?? 0;
+      if (code == 302 || code == 303) {
+        return response.headers.value('location');
+      }
+    } on DioException catch (e) {
+      final code = e.response?.statusCode ?? 0;
+      if (code == 302 || code == 303) {
+        return e.response?.headers.value('location');
+      }
+      rethrow;
+    }
+    return null;
+  }
+
+  Future<String> fetchMyTagsHtml(int tagSetNo) async {
+    final response = await _dio.get<String>(myTagsUrl, queryParameters: {'tagset': tagSetNo});
+    return response.data ?? '';
+  }
+
+  Future<void> postMyTagsForm(int tagSetNo, Map<String, dynamic> fields) async {
+    await _dio.post(
+      myTagsUrl,
+      queryParameters: {'tagset': tagSetNo},
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+      data: fields,
+    );
+  }
+
   // --- Gallery API ---
 
   Future<Map<String, dynamic>> fetchGalleryMetadata(int gid, String token) async {
@@ -696,6 +756,15 @@ class EHClient {
       result.reloadKey = nlMatch?.group(1);
     }
 
+    try {
+      final hashEl = doc.querySelector('#i6 div a');
+      final href = hashEl?.attributes['href'];
+      if (href != null) {
+        final hm = RegExp(r'f_shash=(\w+)').firstMatch(href);
+        if (hm != null) result.imageHash = hm.group(1)!;
+      }
+    } catch (_) {}
+
     return result;
   }
 
@@ -766,4 +835,6 @@ class GalleryDetailResult {
 class ImagePageResult {
   String imageUrl = '';
   String? reloadKey;
+  /// EH file hash from `f_shash=` on the image page (for upgrade reuse / JHenTai public API).
+  String imageHash = '';
 }

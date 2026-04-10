@@ -22,6 +22,10 @@ services:
       - PGID=1000
       # Comma-separated extra scan paths for local gallery scanning
       # - JH_EXTRA_SCAN_PATHS=/media/manga,/media/doujinshi
+      # Optional: JHenTai public API secret for gallery upgrade hash reuse (same as app build; see JHenTai docs)
+      # - JH_JHENTAI_API_SECRET=your_secret
+      # - JH_GALLERY_UPGRADE_REUSE_IMAGES=true
+      # - JH_JHENTAI_PUBLIC_API=https://jhentai.top
     restart: unless-stopped
     mem_limit: 1g
 

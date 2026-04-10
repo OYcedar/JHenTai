@@ -16,15 +16,15 @@ T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
 }
 
 enum ArchiveStatus {
-  none,         // 0
-  unlocking,    // 1
-  parsingUrl,   // 2
-  downloading,  // 3
-  downloaded,   // 4
-  unpacking,    // 5
-  completed,    // 6
-  paused,       // 7
-  failed,       // 8
+  none, // 0
+  unlocking, // 1
+  parsingUrl, // 2
+  downloading, // 3
+  downloaded, // 4
+  unpacking, // 5
+  completed, // 6
+  paused, // 7
+  failed, // 8
 }
 
 class ArchiveDownloadTask {
@@ -39,7 +39,9 @@ class ArchiveDownloadTask {
   final String size;
   final String archivePageUrl;
   final bool isOriginal;
-  final String group;
+  String group;
+  int priority;
+  final String insertTime;
   ArchiveStatus status;
   String downloadPageUrl;
   String downloadUrl;
@@ -60,6 +62,8 @@ class ArchiveDownloadTask {
     required this.archivePageUrl,
     required this.isOriginal,
     this.group = 'default',
+    this.priority = 0,
+    required this.insertTime,
     this.status = ArchiveStatus.none,
     this.downloadPageUrl = '',
     this.downloadUrl = '',
@@ -85,6 +89,9 @@ class ArchiveDownloadTask {
     'downloadedBytes': downloadedBytes,
     'totalBytes': totalBytes,
     'group': group,
+    'group_name': group,
+    'priority': priority,
+    'insertTime': insertTime,
   };
 }
 
@@ -95,7 +102,8 @@ class ArchiveDownloadService {
 
   final Map<int, ArchiveDownloadTask> _tasks = {};
   final Set<int> _activeDownloads = {};
-  static const int _maxConcurrent = 2;
+
+  int get _maxConcurrent => _config.maxConcurrentArchiveDownloads;
 
   List<ArchiveDownloadTask> get tasks => _tasks.values.toList();
 
@@ -122,12 +130,13 @@ class ArchiveDownloadService {
         downloadedBytes: row['downloaded_bytes'] as int? ?? 0,
         totalBytes: row['total_bytes'] as int? ?? 0,
         group: row['group_name'] as String? ?? 'default',
+        priority: row['priority'] as int? ?? 0,
+        insertTime: row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
       );
       _tasks[task.gid] = task;
     }
     log.info('Loaded ${_tasks.length} archive download tasks');
 
-    // Resume interrupted downloads
     final activeStatuses = {
       ArchiveStatus.unlocking,
       ArchiveStatus.parsingUrl,
@@ -135,17 +144,14 @@ class ArchiveDownloadService {
       ArchiveStatus.downloaded,
       ArchiveStatus.unpacking,
     };
-    final toResume = _tasks.values
-        .where((t) => activeStatuses.contains(t.status))
-        .toList();
+    final toResume = _tasks.values.where((t) => activeStatuses.contains(t.status)).toList();
     for (final task in toResume) {
       log.info('Resuming archive download: ${task.gid} (${task.title})');
       task.status = ArchiveStatus.unlocking;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
-      _scheduleDownload(task);
     }
     if (toResume.isNotEmpty) {
-      log.info('Resumed ${toResume.length} archive downloads');
+      _processQueue();
     }
   }
 
@@ -162,17 +168,19 @@ class ArchiveDownloadService {
     String size = '',
     bool isOriginal = false,
     String group = 'default',
+    int priority = 0,
   }) async {
     if (_tasks.containsKey(gid)) {
       final existing = _tasks[gid]!;
       if (existing.status == ArchiveStatus.paused || existing.status == ArchiveStatus.failed) {
         existing.status = ArchiveStatus.unlocking;
         db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
-        _scheduleDownload(existing);
+        _processQueue();
       }
       return;
     }
 
+    final now = DateTime.now().toIso8601String();
     final task = ArchiveDownloadTask(
       gid: gid,
       token: token,
@@ -187,6 +195,8 @@ class ArchiveDownloadService {
       isOriginal: isOriginal,
       status: ArchiveStatus.unlocking,
       group: group,
+      priority: priority,
+      insertTime: now,
     );
 
     _tasks[gid] = task;
@@ -200,15 +210,31 @@ class ArchiveDownloadService {
       'cover_url': coverUrl,
       'uploader': uploader,
       'size': size,
-      'publish_time': DateTime.now().toIso8601String(),
+      'publish_time': now,
       'archive_status': ArchiveStatus.unlocking.index,
       'archive_page_url': archivePageUrl,
       'is_original': isOriginal ? 1 : 0,
       'group_name': group,
+      'insert_time': now,
+      'priority': priority,
     });
 
     _notifyProgress(task);
-    _scheduleDownload(task);
+    _processQueue();
+  }
+
+  void updateTaskMeta(int gid, {int? priority, String? group}) {
+    final task = _tasks[gid];
+    if (task == null) return;
+    if (priority != null) {
+      task.priority = priority;
+      db.updateArchiveDownloadMeta(gid, priority: priority);
+    }
+    if (group != null) {
+      task.group = group;
+      db.updateArchiveDownloadMeta(gid, groupName: group);
+    }
+    _notifyProgress(task);
   }
 
   void pauseDownload(int gid) {
@@ -219,6 +245,7 @@ class ArchiveDownloadService {
     _activeDownloads.remove(gid);
     db.updateArchiveDownloadStatus(gid, ArchiveStatus.paused.index);
     _notifyProgress(task);
+    _processQueue();
   }
 
   void resumeDownload(int gid) {
@@ -228,7 +255,7 @@ class ArchiveDownloadService {
     task.status = ArchiveStatus.unlocking;
     db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
     _notifyProgress(task);
-    _scheduleDownload(task);
+    _processQueue();
   }
 
   Future<void> deleteDownload(int gid, {bool deleteFiles = true}) async {
@@ -244,27 +271,33 @@ class ArchiveDownloadService {
       if (await zipFile.exists()) await zipFile.delete();
     }
     _eventBus.fire('download_removed', {'type': 'archive', 'gid': gid});
+    _processQueue();
   }
 
-  void _scheduleDownload(ArchiveDownloadTask task) {
-    if (_activeDownloads.length >= _maxConcurrent) return;
-    if (_activeDownloads.contains(task.gid)) return;
-    _activeDownloads.add(task.gid);
-    _doDownload(task);
+  ArchiveDownloadTask? _nextQueuedTask() {
+    final candidates = _tasks.values
+        .where((t) => t.status == ArchiveStatus.unlocking && !_activeDownloads.contains(t.gid))
+        .toList();
+    if (candidates.isEmpty) return null;
+    candidates.sort((a, b) {
+      final c = b.priority.compareTo(a.priority);
+      if (c != 0) return c;
+      return a.insertTime.compareTo(b.insertTime);
+    });
+    return candidates.first;
   }
 
   void _processQueue() {
-    for (final task in _tasks.values) {
-      if (task.status == ArchiveStatus.unlocking && !_activeDownloads.contains(task.gid)) {
-        _scheduleDownload(task);
-        if (_activeDownloads.length >= _maxConcurrent) break;
-      }
+    while (_activeDownloads.length < _maxConcurrent) {
+      final next = _nextQueuedTask();
+      if (next == null) break;
+      _activeDownloads.add(next.gid);
+      _doDownload(next);
     }
   }
 
   Future<void> _doDownload(ArchiveDownloadTask task) async {
     try {
-      // Step 1: Unlock archive
       task.status = ArchiveStatus.unlocking;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
       _notifyProgress(task);
@@ -281,7 +314,6 @@ class ArchiveDownloadService {
         db.updateArchiveDownloadUrls(task.gid, downloadPageUrl: downloadPageUrl);
       }
 
-      // Step 2: Parse download URL
       task.status = ArchiveStatus.parsingUrl;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.parsingUrl.index);
       _notifyProgress(task);
@@ -300,7 +332,6 @@ class ArchiveDownloadService {
         db.updateArchiveDownloadUrls(task.gid, downloadUrl: downloadUrl);
       }
 
-      // Step 3: Download archive
       task.status = ArchiveStatus.downloading;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.downloading.index);
       _notifyProgress(task);
@@ -330,7 +361,6 @@ class ArchiveDownloadService {
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.downloaded.index);
       _notifyProgress(task);
 
-      // Step 4: Unpack
       task.status = ArchiveStatus.unpacking;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unpacking.index);
       _notifyProgress(task);
@@ -343,7 +373,6 @@ class ArchiveDownloadService {
         throw Exception('Failed to extract archive');
       }
 
-      // Delete zip after successful extraction
       try {
         await File(zipPath).delete();
       } catch (_) {}
@@ -352,7 +381,6 @@ class ArchiveDownloadService {
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.completed.index);
       _notifyProgress(task);
       log.info('Archive ${task.gid} download and extraction completed');
-
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) return;
       log.error('Archive download failed for ${task.gid}', e);

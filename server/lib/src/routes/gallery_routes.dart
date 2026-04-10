@@ -7,6 +7,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../core/database.dart';
 import '../network/eh_client.dart';
+import '../utils/gallery_stats_parser.dart';
 import 'block_rule_routes.dart';
 
 class GalleryRoutes {
@@ -18,10 +19,125 @@ class GalleryRoutes {
     final router = Router();
 
     router.get('/list', _galleryList);
+    router.get('/list-by-url', _galleryListByUrl);
+    router.get('/stats/<gid>/<token>', _galleryStats);
+    router.post('/image-lookup', _galleryImageLookup);
     router.get('/detail/<gid>/<token>', _galleryDetail);
     router.get('/images/<gid>/<token>', _galleryImagePages);
 
     return router;
+  }
+
+  String _normalizeListHref(String? href, String origin) {
+    if (href == null || href.isEmpty) return '';
+    if (href.startsWith('http://') || href.startsWith('https://')) return href;
+    if (href.startsWith('//')) return 'https:$href';
+    if (href.startsWith('/')) return '$origin$href';
+    return '$origin/$href';
+  }
+
+  Future<Response> _galleryStats(Request request, String gid, String token) async {
+    final id = int.tryParse(gid);
+    if (id == null) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    }
+    try {
+      final html = await _client.fetchStatsPageHtml(id, token);
+      final stats = parseGalleryStatsHtml(html);
+      if (stats == null) {
+        return Response(
+          404,
+          body: jsonEncode({'error': 'Stats unavailable or gallery hidden'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      return Response.ok(jsonEncode(stats), headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to fetch stats: $e'}),
+      );
+    }
+  }
+
+  Future<Response> _galleryListByUrl(Request request) async {
+    final raw = request.url.queryParameters['url'];
+    if (raw == null || raw.isEmpty) {
+      return Response.badRequest(body: jsonEncode({'error': 'Missing url query parameter'}));
+    }
+    final decoded = Uri.decodeComponent(raw);
+    final fetchUrl = _normalizeListHref(decoded, _client.baseUrl);
+    if (fetchUrl.isEmpty) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid url'}));
+    }
+    try {
+      final result = await _client.proxyGet(fetchUrl);
+      final html = result['data']?.toString() ?? '';
+      if (html.isEmpty) {
+        return Response.internalServerError(
+          body: jsonEncode({'error': 'Empty response'}),
+        );
+      }
+      final galleries = _parseGalleryListHtml(html);
+      final origin = Uri.parse(fetchUrl).origin;
+      galleries['prevUrl'] = _normalizeListHref(galleries['prevUrl'] as String?, origin);
+      galleries['nextUrl'] = _normalizeListHref(galleries['nextUrl'] as String?, origin);
+      final list = galleries['galleries'] as List<Map<String, dynamic>>?;
+      if (list != null) {
+        for (final g in list) {
+          final u = g['url'] as String? ?? '';
+          if (u.isNotEmpty) g['url'] = _normalizeListHref(u, origin);
+        }
+      }
+      final blockRules = db.selectAllBlockRules();
+      if (blockRules.isNotEmpty && list != null) {
+        list.removeWhere((g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
+      }
+      return Response.ok(jsonEncode(galleries), headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to fetch list: $e'}),
+      );
+    }
+  }
+
+  Future<Response> _galleryImageLookup(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON'}));
+    }
+    final b64 = body['imageBase64'] as String?;
+    final filename = body['filename'] as String? ?? 'upload.jpg';
+    if (b64 == null || b64.isEmpty) {
+      return Response.badRequest(body: jsonEncode({'error': 'Missing imageBase64'}));
+    }
+    try {
+      final bytes = base64Decode(b64);
+      if (bytes.isEmpty) {
+        return Response.badRequest(body: jsonEncode({'error': 'Empty image'}));
+      }
+      if (bytes.length > 25 * 1024 * 1024) {
+        return Response(413, body: jsonEncode({'error': 'Image too large'}));
+      }
+      final loc = await _client.postImageLookup(bytes, filename);
+      if (loc == null || loc.isEmpty) {
+        return Response(
+          502,
+          body: jsonEncode({'error': 'Lookup did not redirect'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      final absolute = _normalizeListHref(loc, _client.baseUrl);
+      return Response.ok(
+        jsonEncode({'redirectUrl': absolute}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Image lookup failed: $e'}),
+      );
+    }
   }
 
   Future<Response> _galleryList(Request request) async {
@@ -62,9 +178,25 @@ class GalleryRoutes {
     // Advanced search / category bitmask only applies to the main gallery index on EH/EX.
     // Forwarding them to /popular, /watched, etc. can break upstream responses and cause 5xx.
     if (section == 'home') {
-      for (final key in ['f_cats', 'f_sname', 'f_stags', 'f_sdesc', 'f_sh', 'advsearch', 'f_srdd', 'f_sr']) {
+      for (final key in [
+        'f_cats',
+        'f_sname',
+        'f_stags',
+        'f_sdesc',
+        'f_sh',
+        'advsearch',
+        'f_srdd',
+        'f_sr',
+        // Align with native [SearchConfig]: disable language filter on index search.
+        'f_sfl',
+      ]) {
         final val = request.url.queryParameters[key];
         if (val != null && val.isNotEmpty) queryParams[key] = val;
+      }
+    } else if (section == 'watched') {
+      final fSfl = request.url.queryParameters['f_sfl'];
+      if (fSfl != null && fSfl.isNotEmpty) {
+        queryParams['f_sfl'] = fSfl;
       }
     }
 

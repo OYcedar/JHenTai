@@ -198,6 +198,8 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   const SizedBox(height: 24),
                   _buildTagTranslationSection(context),
                   const SizedBox(height: 24),
+                  _buildUsertagsSection(context),
+                  const SizedBox(height: 24),
                   _buildBlockRuleSection(context),
                   const SizedBox(height: 24),
                   _buildServerInfoSection(context),
@@ -664,6 +666,17 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         ),
       ),
     ));
+  }
+
+  Widget _buildUsertagsSection(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.label_outline),
+        title: Text('settings.usertags'.tr),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Get.toNamed('/web/tag-sets'),
+      ),
+    );
   }
 
   Widget _buildBlockRuleSection(BuildContext context) {
