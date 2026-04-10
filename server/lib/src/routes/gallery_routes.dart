@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -46,13 +47,25 @@ class GalleryRoutes {
       if (tl != null) queryParams['tl'] = tl;
     }
     if (section == 'favorites') {
-      queryParams['inline_set'] = 'dm_e';
+      // Align with native: FavoriteSortOrder — fs_f = favorited time, fs_p = published time.
+      final favSort = request.url.queryParameters['fav_sort'] ?? 'fs_f';
+      queryParams['inline_set'] = favSort == 'fs_p' ? 'fs_p' : 'fs_f';
+      final favcatStr = request.url.queryParameters['favcat'];
+      if (favcatStr != null && favcatStr.isNotEmpty) {
+        final fc = int.tryParse(favcatStr);
+        if (fc != null && fc >= 0 && fc <= 9) {
+          queryParams['favcat'] = fc;
+        }
+      }
     }
 
-    // Forward advanced search parameters
-    for (final key in ['f_cats', 'f_sname', 'f_stags', 'f_sdesc', 'f_sh', 'advsearch', 'f_srdd', 'f_sr']) {
-      final val = request.url.queryParameters[key];
-      if (val != null && val.isNotEmpty) queryParams[key] = val;
+    // Advanced search / category bitmask only applies to the main gallery index on EH/EX.
+    // Forwarding them to /popular, /watched, etc. can break upstream responses and cause 5xx.
+    if (section == 'home') {
+      for (final key in ['f_cats', 'f_sname', 'f_stags', 'f_sdesc', 'f_sh', 'advsearch', 'f_srdd', 'f_sr']) {
+        final val = request.url.queryParameters[key];
+        if (val != null && val.isNotEmpty) queryParams[key] = val;
+      }
     }
 
     try {
@@ -254,8 +267,19 @@ class GalleryRoutes {
     // Parse pagination from various page types
     String prevUrl = '';
     String nextUrl = '';
-    final prevEl = doc.querySelector('#uprev, .ptt td:first-child a, a#dprev, a[id="dprev"]');
-    final nextEl = doc.querySelector('#unext, .ptt td:last-child a, a#dnext, a[id="dnext"]');
+    // Prefer explicit IDs; `.ptt td:last-child` is often "last page" (>>), not "next" (>).
+    Element? prevEl = doc.querySelector('#uprev');
+    prevEl ??= doc.querySelector('a#dprev');
+    prevEl ??= doc.querySelector('a[id="dprev"]');
+    prevEl ??= doc.querySelector('.ptt td:nth-child(2) a');
+    prevEl ??= doc.querySelector('.ptt td:first-child a');
+
+    Element? nextEl = doc.querySelector('#unext');
+    nextEl ??= doc.querySelector('a#dnext');
+    nextEl ??= doc.querySelector('a[id="dnext"]');
+    nextEl ??= doc.querySelector('.ptt td:nth-last-child(2) a');
+    nextEl ??= doc.querySelector('.ptt td:last-child a');
+
     if (prevEl != null) prevUrl = prevEl.attributes['href'] ?? '';
     if (nextEl != null) nextUrl = nextEl.attributes['href'] ?? '';
 
@@ -310,19 +334,60 @@ class GalleryRoutes {
       }
     }
 
-    // Tags from .gt / .gtl / .gtw elements
-    final tags = <String, List<String>>{};
-    for (final tagEl in element.querySelectorAll('.gt, .gtl, .gtw')) {
-      final title = tagEl.attributes['title'] ?? tagEl.text.trim();
-      if (title.contains(':')) {
-        final idx = title.indexOf(':');
-        final ns = title.substring(0, idx);
-        final tag = title.substring(idx + 1);
-        tags.putIfAbsent(ns, () => []).add(tag);
-      }
-    }
+    // Tags: compact (.gt*) and extended (gl2e…) — EH highlights watched tags via inline style
+    // (same as EHSpiderParser._parseCompactGalleryTags / _parseExtendedGalleryTags).
+    final tagElements = <Element>[
+      ...element.querySelectorAll('.gt, .gtl, .gtw'),
+      ...element.querySelectorAll(
+        '.gl2e > div > a > div > div:nth-child(1) > table > tbody > tr > td > div',
+      ),
+    ];
+    final tags = _parseGalleryRowTags(tagElements);
     if (tags.isNotEmpty) extra['tags'] = tags;
 
     return extra;
+  }
+
+  /// Per-namespace list of `{tag, color?, backgroundColor?}` (ARGB ints) for watched-tag styling.
+  Map<String, List<Map<String, dynamic>>> _parseGalleryRowTags(List<Element> tagElements) {
+    final tags = <String, List<Map<String, dynamic>>>{};
+    final seen = <String>{};
+
+    for (final tagEl in tagElements) {
+      final title = tagEl.attributes['title'] ?? tagEl.text.trim();
+      if (!title.contains(':')) continue;
+
+      final idx = title.indexOf(':');
+      final ns = title.substring(0, idx);
+      final tagName = title.substring(idx + 1);
+      final dedupeKey = '$ns:$tagName';
+      if (seen.contains(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
+      final style = tagEl.attributes['style'] ?? '';
+      final colorArgb = _parseEhTagForegroundArgb(style);
+      final bgArgb = _parseEhTagWatchedBackgroundArgb(style);
+
+      final m = <String, dynamic>{'tag': tagName};
+      if (colorArgb != null) m['color'] = colorArgb;
+      if (bgArgb != null) m['backgroundColor'] = bgArgb;
+      tags.putIfAbsent(ns, () => []).add(m);
+    }
+    return tags;
+  }
+
+  static final _ehTagColorRe = RegExp(r'color:#([0-9a-fA-F]{6})');
+  static final _ehTagBgGradRe = RegExp(r'background:radial-gradient\(#.*,#([0-9a-fA-F]{6})\)');
+
+  int? _parseEhTagForegroundArgb(String style) {
+    final m = _ehTagColorRe.firstMatch(style);
+    if (m == null) return null;
+    return int.tryParse('FF${m.group(1)}', radix: 16);
+  }
+
+  int? _parseEhTagWatchedBackgroundArgb(String style) {
+    final m = _ehTagBgGradRe.firstMatch(style);
+    if (m == null) return null;
+    return int.tryParse('FF${m.group(1)}', radix: 16);
   }
 }

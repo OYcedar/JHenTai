@@ -317,11 +317,17 @@ class BackendApiClient {
     String? page,
     String? search,
     Map<String, dynamic>? advancedParams,
+    /// EH `inline_set`: `fs_f` (favorited time) or `fs_p` (published time). Used when [section] is `favorites`.
+    String? favSort,
+    /// Filter favorites list to one folder (0–9). Used when [section] is `favorites`.
+    int? favcat,
   }) async {
     final params = <String, dynamic>{'section': section};
     if (page != null) params['page'] = page;
     if (search != null && search.isNotEmpty) params['f_search'] = search;
     if (advancedParams != null) params.addAll(advancedParams);
+    if (favSort != null && favSort.isNotEmpty) params['fav_sort'] = favSort;
+    if (favcat != null) params['favcat'] = favcat;
     final response = await _dio.get('/api/gallery/list', queryParameters: params);
     return response.data;
   }
@@ -440,11 +446,44 @@ class BackendApiClient {
     return response.data;
   }
 
-  // --- Favorite names ---
+  // --- Favorite folders (names + counts per slot) ---
+
+  Future<({List<String> names, List<int> counts})> fetchFavoriteFolders() async {
+    final response = await _dio.get('/api/favorite/names');
+    final data = response.data as Map<String, dynamic>? ?? {};
+    final names = ((data['names'] as List?) ?? []).map((e) => e.toString()).toList();
+    final countsRaw = data['counts'] as List?;
+    final counts = <int>[];
+    if (countsRaw != null) {
+      for (final e in countsRaw) {
+        counts.add(int.tryParse(e.toString()) ?? 0);
+      }
+    }
+    while (counts.length < names.length) {
+      counts.add(0);
+    }
+    if (names.isEmpty) {
+      return (
+        names: List.generate(10, (i) => 'Favorites $i'),
+        counts: List.filled(10, 0),
+      );
+    }
+    return (names: names, counts: counts);
+  }
 
   Future<List<String>> fetchFavoriteNames() async {
-    final response = await _dio.get('/api/favorite/names');
-    return ((response.data['names'] as List?) ?? []).cast<String>();
+    final f = await fetchFavoriteFolders();
+    return f.names;
+  }
+
+  /// Current favorite note from EH add-favorite popup HTML.
+  Future<String> fetchFavoriteNote(int gid, String token) async {
+    final response = await _dio.get(
+      '/api/favorite/popup',
+      queryParameters: {'gid': gid, 'token': token},
+    );
+    final data = response.data as Map<String, dynamic>? ?? {};
+    return data['note']?.toString() ?? '';
   }
 
   // --- Tag translation ---

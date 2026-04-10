@@ -48,6 +48,11 @@ class WebZhCN {
       'home.next': '下一页',
       'home.page': '第 @page 页',
       'home.loadFailed': '加载失败: @error',
+      'home.favSortTitle': '收藏排序',
+      'home.favSortFavorited': '按收藏时间',
+      'home.favSortPublished': '按发布时间',
+      'home.favAllFolders': '全部',
+      'home.favSlotShort': '夹 @n',
       // advanced search
       'home.categoryFilter': '分类筛选',
       'home.minimumRating': '最低评分',
@@ -82,6 +87,8 @@ class WebZhCN {
       'detail.favAddedMsg': '已添加到 @name',
       'detail.favError': '收藏操作失败: @error',
       'detail.favSlot': '收藏夹 @n',
+      'detail.favNoteHint': '收藏备注（可选）',
+      'detail.favQuickAddTooltip': '加入默认收藏夹（长按）',
       'detail.rateTitle': '为画廊评分',
       'detail.rateSubmit': '提交',
       'detail.rated': '已评分',
@@ -341,6 +348,8 @@ class WebZhCN {
       'reader.startAutoMode': '开始',
 
       // settings reader
+      'settings.defaultFavoriteSlot': '默认收藏夹',
+      'settings.defaultFavoriteNone': '无（每次询问）',
       'settings.readerSettings': '阅读器设置',
       'settings.defaultDirection': '默认方向',
       'settings.imageSpacing': '图片间距',

@@ -16,10 +16,35 @@ class WebSettingsController extends GetxController {
   final cookieController = TextEditingController();
   final isLoggingIn = false.obs;
 
+  /// `null` = always show folder picker; `0`–`9` = long-press heart on gallery detail adds to this slot.
+  final defaultFavoriteSlot = Rxn<int>();
+
+  static const _defaultFavCatKey = 'jh_web_default_favcat';
+
   @override
   void onInit() {
     super.onInit();
+    _loadDefaultFavoriteSlot();
     _loadStatus();
+  }
+
+  void _loadDefaultFavoriteSlot() {
+    final raw = web.window.localStorage.getItem(_defaultFavCatKey);
+    if (raw == null || raw.isEmpty) {
+      defaultFavoriteSlot.value = null;
+      return;
+    }
+    final n = int.tryParse(raw);
+    defaultFavoriteSlot.value = (n != null && n >= 0 && n <= 9) ? n : null;
+  }
+
+  void setDefaultFavoriteSlot(int? slot) {
+    defaultFavoriteSlot.value = slot;
+    if (slot == null) {
+      web.window.localStorage.removeItem(_defaultFavCatKey);
+    } else {
+      web.window.localStorage.setItem(_defaultFavCatKey, '$slot');
+    }
   }
 
   Future<void> _loadStatus() async {
@@ -167,6 +192,8 @@ class WebSettingsPage extends GetView<WebSettingsController> {
                   const SizedBox(height: 24),
                   _buildReaderSettingsSection(context),
                   const SizedBox(height: 24),
+                  _buildFavoriteDefaultsSection(context),
+                  const SizedBox(height: 24),
                   _buildLanguageSection(context),
                   const SizedBox(height: 24),
                   _buildTagTranslationSection(context),
@@ -278,6 +305,44 @@ class WebSettingsPage extends GetView<WebSettingsController> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFavoriteDefaultsSection(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('home.favorites'.tr, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text(
+              'detail.favQuickAddTooltip'.tr,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            Obx(() => DropdownButtonFormField<int?>(
+                  decoration: InputDecoration(
+                    labelText: 'settings.defaultFavoriteSlot'.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                  value: controller.defaultFavoriteSlot.value,
+                  items: [
+                    DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('settings.defaultFavoriteNone'.tr),
+                    ),
+                    ...List.generate(10, (i) => DropdownMenuItem<int?>(
+                          value: i,
+                          child: Text('detail.favSlot'.trParams({'n': '$i'})),
+                        )),
+                  ],
+                  onChanged: (v) => controller.setDefaultFavoriteSlot(v),
+                )),
+          ],
+        ),
+      ),
     );
   }
 

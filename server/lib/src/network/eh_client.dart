@@ -399,24 +399,70 @@ class EHClient {
     }
   }
 
-  // --- Favorite names ---
+  // --- Favorite names / counts (favorites.php) ---
 
-  Future<List<String>> fetchFavoriteNames() async {
+  /// Parses folder names and per-folder counts (same structure as EHSpiderParser.favoritePage2FavoriteTagsAndCounts).
+  Future<({List<String> names, List<int> counts})> fetchFavoriteFolders() async {
     try {
       final response = await _dio.get('$baseUrl/favorites.php');
       final body = response.data.toString();
-      final doc = html_parser.parse(body);
-      final options = doc.querySelectorAll('.fp a.i');
-      if (options.length >= 10) {
-        return options.take(10).map((e) => e.text.trim()).toList();
-      }
-      final inputs = doc.querySelectorAll('input[name^="favorite_"]');
-      if (inputs.length >= 10) {
-        return inputs.take(10).map((e) => e.attributes['value'] ?? 'Favorites ${inputs.indexOf(e)}').toList();
-      }
-      return List.generate(10, (i) => 'Favorites $i');
+      return _parseFavoriteFoldersHtml(body);
     } catch (_) {
-      return List.generate(10, (i) => 'Favorites $i');
+      return (names: List.generate(10, (i) => 'Favorites $i'), counts: List.filled(10, 0));
+    }
+  }
+
+  ({List<String> names, List<int> counts}) _parseFavoriteFoldersHtml(String body) {
+    final doc = html_parser.parse(body);
+    final divs = doc.querySelectorAll('.nosel > .fp');
+    if (divs.length > 1) {
+      final list = divs.toList();
+      list.removeLast();
+      if (list.length >= 10) {
+        final names = <String>[];
+        final counts = <int>[];
+        for (final div in list.take(10)) {
+          names.add(div.querySelector('div:last-child')?.text.trim() ?? '');
+          counts.add(int.tryParse(div.querySelector('div:first-child')?.text.trim() ?? '0') ?? 0);
+        }
+        return (names: names, counts: counts);
+      }
+    }
+    final options = doc.querySelectorAll('.fp a.i');
+    if (options.length >= 10) {
+      final names = options.take(10).map((e) => e.text.trim()).toList();
+      return (names: names, counts: List.filled(10, 0));
+    }
+    final inputs = doc.querySelectorAll('input[name^="favorite_"]');
+    if (inputs.length >= 10) {
+      final names = inputs
+          .take(10)
+          .map((e) => e.attributes['value'] ?? 'Favorites ${inputs.indexOf(e)}')
+          .toList();
+      return (names: names, counts: List.filled(10, 0));
+    }
+    return (names: List.generate(10, (i) => 'Favorites $i'), counts: List.filled(10, 0));
+  }
+
+  Future<List<String>> fetchFavoriteNames() async {
+    final folders = await fetchFavoriteFolders();
+    return folders.names;
+  }
+
+  /// GET gallery popups addfav — favorite note textarea (see favoritePopup2GalleryNote).
+  Future<String> fetchFavoritePopupNote(int gid, String token) async {
+    try {
+      final response = await _dio.get(
+        '$baseUrl/gallerypopups.php',
+        queryParameters: {'gid': gid, 't': token, 'act': 'addfav'},
+      );
+      final body = response.data.toString();
+      final doc = html_parser.parse(body);
+      final ta = doc.querySelector('#galpop textarea') ??
+          doc.querySelector('#galpop > div > div:nth-child(3) > textarea');
+      return ta?.text ?? '';
+    } catch (_) {
+      return '';
     }
   }
 

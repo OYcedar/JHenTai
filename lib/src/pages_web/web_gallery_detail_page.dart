@@ -53,6 +53,7 @@ class WebGalleryDetailController extends GetxController {
   final isFavLoading = false.obs;
   final site = 'EH'.obs;
   final favoriteNames = <String>[].obs;
+  final favoriteCounts = <int>[].obs;
   final publishDate = ''.obs;
   final fileSize = ''.obs;
   final language = ''.obs;
@@ -60,6 +61,9 @@ class WebGalleryDetailController extends GetxController {
   final ratingCount = 0.obs;
   final newerVersionUrl = Rxn<String>();
   final readProgress = 0.obs;
+
+  /// True while fetching full thumbnail strip via [fetchGalleryImagePages] (EH shows ~20 per HTML page).
+  final isThumbsLoading = false.obs;
 
   int? apiuid;
   String? apikey;
@@ -81,7 +85,17 @@ class WebGalleryDetailController extends GetxController {
       site.value = status['site'] as String? ?? 'EH';
     } catch (_) {}
     try {
-      favoriteNames.value = await backendApiClient.fetchFavoriteNames();
+      final f = await backendApiClient.fetchFavoriteFolders();
+      favoriteNames.value = f.names;
+      final counts = f.counts;
+      if (counts.length >= favoriteNames.length) {
+        favoriteCounts.assignAll(counts.take(favoriteNames.length).toList());
+      } else {
+        favoriteCounts.assignAll([
+          ...counts,
+          ...List.filled(favoriteNames.length - counts.length, 0),
+        ]);
+      }
     } catch (_) {}
   }
 
@@ -142,10 +156,47 @@ class WebGalleryDetailController extends GetxController {
       ).catchError((_) {});
 
       _loadTagTranslations();
+
+      if (pageCount.value > 0 &&
+          (thumbnailImageUrls.length < pageCount.value || galleryThumbnails.length < pageCount.value)) {
+        _loadFullThumbnails();
+      }
     } catch (e) {
       errorMessage.value = 'detail.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Merges all pages of `#gdt` thumbs (same as reader) so the detail grid is not limited to ~20.
+  Future<void> _loadFullThumbnails() async {
+    isThumbsLoading.value = true;
+    try {
+      final result = await backendApiClient.fetchGalleryImagePages(gid, token);
+      final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
+      final thumbs = (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
+      final gt = result['galleryThumbnails'] as List?;
+      final total = result['totalPages'] as int?;
+
+      if (pages.isNotEmpty) {
+        imagePageUrls.value = pages;
+      }
+      if (thumbs.isNotEmpty) {
+        thumbnailImageUrls.value = thumbs;
+      }
+      if (gt != null && gt.isNotEmpty) {
+        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      if (total != null && total > 0) {
+        pageCount.value = total;
+      }
+      thumbnailImageUrls.refresh();
+      galleryThumbnails.refresh();
+      imagePageUrls.refresh();
+    } catch (_) {
+      // Keep first-page thumbs from fetchGalleryDetail
+    } finally {
+      isThumbsLoading.value = false;
     }
   }
 
@@ -177,22 +228,23 @@ class WebGalleryDetailController extends GetxController {
     return translatedTags[key] ?? tag;
   }
 
-  Future<void> toggleFavorite(int? favcat) async {
+  /// [slotIndex] 0–9. If already in that folder, removes from favorites (EH behavior).
+  Future<void> applyFavoriteFolder(int slotIndex, String favnote) async {
     isFavLoading.value = true;
     try {
-      if (favoriteSlot.value != null && favcat == null) {
+      if (favoriteSlot.value != null && favoriteSlot.value == slotIndex) {
         await backendApiClient.removeFavorite(gid, token);
         favoriteSlot.value = null;
         favoriteName.value = null;
         Get.snackbar('detail.favRemoved'.tr, 'detail.favRemovedMsg'.tr, snackPosition: SnackPosition.BOTTOM);
-      } else {
-        final slot = favcat ?? 0;
-        await backendApiClient.addFavorite(gid, token, favcat: slot);
-        favoriteSlot.value = slot;
-        final slotName = 'detail.favSlot'.trParams({'n': '$slot'});
-        favoriteName.value = slotName;
-        Get.snackbar('detail.favAdded'.tr, 'detail.favAddedMsg'.trParams({'name': slotName}), snackPosition: SnackPosition.BOTTOM);
+        return;
       }
+      await backendApiClient.addFavorite(gid, token, favcat: slotIndex, favnote: favnote);
+      favoriteSlot.value = slotIndex;
+      final name = getFavSlotName(slotIndex);
+      favoriteName.value = name;
+      Get.snackbar('detail.favAdded'.tr, 'detail.favAddedMsg'.trParams({'name': name}), snackPosition: SnackPosition.BOTTOM);
+      _loadSiteAndFavNames().catchError((_) {});
     } catch (e) {
       Get.snackbar('common.error'.tr, 'detail.favError'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
@@ -349,14 +401,9 @@ class WebGalleryDetailPage extends StatelessWidget {
             return IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
                   color: isFav ? _favSlotColor(controller.favoriteSlot.value ?? 0) : null),
-              tooltip: isFav ? 'detail.removeFromFav'.tr : 'detail.addToFav'.tr,
-              onPressed: () {
-                if (isFav) {
-                  controller.toggleFavorite(null);
-                } else {
-                  _showFavoritePicker(context);
-                }
-              },
+              tooltip: 'detail.addToFavTitle'.tr,
+              onPressed: () => _showFavoriteFolderDialog(context, controller),
+              onLongPress: () => _quickAddToDefaultFavorite(context, controller),
             );
           }),
           PopupMenuButton<String>(
@@ -382,28 +429,20 @@ class WebGalleryDetailPage extends StatelessWidget {
     );
   }
 
-  void _showFavoritePicker(BuildContext context) {
-    showDialog(
+  void _showFavoriteFolderDialog(BuildContext context, WebGalleryDetailController c) {
+    showDialog<void>(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text('detail.addToFavTitle'.tr),
-        children: List.generate(10, (i) {
-          return SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.toggleFavorite(i);
-            },
-            child: Row(
-              children: [
-                Icon(Icons.favorite, size: 18, color: _favSlotColor(i)),
-                const SizedBox(width: 12),
-                Text(controller.getFavSlotName(i)),
-              ],
-            ),
-          );
-        }),
-      ),
+      builder: (ctx) => _WebFavoriteFolderDialog(controller: c),
     );
+  }
+
+  void _quickAddToDefaultFavorite(BuildContext context, WebGalleryDetailController c) {
+    if (c.favoriteSlot.value != null) return;
+    final raw = web.window.localStorage.getItem('jh_web_default_favcat');
+    if (raw == null || raw.isEmpty) return;
+    final slot = int.tryParse(raw);
+    if (slot == null || slot < 0 || slot > 9) return;
+    c.applyFavoriteFolder(slot, '');
   }
 
   void _handleOverflowMenu(BuildContext context, String value) {
@@ -1194,8 +1233,20 @@ class WebGalleryDetailPage extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('detail.thumbnails'.trParams({'count': '$total'}),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Expanded(
+                child: Text('detail.thumbnails'.trParams({'count': '$total'}),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              ),
+              if (controller.isThumbsLoading.value)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
           const SizedBox(height: 8),
           GridView.builder(
             shrinkWrap: true,
@@ -1544,4 +1595,98 @@ Color _favSlotColor(int slot) {
     Colors.blue, Colors.indigo, Colors.purple, Colors.pink, Colors.brown,
   ];
   return colors[slot % colors.length];
+}
+
+class _WebFavoriteFolderDialog extends StatefulWidget {
+  final WebGalleryDetailController controller;
+  const _WebFavoriteFolderDialog({required this.controller});
+
+  @override
+  State<_WebFavoriteFolderDialog> createState() => _WebFavoriteFolderDialogState();
+}
+
+class _WebFavoriteFolderDialogState extends State<_WebFavoriteFolderDialog> {
+  late final TextEditingController _note;
+  bool _loadingNote = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _note = TextEditingController();
+    if (widget.controller.favoriteSlot.value != null) {
+      _loadingNote = true;
+      backendApiClient.fetchFavoriteNote(widget.controller.gid, widget.controller.token).then((n) {
+        if (mounted) {
+          setState(() {
+            _note.text = n;
+            _loadingNote = false;
+          });
+        }
+      }).catchError((_) {
+        if (mounted) setState(() => _loadingNote = false);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller;
+    return AlertDialog(
+      title: Text('detail.addToFavTitle'.tr),
+      content: SizedBox(
+        width: 420,
+        child: _loadingNote
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: _note,
+                      maxLines: 3,
+                      maxLength: 200,
+                      inputFormatters: [LengthLimitingTextInputFormatter(200)],
+                      decoration: InputDecoration(
+                        labelText: 'detail.favNoteHint'.tr,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ...List.generate(10, (i) {
+                      final isSel = c.favoriteSlot.value == i;
+                      final countStr = c.favoriteCounts.length > i ? '${c.favoriteCounts[i]}' : '';
+                      return ListTile(
+                        dense: true,
+                        leading: Icon(Icons.favorite, color: _favSlotColor(i)),
+                        title: Text(c.getFavSlotName(i)),
+                        subtitle: countStr.isEmpty ? null : Text(countStr),
+                        selected: isSel,
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await c.applyFavoriteFolder(i, _note.text);
+                        },
+                      );
+                    }),
+                  ],
+                ),
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('common.cancel'.tr),
+        ),
+      ],
+    );
+  }
 }
