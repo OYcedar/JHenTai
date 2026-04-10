@@ -95,7 +95,8 @@ Generated new API token: a3f9c2...
 
 | 变量                    | 默认值        | 说明                |
 | --------------------- | ---------- | ----------------- |
-| `JH_DATA_DIR`         | `/data`    | 数据目录（数据库、下载文件、日志） |
+| `JH_DATA_DIR`         | `/data`    | 数据目录（数据库、日志、配置、本地画廊目录；若设置了 `JH_DOWNLOAD_DIR` 则**不含**下载文件） |
+| `JH_DOWNLOAD_DIR`     | `{JH_DATA_DIR}/download` | 画廊/归档下载根目录（其下为 `gallery/<gid>/`、`archive/<gid>/`）。可指向独立挂载，例如 Unraid 将 `/mnt/user/media/comics/download` 挂到容器内 `/downloads` 并设为 `JH_DOWNLOAD_DIR=/downloads`。 |
 | `JH_PORT`             | `8080`     | HTTP 监听端口         |
 | `JH_HOST`             | `0.0.0.0`  | 绑定地址              |
 | `JH_WEB_DIR`          | `/app/web` | Web 前端静态文件目录      |
@@ -110,6 +111,20 @@ Generated new API token: a3f9c2...
 
 ```yaml
 environment:
+  - PUID=99
+  - PGID=100
+```
+
+### 下载目录与配置分离（Unraid 示例）
+
+配置与数据库仍在 appdata，漫画下载放到媒体盘：
+
+```yaml
+volumes:
+  - /mnt/user/appdata/jhentai:/data
+  - /mnt/user/media/comics/download:/downloads
+environment:
+  - JH_DOWNLOAD_DIR=/downloads
   - PUID=99
   - PGID=100
 ```
@@ -134,13 +149,13 @@ environment:
 
 ## 数据备份
 
-所有数据均存储在 `/data` 卷中：
+默认以 `/data` 为主卷；若配置了 **`JH_DOWNLOAD_DIR`**，下载内容在该路径下（不再使用 `/data/download/`）：
 
 
 | 路径                     | 内容                            |
 | ---------------------- | ----------------------------- |
 | `/data/db.sqlite`      | 数据库：设置、EH Cookie、下载任务状态       |
-| `/data/download/`      | 已下载的画廊图片及解压后的归档文件             |
+| `{JH_DOWNLOAD_DIR}`（默认 `/data/download/`） | 已下载的画廊图片及解压后的归档文件             |
 | `/data/local_gallery/` | 直接放置在容器中的本地画廊                 |
 | `/data/logs/`          | 服务器日志（自动轮转：最多 10 个文件 × 10 MB） |
 
@@ -265,10 +280,13 @@ chmod +x scripts/dockerhub-delete-tags.sh
 
 ## 常见问题
 
-**容器无法启动**  
+**容器无法启动**
 → 查看日志：`docker logs jhentai`
 
-**写入 `/data` 时提示权限不足**  
+**Unraid 上反复重启（exit 255）**
+→ 不要使用 Hub 上的 `latest`（本仓库已不维护该标签）；请使用 **`x.y.z-hhh`** 具体标签并重新拉取镜像。数据目录映射到 `/mnt/user/...` 时，容器内 `chown` 可能失败，新版本 entrypoint 会记录 **WARNING** 后继续启动；请保证宿主机上该目录对 **`PUID`/`PGID`**（Unraid 常用 `99:100`）可写。若在 compose 中设置了 `HTTP_PROXY`/`HTTPS_PROXY`，请保留 `NO_PROXY` 中的 `127.0.0.1,localhost`，否则健康检查或本地请求可能异常。
+
+**写入 `/data` 时提示权限不足**
 → 将 `PUID`/`PGID` 设置为与宿主机用户匹配，或执行：`chown -R 1000:1000 /path/to/data-volume`
 
 **WebSocket 断开 / 下载页面没有实时进度**  

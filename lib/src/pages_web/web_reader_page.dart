@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:web/web.dart' as web;
 
@@ -56,6 +57,8 @@ class WebReaderController extends GetxController {
   final errorMessage = ''.obs;
   final showOverlay = true.obs;
   final readDirection = ReadDirection.ltr.obs;
+  /// Mouse wheel over image: page turn vs zoom (PageView modes only; see [kWebReaderWheelActionKey]).
+  final wheelAction = WebReaderWheelAction.page.obs;
 
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
@@ -82,6 +85,7 @@ class WebReaderController extends GetxController {
 
     pageController = PageController();
     _loadSavedDirection();
+    _loadWheelAction();
     _loadGallery();
   }
 
@@ -135,6 +139,13 @@ class WebReaderController extends GetxController {
           readDirection.value = ReadDirection.values[idx];
         }
       }
+    } catch (_) {}
+  }
+
+  Future<void> _loadWheelAction() async {
+    try {
+      final raw = await backendApiClient.getSetting(kWebReaderWheelActionKey);
+      wheelAction.value = webReaderWheelActionFromStorage(raw);
     } catch (_) {}
   }
 
@@ -735,19 +746,58 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
     }
   }
 
+  static const double _minScale = 0.5;
+  static const double _maxScale = 4.0;
+
+  void _applyWheelZoom(PointerScrollEvent e) {
+    final delta = e.scrollDelta.dy + e.scrollDelta.dx;
+    if (delta.abs() < 0.25) return;
+    final m = _transformationController.value.clone();
+    final s = m.getMaxScaleOnAxis();
+    final factor = math.exp(-delta * 0.002);
+    final sNew = (s * factor).clamp(_minScale, _maxScale);
+    if ((sNew - s).abs() < 1e-6) return;
+    final scaleBy = sNew / s;
+    final focal = e.localPosition;
+    final inner = Matrix4.identity()
+      ..translate(focal.dx, focal.dy)
+      ..scale(scaleBy)
+      ..translate(-focal.dx, -focal.dy);
+    _transformationController.value = m * inner;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onDoubleTapDown: (d) => _doubleTapDetails = d,
-      onDoubleTap: _handleDoubleTap,
-      child: InteractiveViewer(
-        transformationController: _transformationController,
-        panEnabled: _pannable,
-        minScale: 0.5,
-        maxScale: 4.0,
-        child: Center(child: _ImageContent(controller: widget.controller, index: widget.index)),
-      ),
-    );
+    return Obx(() {
+      final dir = widget.controller.readDirection.value;
+      final zoomWheel = widget.controller.wheelAction.value == WebReaderWheelAction.zoom &&
+          dir != ReadDirection.vertical &&
+          dir != ReadDirection.fitWidth;
+
+      final viewer = GestureDetector(
+        onDoubleTapDown: (d) => _doubleTapDetails = d,
+        onDoubleTap: _handleDoubleTap,
+        child: InteractiveViewer(
+          transformationController: _transformationController,
+          panEnabled: _pannable,
+          minScale: _minScale,
+          maxScale: _maxScale,
+          child: Center(child: _ImageContent(controller: widget.controller, index: widget.index)),
+        ),
+      );
+
+      if (!zoomWheel) return viewer;
+
+      return Listener(
+        onPointerSignal: (signal) {
+          if (signal is! PointerScrollEvent) return;
+          GestureBinding.instance.pointerSignalResolver.register(signal, (PointerSignalEvent e) {
+            if (e is PointerScrollEvent) _applyWheelZoom(e);
+          });
+        },
+        child: viewer,
+      );
+    });
   }
 }
 

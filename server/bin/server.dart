@@ -39,6 +39,7 @@ Future<void> main(List<String> args) async {
   await log.init(config.logDir);
   log.info('JHenTai Server starting...');
   log.info('Data directory: ${config.dataDir}');
+  log.info('Download directory: ${config.downloadDir}');
 
   await db.init(config.databasePath);
 

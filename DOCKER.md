@@ -94,7 +94,8 @@ Enter this token in the browser setup page. It is saved to `localStorage` so you
 
 | Variable | Default | Description |
 |---|---|---|
-| `JH_DATA_DIR` | `/data` | Data directory (database, downloads, logs) |
+| `JH_DATA_DIR` | `/data` | Data directory (database, logs, config, local gallery folder — **not** downloads if `JH_DOWNLOAD_DIR` is set) |
+| `JH_DOWNLOAD_DIR` | `{JH_DATA_DIR}/download` | Root for gallery/archive files (`gallery/<gid>/`, `archive/<gid>/`). Set to a different path and mount it (e.g. Unraid `/mnt/user/media/comics/download` → `/downloads`) to keep comics off the appdata volume. |
 | `JH_PORT` | `8080` | HTTP port |
 | `JH_HOST` | `0.0.0.0` | Bind address |
 | `JH_WEB_DIR` | `/app/web` | Web frontend static files directory |
@@ -111,6 +112,24 @@ environment:
   - PUID=99
   - PGID=100
 ```
+
+---
+
+### Separate download directory (Unraid / large libraries)
+
+Keep SQLite and config on appdata, but put downloads on your media share:
+
+```yaml
+volumes:
+  - /mnt/user/appdata/jhentai:/data
+  - /mnt/user/media/comics/download:/downloads
+environment:
+  - JH_DOWNLOAD_DIR=/downloads
+  - PUID=99
+  - PGID=100
+```
+
+The server creates `gallery/` and `archive/` under that path.
 
 ---
 
@@ -132,12 +151,12 @@ The server scans these paths on startup and exposes them in the **Local Gallerie
 
 ## Backup
 
-Everything is stored under the `/data` volume:
+By default everything under `/data` except that **`JH_DOWNLOAD_DIR`** can point elsewhere:
 
 | Path | Contents |
 |---|---|
 | `/data/db.sqlite` | Database: settings, EH cookies, download task state |
-| `/data/download/` | Downloaded gallery images and extracted archives |
+| `{JH_DOWNLOAD_DIR}` (default `/data/download/`) | Downloaded gallery images and extracted archives |
 | `/data/local_gallery/` | Galleries placed directly in the container |
 | `/data/logs/` | Server logs (auto-rotated: max 10 files × 10 MB) |
 
@@ -259,6 +278,9 @@ Adjust the tag list to match what still exists on [Docker Hub](https://hub.docke
 
 **Container won't start**  
 → Check logs: `docker logs jhentai`
+
+**Unraid: crash loop (exit 255)**  
+→ Do not use the `latest` tag (this fork publishes **`x.y.z-hhh` only**). Pull an explicit tag. If `/data` is on `/mnt/user/...`, in-container `chown` may fail; the entrypoint logs a **WARNING** and continues—ensure the host path is writable by your **`PUID`/`PGID`** (often `99:100` on Unraid). With `HTTP_PROXY`/`HTTPS_PROXY`, keep `127.0.0.1` and `localhost` in **`NO_PROXY`**.
 
 **Permission denied writing to `/data`**  
 → Set `PUID`/`PGID` to match your host user, or run: `chown -R 1000:1000 /path/to/data-volume`

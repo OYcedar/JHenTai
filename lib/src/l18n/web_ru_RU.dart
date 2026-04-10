@@ -129,6 +129,11 @@ class WebRuRU {
       'reader.ltr': 'Слева→Направо',
       'reader.rtl': 'Справа→Налево',
       'reader.vertical': 'Вертикально',
+      'reader.wheelAction': 'Колёсико над изображением',
+      'reader.wheelActionPage': 'Листать страницу',
+      'reader.wheelActionZoom': 'Масштабировать',
+      'reader.wheelActionVerticalHint':
+          'В вертикальном режиме и «по ширине» всегда прокручивается список. Опция действует для LTR, RTL и двухстраничного режима.',
 
       // downloads
       'downloads.title': 'Загрузки',
@@ -219,6 +224,35 @@ class WebRuRU {
           'Прокси и сеть настраиваются на сервере или в Docker, а не в этом веб-интерфейсе. См. документацию по развёртыванию.',
       'settings.about': 'О приложении',
       'settings.appVersion': 'Версия @version (@build)',
+      'settings.hubMenu': 'Меню настроек',
+      'settings.menuEH': 'E-Hentai',
+      'settings.menuStyle': 'Стиль',
+      'settings.menuRead': 'Чтение',
+      'settings.menuPreference': 'Поведение',
+      'settings.menuNetwork': 'Сеть',
+      'settings.menuDownload': 'Загрузки',
+      'settings.menuPerformance': 'Производительность',
+      'settings.menuMouseWheel': 'Колёсико мыши',
+      'settings.menuAdvanced': 'Дополнительно',
+      'settings.menuSecurity': 'Безопасность',
+      'settings.ehRequiresLogin': 'Войдите в разделе «Аккаунт», чтобы менять сайт и состояние cookie.',
+      'settings.ehWebMoreSoon': 'Профиль галереи, квоты и «Мои теги» могут появиться при готовности API сервера.',
+      'settings.styleWebMoreSoon': 'Варианты макета списка могут быть добавлены позже.',
+      'settings.networkWebStub': 'Прокси на запрос, domain fronting и таймауты пока нельзя настроить здесь.',
+      'settings.downloadWebStub':
+          'Активные и завершённые загрузки — на странице загрузок. Расширенные настройки загрузки в веб-интерфейсе недоступны.',
+      'settings.performanceWebStub': 'Настройки CPU и памяти относятся к нативному приложению. Веб-клиент работает в браузере.',
+      'settings.advancedWebStub': 'Журналы и экспериментальные функции десктопа в веб-версии недоступны.',
+      'settings.securityWebStub':
+          'Подключение выполнялось с API-токеном. Чтобы сменить его, обновите сервер и введите новый токен в мастере или очистите данные сайта.',
+      'settings.mouseWheelIntro': 'Поведение колёсика над изображением в читалке (горизонтальные режимы страниц).',
+      'settings.mouseWheelReadHint': 'Направление, предзагрузка и другое',
+      'settings.aboutVersionLabel': 'Версия',
+      'settings.aboutAuthorLabel': 'Автор',
+      'settings.aboutTelegramTitle': 'Telegram (в основном китайский)',
+      'settings.aboutTelegramHint': 'Ссылка на сообщество',
+      'settings.aboutQA': 'Вопросы и ответы',
+      'settings.aboutWebForkNote': 'Этот веб-интерфейс из форка JHenTai Docker; исходный проект указан выше.',
 
       // history
       'history.title': 'История',
