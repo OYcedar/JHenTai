@@ -21,6 +21,10 @@ class WebZhTW {
       'setup.connect': '連線',
       'setup.emptyToken': '請輸入 Token',
       'setup.invalidToken': 'Token 無效，請查看伺服器記錄取得正確的 Token。',
+      'setup.tokenHint': 'Token 為一行共 64 位十六進位字元，請完整複製記錄中的整行，不要只複製前半段。',
+      'setup.tokenPasteHint': '請貼上記錄中的完整 64 位 Token',
+      'setup.tokenCharCount': '已輸入 @current / @total 位',
+      'setup.tokenWrongLength': 'Token 必須為 64 位十六進位字元（請從 docker logs 完整複製一行）。',
 
       // home
       'home.title': 'JHenTai',

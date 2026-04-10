@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:shelf/shelf.dart';
@@ -25,6 +26,8 @@ class AuthMiddleware {
       log.info('Use this token in the web UI setup page.');
       log.info('========================================');
     }
+    // Plain stderr line so `docker logs ... | grep` works (package:logger may format messages).
+    stderr.writeln('[JHenTai] API token for web UI (copy full line): $_token');
   }
 
   String get token => _token;

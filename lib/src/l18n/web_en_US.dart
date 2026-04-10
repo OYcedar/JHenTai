@@ -21,6 +21,10 @@ class WebEnUS {
       'setup.connect': 'Connect',
       'setup.emptyToken': 'Please enter a token',
       'setup.invalidToken': 'Invalid token. Check your server logs for the correct token.',
+      'setup.tokenHint': 'The token is 64 hex characters on one line — copy the full string, not half.',
+      'setup.tokenPasteHint': 'Paste the complete 64-character token from logs',
+      'setup.tokenCharCount': '@current / @total characters',
+      'setup.tokenWrongLength': 'Token must be exactly 64 hexadecimal characters (full line from docker logs).',
 
       // home
       'home.title': 'JHenTai',

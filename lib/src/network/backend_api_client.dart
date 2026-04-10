@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:get/get.dart';
+import 'package:web/web.dart' as web;
 
 typedef HtmlParser<T> = T Function(Headers headers, dynamic data);
 
@@ -27,6 +29,34 @@ class BackendApiClient {
     if (_token != null) {
       _applyToken(_token!);
     }
+    _dio.interceptors.add(InterceptorsWrapper(
+      onError: (DioException e, ErrorInterceptorHandler handler) {
+        final code = e.response?.statusCode;
+        final path = e.requestOptions.path;
+        if ((code == 401 || code == 403) &&
+            path.contains('/api/') &&
+            !path.contains('/api/auth/token/verify')) {
+          _sessionInvalidatedByServer();
+        }
+        handler.next(e);
+      },
+    ));
+  }
+
+  static bool _redirectingToSetup = false;
+
+  void _sessionInvalidatedByServer() {
+    if (_redirectingToSetup) return;
+    _redirectingToSetup = true;
+    _token = null;
+    _dio.options.headers.remove('Authorization');
+    web.window.localStorage.removeItem('jh_api_token');
+    Future.microtask(() {
+      _redirectingToSetup = false;
+      if (Get.currentRoute != '/web/setup') {
+        Get.offAllNamed('/web/setup');
+      }
+    });
   }
 
   void setToken(String token) {
