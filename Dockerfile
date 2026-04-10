@@ -34,6 +34,7 @@ RUN apt-get update && \
     sqlite3 \
     ca-certificates \
     wget \
+    gosu \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/lib/*/libsqlite3.so.0 /usr/lib/libsqlite3.so
 
@@ -60,7 +61,8 @@ EXPOSE 8080
 
 VOLUME ["/data"]
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8080/api/health || exit 1
+# Strip proxy env so healthcheck always hits local server (HTTP_PROXY breaks wget on some hosts).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD /bin/sh -c 'env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy wget -q -O- --spider http://127.0.0.1:8080/api/health || exit 1'
 
 ENTRYPOINT ["/bin/bash", "/app/docker-entrypoint.sh"]

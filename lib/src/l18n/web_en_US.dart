@@ -128,6 +128,11 @@ class WebEnUS {
       'reader.ltr': 'LTR',
       'reader.rtl': 'RTL',
       'reader.vertical': 'Vertical',
+      'reader.wheelAction': 'Mouse wheel on image',
+      'reader.wheelActionPage': 'Turn page',
+      'reader.wheelActionZoom': 'Zoom image',
+      'reader.wheelActionVerticalHint':
+          'Vertical and fit-width modes always scroll the list. This option applies to LTR, RTL, and double-page modes.',
 
       // downloads
       'downloads.title': 'Downloads',
@@ -221,6 +226,40 @@ class WebEnUS {
           'See deployment docs for reverse proxy, TLS, and cookie-based login.',
       'settings.about': 'About',
       'settings.appVersion': 'Version @version (@build)',
+      'settings.hubMenu': 'Settings menu',
+      'settings.menuEH': 'E-Hentai',
+      'settings.menuStyle': 'Style',
+      'settings.menuRead': 'Read',
+      'settings.menuPreference': 'Preference',
+      'settings.menuNetwork': 'Network',
+      'settings.menuDownload': 'Download',
+      'settings.menuPerformance': 'Performance',
+      'settings.menuMouseWheel': 'Mouse wheel',
+      'settings.menuAdvanced': 'Advanced',
+      'settings.menuSecurity': 'Security',
+      'settings.ehRequiresLogin': 'Log in from Account to change site and cookie status.',
+      'settings.ehWebMoreSoon': 'Gallery profile, quotas, and My Tags may be added when server APIs are available.',
+      'settings.styleWebMoreSoon': 'List layout options may be added in a future update.',
+      'settings.networkWebStub':
+          'Per-request proxy, domain fronting, and timeouts are not configurable in this UI yet.',
+      'settings.downloadWebStub':
+          'Manage active and finished downloads from the downloads page. Advanced download settings are not exposed in the web UI yet.',
+      'settings.performanceWebStub':
+          'CPU and memory tuning apply to the native app. The web client runs in your browser.',
+      'settings.advancedWebStub':
+          'Logs and experimental options from the desktop app are not available on web.',
+      'settings.securityWebStub':
+          'You connected with an API token at setup. To rotate it, update the server and paste a new token in setup, or clear site data and reconnect.',
+      'settings.mouseWheelIntro':
+          'Choose how the mouse wheel behaves over images in the reader (horizontal page modes).',
+      'settings.mouseWheelReadHint': 'Direction, preload, and more',
+      'settings.aboutVersionLabel': 'Version',
+      'settings.aboutAuthorLabel': 'Author',
+      'settings.aboutTelegramTitle': 'Telegram (Chinese mainly)',
+      'settings.aboutTelegramHint': 'Community link',
+      'settings.aboutQA': 'Q & A',
+      'settings.aboutWebForkNote':
+          'This web UI is served from the JHenTai Docker fork; upstream is linked above.',
 
       // history
       'history.title': 'History',

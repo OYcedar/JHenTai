@@ -1,7 +1,11 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 class ServerConfig {
   final String dataDir;
+  /// Gallery/archive download root (`gallery/<gid>/`, `archive/<gid>/`). Override with `JH_DOWNLOAD_DIR`.
+  final String downloadDir;
   final int port;
   final String host;
   final String? webDir;
@@ -15,7 +19,6 @@ class ServerConfig {
   final String jhAppId;
   final String jhApiSecret;
 
-  String get downloadDir => '$dataDir/download';
   String get localGalleryDir => '$dataDir/local_gallery';
   String get databasePath => '$dataDir/db.sqlite';
   String get logDir => '$dataDir/logs';
@@ -24,6 +27,7 @@ class ServerConfig {
 
   ServerConfig({
     required this.dataDir,
+    required this.downloadDir,
     this.port = 8080,
     this.host = '0.0.0.0',
     this.webDir,
@@ -43,6 +47,10 @@ class ServerConfig {
     String? hostOverride,
   }) {
     final dataDir = dataDirOverride ?? Platform.environment['JH_DATA_DIR'] ?? '/data';
+    final downloadOverride = Platform.environment['JH_DOWNLOAD_DIR']?.trim();
+    final downloadDir = (downloadOverride != null && downloadOverride.isNotEmpty)
+        ? downloadOverride
+        : p.join(dataDir, 'download');
     final port = portOverride ?? int.tryParse(Platform.environment['JH_PORT'] ?? '8080') ?? 8080;
     final host = hostOverride ?? Platform.environment['JH_HOST'] ?? '0.0.0.0';
     final webDir = webDirOverride ?? Platform.environment['JH_WEB_DIR'] ?? '/app/web';
@@ -59,6 +67,7 @@ class ServerConfig {
 
     return ServerConfig(
       dataDir: dataDir,
+      downloadDir: downloadDir,
       port: port,
       host: host,
       webDir: webDir,

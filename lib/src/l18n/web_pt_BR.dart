@@ -129,6 +129,11 @@ class WebPtBR {
       'reader.ltr': 'Esquerda→Direita',
       'reader.rtl': 'Direita→Esquerda',
       'reader.vertical': 'Vertical',
+      'reader.wheelAction': 'Roda do mouse na imagem',
+      'reader.wheelActionPage': 'Virar página',
+      'reader.wheelActionZoom': 'Ampliar imagem',
+      'reader.wheelActionVerticalHint':
+          'Modos vertical e largura ajustada sempre rolam a lista. Esta opção vale para LTR, RTL e página dupla.',
 
       // downloads
       'downloads.title': 'Downloads',
@@ -219,6 +224,35 @@ class WebPtBR {
           'Proxy e rede avançada são configurados no servidor ou Docker, não nesta interface web. Veja a documentação de implantação.',
       'settings.about': 'Sobre',
       'settings.appVersion': 'Versão @version (@build)',
+      'settings.hubMenu': 'Menu de configurações',
+      'settings.menuEH': 'E-Hentai',
+      'settings.menuStyle': 'Estilo',
+      'settings.menuRead': 'Leitura',
+      'settings.menuPreference': 'Preferências',
+      'settings.menuNetwork': 'Rede',
+      'settings.menuDownload': 'Download',
+      'settings.menuPerformance': 'Desempenho',
+      'settings.menuMouseWheel': 'Roda do mouse',
+      'settings.menuAdvanced': 'Avançado',
+      'settings.menuSecurity': 'Segurança',
+      'settings.ehRequiresLogin': 'Entre em Conta para alterar o site e o estado dos cookies.',
+      'settings.ehWebMoreSoon': 'Perfil da galeria, cotas e Minhas tags podem ser adicionados quando houver APIs no servidor.',
+      'settings.styleWebMoreSoon': 'Opções de layout de lista podem ser adicionadas depois.',
+      'settings.networkWebStub': 'Proxy por requisição, domain fronting e timeouts ainda não são configuráveis aqui.',
+      'settings.downloadWebStub':
+          'Gerencie downloads ativos e concluídos na página de downloads. Configurações avançadas de download não estão na web.',
+      'settings.performanceWebStub': 'Ajustes de CPU e memória são do app nativo. O cliente web roda no navegador.',
+      'settings.advancedWebStub': 'Logs e opções experimentais do app desktop não estão disponíveis na web.',
+      'settings.securityWebStub':
+          'Você conectou com um token de API na configuração. Para trocar, atualize o servidor e cole um novo token, ou limpe os dados do site.',
+      'settings.mouseWheelIntro': 'Escolha o comportamento da roda do mouse sobre as imagens no leitor (modos de página horizontais).',
+      'settings.mouseWheelReadHint': 'Direção, pré-carregamento e mais',
+      'settings.aboutVersionLabel': 'Versão',
+      'settings.aboutAuthorLabel': 'Autor',
+      'settings.aboutTelegramTitle': 'Telegram (principalmente chinês)',
+      'settings.aboutTelegramHint': 'Link da comunidade',
+      'settings.aboutQA': 'Perguntas e respostas',
+      'settings.aboutWebForkNote': 'Esta UI web vem do fork JHenTai Docker; o projeto original está linkado acima.',
 
       // history
       'history.title': 'Histórico',

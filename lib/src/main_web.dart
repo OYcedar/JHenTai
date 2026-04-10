@@ -15,7 +15,21 @@ import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_local_page.dart';
 import 'package:jhentai/src/pages_web/web_reader_page.dart';
 import 'package:jhentai/src/pages_web/web_quick_search_manage_page.dart';
-import 'package:jhentai/src/pages_web/web_settings_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_about_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_account_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_advanced_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_download_menu_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_eh_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_hub_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_mouse_wheel_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_network_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_performance_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_preference_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_read_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_security_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_style_page.dart';
+import 'package:jhentai/src/pages_web/web_theme_controller.dart';
 import 'package:jhentai/src/pages_web/web_stats_page.dart';
 import 'package:jhentai/src/pages_web/web_tag_sets_page.dart';
 import 'package:jhentai/src/pages_web/web_thumbnails_page.dart';
@@ -186,86 +200,6 @@ class WebDownloadService extends GetxController {
   Future<void> refresh() => _loadTasks();
 }
 
-class ThemeController extends GetxController {
-  final themeMode = ThemeMode.system.obs;
-  final Rx<Color> seedColor = Rx<Color>(Colors.deepPurple);
-
-  static const _themeModeKey = 'jh_theme_mode';
-  static const _seedColorKey = 'jh_seed_color';
-
-  static const seedColors = <Color>[
-    Colors.deepPurple,
-    Colors.blue,
-    Colors.teal,
-    Colors.green,
-    Colors.orange,
-    Colors.red,
-    Colors.pink,
-    Colors.indigo,
-    Colors.brown,
-    Colors.grey,
-  ];
-
-  @override
-  void onInit() {
-    super.onInit();
-    _loadFromStorage();
-  }
-
-  void _loadFromStorage() {
-    final modeStr = web.window.localStorage.getItem(_themeModeKey);
-    if (modeStr != null) {
-      themeMode.value = switch (modeStr) {
-        'light' => ThemeMode.light,
-        'dark' => ThemeMode.dark,
-        _ => ThemeMode.system,
-      };
-    }
-    final colorStr = web.window.localStorage.getItem(_seedColorKey);
-    if (colorStr != null) {
-      final colorVal = int.tryParse(colorStr);
-      if (colorVal != null) {
-        seedColor.value = Color(colorVal);
-      }
-    }
-  }
-
-  void setThemeMode(ThemeMode mode) {
-    themeMode.value = mode;
-    web.window.localStorage.setItem(_themeModeKey, switch (mode) {
-      ThemeMode.light => 'light',
-      ThemeMode.dark => 'dark',
-      _ => 'system',
-    });
-    Get.changeThemeMode(mode);
-  }
-
-  void setSeedColor(Color color) {
-    seedColor.value = color;
-    web.window.localStorage.setItem(_seedColorKey, color.toARGB32().toString());
-    Get.changeTheme(_buildTheme(Brightness.light, color));
-    Get.changeTheme(_buildTheme(Brightness.dark, color));
-    Get.forceAppUpdate();
-  }
-
-  static ThemeData _buildTheme(Brightness brightness, Color seed) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: brightness,
-    );
-    return ThemeData(
-      colorScheme: colorScheme,
-      useMaterial3: true,
-      appBarTheme: AppBarTheme(
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        backgroundColor: colorScheme.surface,
-      ),
-    );
-  }
-}
-
 class JHenTaiWebApp extends StatelessWidget {
   const JHenTaiWebApp({super.key});
 
@@ -278,8 +212,8 @@ class JHenTaiWebApp extends StatelessWidget {
       title: 'JHenTai',
       translations: WebLocaleText(),
       themeMode: tc.themeMode.value,
-      theme: ThemeController._buildTheme(Brightness.light, tc.seedColor.value),
-      darkTheme: ThemeController._buildTheme(Brightness.dark, tc.seedColor.value),
+      theme: ThemeController.buildTheme(Brightness.light, tc.seedColor.value),
+      darkTheme: ThemeController.buildTheme(Brightness.dark, tc.seedColor.value),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -376,9 +310,67 @@ final _webRoutes = [
   GetPage(
     name: '/web/settings',
     page: () => const WebSettingsPage(),
-    binding: BindingsBuilder(() {
-      Get.lazyPut(() => WebSettingsController());
-    }),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/account',
+    page: () => const WebSettingsAccountPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/eh',
+    page: () => const WebSettingsEhPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/style',
+    page: () => const WebSettingsStylePage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/read',
+    page: () => const WebSettingsReadPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/preference',
+    page: () => const WebSettingsPreferencePage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/network',
+    page: () => const WebSettingsNetworkPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/download',
+    page: () => const WebSettingsDownloadMenuPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/performance',
+    page: () => const WebSettingsPerformancePage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/mouse-wheel',
+    page: () => const WebSettingsMouseWheelPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/advanced',
+    page: () => const WebSettingsAdvancedPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/security',
+    page: () => const WebSettingsSecurityPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/about',
+    page: () => const WebSettingsAboutPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(
     name: '/web/quick-search',
