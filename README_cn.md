@@ -69,8 +69,10 @@ Linux安装（不维护）：根据你的系统选择 Linux-amd64.deb 或 Linux-
 
 JHenTai 支持通过 **Docker 容器** 部署，使用任意设备的 Web 浏览器进行访问。适用于 NAS（Unraid、群晖等）、无界面服务器或长期运行的自托管环境。支持 **AMD64** 和 **ARM64** 架构。
 
+镜像标签仅为 **`x.y.z-hhh`**（`hhh` 为本 fork 的三位十六进制版本，十进制 0–4095，见 `docker/fork_revision`）。**无 `latest` 标签**。
+
 ```bash
-docker pull hemumoe/jhentai:latest
+docker pull hemumoe/jhentai:8.0.12-135
 ```
 
 **使用 docker-compose 快速启动：**
@@ -78,7 +80,7 @@ docker pull hemumoe/jhentai:latest
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:latest
+    image: hemumoe/jhentai:8.0.12-135
     container_name: jhentai
     ports:
       - "8080:8080"

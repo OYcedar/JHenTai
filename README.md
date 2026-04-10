@@ -69,8 +69,10 @@ or execute it (You may need to install webkit2gtk-4.1).
 
 JHenTai can also be deployed as a **Docker container** and accessed via a web browser from any device. This is ideal for NAS (Unraid, Synology, etc.), headless servers, or always-on self-hosted setups. Supports **AMD64** and **ARM64** architectures.
 
+Docker images use tags **`x.y.z-hhh`** only (`hhh` = three lowercase hex digits, fork revision 0–4095; see `docker/fork_revision`). There is no `latest` tag.
+
 ```bash
-docker pull hemumoe/jhentai:latest
+docker pull hemumoe/jhentai:8.0.12-135
 ```
 
 **Quick start with docker-compose:**
@@ -78,7 +80,7 @@ docker pull hemumoe/jhentai:latest
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:latest
+    image: hemumoe/jhentai:8.0.12-135
     container_name: jhentai
     ports:
       - "8080:8080"

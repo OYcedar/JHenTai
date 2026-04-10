@@ -22,8 +22,17 @@
 
 ### Docker Hub에서 가져오기
 
+태그는 **`x.y.z-hhh`** 형식만 사용합니다.
+
+- **`x.y.z`**: `pubspec.yaml`의 `version:`에서 `+` 앞 semver.
+- **`hhh`**: fork 전용 십진수 **0–4095**를 **소문자 16진수 3자리**로 표시(`docker/fork_revision` 참고).
+
+예: fork 버전 `309` → `309` = `0x135` → **`8.0.12-135`**.
+
+**`latest` 태그는 없습니다.** compose/Unraid에서 위와 같이 명시하세요.
+
 ```bash
-docker pull hemumoe/jhentai:latest
+docker pull hemumoe/jhentai:8.0.12-135
 ```
 
 **docker-compose.yml**（권장）:
@@ -31,7 +40,7 @@ docker pull hemumoe/jhentai:latest
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:latest
+    image: hemumoe/jhentai:8.0.12-135
     container_name: jhentai
     ports:
       - "8080:8080"
@@ -219,10 +228,9 @@ Docker Hub 토큰 생성: Docker Hub → Account Settings → Security → New A
 
 | 태그 | 트리거 조건 |
 |---|---|
-| `latest` | `master`에 푸시할 때마다 |
-| `x.y.z` | 버전 태그 푸시 시, 예: `v8.0.12` |
-| `x.y` | 버전 태그 푸시 시 (마이너 버전 별칭) |
-| `master` | `master` 브랜치에 푸시할 때마다 |
+| `x.y.z-hhh` | 워크플로 실행 시마다; `hhh`는 fork 리비전의 16진수(`docker/fork_revision` 또는 `pubspec`의 `+` 빌드 번호) |
+
+**구 태그 삭제**(`latest`, `8.0.12`, `8.0`, `*-web` 등): `scripts/dockerhub-delete-tags.sh` 및 [DOCKER.md](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md)의 예시를 참고하세요.
 
 ---
 
