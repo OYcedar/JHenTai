@@ -27,12 +27,12 @@
 - `**x.y.z**`：与 `pubspec.yaml` 的 `version:` 中 `**+` 前面**一致。
 - `**hhh`**：**三位小写十六进制**（000–fff），对应本 Docker fork 的十进制版本号 **0–4095**（见仓库根下 `**docker/fork_revision`**）。
 
-示例：fork 版本号为 `309` 时，`309` → 十六进制 `135`，故标签为 `**8.0.12-135**`（在应用版本为 `8.0.12` 的前提下）。
+示例：fork 版本号为 `310` 时，`310` → 十六进制 `136`，故标签为 `**8.0.12-136**`（在应用版本为 `8.0.12` 的前提下）。
 
 **不再提供 `latest`**，请在 compose / Unraid 里写死具体标签。
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-135
+docker pull hemumoe/jhentai:8.0.12-136
 ```
 
 **docker-compose.yml**（推荐）：
@@ -40,7 +40,7 @@ docker pull hemumoe/jhentai:8.0.12-135
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-135
+    image: hemumoe/jhentai:8.0.12-136
     container_name: jhentai
     ports:
       - "8080:8080"

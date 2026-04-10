@@ -26,13 +26,13 @@ This workflow is for the **JHenTai-Docker** fork: Dockerfile at repo root, image
    - If **`docker/fork_revision`** exists: first line, strip whitespace.
    - Else: digits after **`+`** in `pubspec` `version:`; if missing, use `0`.
 3. Validate integer **0–4095**. Convert with 10#-safe arithmetic, then **`hhh`** = `printf '%03x' "$DEC"` (lowercase hex).
-4. **Tag** = `x.y.z-hhh` (example: `8.0.12+309` + fork file `309` → **`8.0.12-135`**).
+4. **Tag** = `x.y.z-hhh` (example: fork file `310` on `8.0.12` → **`8.0.12-136`**).
 
 Match the same logic as `.github/workflows/docker-publish.yml` (`Image tag` step).
 
 ## Commands (run from repository root)
 
-Replace `TAG` with the computed tag (e.g. `8.0.12-135`).
+Replace `TAG` with the computed tag (e.g. `8.0.12-136`).
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t hemumoe/jhentai:TAG --push .
