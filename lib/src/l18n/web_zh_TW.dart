@@ -305,6 +305,38 @@ class WebZhTW {
       'detail.deleteDownload': '刪除下載',
       'detail.deleteDownloadConfirm': '刪除此下載及其檔案？',
       'detail.archiveCompleted': '歸檔就緒',
+
+      // detail enhancements
+      'detail.share': '分享',
+      'detail.jumpToPage': '跳轉到頁',
+      'detail.similarSearch': '相似搜尋',
+      'detail.blockGallery': '封鎖畫廊',
+      'detail.allComments': '全部評論',
+      'detail.thumbnails': '縮圖 (@count)',
+      'detail.viewAllThumbnails': '查看全部縮圖',
+      'detail.galleryBlocked': '畫廊已被封鎖',
+      'detail.jumpPageHint': '輸入頁碼 (1-@max)',
+
+      // reader enhancements
+      'reader.saveImage': '儲存圖片',
+      'reader.openInNewTab': '在新標籤頁開啟',
+      'reader.reloadImage': '重新載入',
+      'reader.interval': '間隔',
+      'reader.preload': '預載入',
+      'reader.imageSpacing': '圖片間距',
+      'reader.autoInterval': '自動閱讀間隔',
+      'reader.startAutoMode': '開始',
+
+      // settings reader
+      'settings.readerSettings': '閱讀器設定',
+      'settings.defaultDirection': '預設方向',
+      'settings.imageSpacing': '圖片間距',
+      'settings.preloadPages': '預載入頁數',
+      'settings.autoInterval': '自動閱讀間隔',
+      'settings.fitWidth': '適應寬度',
+
+      // home enhancements
+      'home.scrollToTop': '回到頂部',
     };
   }
 }

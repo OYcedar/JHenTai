@@ -309,6 +309,38 @@ class WebZhCN {
       'detail.deleteDownload': '删除下载',
       'detail.deleteDownloadConfirm': '删除此下载及其文件？',
       'detail.archiveCompleted': '归档就绪',
+
+      // detail enhancements
+      'detail.share': '分享',
+      'detail.jumpToPage': '跳转到页',
+      'detail.similarSearch': '相似搜索',
+      'detail.blockGallery': '屏蔽画廊',
+      'detail.allComments': '全部评论',
+      'detail.thumbnails': '缩略图 (@count)',
+      'detail.viewAllThumbnails': '查看全部缩略图',
+      'detail.galleryBlocked': '画廊已被屏蔽',
+      'detail.jumpPageHint': '输入页码 (1-@max)',
+
+      // reader enhancements
+      'reader.saveImage': '保存图片',
+      'reader.openInNewTab': '在新标签页打开',
+      'reader.reloadImage': '重新加载',
+      'reader.interval': '间隔',
+      'reader.preload': '预加载',
+      'reader.imageSpacing': '图片间距',
+      'reader.autoInterval': '自动阅读间隔',
+      'reader.startAutoMode': '开始',
+
+      // settings reader
+      'settings.readerSettings': '阅读器设置',
+      'settings.defaultDirection': '默认方向',
+      'settings.imageSpacing': '图片间距',
+      'settings.preloadPages': '预加载页数',
+      'settings.autoInterval': '自动阅读间隔',
+      'settings.fitWidth': '适应宽度',
+
+      // home enhancements
+      'home.scrollToTop': '回到顶部',
     };
   }
 }

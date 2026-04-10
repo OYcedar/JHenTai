@@ -309,6 +309,38 @@ class WebKoKR {
       'detail.deleteDownload': '다운로드 삭제',
       'detail.deleteDownloadConfirm': '이 다운로드와 파일을 삭제하시겠습니까?',
       'detail.archiveCompleted': '아카이브 준비됨',
+
+      // detail enhancements
+      'detail.share': '공유',
+      'detail.jumpToPage': '페이지 이동',
+      'detail.similarSearch': '유사 검색',
+      'detail.blockGallery': '갤러리 차단',
+      'detail.allComments': '모든 댓글',
+      'detail.thumbnails': '썸네일 (@count)',
+      'detail.viewAllThumbnails': '모든 썸네일 보기',
+      'detail.galleryBlocked': '갤러리가 차단되었습니다',
+      'detail.jumpPageHint': '페이지 번호 입력 (1-@max)',
+
+      // reader enhancements
+      'reader.saveImage': '이미지 저장',
+      'reader.openInNewTab': '새 탭에서 열기',
+      'reader.reloadImage': '이미지 새로고침',
+      'reader.interval': '간격',
+      'reader.preload': '미리 로드',
+      'reader.imageSpacing': '이미지 간격',
+      'reader.autoInterval': '자동 넘기기 간격',
+      'reader.startAutoMode': '시작',
+
+      // settings reader
+      'settings.readerSettings': '리더 설정',
+      'settings.defaultDirection': '기본 방향',
+      'settings.imageSpacing': '이미지 간격',
+      'settings.preloadPages': '미리 로드 페이지',
+      'settings.autoInterval': '자동 넘기기 간격',
+      'settings.fitWidth': '너비 맞춤',
+
+      // home enhancements
+      'home.scrollToTop': '맨 위로',
     };
   }
 }
