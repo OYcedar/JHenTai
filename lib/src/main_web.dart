@@ -413,6 +413,14 @@ class _WebSetupPageState extends State<WebSetupPage> {
   bool _verifying = false;
   String? _error;
 
+  static const _tokenLen = 64;
+
+  @override
+  void initState() {
+    super.initState();
+    _tokenController.addListener(() => setState(() {}));
+  }
+
   @override
   void dispose() {
     _tokenController.dispose();
@@ -421,10 +429,11 @@ class _WebSetupPageState extends State<WebSetupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final len = _tokenController.text.trim().length;
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 400),
+          constraints: const BoxConstraints(maxWidth: 520),
           child: Card(
             margin: const EdgeInsets.all(24),
             child: Padding(
@@ -443,13 +452,31 @@ class _WebSetupPageState extends State<WebSetupPage> {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'setup.tokenHint'.tr,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                  ),
                   const SizedBox(height: 24),
                   TextField(
                     controller: _tokenController,
+                    maxLines: 3,
+                    minLines: 2,
+                    style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
                     decoration: InputDecoration(
                       labelText: 'setup.tokenLabel'.tr,
+                      hintText: 'setup.tokenPasteHint'.tr,
                       border: const OutlineInputBorder(),
                       errorText: _error,
+                      alignLabelWithHint: true,
+                      counterText: 'setup.tokenCharCount'.trParams({
+                        'current': '$len',
+                        'total': '$_tokenLen',
+                      }),
                     ),
                     onSubmitted: (_) => _verify(),
                   ),
@@ -474,9 +501,13 @@ class _WebSetupPageState extends State<WebSetupPage> {
   }
 
   Future<void> _verify() async {
-    final token = _tokenController.text.trim();
+    final token = _tokenController.text.trim().replaceAll(RegExp(r'\s+'), '');
     if (token.isEmpty) {
       setState(() => _error = 'setup.emptyToken'.tr);
+      return;
+    }
+    if (token.length != _tokenLen || !RegExp(r'^[0-9a-fA-F]+$').hasMatch(token)) {
+      setState(() => _error = 'setup.tokenWrongLength'.tr);
       return;
     }
 
