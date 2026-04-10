@@ -21,6 +21,10 @@ class WebPtBR {
       'setup.connect': 'Conectar',
       'setup.emptyToken': 'Por favor, insira um token',
       'setup.invalidToken': 'Token inválido. Verifique os logs do servidor para o token correto.',
+      'setup.tokenHint': 'O token tem 64 caracteres hex em uma linha — copie a linha inteira.',
+      'setup.tokenPasteHint': 'Cole o token completo de 64 caracteres dos logs',
+      'setup.tokenCharCount': '@current / @total caracteres',
+      'setup.tokenWrongLength': 'O token deve ter exatamente 64 caracteres hexadecimais (linha completa do docker logs).',
 
       // home
       'home.title': 'JHenTai',

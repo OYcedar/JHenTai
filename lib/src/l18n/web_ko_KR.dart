@@ -21,6 +21,10 @@ class WebKoKR {
       'setup.connect': '연결',
       'setup.emptyToken': '토큰을 입력하세요',
       'setup.invalidToken': '유효하지 않은 토큰입니다. 서버 로그에서 올바른 토큰을 확인하세요.',
+      'setup.tokenHint': '토큰은 한 줄에 64자리 16진수입니다. 로그에서 전체를 복사하세요(절반만 복사하지 마세요).',
+      'setup.tokenPasteHint': '로그의 전체 64자 토큰을 붙여넣으세요',
+      'setup.tokenCharCount': '@current / @total자',
+      'setup.tokenWrongLength': '토큰은 정확히 64자리 16진수여야 합니다(docker logs 한 줄 전체).',
 
       // home
       'home.title': 'JHenTai',

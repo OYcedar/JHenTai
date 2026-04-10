@@ -21,6 +21,10 @@ class WebRuRU {
       'setup.connect': 'Подключить',
       'setup.emptyToken': 'Пожалуйста, введите токен',
       'setup.invalidToken': 'Недействительный токен. Проверьте логи сервера.',
+      'setup.tokenHint': 'Токен — 64 шестнадцатеричных символа в одной строке. Копируйте строку целиком.',
+      'setup.tokenPasteHint': 'Вставьте полный 64-символьный токен из логов',
+      'setup.tokenCharCount': '@current / @total символов',
+      'setup.tokenWrongLength': 'Токен должен быть ровно из 64 шестнадцатеричных символов (полная строка из docker logs).',
 
       // home
       'home.title': 'JHenTai',
