@@ -30,5 +30,7 @@ $tag = "${semver}-${hhh}"
 
 Write-Host "Image: ${image}:${tag} (fork_revision=$frNum -> 0x$hhh)"
 docker build -t "${image}:${tag}" $Root
+docker tag "${image}:${tag}" "${image}:latest"
 docker push "${image}:${tag}"
-Write-Host "Pushed ${image}:${tag}"
+docker push "${image}:latest"
+Write-Host "Pushed ${image}:${tag} and ${image}:latest"

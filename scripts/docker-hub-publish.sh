@@ -30,5 +30,7 @@ TAG="${SEMVER}-${HHH}"
 
 echo "Image: ${IMAGE}:${TAG} (fork_revision=$FR -> 0x$HHH)"
 docker build -t "${IMAGE}:${TAG}" .
+docker tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
 docker push "${IMAGE}:${TAG}"
-echo "Pushed ${IMAGE}:${TAG}"
+docker push "${IMAGE}:latest"
+echo "Pushed ${IMAGE}:${TAG} and ${IMAGE}:latest"
