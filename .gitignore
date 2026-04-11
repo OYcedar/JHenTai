@@ -1,5 +1,6 @@
 # Miscellaneous
 .arts/
+.agents/
 *.class
 *.log
 *.pyc
