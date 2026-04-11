@@ -1,67 +1,67 @@
 ---
 name: jhentai-docker-local-deploy
 description: >-
-  Rebuilds and runs the JHenTai-Docker stack locally via docker compose after
-  code changes. Use when the user asks to deploy locally with Docker, verify the
-  image after edits, run compose up --build, refresh the jhentai container, or
-  wants the agent to automatically deploy to local Docker when implementation
-  is finished in this repository.
+  Local JHenTai-Docker: deploy by running docker compose from repo root — default
+  is `docker compose up -d --build`. Use when the user asks for local Docker deploy,
+  to verify after edits, or to auto-deploy locally when work in this repo is done.
 ---
 
-# JHenTai — local Docker deploy (compose)
+# JHenTai — 本地部署（Docker Compose）
 
-## When to run
+## 原则
 
-- **After** finishing code changes in **JHenTai-Docker** (same repo as root `Dockerfile` and [`docker-compose.yml`](docker-compose.yml)).
-- When the user explicitly asks for local Docker / compose deploy, or says to auto-deploy locally after edits.
+**本地部署 = 在仓库根目录直接起 compose。** 常规迭代不需要额外步骤；改完代码后一条命令即可。
 
-**Skip** if the user only wanted a plan, docs-only change, or said not to run Docker.
+## 何时执行
 
-## Prerequisites
+- 本仓库（含根目录 `Dockerfile`、`docker-compose.yml`）**实现或修改完成后**，用户要本地跑起来、或明确说本地部署 / compose。
+- 用户说「部署一下」「本地起一下」等 — 按下面默认命令执行。
 
-- **Docker** available (`docker compose` v2 or `docker-compose`).
-- Shell on Windows: **PowerShell**; chain with **`;`**, not `&&`.
+**不跑**：只要方案/文档、用户禁止 Docker、或纯只读问答。
 
-## Commands (repository root)
+## 默认命令（仓库根目录）
 
-`Set-Location` to the repo root (directory containing `docker-compose.yml`), then:
+PowerShell：用 **`;`** 链接命令，不要用 **`&&`**。
+
+```powershell
+Set-Location H:\JHenTai-Docker
+docker compose up -d --build
+```
+
+（路径按用户实际仓库根目录替换。）
+
+- 容器名：**`jhentai`**
+- 默认访问：**`http://localhost:8080`**
+
+## 可选：怀疑缓存坏掉时再全量重建
 
 ```powershell
 docker compose build --no-cache; docker compose up -d
 ```
 
-For faster iteration when only app code changed and Dockerfile layers cache well:
+日常**不要**默认加 `--no-cache`，除非构建明显用了陈旧层。
 
-```powershell
-docker compose up -d --build
-```
-
-- Service / container name: **`jhentai`** (see compose file).
-- Default URL: **`http://localhost:8080`** (map `8080:8080`).
-
-## Verify
+## 简单验收
 
 ```powershell
 docker compose ps
 docker compose logs jhentai --tail 80
 ```
 
-Optional: open `http://localhost:8080` or `curl` `/api/health` if the API exposes it.
+## 失败时
 
-## If build or start fails
+- **端口占用**：改 `docker-compose.yml` 主机端口或停掉占用进程。
+- **构建失败**：看 build 日志；修 Dart/Flutter/服务端编译后再 `docker compose up -d --build`。
+- **Linux 权限/卷**：查 `PUID`/`PGID`；Windows 查 Docker Desktop 文件共享。
 
-- **Port in use**: change host port in `docker-compose.yml` or stop the conflicting process.
-- **Build errors**: read the **docker build** step output; fix Dart/Flutter or server compile issues, then retry.
-- **Permission / volume**: on Linux check `PUID`/`PGID`; on Windows Docker Desktop file sharing.
+## 与其他 skill 的关系
 
-## Relation to other skills
+- 推 **Docker Hub**（多架构）：用 [jhentai-docker-hub-publish](../jhentai-docker-hub-publish/SKILL.md)。
+- 本 skill **仅本地**，不涉及 registry。
 
-- **Hub publish** (multi-arch push): use [jhentai-docker-hub-publish](../jhentai-docker-hub-publish/SKILL.md), not this skill.
-- This skill is **local only** — no registry push.
+## Agent 收尾检查
 
-## Agent checklist (post-implementation)
-
-1. Confirm edits are saved and the user did not forbid running commands.
-2. `Set-Location` to repo root.
-3. Run `docker compose up -d --build` (or `build` then `up` as above).
-4. Report exit codes; show last lines of `docker compose logs jhentai` if non-trivial.
+1. 用户未禁止执行命令。
+2. `Set-Location` 到含 `docker-compose.yml` 的根目录。
+3. 执行 **`docker compose up -d --build`**（默认）；必要时再用 `--no-cache` 那条。
+4. 汇报退出码；若异常，贴 `docker compose logs jhentai` 末尾若干行。

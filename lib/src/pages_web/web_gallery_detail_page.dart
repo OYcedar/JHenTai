@@ -49,6 +49,8 @@ class WebGalleryDetailController extends GetxController {
   final thumbnailImageUrls = <String>[].obs;
   final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final tags = <String, List<String>>{}.obs;
+  /// Server [tagsRich]: EH `#taglist` inline colors, aligned by `name` with [tags].
+  final tagsRich = <String, List<Map<String, dynamic>>>{}.obs;
   final translatedTags = <String, String>{}.obs;
   final comments = <Map<String, dynamic>>[].obs;
 
@@ -137,7 +139,21 @@ class WebGalleryDetailController extends GetxController {
       final rawTags = result['tags'] as Map<String, dynamic>?;
       if (rawTags != null) {
         tags.value = rawTags.map((k, v) => MapEntry(k, (v as List).cast<String>()));
+      } else {
+        tags.clear();
       }
+
+      tagsRich.clear();
+      final rawRich = result['tagsRich'] as Map<String, dynamic>?;
+      if (rawRich != null) {
+        for (final e in rawRich.entries) {
+          final v = e.value;
+          if (v is List) {
+            tagsRich[e.key] = v.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+          }
+        }
+      }
+      tagsRich.refresh();
 
       apiuid = result['apiuid'] as int?;
       apikey = result['apikey'] as String?;
@@ -236,6 +252,28 @@ class WebGalleryDetailController extends GetxController {
   String getTranslatedTag(String namespace, String tag) {
     final key = '$namespace:$tag';
     return translatedTags[key] ?? tag;
+  }
+
+  /// Inline ARGB from gallery HTML (`tagsRich`), same order as [tags] rows.
+  ({int? colorArgb, int? backgroundArgb})? tagHtmlStyleArgb(String namespace, String tagName) {
+    final list = tagsRich[namespace];
+    if (list == null) return null;
+    int? asArgb(dynamic v) {
+      if (v == null) return null;
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString());
+    }
+
+    for (final m in list) {
+      if (m['name'] == tagName) {
+        return (
+          colorArgb: asArgb(m['color']),
+          backgroundArgb: asArgb(m['backgroundColor']),
+        );
+      }
+    }
+    return null;
   }
 
   /// [slotIndex] 0–9. If already in that folder, removes from favorites (EH behavior).
@@ -1000,11 +1038,12 @@ class WebGalleryDetailPage extends StatelessWidget {
         final completed = task['completedCount'] as int? ?? 0;
         final total = task['pageCount'] as int? ?? 0;
         return FilledButton.tonalIcon(
-          icon: const Icon(Icons.pause_circle_outline),
+          icon: Icon(Icons.pause_circle_outline, color: Colors.blue.shade900),
           label: Text('${'downloads.pause'.tr}  $completed/$total'),
           style: FilledButton.styleFrom(
             minimumSize: const Size(160, 44),
             backgroundColor: Colors.blue.shade100,
+            foregroundColor: Colors.blue.shade900,
           ),
           onPressed: () => svc.pauseGallery(controller.gid),
         );
@@ -1012,31 +1051,34 @@ class WebGalleryDetailPage extends StatelessWidget {
         final completed = task['completedCount'] as int? ?? 0;
         final total = task['pageCount'] as int? ?? 0;
         return FilledButton.tonalIcon(
-          icon: const Icon(Icons.play_circle_outline),
+          icon: Icon(Icons.play_circle_outline, color: Colors.orange.shade900),
           label: Text('${'downloads.resume'.tr}  $completed/$total'),
           style: FilledButton.styleFrom(
             minimumSize: const Size(160, 44),
             backgroundColor: Colors.orange.shade100,
+            foregroundColor: Colors.orange.shade900,
           ),
           onPressed: () => svc.resumeGallery(controller.gid),
         );
       case 3: // Completed
         return FilledButton.tonalIcon(
-          icon: const Icon(Icons.check_circle, color: Colors.green),
+          icon: Icon(Icons.check_circle, color: Colors.green.shade900),
           label: Text('detail.completed'.tr),
           style: FilledButton.styleFrom(
             minimumSize: const Size(160, 44),
             backgroundColor: Colors.green.shade100,
+            foregroundColor: Colors.green.shade900,
           ),
           onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=downloaded'),
         );
       case 4: // Failed
         return FilledButton.tonalIcon(
-          icon: const Icon(Icons.refresh, color: Colors.red),
+          icon: Icon(Icons.refresh, color: Colors.red.shade900),
           label: Text('detail.retryDownload'.tr),
           style: FilledButton.styleFrom(
             minimumSize: const Size(160, 44),
             backgroundColor: Colors.red.shade100,
+            foregroundColor: Colors.red.shade900,
           ),
           onPressed: () => svc.resumeGallery(controller.gid),
         );
@@ -1085,11 +1127,12 @@ class WebGalleryDetailPage extends StatelessWidget {
     final svc = Get.find<WebDownloadService>();
     if (status == 6) {
       return FilledButton.tonalIcon(
-        icon: const Icon(Icons.check_circle, color: Colors.green),
+        icon: Icon(Icons.check_circle, color: Colors.green.shade900),
         label: Text('detail.archiveCompleted'.tr),
         style: FilledButton.styleFrom(
           minimumSize: const Size(160, 44),
           backgroundColor: Colors.green.shade100,
+          foregroundColor: Colors.green.shade900,
         ),
         onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=archive'),
       );
@@ -1200,17 +1243,32 @@ class WebGalleryDetailPage extends StatelessWidget {
                       children: entry.value.map((tag) {
                         final translated = controller.getTranslatedTag(entry.key, tag);
                         final showTranslated = translated != tag;
+                        final html = controller.tagHtmlStyleArgb(entry.key, tag);
+                        final htmlBg = html?.backgroundArgb;
+                        final htmlFg = html?.colorArgb;
                         final watchedBgArgb = WebWatchedTagStylesController.lookupBackgroundArgb(
                           accountWatchedBg,
                           entry.key,
                           tag,
                         );
-                        final bg = watchedBgArgb != null ? Color(watchedBgArgb) : null;
-                        final fg = bg == null
-                            ? null
-                            : (ThemeData.estimateBrightnessForColor(bg) == Brightness.light
-                                ? const Color(0xFF090909)
-                                : const Color(0xFFF1F1F1));
+                        final mergedBgArgb = htmlBg ?? watchedBgArgb;
+                        final Color? bg = mergedBgArgb != null ? Color(mergedBgArgb) : null;
+                        final ns = _namespaceColor(entry.key);
+                        final Color defaultFg =
+                            Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87;
+                        final Color labelFg = htmlFg != null
+                            ? Color(htmlFg)
+                            : (bg != null
+                                ? (ThemeData.estimateBrightnessForColor(bg) == Brightness.light
+                                    ? const Color(0xFF090909)
+                                    : const Color(0xFFF1F1F1))
+                                : defaultFg);
+                        final Color chipBg = bg ?? ns.withValues(alpha: 0.14);
+                        final Color borderColor = bg != null
+                            ? bg.withValues(alpha: 0.9)
+                            : (htmlFg != null
+                                ? Color(htmlFg).withValues(alpha: 0.55)
+                                : ns.withValues(alpha: 0.55));
                         return GestureDetector(
                           onSecondaryTapUp: (details) {
                             _showTagContextMenu(context, details.globalPosition, entry.key, tag);
@@ -1223,10 +1281,10 @@ class WebGalleryDetailPage extends StatelessWidget {
                             child: ActionChip(
                               label: Text(
                                 showTranslated ? translated : tag,
-                                style: TextStyle(fontSize: 12, color: fg),
+                                style: TextStyle(fontSize: 12, color: labelFg),
                               ),
-                              backgroundColor: bg,
-                              side: bg != null ? BorderSide(color: bg.withValues(alpha: 0.9)) : null,
+                              backgroundColor: chipBg,
+                              side: BorderSide(color: borderColor, width: 1),
                               visualDensity: VisualDensity.compact,
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               onPressed: () {

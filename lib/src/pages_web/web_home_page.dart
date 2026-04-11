@@ -25,6 +25,29 @@ class WebHomeController extends GetxController {
   final hasNextPage = false.obs;
   final hasPrevPage = false.obs;
 
+  /// EH `next=` / `prev=` gid cursors (native [requestGalleryPage]); not used for [ranklist].
+  String? _pendingNextGid;
+  String? _pendingPrevGid;
+  String? _lastNextGid;
+  String? _lastPrevGid;
+
+  static String? _gidFromJson(dynamic v) {
+    if (v == null) return null;
+    if (v is String && v.isNotEmpty) return v;
+    if (v is num) return '$v';
+    final s = v.toString();
+    return s.isNotEmpty ? s : null;
+  }
+
+  void _clearPaginationCursors() {
+    _pendingNextGid = null;
+    _pendingPrevGid = null;
+    _lastNextGid = null;
+    _lastPrevGid = null;
+  }
+
+  static bool _sectionUsesRanklistPaging(String section) => section == 'ranklist';
+
   // Advanced search state
   final categoryFilter = 0.obs;
   final minimumRating = 0.obs;
@@ -163,6 +186,7 @@ class WebHomeController extends GetxController {
     if (!listByUrlMode.value) return;
     _exitListByUrlMode();
     currentPage.value = 0;
+    _clearPaginationCursors();
     await _fetchGalleryList();
   }
 
@@ -191,6 +215,7 @@ class WebHomeController extends GetxController {
       }
       listByUrlMode.value = true;
       currentPage.value = 0;
+      _clearPaginationCursors();
       listByUrlHumanPage.value = 1;
       _currentSearch = '';
       searchController.clear();
@@ -283,6 +308,8 @@ class WebHomeController extends GetxController {
     _exitListByUrlMode();
     currentSection.value = 'home';
     if (_currentSearch.isEmpty) _currentSearch = '';
+    currentPage.value = 0;
+    _clearPaginationCursors();
     await _fetchGalleryList();
   }
 
@@ -291,6 +318,7 @@ class WebHomeController extends GetxController {
     _currentSearch = keyword;
     currentSection.value = 'home';
     currentPage.value = 0;
+    _clearPaginationCursors();
     if (keyword.trim().isNotEmpty) {
       backendApiClient.recordSearchHistory(keyword.trim()).catchError((_) {});
       loadSearchHistory();
@@ -311,6 +339,13 @@ class WebHomeController extends GetxController {
       }
       return;
     }
+    final sec = currentSection.value;
+    if (!_sectionUsesRanklistPaging(sec)) {
+      final nid = _lastNextGid;
+      if ((nid == null || nid.isEmpty) && !hasNextPage.value) return;
+      _pendingNextGid = nid;
+      _pendingPrevGid = null;
+    }
     currentPage.value++;
     await _fetchGalleryList();
   }
@@ -328,7 +363,13 @@ class WebHomeController extends GetxController {
       }
       return;
     }
-    if (currentPage.value > 0) currentPage.value--;
+    if (currentPage.value <= 0) return;
+    final sec = currentSection.value;
+    if (!_sectionUsesRanklistPaging(sec)) {
+      _pendingPrevGid = _lastPrevGid;
+      _pendingNextGid = null;
+    }
+    currentPage.value--;
     await _fetchGalleryList();
   }
 
@@ -342,6 +383,9 @@ class WebHomeController extends GetxController {
       }
       return;
     }
+    // Match native [handleRefresh]: reload first page of current list/search.
+    currentPage.value = 0;
+    _clearPaginationCursors();
     await _fetchGalleryList();
   }
 
@@ -350,6 +394,7 @@ class WebHomeController extends GetxController {
     currentSection.value = section;
     _currentSearch = '';
     currentPage.value = 0;
+    _clearPaginationCursors();
     if (tl != null) _ranklistTl = tl;
     await _fetchGalleryList();
   }
@@ -430,14 +475,49 @@ class WebHomeController extends GetxController {
         favcat = favoriteCategoryFilter.value;
       }
       final composedSearch = _composeFSearch(_currentSearch);
+      // EH `/popular` and `/toplist.php` are not gallery search endpoints; sending `f_search`
+      // (e.g. language-only from _composeFSearch when the keyword is empty) can break upstream.
+      String? searchForSection;
+      if (composedSearch.isNotEmpty) {
+        switch (currentSection.value) {
+          case 'home':
+          case 'watched':
+          case 'favorites':
+            searchForSection = composedSearch;
+            break;
+          default:
+            break;
+        }
+      }
+      final sec = currentSection.value;
+      String? pageStr;
+      String? nextStr;
+      String? prevStr;
+      if (_sectionUsesRanklistPaging(sec)) {
+        pageStr = currentPage.value > 0 ? currentPage.value.toString() : null;
+      } else {
+        nextStr = _pendingNextGid;
+        prevStr = _pendingPrevGid;
+        if (nextStr == null &&
+            prevStr == null &&
+            currentPage.value > 0) {
+          pageStr = currentPage.value.toString();
+        }
+      }
+
       final result = await backendApiClient.fetchGalleryList(
-        section: currentSection.value,
-        page: currentPage.value > 0 ? currentPage.value.toString() : null,
-        search: composedSearch.isNotEmpty ? composedSearch : null,
+        section: sec,
+        page: pageStr,
+        next: nextStr,
+        prev: prevStr,
+        search: searchForSection,
         advancedParams: advParams.isNotEmpty ? advParams : null,
         favSort: favSort,
         favcat: favcat,
       );
+
+      _pendingNextGid = null;
+      _pendingPrevGid = null;
 
       final galleryList = (result['galleries'] as List?) ?? [];
       if (galleryList.isEmpty && snapshotPage > 0) {
@@ -446,21 +526,35 @@ class WebHomeController extends GetxController {
         galleries.value = snapshotGalleries;
         hasNextPage.value = false;
         hasPrevPage.value = currentPage.value > 0;
+        _clearPaginationCursors();
         return;
       }
       galleries.value = galleryList.cast<Map<String, dynamic>>();
       unawaited(_fetchGalleryListTagTranslations());
 
+      _lastNextGid = _gidFromJson(result['nextGid']);
+      _lastPrevGid = _gidFromJson(result['prevGid']);
+
       final nextUrl = result['nextUrl'] as String? ?? '';
-      // Do not rely only on parsed prevUrl — on many EH layouts the < link is easy to miss;
-      // we drive page index ourselves, so "previous" is available whenever not on first page.
-      if (nextUrl.isNotEmpty) {
-        hasNextPage.value = true;
+      final hasMore = result['hasMore'];
+      if (hasMore is bool) {
+        hasNextPage.value = hasMore;
       } else {
-        // If EH hid/changed next links but returned a full page, allow one more `page` fetch.
-        hasNextPage.value = galleries.length >= _ehGalleryPageSizeHint;
+        if (nextUrl.isNotEmpty || (_lastNextGid != null && _lastNextGid!.isNotEmpty)) {
+          hasNextPage.value = true;
+        } else {
+          hasNextPage.value = galleries.length >= _ehGalleryPageSizeHint;
+        }
       }
-      hasPrevPage.value = currentPage.value > 0;
+
+      final hasPrev = result['hasPrev'];
+      if (hasPrev is bool) {
+        hasPrevPage.value = hasPrev || currentPage.value > 0;
+      } else {
+        final pu = result['prevUrl'] as String? ?? '';
+        hasPrevPage.value =
+            currentPage.value > 0 || pu.isNotEmpty || (_lastPrevGid != null && _lastPrevGid!.isNotEmpty);
+      }
     } catch (e) {
       errorMessage.value = 'home.loadFailed'.trParams({'error': '$e'});
     } finally {
@@ -565,6 +659,7 @@ class WebHomeController extends GetxController {
       filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
       disableFilterForLanguage.value = config['disableFilterForLanguage'] as bool? ?? false;
       currentPage.value = 0;
+      _clearPaginationCursors();
       currentSection.value = 'home';
       persistAdvancedSearchSettings();
       _fetchGalleryList();
@@ -1127,11 +1222,6 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
               onPressed: () => WebHomePage._showAdvancedSearchStatic(context, controller),
             );
           }),
-          IconButton(
-            icon: const Icon(Icons.image_search),
-            onPressed: controller.pickImageAndSearch,
-            tooltip: 'home.imageSearch'.tr,
-          ),
         ],
       ),
       body: Row(

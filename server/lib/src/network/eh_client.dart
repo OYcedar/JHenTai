@@ -5,6 +5,7 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 
 import '../core/log.dart';
+import '../utils/eh_tag_style_parse.dart';
 import 'cookie_manager.dart';
 
 /// Thrown when gallery HTML looks like EX sad panda / block page instead of a real gallery.
@@ -13,6 +14,25 @@ class GalleryDetailAccessException implements Exception {
   final String message;
   @override
   String toString() => message;
+}
+
+/// EH archiver unlock failed with a definite message (e.g. insufficient GP/Credits).
+/// See [EHSpiderParser.unlockArchivePage2DownloadArchivePageUrl] on the Flutter side.
+class ArchiveUnlockException implements Exception {
+  ArchiveUnlockException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
+/// dio 5.9+ [CancelToken] has no `throwIfCancelled`; throws [DioExceptionType.cancel] when needed.
+void cancelTokenThrowIfCancelled(CancelToken? token) {
+  if (token != null && token.isCancelled) {
+    throw DioException(
+      requestOptions: RequestOptions(),
+      type: DioExceptionType.cancel,
+    );
+  }
 }
 
 bool _ehGalleryHtmlLooksBlocked(String body) {
@@ -46,6 +66,31 @@ class EHClient {
     return '';
   }
 
+  /// Sprite offset from `#gdt` / `.gdtm` inline style. Horizontal: `url(...) -Npx 0`;
+  /// vertical stack: `url(...) 0px -Npx` or `background-position:0px -Npx`.
+  /// [spriteCropY] true => Web uses srcRect (0, off, tw, off+th); false => (off, 0, off+tw, th).
+  static ({double offset, bool spriteCropY})? _spriteOffsetFromGdtStyle(String style) {
+    final horizontal = RegExp(r'\)\s*-(\d+)px').firstMatch(style);
+    if (horizontal != null) {
+      final v = double.tryParse(horizontal.group(1)!);
+      if (v != null) return (offset: v, spriteCropY: false);
+    }
+    final yPatterns = [
+      RegExp(r'background-position:\s*0px\s*-(\d+)px', caseSensitive: false),
+      RegExp(r'background-position:\s*0\s+-(\d+)px', caseSensitive: false),
+      RegExp(r'url\([^)]*\)\s*0px\s*-(\d+)px', caseSensitive: false),
+      RegExp(r'url\([^)]*\)\s*0\s+-(\d+)px', caseSensitive: false),
+    ];
+    for (final re in yPatterns) {
+      final m = re.firstMatch(style);
+      if (m != null) {
+        final v = double.tryParse(m.group(1)!);
+        if (v != null) return (offset: v, spriteCropY: true);
+      }
+    }
+    return null;
+  }
+
   /// Aligns with [GalleryThumbnail] / eh_spider_parser: large = one image URL; small = sprite sheet + crop.
   static Map<String, dynamic>? parseGdtAnchorThumbnail(Element a, String siteOrigin) {
     final div = a.querySelector('div[style]');
@@ -60,8 +105,8 @@ class EHClient {
         }
         thumbUrl = _makeAbsoluteThumbUrl(thumbUrl, siteOrigin);
 
-        final offsetMatch = RegExp(r'\)\s*-(\d+)px').firstMatch(style);
-        final offsetVal = offsetMatch != null ? double.tryParse(offsetMatch.group(1)!) : null;
+        final sprite = _spriteOffsetFromGdtStyle(style);
+        final offsetVal = sprite?.offset;
 
         final wMatch = RegExp(r'width:\s*(\d+)px').firstMatch(style);
         final hMatch = RegExp(r'height:\s*(\d+)px').firstMatch(style);
@@ -78,6 +123,9 @@ class EHClient {
           out['offSet'] = offsetVal;
           out['thumbWidth'] = tw;
           out['thumbHeight'] = th;
+          if (sprite!.spriteCropY) {
+            out['spriteCropY'] = true;
+          }
         }
         final oh = div.attributes['data-orghash'];
         if (oh != null && oh.isNotEmpty) out['originImageHash'] = oh;
@@ -118,21 +166,25 @@ class EHClient {
         thumbUrl = thumbUrl.substring(1, thumbUrl.length - 1);
       }
       thumbUrl = _makeAbsoluteThumbUrl(thumbUrl, siteOrigin);
-      final offsetMatch = RegExp(r'\)\s*-(\d+)px').firstMatch(st);
-      final off = offsetMatch != null ? double.tryParse(offsetMatch.group(1)!) : null;
+      final sprite = _spriteOffsetFromGdtStyle(st);
+      final off = sprite?.offset;
       final wMatch = RegExp(r'width:\s*(\d+)px').firstMatch(st);
       final hMatch = RegExp(r'height:\s*(\d+)px').firstMatch(st);
       final tw = double.tryParse(wMatch?.group(1) ?? '0') ?? 0;
       var th = double.tryParse(hMatch?.group(1) ?? '0') ?? 0;
       if (th > 0) th -= 1;
       if (off != null) {
-        return {
+        final m = <String, dynamic>{
           'thumbUrl': thumbUrl,
           'isLarge': false,
           'offSet': off,
           'thumbWidth': tw,
           'thumbHeight': th,
         };
+        if (sprite!.spriteCropY) {
+          m['spriteCropY'] = true;
+        }
+        return m;
       }
     }
 
@@ -318,39 +370,106 @@ class EHClient {
     return response.data ?? [];
   }
 
-  // --- Archive operations ---
+  // --- Archive operations (parity with Flutter [ArchiveDownloadService] / [EHSpiderParser]) ---
 
-  Future<String?> unlockArchive(String archiverUrl, {required bool isOriginal}) async {
-    final response = await _dio.post(
-      archiverUrl,
-      data: FormData.fromMap({
-        'dltype': isOriginal ? 'org' : 'res',
-        'dlcheck': isOriginal ? 'Download Original Archive' : 'Download Resample Archive',
-      }),
-    );
+  static const String _ehInsufficientFundsUnlockPrefix =
+      'You do not have enough funds to download this archive. Obtain some Credits or GP and try again.';
 
-    final body = response.data.toString();
+  static const Duration _archiveUnlockPollDelay = Duration(seconds: 1);
+  static const int _archiveUnlockMaxAttempts = 120;
+
+  static bool _isInsufficientFundsUnlockBody(String body) {
+    return body.startsWith(_ehInsufficientFundsUnlockPrefix);
+  }
+
+  static String? _continueHrefFromUnlockHtml(String body) {
     final doc = html_parser.parse(body);
-
-    final continueLink = doc.querySelector('#continue a')?.attributes['href'];
-    if (continueLink != null) return continueLink;
+    var href = doc.querySelector('#continue > a')?.attributes['href'];
+    href ??= doc.querySelector('#continue a')?.attributes['href'];
+    if (href != null && href.isNotEmpty) return href;
 
     final onClickAttr = doc.querySelector('#continue input')?.attributes['onclick'];
     if (onClickAttr != null) {
       final urlMatch = RegExp(r"document\.location\s*=\s*'([^']+)'").firstMatch(onClickAttr);
       if (urlMatch != null) return urlMatch.group(1);
     }
-
     return null;
   }
 
-  Future<String?> parseArchiveDownloadUrl(String downloadPageUrl) async {
-    final response = await _dio.get(downloadPageUrl);
+  /// POST archiver until EH returns a continue link (async archive generation), or fail.
+  /// URL normalized with `replaceFirst('--', '-')` like native [ArchiveDownloadService._unlock].
+  Future<String> unlockArchive(
+    String archiverUrl, {
+    required bool isOriginal,
+    CancelToken? cancelToken,
+  }) async {
+    final normalized = archiverUrl.replaceFirst('--', '-');
+
+    for (var attempt = 0; attempt < _archiveUnlockMaxAttempts; attempt++) {
+      cancelTokenThrowIfCancelled(cancelToken);
+
+      final response = await _dio.post(
+        normalized,
+        data: FormData.fromMap({
+          'dltype': isOriginal ? 'org' : 'res',
+          'dlcheck': isOriginal ? 'Download Original Archive' : 'Download Resample Archive',
+        }),
+        cancelToken: cancelToken,
+      );
+
+      final body = response.data.toString();
+
+      if (_isInsufficientFundsUnlockBody(body)) {
+        final line = body.split('\n').first.trim();
+        throw ArchiveUnlockException(line.isNotEmpty ? line : _ehInsufficientFundsUnlockPrefix);
+      }
+
+      final href = _continueHrefFromUnlockHtml(body);
+      if (href != null && href.isNotEmpty) {
+        return Uri.parse(normalized).resolve(href).toString();
+      }
+
+      await Future<void>.delayed(_archiveUnlockPollDelay);
+      cancelTokenThrowIfCancelled(cancelToken);
+    }
+
+    throw ArchiveUnlockException(
+      'Timed out waiting for archive download page (no continue link after $_archiveUnlockMaxAttempts attempts)',
+    );
+  }
+
+  /// Final file URL: [EHSpiderParser.downloadArchivePage2DownloadUrl] + [_getDownloadUrl] query/host rules.
+  static String? buildOfficialArchiveFileDownloadUrl(String downloadPageUrl, String hrefFromParser) {
+    if (hrefFromParser.isEmpty) return null;
+
+    final pageUri = Uri.parse(downloadPageUrl);
+    final resolved = pageUri.resolve(hrefFromParser);
+
+    final qp = Map<String, String>.from(resolved.queryParameters);
+    qp.remove('autostart');
+    qp.putIfAbsent('start', () => '1');
+
+    if (resolved.hasScheme && resolved.host.isNotEmpty) {
+      return resolved.replace(queryParameters: qp.isEmpty ? null : qp).toString();
+    }
+
+    final pathAndQuery = Uri(
+      path: resolved.path,
+      queryParameters: qp.isEmpty ? null : qp,
+    ).toString();
+    return 'https://${pageUri.host}$pathAndQuery';
+  }
+
+  Future<String?> parseArchiveDownloadUrl(String downloadPageUrl, {CancelToken? cancelToken}) async {
+    final response = await _dio.get(downloadPageUrl, cancelToken: cancelToken);
     final body = response.data.toString();
     final doc = html_parser.parse(body);
 
-    final archiveLink = doc.querySelector('#db a')?.attributes['href'];
-    return archiveLink;
+    var href = doc.querySelector('#db > p > a')?.attributes['href'];
+    href ??= doc.querySelector('#db a')?.attributes['href'];
+    if (href == null || href.isEmpty) return null;
+
+    return buildOfficialArchiveFileDownloadUrl(downloadPageUrl, href);
   }
 
   // --- Favorites ---
@@ -671,14 +790,28 @@ class EHClient {
       result.archiverUrl = urlMatch?.group(1);
     }
 
-    // Parse tags grouped by namespace (#taglist tr)
+    // Parse tags grouped by namespace (#taglist tr); also capture inline EH styles for Web parity.
     for (final tr in doc.querySelectorAll('#taglist tr')) {
       final tdNamespace = tr.querySelector('td.tc');
       final namespace = tdNamespace?.text.replaceAll(':', '').trim() ?? 'misc';
       final tagElements = tr.querySelectorAll('td:not(.tc) a, td:not(.tc) div a');
-      final tagValues = tagElements.map((a) => a.text.trim()).where((t) => t.isNotEmpty).toList();
+      final tagValues = <String>[];
+      final tagRich = <Map<String, dynamic>>[];
+      for (final a in tagElements) {
+        final name = a.text.trim();
+        if (name.isEmpty) continue;
+        tagValues.add(name);
+        final style = EhTagStyleParse.mergedInlineStyles(a);
+        final cArgb = EhTagStyleParse.foregroundArgb(style);
+        final bgArgb = EhTagStyleParse.watchedBackgroundArgb(style);
+        final m = <String, dynamic>{'name': name};
+        if (cArgb != null) m['color'] = cArgb;
+        if (bgArgb != null) m['backgroundColor'] = bgArgb;
+        tagRich.add(m);
+      }
       if (tagValues.isNotEmpty) {
         result.tags[namespace] = tagValues;
+        result.tagsRich[namespace] = tagRich;
       }
     }
 
@@ -839,6 +972,8 @@ class GalleryDetailResult {
   List<String> thumbnailImageUrls = [];
   List<Map<String, dynamic>> galleryThumbnails = [];
   Map<String, List<String>> tags = {};
+  /// Per-namespace rows aligned with [tags] order: `{name, color?, backgroundColor?}` (ARGB ints).
+  Map<String, List<Map<String, dynamic>>> tagsRich = {};
   int? apiuid;
   String? apikey;
   int? favoriteSlot;

@@ -51,6 +51,9 @@ class WebEhThumbnail extends StatefulWidget {
     return off != null && tw != null && tw > 0 && th != null && th > 0;
   }
 
+  /// Server sets when sprite offset is Y (e.g. `url(...) 0px -Npx`); default horizontal strip.
+  static bool spriteCropY(Map<String, dynamic> data) => data['spriteCropY'] == true;
+
   @override
   State<WebEhThumbnail> createState() => _WebEhThumbnailState();
 }
@@ -169,7 +172,9 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     super.didUpdateWidget(oldWidget);
     final oldU = oldWidget.data['thumbUrl'] as String? ?? '';
     final newU = widget.data['thumbUrl'] as String? ?? '';
-    if (oldU == newU && WebEhThumbnail.useSpriteSheet(widget.data) == WebEhThumbnail.useSpriteSheet(oldWidget.data)) {
+    if (oldU == newU &&
+        WebEhThumbnail.useSpriteSheet(widget.data) == WebEhThumbnail.useSpriteSheet(oldWidget.data) &&
+        WebEhThumbnail.spriteCropY(widget.data) == WebEhThumbnail.spriteCropY(oldWidget.data)) {
       return;
     }
     final thumbUrl = widget.data['thumbUrl'] as String? ?? '';
@@ -261,7 +266,10 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
         final o = off!;
         final twn = tw!;
         final thn = th!;
-        final src = Rect.fromLTRB(o, 0, o + twn, thn);
+        final cropY = WebEhThumbnail.spriteCropY(widget.data);
+        final src = cropY
+            ? Rect.fromLTRB(0, o, twn, o + thn)
+            : Rect.fromLTRB(o, 0, o + twn, thn);
 
         return ClipRRect(
           borderRadius: widget.borderRadius,
