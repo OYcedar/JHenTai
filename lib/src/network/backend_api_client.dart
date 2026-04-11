@@ -370,6 +370,10 @@ class BackendApiClient {
   Future<Map<String, dynamic>> fetchGalleryList({
     String section = 'home',
     String? page,
+    /// EH gallery index `next=` gid (native [requestGalleryPage]).
+    String? next,
+    /// EH gallery index `prev=` gid.
+    String? prev,
     String? search,
     Map<String, dynamic>? advancedParams,
     /// EH `inline_set`: `fs_f` (favorited time) or `fs_p` (published time). Used when [section] is `favorites`.
@@ -379,6 +383,8 @@ class BackendApiClient {
   }) async {
     final params = <String, dynamic>{'section': section};
     if (page != null) params['page'] = page;
+    if (next != null && next.isNotEmpty) params['next'] = next;
+    if (prev != null && prev.isNotEmpty) params['prev'] = prev;
     if (search != null && search.isNotEmpty) params['f_search'] = search;
     if (advancedParams != null) params.addAll(advancedParams);
     if (favSort != null && favSort.isNotEmpty) params['fav_sort'] = favSort;

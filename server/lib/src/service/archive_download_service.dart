@@ -297,6 +297,7 @@ class ArchiveDownloadService {
   }
 
   Future<void> _doDownload(ArchiveDownloadTask task) async {
+    task._cancelToken = CancelToken();
     try {
       task.status = ArchiveStatus.unlocking;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
@@ -306,10 +307,8 @@ class ArchiveDownloadService {
         final downloadPageUrl = await _client.unlockArchive(
           task.archivePageUrl,
           isOriginal: task.isOriginal,
+          cancelToken: task._cancelToken,
         );
-        if (downloadPageUrl == null) {
-          throw Exception('Failed to unlock archive');
-        }
         task.downloadPageUrl = downloadPageUrl;
         db.updateArchiveDownloadUrls(task.gid, downloadPageUrl: downloadPageUrl);
       }
@@ -320,10 +319,14 @@ class ArchiveDownloadService {
 
       if (task.downloadUrl.isEmpty) {
         String? downloadUrl;
-        for (int i = 0; i < 10 && task.status == ArchiveStatus.parsingUrl; i++) {
-          downloadUrl = await _client.parseArchiveDownloadUrl(task.downloadPageUrl);
+        for (var i = 0; i < 10 && task.status == ArchiveStatus.parsingUrl; i++) {
+          downloadUrl = await _client.parseArchiveDownloadUrl(
+            task.downloadPageUrl,
+            cancelToken: task._cancelToken,
+          );
           if (downloadUrl != null) break;
-          await Future.delayed(const Duration(seconds: 3));
+          await Future<void>.delayed(const Duration(seconds: 3));
+          cancelTokenThrowIfCancelled(task._cancelToken);
         }
         if (downloadUrl == null) {
           throw Exception('Failed to parse archive download URL');
@@ -339,7 +342,6 @@ class ArchiveDownloadService {
       final zipPath = _archiveZipPath(task.gid);
       await Directory(p.dirname(zipPath)).create(recursive: true);
 
-      task._cancelToken = CancelToken();
       await _client.downloadFile(
         task.downloadUrl,
         zipPath,
@@ -381,6 +383,11 @@ class ArchiveDownloadService {
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.completed.index);
       _notifyProgress(task);
       log.info('Archive ${task.gid} download and extraction completed');
+    } on ArchiveUnlockException catch (e) {
+      log.error('Archive unlock failed for ${task.gid}: ${e.message}');
+      task.status = ArchiveStatus.failed;
+      db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
+      _notifyProgress(task);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) return;
       log.error('Archive download failed for ${task.gid}', e);

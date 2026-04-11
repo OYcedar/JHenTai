@@ -3,8 +3,13 @@ String webNormalizeTagNamespace(String namespace) => namespace.trim().toLowerCas
 
 String webNormalizeTagKeyBody(String key) {
   var s = key.trim().toLowerCase();
+  s = s.replaceAll('\u3000', ' ');
   s = s.replaceAll('_', ' ');
   s = s.replaceAll(RegExp(r'\s+'), ' ');
+  if (s.startsWith('temp:')) {
+    s = s.substring('temp:'.length).trimLeft();
+    s = s.replaceAll(RegExp(r'\s+'), ' ');
+  }
   return s;
 }
 
@@ -25,5 +30,7 @@ List<String> webTagMapKeyVariants(String namespace, String key) {
     if (rawNs.isNotEmpty && rawKey.isNotEmpty) '$rawNs:$rawKey',
     '${ns}:$rawKey',
     if (body.isNotEmpty) '$ns:$body',
+    if (body.isNotEmpty) '$ns:temp:$body',
+    if (body.isNotEmpty) '$ns:temp:${body.replaceAll(' ', '_')}',
   }.toList();
 }

@@ -26,6 +26,9 @@ final ScrollBehavior _webReaderScrollBehavior =
   scrollbars: false,
 );
 
+/// Bottom thumbnail strip: thumb width (40) + horizontal margin (2+2).
+const double _kWebReaderStripItemExtent = 44.0;
+
 /// Start decoding network images into GPU cache (aligned with native reader preload).
 void _precacheNetworkImage(String proxyGetUrl) {
   final provider = NetworkImage(proxyGetUrl);
@@ -40,6 +43,20 @@ void _precacheNetworkImage(String proxyGetUrl) {
     },
   );
   stream.addListener(listener);
+}
+
+/// Pop the reader route when the navigator stack allows; otherwise replace with
+/// gallery detail or local list (browser deep-link / refresh leaves no route to pop).
+void _popOrExitWebReader(BuildContext context, WebReaderController c) {
+  if (Navigator.of(context).canPop()) {
+    Get.back();
+    return;
+  }
+  if (c.gid == 0 && c.token == 'local') {
+    Get.offNamed('/web/local');
+  } else {
+    Get.offNamed('/web/gallery/${c.gid}/${c.token}');
+  }
 }
 
 enum ReaderMode { online, downloaded, archive, local }
@@ -80,6 +97,8 @@ class WebReaderController extends GetxController {
 
   Timer? _saveProgressTimer;
   int? _startPage;
+  Timer? _stripScrollTimer;
+  late final Worker _stripScrollOnPageWorker;
 
   @override
   void onInit() {
@@ -90,10 +109,14 @@ class WebReaderController extends GetxController {
     _loadSavedDirection();
     _loadWheelAction();
     _loadGallery();
+    _stripScrollOnPageWorker =
+        ever(currentPage, (_) => _scheduleScrollThumbnailStripToCurrent());
   }
 
   @override
   void onClose() {
+    _stripScrollOnPageWorker.dispose();
+    _stripScrollTimer?.cancel();
     _autoTimer?.cancel();
     _saveProgressTimer?.cancel();
     _saveProgressNow();
@@ -102,6 +125,29 @@ class WebReaderController extends GetxController {
     stripScrollController.dispose();
     focusNode.dispose();
     super.onClose();
+  }
+
+  void _scheduleScrollThumbnailStripToCurrent() {
+    _stripScrollTimer?.cancel();
+    _stripScrollTimer =
+        Timer(const Duration(milliseconds: 48), _scrollThumbnailStripToCurrent);
+  }
+
+  void _scrollThumbnailStripToCurrent() {
+    final c = stripScrollController;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!c.hasClients || totalPages.value <= 1) return;
+      final page =
+          currentPage.value.clamp(0, totalPages.value - 1);
+      final viewport = c.position.viewportDimension;
+      var offset = page * _kWebReaderStripItemExtent -
+          viewport / 2 +
+          _kWebReaderStripItemExtent / 2;
+      offset = offset.clamp(0.0, c.position.maxScrollExtent);
+      if ((c.offset - offset).abs() > 0.5) {
+        c.jumpTo(offset);
+      }
+    });
   }
 
   /// Reads `?startPage=` / `?mode=` from the browser URL; Get.parameters often omits query on Flutter Web.
@@ -221,6 +267,8 @@ class WebReaderController extends GetxController {
       errorMessage.value = 'reader.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
+      // Strip mounts only after loading; align once if progress was restored earlier.
+      _scheduleScrollThumbnailStripToCurrent();
     }
   }
 
@@ -552,7 +600,7 @@ class _ReaderBody extends StatelessWidget {
           } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
             controller.prevPage();
           } else if (event.logicalKey == LogicalKeyboardKey.escape) {
-            Get.back();
+            _popOrExitWebReader(context, controller);
           }
         }
       },
@@ -966,7 +1014,7 @@ class _TopOverlay extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Get.back(),
+                  onPressed: () => _popOrExitWebReader(context, controller),
                 ),
                 Expanded(
                   child: Obx(() => Text(
@@ -1116,10 +1164,7 @@ class _BottomOverlay extends StatelessWidget {
   Widget _buildThumbnailStrip() {
     return Obx(() {
       if (controller.totalPages.value <= 1) return const SizedBox.shrink();
-      final maxThumbs = controller.totalPages.value.clamp(0, 20);
-      final step = controller.totalPages.value > 20
-          ? controller.totalPages.value / 20
-          : 1.0;
+      final total = controller.totalPages.value;
 
       return SizedBox(
         height: 52,
@@ -1137,28 +1182,32 @@ class _BottomOverlay extends StatelessWidget {
             child: ListView.builder(
               controller: controller.stripScrollController,
               scrollDirection: Axis.horizontal,
-              itemCount: maxThumbs,
-              itemBuilder: (context, i) {
-                final pageIndex = (i * step).floor().clamp(0, controller.totalPages.value - 1);
-                final url = pageIndex < controller.imageUrls.length ? controller.imageUrls[pageIndex] : '';
+              itemExtent: _kWebReaderStripItemExtent,
+              itemCount: total,
+              itemBuilder: (context, pageIndex) {
+                final url = pageIndex < controller.imageUrls.length
+                    ? controller.imageUrls[pageIndex]
+                    : '';
                 final isActive = controller.currentPage.value == pageIndex;
 
                 return GestureDetector(
                   onTap: () => controller.goToPage(pageIndex),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: isActive ? Colors.white : Colors.white24,
-                        width: isActive ? 2 : 1,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isActive ? Colors.white : Colors.white24,
+                          width: isActive ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(4),
                       ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: _readerStripThumb(controller, pageIndex, url),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: _readerStripThumb(controller, pageIndex, url),
+                      ),
                     ),
                   ),
                 );

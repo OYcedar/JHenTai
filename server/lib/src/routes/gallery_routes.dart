@@ -7,6 +7,8 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../core/database.dart';
 import '../network/eh_client.dart';
+import '../utils/eh_gallery_list_navigation.dart';
+import '../utils/eh_tag_style_parse.dart';
 import '../utils/gallery_stats_parser.dart';
 import 'block_rule_routes.dart';
 
@@ -142,6 +144,8 @@ class GalleryRoutes {
 
   Future<Response> _galleryList(Request request) async {
     final page = request.url.queryParameters['page'];
+    final cursorNext = request.url.queryParameters['next'];
+    final cursorPrev = request.url.queryParameters['prev'];
     final search = request.url.queryParameters['f_search'];
     final section = request.url.queryParameters['section'] ?? 'home';
 
@@ -155,10 +159,29 @@ class GalleryRoutes {
       _ => _client.baseUrl,
     };
 
-    // EH/EX gallery index uses `page` as 0-based offset pages (same as WebHomeController.currentPage).
     final queryParams = <String, dynamic>{};
-    if (page != null) queryParams['page'] = page;
-    if (search != null && search.isNotEmpty) queryParams['f_search'] = search;
+    // Ranklist uses `p=` (native [requestRanklistPage]), not `page=`.
+    if (section == 'ranklist') {
+      if (page != null && page.isNotEmpty) {
+        queryParams['p'] = page;
+      }
+    } else {
+      // Main index lists: native uses `next` / `prev` gid cursors; `page` is fallback only.
+      if (cursorNext != null && cursorNext.isNotEmpty) {
+        queryParams['next'] = cursorNext;
+      } else if (cursorPrev != null && cursorPrev.isNotEmpty) {
+        queryParams['prev'] = cursorPrev;
+      } else if (page != null && page.isNotEmpty) {
+        queryParams['page'] = page;
+      }
+    }
+    // Only index-like lists accept arbitrary `f_search`. Popular / ranklist may 5xx or break parsers if
+    // the client sends e.g. `language:"…"` from an empty keyword (WebHomeController._composeFSearch).
+    if (search != null && search.isNotEmpty) {
+      if (section == 'home' || section == 'watched' || section == 'favorites') {
+        queryParams['f_search'] = search;
+      }
+    }
 
     if (section == 'ranklist') {
       if (tl != null) queryParams['tl'] = tl;
@@ -220,6 +243,22 @@ class GalleryRoutes {
         }
       }
 
+      // EH cursor navigation (before block rules — independent of filtered row count).
+      var parsedNextGid = EhGalleryListNavigation.parseNextGid(html);
+      var parsedPrevGid = EhGalleryListNavigation.parsePrevGid(html);
+      final nu = galleries['nextUrl'] as String? ?? '';
+      final pu = galleries['prevUrl'] as String? ?? '';
+      parsedNextGid ??=
+          RegExp(r'[?&]next=([\d-]+)', caseSensitive: false).firstMatch(nu)?.group(1);
+      parsedPrevGid ??=
+          RegExp(r'[?&]prev=([\d-]+)', caseSensitive: false).firstMatch(pu)?.group(1);
+      galleries['nextGid'] = parsedNextGid;
+      galleries['prevGid'] = parsedPrevGid;
+      galleries['hasMore'] =
+          (parsedNextGid != null && parsedNextGid.isNotEmpty) || nu.isNotEmpty;
+      galleries['hasPrev'] =
+          (parsedPrevGid != null && parsedPrevGid.isNotEmpty) || pu.isNotEmpty;
+
       final blockRules = db.selectAllBlockRules();
       if (blockRules.isNotEmpty) {
         final list = galleries['galleries'] as List<Map<String, dynamic>>?;
@@ -259,6 +298,7 @@ class GalleryRoutes {
           'galleryThumbnails': detail.galleryThumbnails,
           'galleryUrl': galleryUrl,
           'tags': detail.tags,
+          'tagsRich': detail.tagsRich,
           'apiuid': detail.apiuid,
           'apikey': detail.apikey,
           'favoriteSlot': detail.favoriteSlot,
@@ -509,7 +549,8 @@ class GalleryRoutes {
         final catEl = parent?.querySelector('.cn, .cs, .ct');
         if (catEl != null) category = catEl.text.trim();
 
-        final extra = _parseRowMetadata(parent ?? a);
+        final scope = a.parent is Element ? a.parent as Element : a;
+        final extra = _parseRowMetadata(scope);
 
         galleries.add({
           'gid': int.parse(gid),
@@ -581,7 +622,7 @@ class GalleryRoutes {
     };
   }
 
-  Map<String, dynamic> _parseRowMetadata(dynamic element) {
+  Map<String, dynamic> _parseRowMetadata(Element element) {
     final extra = <String, dynamic>{};
 
     // Page count: look for "N pages" text
@@ -601,7 +642,10 @@ class GalleryRoutes {
         final y = int.tryParse(posMatch.group(2)!) ?? 0;
         double rating = 5.0 + x / 16.0;
         if (y <= -21) rating -= 0.5;
-        extra['rating'] = rating.clamp(0.0, 5.0);
+        final clamped = rating.clamp(0.0, 5.0);
+        if (clamped.isFinite) {
+          extra['rating'] = clamped;
+        }
       }
     }
 
@@ -649,9 +693,9 @@ class GalleryRoutes {
       if (seen.contains(dedupeKey)) continue;
       seen.add(dedupeKey);
 
-      final style = _mergedInlineStyles(tagEl);
-      final colorArgb = _parseEhTagForegroundArgb(style);
-      final bgArgb = _parseEhTagWatchedBackgroundArgb(style);
+      final style = EhTagStyleParse.mergedInlineStyles(tagEl);
+      final colorArgb = EhTagStyleParse.foregroundArgb(style);
+      final bgArgb = EhTagStyleParse.watchedBackgroundArgb(style);
 
       final m = <String, dynamic>{'tag': tagName};
       if (colorArgb != null) m['color'] = colorArgb;
@@ -659,60 +703,5 @@ class GalleryRoutes {
       tags.putIfAbsent(ns, () => []).add(m);
     }
     return tags;
-  }
-
-  /// EH may put `style` on the tag node or an ancestor; merge a few levels for robustness.
-  String _mergedInlineStyles(Element? el, {int maxDepth = 5}) {
-    final sb = StringBuffer();
-    Element? cur = el;
-    for (var i = 0; i < maxDepth && cur != null; i++) {
-      final s = cur.attributes['style'];
-      if (s != null && s.isNotEmpty) {
-        sb.write(s);
-        if (!s.endsWith(';')) sb.write(';');
-      }
-      final p = cur.parent;
-      cur = p is Element ? p : null;
-    }
-    return sb.toString();
-  }
-
-  int? _parseEhTagForegroundArgb(String style) {
-    var m = RegExp(r'color\s*:\s*#([0-9a-fA-F]{6})\b', caseSensitive: false).firstMatch(style);
-    m ??= RegExp(r'color\s*:\s*#([0-9a-fA-F]{3})\b', caseSensitive: false).firstMatch(style);
-    if (m == null) return null;
-    var hex = m.group(1)!;
-    if (hex.length == 3) {
-      hex = hex.split('').map((c) => '$c$c').join();
-    }
-    return int.tryParse('FF$hex', radix: 16);
-  }
-
-  int? _parseEhTagWatchedBackgroundArgb(String style) {
-    final twoStop = RegExp(
-      r'(?:background\s*:\s*)?radial-gradient\([^#]*#([0-9a-fA-F]{6})[^#]*,\s*#([0-9a-fA-F]{6})',
-      caseSensitive: false,
-    ).firstMatch(style);
-    if (twoStop != null && twoStop.groupCount >= 2) {
-      final outer = twoStop.group(2);
-      if (outer != null) return int.tryParse('FF$outer', radix: 16);
-    }
-    final oneStop = RegExp(
-      r'(?:background\s*:\s*)?radial-gradient\([^)]*#([0-9a-fA-F]{6})',
-      caseSensitive: false,
-    ).firstMatch(style);
-    if (oneStop != null) {
-      final g = oneStop.group(1);
-      if (g != null) return int.tryParse('FF$g', radix: 16);
-    }
-    final solid = RegExp(
-      r'background(?:-color)?\s*:\s*#([0-9a-fA-F]{6})\b',
-      caseSensitive: false,
-    ).firstMatch(style);
-    if (solid != null) {
-      final g = solid.group(1);
-      if (g != null) return int.tryParse('FF$g', radix: 16);
-    }
-    return null;
   }
 }

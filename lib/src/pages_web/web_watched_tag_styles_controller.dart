@@ -9,7 +9,9 @@ import 'package:jhentai/src/utils/color_util.dart';
 /// Merges EH `/mytags` colors into gallery list/detail (parity with native
 /// [MyTagsSetting] + [DetailsPageLogic._addColor2WatchedTags]).
 class WebWatchedTagStylesController extends GetxController {
-  /// `namespace:key` → background ARGB (only tags with `watched: true` on /mytags).
+  /// `namespace:key` → background ARGB from EH `/mytags` rows (entire tag set).
+  /// Align with native [DetailsPageLogic._addColor2WatchedTags]: any tag listed in
+  /// a tag set gets styling — **not** limited to rows with the "watch" checkbox on.
   final backgroundArgbByTagKey = Rx<Map<String, int>>({});
 
   static int _colorToArgb(Color c) {
@@ -31,7 +33,6 @@ class WebWatchedTagStylesController extends GetxController {
     final tags = (data['tags'] as List?) ?? [];
     for (final raw in tags) {
       if (raw is! Map) continue;
-      if (raw['watched'] != true) continue;
       final ns = raw['namespace']?.toString() ?? '';
       final key = raw['key']?.toString() ?? '';
       if (ns.isEmpty || key.isEmpty) continue;
