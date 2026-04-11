@@ -1,6 +1,7 @@
 # Miscellaneous
 .arts/
 .agents/
+.cursor/
 skills-lock.json
 *.class
 *.log
