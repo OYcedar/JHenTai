@@ -213,7 +213,7 @@ labels:
 
 이 fork는 GitHub Actions로 Docker 이미지를 푸시하지 않습니다. **`docker login`** 후 로컬(또는 자체 CI)에서 빌드·푸시하세요. Cursor용 체크리스트는 [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md)를 참고하세요.
 
-**원스크립트** (저장소 루트, 태그 `x.y.z-hhh`):
+**원스크립트** (저장소 루트; **`x.y.z-hhh`** 및 **`latest`** 푸시):
 
 - **Linux / macOS / Git Bash:** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
 - **Windows PowerShell:** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`

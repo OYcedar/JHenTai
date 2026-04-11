@@ -1,8 +1,8 @@
 ---
 name: docker-hub-publish
 description: >-
-  Build and push this fork’s Docker image to Docker Hub using local scripts (tag
-  x.y.z-hhh). Do not rely on GitHub Actions for Docker Hub; use
+  Build and push this fork’s Docker image to Docker Hub using local scripts (tags
+  x.y.z-hhh and latest). Do not rely on GitHub Actions for Docker Hub; use
   scripts/docker-hub-publish.sh or docker-hub-publish.ps1 after docker login.
 ---
 
@@ -12,6 +12,7 @@ description: >-
 
 - **`x.y.z`**: from `pubspec.yaml` `version:` before `+`.
 - **`hhh`**: three-digit lowercase hex of **`docker/fork_revision`** (decimal 0–4095). If the file is missing, use the build number after `+` in `pubspec.yaml` (same rule as [DOCKER.md](../../DOCKER.md)).
+- **`latest`**: same image as the versioned tag above; always pushed together.
 
 ## Steps
 

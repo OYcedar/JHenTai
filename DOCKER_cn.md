@@ -232,7 +232,7 @@ labels:
 
 本 fork **不再**通过 GitHub Actions 自动推送镜像。在已执行 **`docker login`** 的机器上本地构建并推送（或使用你自建的 CI）。面向 Cursor 的检查清单见 [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md)。
 
-**一键脚本**（在仓库根目录执行，标签为 `x.y.z-hhh`）：
+**一键脚本**（在仓库根目录执行；会推送 **`x.y.z-hhh`** 与 **`latest`**）：
 
 - **Linux / macOS / Git Bash：** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
 - **Windows PowerShell：** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`

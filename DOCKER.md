@@ -232,7 +232,7 @@ labels:
 
 This fork does **not** use GitHub Actions to push Docker images. Build and push from your machine (or any CI you control) after **`docker login`**. A Cursor-oriented checklist lives in [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md).
 
-**One-shot scripts** (from the repo root; tag = `x.y.z-hhh`):
+**One-shot scripts** (from the repo root; pushes **`x.y.z-hhh`** and **`latest`**):
 
 - **Linux / macOS / Git Bash:** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
 - **Windows PowerShell:** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`
