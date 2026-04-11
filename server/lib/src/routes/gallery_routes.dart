@@ -333,10 +333,15 @@ class GalleryRoutes {
       final allPageUrls = <String>[];
       final allThumbUrls = <String>[];
       final allGalleryThumbs = <Map<String, dynamic>>[];
-      var pageUrl = galleryUrl;
-      int totalPages = 0;
+      final baseUri = Uri.parse(galleryUrl);
+      var thumbPageIndex = 0;
+      var totalPages = 0;
 
       while (true) {
+        final q = Map<String, String>.from(baseUri.queryParameters);
+        q['p'] = '$thumbPageIndex';
+        final pageUrl = baseUri.replace(queryParameters: q).toString();
+
         final result = await _client.proxyGet(pageUrl);
         final html = result['data']?.toString() ?? '';
         final doc = html_parser.parse(html);
@@ -347,13 +352,15 @@ class GalleryRoutes {
           totalPages = int.tryParse(countMatch?.group(1) ?? '') ?? 0;
         }
 
+        final countBefore = allPageUrls.length;
         _client.appendGalleryThumbPageData(html, pageUrl, allPageUrls, allThumbUrls, allGalleryThumbs);
 
-        final nextLink = doc.querySelector('.ptt td:last-child a');
-        final nextHref = nextLink?.attributes['href'];
-        if (nextHref == null || nextHref == pageUrl) break;
-        if (allPageUrls.length >= totalPages && totalPages > 0) break;
-        pageUrl = nextHref;
+        if (totalPages > 0 && allPageUrls.length >= totalPages) break;
+        if (allPageUrls.length == countBefore) break;
+
+        final cap = totalPages > 0 ? (totalPages + 9) ~/ 10 + 10 : 50;
+        if (thumbPageIndex >= cap) break;
+        thumbPageIndex++;
       }
 
       return Response.ok(

@@ -287,8 +287,14 @@ final _webRoutes = [
     binding: BindingsBuilder(() {
       final controller = WebReaderController();
       final args = Get.arguments;
-      if (args is Map<String, dynamic> && args['images'] is List<String>) {
-        controller.localImages = args['images'] as List<String>;
+      if (args is Map<String, dynamic>) {
+        if (args['images'] is List<String>) {
+          controller.localImages = args['images'] as List<String>;
+        }
+        final t = args['title'];
+        if (t is String && t.isNotEmpty) {
+          controller.galleryTitle.value = t;
+        }
       }
       Get.lazyPut(() => controller);
     }),

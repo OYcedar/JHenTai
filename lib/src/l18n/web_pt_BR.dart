@@ -15,6 +15,16 @@ class WebPtBR {
       'common.images': '@count imagens',
       'common.pages': '@count páginas',
 
+      'share': 'Compartilhar',
+      'save': 'Salvar',
+      'reload': 'Recarregar',
+      'cancel': 'Cancelar',
+      'resampleImage': 'Reamostrada',
+      'originalImage': 'Original',
+      'reDownload': 'Baixar novamente',
+      'hasCopiedToClipboard': 'Copiado para a área de transferência',
+      'displayFirstPageAlone': 'Mostrar primeira página sozinha',
+
       // setup
       'setup.title': 'Configuração do Servidor JHenTai',
       'setup.description': 'Insira o token API mostrado nos logs do servidor para conectar.',
@@ -410,6 +420,11 @@ class WebPtBR {
       'reader.imageSpacing': 'Espaçamento de Imagem',
       'reader.autoInterval': 'Intervalo Auto-leitura',
       'reader.startAutoMode': 'Iniciar',
+      'reader.saveFailed': 'Não foi possível salvar a imagem',
+      'reader.redownloadHint': 'Abra Downloads para tentar novamente ou reiniciar o download desta galeria.',
+      'reader.deviceOrientation': 'Orientação do dispositivo',
+      'reader.deviceOrientationWebHint':
+          'O navegador não pode fixar a orientação como o app. Use tela cheia ou o bloqueio de rotação do sistema.',
 
       // settings reader
       'settings.defaultFavoriteSlot': 'Pasta de favoritos padrão',

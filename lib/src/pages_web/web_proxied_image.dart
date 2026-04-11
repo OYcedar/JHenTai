@@ -16,6 +16,8 @@ class WebProxiedImage extends StatefulWidget {
     this.errorIconSize = 28,
     this.readerStyle = false,
     this.readerTallLoading = false,
+    /// Horizontal reader: give network/POST loading states a minimum height (avoids black sliver).
+    this.readerFillMinLoadingHeight = false,
     this.readerErrorChild,
     /// Gallery cards: themed surface + spinner while loading (GET and POST paths).
     this.surfaceLoadingPlaceholder = false,
@@ -31,6 +33,7 @@ class WebProxiedImage extends StatefulWidget {
   /// White progress / reader layout hints.
   final bool readerStyle;
   final bool readerTallLoading;
+  final bool readerFillMinLoadingHeight;
   final Widget? readerErrorChild;
   final bool surfaceLoadingPlaceholder;
 
@@ -63,6 +66,14 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
     }
   }
 
+  double? _readerLoadingBoxHeight(BuildContext context) {
+    if (!widget.readerStyle) return null;
+    final h = MediaQuery.sizeOf(context).height;
+    if (widget.readerTallLoading) return h * 0.8;
+    if (widget.readerFillMinLoadingHeight) return h * 0.55;
+    return null;
+  }
+
   Widget _defaultError() {
     final s = widget.errorIconSize;
     return Icon(Icons.broken_image, color: Colors.grey.shade600, size: s);
@@ -90,7 +101,8 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
                 final total = loadingProgress.expectedTotalBytes;
                 final progress = total != null ? loadingProgress.cumulativeBytesLoaded / total : null;
                 return SizedBox(
-                  height: widget.readerTallLoading ? MediaQuery.sizeOf(context).height * 0.8 : null,
+                  height: _readerLoadingBoxHeight(context),
+                  width: double.infinity,
                   child: Center(child: CircularProgressIndicator(value: progress, color: Colors.white54)),
                 );
               }
@@ -107,7 +119,8 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
               snap.connectionState == ConnectionState.active) {
             if (widget.readerStyle) {
               return SizedBox(
-                height: widget.readerTallLoading ? MediaQuery.sizeOf(context).height * 0.8 : null,
+                height: _readerLoadingBoxHeight(context),
+                width: double.infinity,
                 child: const Center(child: CircularProgressIndicator(color: Colors.white54)),
               );
             }
@@ -158,7 +171,8 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
               final total = loadingProgress.expectedTotalBytes;
               final progress = total != null ? loadingProgress.cumulativeBytesLoaded / total : null;
               return SizedBox(
-                height: widget.readerTallLoading ? MediaQuery.sizeOf(context).height * 0.8 : null,
+                height: _readerLoadingBoxHeight(context),
+                width: double.infinity,
                 child: Center(child: CircularProgressIndicator(value: progress, color: Colors.white54)),
               );
             }

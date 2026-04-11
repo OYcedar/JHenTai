@@ -15,6 +15,16 @@ class WebRuRU {
       'common.images': '@count изобр.',
       'common.pages': '@count стр.',
 
+      'share': 'Поделиться',
+      'save': 'Сохранить',
+      'reload': 'Перезагрузить',
+      'cancel': 'Отмена',
+      'resampleImage': 'Сжатое',
+      'originalImage': 'Оригинал',
+      'reDownload': 'Скачать снова',
+      'hasCopiedToClipboard': 'Скопировано в буфер обмена',
+      'displayFirstPageAlone': 'Отдельно показывать первую страницу',
+
       // setup
       'setup.title': 'Настройка сервера JHenTai',
       'setup.description': 'Введите API-токен из логов сервера для подключения.',
@@ -410,6 +420,11 @@ class WebRuRU {
       'reader.imageSpacing': 'Отступы изображений',
       'reader.autoInterval': 'Интервал автопролистывания',
       'reader.startAutoMode': 'Начать',
+      'reader.saveFailed': 'Не удалось сохранить изображение',
+      'reader.redownloadHint': 'Откройте «Загрузки», чтобы повторить или перезапустить загрузку этой галереи.',
+      'reader.deviceOrientation': 'Ориентация устройства',
+      'reader.deviceOrientationWebHint':
+          'Браузер не может заблокировать ориентацию как приложение. Используйте полноэкранный режим или системную блокировку поворота.',
 
       // settings reader
       'settings.defaultFavoriteSlot': 'Папка избранного по умолчанию',

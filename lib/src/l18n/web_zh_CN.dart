@@ -15,6 +15,16 @@ class WebZhCN {
       'common.images': '@count 张图片',
       'common.pages': '@count 页',
 
+      'share': '分享',
+      'save': '保存',
+      'reload': '重新加载',
+      'cancel': '取消',
+      'resampleImage': '压缩图',
+      'originalImage': '原图',
+      'reDownload': '重新下载',
+      'hasCopiedToClipboard': '已复制到剪贴板',
+      'displayFirstPageAlone': '单独展示首页',
+
       // setup
       'setup.title': 'JHenTai 服务器设置',
       'setup.description': '请输入服务器日志中显示的 API Token 以连接。',
@@ -408,6 +418,11 @@ class WebZhCN {
       'reader.imageSpacing': '图片间距',
       'reader.autoInterval': '自动阅读间隔',
       'reader.startAutoMode': '开始',
+      'reader.saveFailed': '保存图片失败',
+      'reader.redownloadHint': '请打开「下载」页面重试或重新开始该画廊下载。',
+      'reader.deviceOrientation': '设备方向',
+      'reader.deviceOrientationWebHint':
+          '网页版无法像客户端一样锁定屏幕方向。请使用浏览器全屏或系统旋转锁定。',
 
       // settings reader
       'settings.defaultFavoriteSlot': '默认收藏夹',

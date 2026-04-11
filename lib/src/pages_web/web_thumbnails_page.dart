@@ -28,6 +28,7 @@ class WebThumbnailsController extends GetxController {
   final thumbnailImageUrls = <String>[].obs;
   final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final coverUrl = ''.obs;
+  final galleryTitle = ''.obs;
   final isLoading = true.obs;
   final errorMessage = ''.obs;
 
@@ -45,6 +46,7 @@ class WebThumbnailsController extends GetxController {
     try {
       final detail = await backendApiClient.fetchGalleryDetail(gid, token);
       coverUrl.value = detail['coverUrl'] as String? ?? '';
+      galleryTitle.value = detail['title'] as String? ?? '';
 
       final result = await backendApiClient.fetchGalleryImagePages(gid, token);
       final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
@@ -128,6 +130,7 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
                 index: index,
                 gid: controller.gid,
                 token: controller.token,
+                galleryTitle: controller.galleryTitle.value,
                 thumbData: _thumbMapForThumbsPage(controller, index),
               ));
         },
@@ -140,12 +143,14 @@ class _ThumbnailCell extends StatelessWidget {
   final int index;
   final int gid;
   final String token;
+  final String galleryTitle;
   final Map<String, dynamic> thumbData;
 
   const _ThumbnailCell({
     required this.index,
     required this.gid,
     required this.token,
+    required this.galleryTitle,
     required this.thumbData,
   });
 
@@ -153,7 +158,12 @@ class _ThumbnailCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        Get.toNamed('/web/reader/$gid/$token?startPage=$index');
+        final parts = <String>['startPage=$index'];
+        final t = galleryTitle.trim();
+        if (t.isNotEmpty) {
+          parts.add('title=${Uri.encodeQueryComponent(t)}');
+        }
+        Get.toNamed('/web/reader/$gid/$token?${parts.join('&')}');
       },
       borderRadius: BorderRadius.circular(6),
       child: Container(

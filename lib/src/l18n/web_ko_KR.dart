@@ -15,6 +15,16 @@ class WebKoKR {
       'common.images': '@count장',
       'common.pages': '@count 페이지',
 
+      'share': '공유',
+      'save': '저장',
+      'reload': '다시 로드',
+      'cancel': '취소',
+      'resampleImage': '리샘플',
+      'originalImage': '원본',
+      'reDownload': '다시 다운로드',
+      'hasCopiedToClipboard': '클립보드에 복사했습니다',
+      'displayFirstPageAlone': '첫 페이지만 표시',
+
       // setup
       'setup.title': 'JHenTai 서버 설정',
       'setup.description': '서버 로그에 표시된 API 토큰을 입력하여 연결하세요.',
@@ -413,6 +423,11 @@ class WebKoKR {
       'reader.imageSpacing': '이미지 간격',
       'reader.autoInterval': '자동 넘기기 간격',
       'reader.startAutoMode': '시작',
+      'reader.saveFailed': '이미지를 저장하지 못했습니다',
+      'reader.redownloadHint': '다운로드 페이지에서 갤러리 다운로드를 다시 시도하세요.',
+      'reader.deviceOrientation': '기기 방향',
+      'reader.deviceOrientationWebHint':
+          '브라우저에서는 앱처럼 화면 방향을 고정할 수 없습니다. 전체 화면이나 기기 회전 잠금을 사용하세요.',
 
       // settings reader
       'settings.defaultFavoriteSlot': '기본 즐겨찾기 폴더',

@@ -1,12 +1,18 @@
 import 'dart:async';
+import 'dart:js_interop';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:html/parser.dart' as html_pkg;
+import 'package:jhentai/src/consts/eh_consts.dart';
+import 'package:jhentai/src/exception/eh_parse_exception.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
+import 'package:jhentai/src/pages_web/web_online_image_page_parse.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
@@ -30,6 +36,155 @@ final ScrollBehavior _webReaderScrollBehavior =
 const double _kWebReaderStripItemExtent = 44.0;
 
 /// Start decoding network images into GPU cache (aligned with native reader preload).
+String _webReaderImageFileExtension(String url) {
+  try {
+    final p = Uri.parse(url).path;
+    final i = p.lastIndexOf('.');
+    if (i > 0 && i < p.length - 1) return p.substring(i);
+  } catch (_) {}
+  return '.jpg';
+}
+
+String _webReaderSafeFileToken(String t) =>
+    t.replaceAll(RegExp(r'[/\\?%*:|"<>]'), '_');
+
+void _webTriggerBytesDownload(Uint8List bytes, String fileName) {
+  final parts = [bytes.toJS].toJS;
+  final blob = web.Blob(parts);
+  final objectUrl = web.URL.createObjectURL(blob);
+  final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+  anchor.href = objectUrl;
+  anchor.download = fileName;
+  anchor.style.display = 'none';
+  web.document.body?.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  web.URL.revokeObjectURL(objectUrl);
+}
+
+Future<void> _webDownloadImageFromSourceUrl(
+  String sourceUrl, {
+  required String fileName,
+}) async {
+  if (sourceUrl.isEmpty) return;
+  if (!backendApiClient.shouldProxyImageUsePost(sourceUrl)) {
+    web.window.open(backendApiClient.proxyImageUrl(sourceUrl), '_blank');
+    return;
+  }
+  try {
+    final bytes = await backendApiClient.fetchProxiedImageBytes(sourceUrl);
+    if (bytes.isEmpty) {
+      Get.snackbar('common.error'.tr, 'reader.saveFailed'.tr);
+      return;
+    }
+    _webTriggerBytesDownload(bytes, fileName);
+  } catch (_) {
+    Get.snackbar('common.error'.tr, 'reader.saveFailed'.tr);
+  }
+}
+
+Future<void> _webReaderCopyText(String text) async {
+  await Clipboard.setData(ClipboardData(text: text));
+  Get.snackbar('common.success'.tr, 'hasCopiedToClipboard'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 2));
+}
+
+/// Pop-up menu for a reader image (online / downloaded / archive / local).
+Future<void> showWebReaderImageContextMenu(
+  BuildContext context,
+  WebReaderController controller,
+  int index, {
+  Offset? position,
+}) async {
+  final url = index < controller.imageUrls.length ? controller.imageUrls[index] : '';
+  if (url.isEmpty) return;
+
+  final box = context.findRenderObject() as RenderBox?;
+  final pos = position ??
+      box?.localToGlobal(const Offset(80, 80)) ??
+      const Offset(80, 80);
+
+  final mode = controller.mode;
+  if (mode == ReaderMode.online) {
+    final orig = controller.originalImageUrlAt(index);
+    final showOriginal = orig != null &&
+        orig.isNotEmpty &&
+        controller.ehLoggedInForOriginal.value;
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(pos.dx, pos.dy, pos.dx, pos.dy),
+      items: [
+        PopupMenuItem(value: 'reload', child: Text('reload'.tr)),
+        PopupMenuItem(value: 'share', child: Text('share'.tr)),
+        PopupMenuItem(
+          value: 'save',
+          child: Text('${'save'.tr}(${'resampleImage'.tr})'),
+        ),
+        if (showOriginal)
+          PopupMenuItem(
+            value: 'original',
+            child: Text('${'save'.tr}(${'originalImage'.tr})'),
+          ),
+      ],
+    );
+    if (!context.mounted) return;
+    final ext = _webReaderImageFileExtension(url);
+    final fname =
+        '${controller.gid}_${_webReaderSafeFileToken(controller.token)}_${index + 1}$ext';
+    switch (selected) {
+      case 'reload':
+        controller.retryImage(index);
+        break;
+      case 'share':
+        await _webReaderCopyText(url);
+        break;
+      case 'save':
+        await _webDownloadImageFromSourceUrl(url, fileName: fname);
+        break;
+      case 'original':
+        if (orig != null) {
+          final oext = _webReaderImageFileExtension(orig);
+          final oname =
+              '${controller.gid}_${_webReaderSafeFileToken(controller.token)}_${index + 1}_orig$oext';
+          await _webDownloadImageFromSourceUrl(orig, fileName: oname);
+        }
+        break;
+      default:
+        break;
+    }
+    return;
+  }
+
+  // Downloaded / archive / local: align with native local menu (share, save, re-download).
+  final selected = await showMenu<String>(
+    context: context,
+    position: RelativeRect.fromLTRB(pos.dx, pos.dy, pos.dx, pos.dy),
+    items: [
+      PopupMenuItem(value: 'share', child: Text('share'.tr)),
+      PopupMenuItem(value: 'save', child: Text('save'.tr)),
+      if (mode == ReaderMode.downloaded || mode == ReaderMode.archive)
+        PopupMenuItem(value: 'redl', child: Text('reDownload'.tr)),
+    ],
+  );
+  if (!context.mounted) return;
+  switch (selected) {
+    case 'share':
+      await _webReaderCopyText(url);
+      break;
+    case 'save':
+      web.window.open(url, '_blank');
+      break;
+    case 'redl':
+      Get.snackbar('reDownload'.tr, 'reader.redownloadHint'.tr);
+      Get.toNamed('/web/downloads');
+      break;
+    default:
+      break;
+  }
+}
+
 void _precacheNetworkImage(String proxyGetUrl) {
   final provider = NetworkImage(proxyGetUrl);
   final stream = provider.resolve(const ImageConfiguration());
@@ -86,6 +241,22 @@ class WebReaderController extends GetxController {
 
   final _imagePageUrls = <String>[];
   final _loadedImageUrls = <int, String>{};
+  /// Online: indices currently fetching HTML to resolve CDN URL (for visible loading shell).
+  final resolvingImageIndexes = <int>[].obs;
+  /// Online: EH `nl` reload key from last successful image-page parse (per page index).
+  final _imagePageReloadKeys = <int, String>{};
+  /// Online: “original” download href from image-page HTML when present.
+  final _originalImageUrls = <int, String>{};
+  /// Backend `/api/health` `loggedIn` — used to show “save original” like native.
+  final ehLoggedInForOriginal = false.obs;
+  /// Double-column: first screen shows only page 0 (persisted).
+  final displayFirstPageAlone = false.obs;
+  /// Gallery title from route args, query `title=`, or API when available.
+  final galleryTitle = ''.obs;
+  /// Online: user-visible message when HTML parse / image-page fetch fails for a page.
+  final imageLoadErrors = <int, String>{}.obs;
+  int _resolveGeneration = 0;
+  final _activeResolveGeneration = <int, int>{};
 
   late PageController pageController;
   final scrollController = ScrollController();
@@ -107,6 +278,8 @@ class WebReaderController extends GetxController {
 
     pageController = PageController();
     _loadSavedDirection();
+    _loadDisplayFirstPageAlone();
+    _refreshEhLoggedInForOriginal();
     _loadWheelAction();
     _loadGallery();
     _stripScrollOnPageWorker =
@@ -177,6 +350,93 @@ class WebReaderController extends GetxController {
     }
     gid = int.tryParse(gidStr) ?? 0;
     token = tokenStr;
+
+    final titleQ = q['title'] ?? Get.parameters['title'];
+    if (titleQ != null && titleQ.isNotEmpty) {
+      try {
+        galleryTitle.value = Uri.decodeComponent(titleQ);
+      } catch (_) {
+        galleryTitle.value = titleQ;
+      }
+    }
+  }
+
+  String? originalImageUrlAt(int index) => _originalImageUrls[index];
+
+  Future<void> _refreshEhLoggedInForOriginal() async {
+    try {
+      final h = await backendApiClient.health();
+      ehLoggedInForOriginal.value = h['loggedIn'] == true;
+    } catch (_) {
+      ehLoggedInForOriginal.value = false;
+    }
+  }
+
+  Future<void> _loadDisplayFirstPageAlone() async {
+    try {
+      final saved = await backendApiClient.getSetting('web_display_first_page_alone');
+      if (saved == 'true') {
+        displayFirstPageAlone.value = true;
+      } else if (saved == 'false') {
+        displayFirstPageAlone.value = false;
+      }
+    } catch (_) {}
+  }
+
+  int doubleColumnScreenIndexForImagePage(int page) {
+    final t = totalPages.value;
+    if (t <= 0) return 0;
+    if (page < 0) return 0;
+    if (page >= t) {
+      final n = doubleColumnPageCount();
+      return n <= 0 ? 0 : n - 1;
+    }
+    if (displayFirstPageAlone.value) {
+      if (page == 0) return 0;
+      return 1 + (page - 1) ~/ 2;
+    }
+    return page ~/ 2;
+  }
+
+  int doubleColumnPageCount() {
+    final t = totalPages.value;
+    if (t <= 0) return 0;
+    if (displayFirstPageAlone.value) {
+      return 1 + ((t - 1) / 2).ceil();
+    }
+    return (t / 2).ceil();
+  }
+
+  List<int> doubleColumnIndicesForScreen(int screenIndex) {
+    final t = totalPages.value;
+    if (displayFirstPageAlone.value) {
+      if (screenIndex == 0) return [0];
+      final left = 1 + (screenIndex - 1) * 2;
+      if (left >= t) return [];
+      final right = left + 1;
+      if (right < t) {
+        return [left, right];
+      }
+      return [left];
+    }
+    final left = screenIndex * 2;
+    if (left >= t) return [];
+    final right = left + 1;
+    if (right < t) {
+      return [left, right];
+    }
+    return [left];
+  }
+
+  void toggleDisplayFirstPageAlone() {
+    if (readDirection.value != ReadDirection.doubleColumn) return;
+    displayFirstPageAlone.value = !displayFirstPageAlone.value;
+    backendApiClient
+        .putSetting('web_display_first_page_alone', displayFirstPageAlone.value)
+        .catchError((_) {});
+    final screen = doubleColumnScreenIndexForImagePage(currentPage.value);
+    pageController.dispose();
+    pageController = PageController(initialPage: screen);
   }
 
   Future<void> _loadSavedDirection() async {
@@ -225,7 +485,7 @@ class WebReaderController extends GetxController {
       return;
     }
     if (dir == ReadDirection.doubleColumn) {
-      pageController = PageController(initialPage: page ~/ 2);
+      pageController = PageController(initialPage: doubleColumnScreenIndexForImagePage(page));
     } else {
       pageController = PageController(initialPage: page);
     }
@@ -273,6 +533,9 @@ class WebReaderController extends GetxController {
   }
 
   Future<void> _loadOnline() async {
+    _imagePageReloadKeys.clear();
+    _originalImageUrls.clear();
+    imageLoadErrors.clear();
     final result = await backendApiClient.fetchGalleryImagePages(gid, token);
     final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
     final total = result['totalPages'] as int? ?? pages.length;
@@ -334,63 +597,158 @@ class WebReaderController extends GetxController {
     }
   }
 
-  Future<void> _loadImageAtIndex(int index) async {
+  Future<void> _loadImageAtIndex(int index, {String? nl}) async {
     if (index < 0 || index >= _imagePageUrls.length) return;
     if (_loadedImageUrls.containsKey(index)) return;
+    if (resolvingImageIndexes.contains(index)) return;
 
+    final gen = ++_resolveGeneration;
+    _activeResolveGeneration[index] = gen;
+    resolvingImageIndexes.add(index);
     try {
-      final result = await backendApiClient.proxyGet(url: _imagePageUrls[index]);
-      final html = (result as Map<String, dynamic>)['data']?.toString() ?? '';
+      await _resolveImagePageOnce(index, nl: nl);
+    } catch (e, st) {
+      debugPrint('Failed to load image $index: $e\n$st');
+      if (_activeResolveGeneration[index] == gen) {
+        imageLoadErrors[index] = 'reader.imageFailed'.tr;
+        imageLoadErrors.refresh();
+      }
+    } finally {
+      if (_activeResolveGeneration[index] == gen) {
+        _activeResolveGeneration.remove(index);
+        resolvingImageIndexes.remove(index);
+      }
+    }
+  }
 
-      String? imageUrl;
-      // Try multiple patterns to robustly extract the image URL
-      final patterns = [
-        RegExp(r'id="img"\s[^>]*src="([^"]+)"'),
-        RegExp(r'src="([^"]+)"\s[^>]*id="img"'),
-        RegExp(r'<img[^>]+id="img"[^>]+src="([^"]+)"'),
-        RegExp(r'<img[^>]+src="([^"]+)"[^>]+id="img"'),
-        RegExp(r'id="img"[^>]+src="([^"]+)"'),
-      ];
-      for (final pattern in patterns) {
-        final match = pattern.firstMatch(html);
-        if (match != null) {
-          imageUrl = match.group(1);
-          break;
-        }
-      }
-      // Fallback: find any large image URL (hentai CDN pattern)
-      if (imageUrl == null) {
-        final cdnMatch = RegExp(r'"(https?://[^"]+\.(jpg|png|gif|webp))"', caseSensitive: false).firstMatch(html);
-        if (cdnMatch != null) imageUrl = cdnMatch.group(1);
-      }
+  static String _unescImgSrc(String s) => s.replaceAll('&amp;', '&').trim();
 
-      if (imageUrl != null) {
-        _loadedImageUrls[index] = imageUrl;
-        if (index < imageUrls.length) {
-          imageUrls[index] = imageUrl;
-          imageUrls.refresh();
+  static String? _fallbackParseImgSrc(String html) {
+    final doc = html_pkg.parse(html);
+    final src = doc.querySelector('#img')?.attributes['src'];
+    if (src == null || src.isEmpty) return null;
+    return _unescImgSrc(src);
+  }
+
+  static String? _fallbackParseReloadKey(String html) {
+    final doc = html_pkg.parse(html);
+    final loadfail = doc.querySelector('#loadfail');
+    final oc = loadfail?.attributes['onclick'];
+    if (oc == null || oc.isEmpty) return null;
+    final m = RegExp(r"return nl\('(.*)'\)").firstMatch(oc);
+    return m?.group(1);
+  }
+
+  /// Fetches one image page (optional EH `nl`) and updates [imageUrls] / errors. No resolving wrapper.
+  Future<void> _resolveImagePageOnce(int index, {String? nl, int depth = 0}) async {
+    imageLoadErrors.remove(index);
+
+    final result = await backendApiClient.proxyGet(
+      url: _imagePageUrls[index],
+      queryParameters: nl != null && nl.isNotEmpty ? {'nl': nl} : null,
+    );
+    final html = (result as Map<String, dynamic>)['data']?.toString() ?? '';
+
+    WebParsedOnlineImagePage? wp;
+    try {
+      wp = webParseOnlineImagePage(html);
+    } on EHParseException catch (e) {
+      if (e.type == EHParseExceptionType.exceedLimit) {
+        final rk = _fallbackParseReloadKey(html);
+        if (rk != null && rk.isNotEmpty && depth < 1 && nl != rk) {
+          await _resolveImagePageOnce(index, nl: rk, depth: depth + 1);
+          return;
         }
-        if (!backendApiClient.shouldProxyImageUsePost(imageUrl)) {
-          _precacheNetworkImage(backendApiClient.proxyImageUrl(imageUrl));
+        imageLoadErrors[index] = e.message;
+        imageLoadErrors.refresh();
+        return;
+      }
+      if (e.type == EHParseExceptionType.unsupportedImagePageStyle) {
+        imageLoadErrors[index] = e.message;
+        imageLoadErrors.refresh();
+        return;
+      }
+      wp = null;
+    }
+
+    String? imageUrl;
+    String? reloadKey;
+    if (wp != null) {
+      imageUrl = _unescImgSrc(wp.url);
+      reloadKey = wp.reloadKey;
+    } else {
+      imageUrl = _fallbackParseImgSrc(html);
+      reloadKey = _fallbackParseReloadKey(html);
+    }
+
+    if (imageUrl == EHConsts.EH509ImageUrl || imageUrl == EHConsts.EX509ImageUrl) {
+      final rk = reloadKey ?? _fallbackParseReloadKey(html);
+      if (rk != null && rk.isNotEmpty && depth < 1 && nl != rk) {
+        await _resolveImagePageOnce(index, nl: rk, depth: depth + 1);
+        return;
+      }
+      imageLoadErrors[index] = 'exceedImageLimits'.tr;
+      imageLoadErrors.refresh();
+      return;
+    }
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      if (reloadKey != null && reloadKey.isNotEmpty) {
+        _imagePageReloadKeys[index] = reloadKey;
+      }
+      if (wp != null &&
+          wp.originalImageUrl != null &&
+          wp.originalImageUrl!.isNotEmpty) {
+        _originalImageUrls[index] = wp.originalImageUrl!;
+      } else {
+        _originalImageUrls.remove(index);
+      }
+      _loadedImageUrls[index] = imageUrl;
+      if (index < imageUrls.length) {
+        imageUrls[index] = imageUrl;
+        imageUrls.refresh();
+      }
+      if (!backendApiClient.shouldProxyImageUsePost(imageUrl)) {
+        _precacheNetworkImage(backendApiClient.proxyImageUrl(imageUrl));
+      }
+    } else {
+      imageLoadErrors[index] = 'reader.imageFailed'.tr;
+      imageLoadErrors.refresh();
+    }
+  }
+
+  void reloadCurrentImages() {
+    if (readDirection.value == ReadDirection.doubleColumn) {
+      final screen = doubleColumnScreenIndexForImagePage(currentPage.value);
+      for (final i in doubleColumnIndicesForScreen(screen)) {
+        if (i < totalPages.value) {
+          retryImage(i);
         }
       }
-    } catch (e) {
-      debugPrint('Failed to load image $index: $e');
+    } else {
+      retryImage(currentPage.value);
     }
   }
 
   void retryImage(int index) {
     if (mode == ReaderMode.online) {
+      final nl = _imagePageReloadKeys[index];
+      _activeResolveGeneration.remove(index);
+      resolvingImageIndexes.remove(index);
       _loadedImageUrls.remove(index);
+      _originalImageUrls.remove(index);
+      imageLoadErrors.remove(index);
       imageUrls[index] = '';
       imageUrls.refresh();
-      _loadImageAtIndex(index);
+      _loadImageAtIndex(index, nl: nl);
     }
   }
 
   void onPageChanged(int page) {
     if (readDirection.value == ReadDirection.doubleColumn) {
-      currentPage.value = (page * 2).clamp(0, totalPages.value - 1);
+      final idxs = doubleColumnIndicesForScreen(page);
+      if (idxs.isEmpty) return;
+      currentPage.value = idxs.first.clamp(0, math.max(0, totalPages.value - 1));
     } else {
       currentPage.value = page;
     }
@@ -407,7 +765,7 @@ class WebReaderController extends GetxController {
       return;
     }
     if (dir == ReadDirection.doubleColumn) {
-      pageController.animateToPage(page ~/ 2,
+      pageController.animateToPage(doubleColumnScreenIndexForImagePage(page),
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     } else {
       pageController.animateToPage(page,
@@ -418,7 +776,13 @@ class WebReaderController extends GetxController {
   void nextPage() {
     final dir = readDirection.value;
     if (dir == ReadDirection.doubleColumn) {
-      goToPage(currentPage.value + 2);
+      final p = currentPage.value;
+      final maxP = totalPages.value - 1;
+      if (displayFirstPageAlone.value && p == 0) {
+        goToPage(1.clamp(0, maxP));
+        return;
+      }
+      goToPage((p + 2).clamp(0, maxP));
     } else {
       goToPage(currentPage.value + 1);
     }
@@ -427,31 +791,48 @@ class WebReaderController extends GetxController {
   void prevPage() {
     final dir = readDirection.value;
     if (dir == ReadDirection.doubleColumn) {
-      goToPage(math.max(0, currentPage.value - 2));
-    } else {
-      goToPage(currentPage.value - 1);
+      final p = currentPage.value;
+      if (displayFirstPageAlone.value && p == 1) {
+        goToPage(0);
+        return;
+      }
+      if (p >= 2) {
+        goToPage(p - 2);
+        return;
+      }
     }
+    goToPage(currentPage.value - 1);
   }
 
   void toggleOverlay() => showOverlay.value = !showOverlay.value;
 
-  void cycleReadDirection() {
-    final values = ReadDirection.values;
-    final next = (readDirection.value.index + 1) % values.length;
-    readDirection.value = values[next];
-    backendApiClient.putSetting('web_read_direction', next).catchError((_) {});
-    final newDir = values[next];
+  void setReadDirection(ReadDirection newDir) {
+    final prev = readDirection.value;
+    if (prev == newDir) return;
+    readDirection.value = newDir;
+    backendApiClient.putSetting('web_read_direction', newDir.index).catchError((_) {});
     if (newDir != ReadDirection.vertical && newDir != ReadDirection.fitWidth) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentPage.value < totalPages.value) {
+          pageController.dispose();
           if (newDir == ReadDirection.doubleColumn) {
-            pageController = PageController(initialPage: currentPage.value ~/ 2);
+            pageController = PageController(
+                initialPage: doubleColumnScreenIndexForImagePage(currentPage.value));
           } else {
             pageController = PageController(initialPage: currentPage.value);
           }
         }
       });
     }
+  }
+
+  void showDeviceOrientationHint() {
+    Get.snackbar(
+      'reader.deviceOrientation'.tr,
+      'reader.deviceOrientationWebHint'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 4),
+    );
   }
 
   void toggleAutoMode() {
@@ -611,6 +992,8 @@ class _ReaderBody extends StatelessWidget {
             onTap: controller.toggleOverlay,
             child: Obx(() {
               final dir = controller.readDirection.value;
+              // Rebuild double-column [PageView] when [displayFirstPageAlone] toggles.
+              controller.displayFirstPageAlone.value;
               return switch (dir) {
                 ReadDirection.vertical => _buildVerticalReader(context),
                 ReadDirection.fitWidth => _buildFitWidthReader(context),
@@ -715,31 +1098,55 @@ class _ReaderBody extends StatelessWidget {
   }
 
   Widget _buildDoubleColumnReader(BuildContext context) {
-    final total = controller.totalPages.value;
-    final pageCount = (total / 2).ceil();
-    return Obx(() => ScrollConfiguration(
-          behavior: _webReaderScrollBehavior,
-          child: PageView.builder(
-            controller: controller.pageController,
-            itemCount: pageCount,
-            onPageChanged: controller.onPageChanged,
-            allowImplicitScrolling: true,
-            padEnds: false,
-            itemBuilder: (context, pairIndex) {
-              final leftIdx = pairIndex * 2;
-              final rightIdx = leftIdx + 1;
+    return Obx(() {
+      final total = controller.totalPages.value;
+      final pageCount = controller.doubleColumnPageCount();
+      return ScrollConfiguration(
+        behavior: _webReaderScrollBehavior,
+        child: PageView.builder(
+          controller: controller.pageController,
+          itemCount: pageCount,
+          onPageChanged: controller.onPageChanged,
+          allowImplicitScrolling: true,
+          padEnds: false,
+          itemBuilder: (context, screenIndex) {
+            final idxs = controller.doubleColumnIndicesForScreen(screenIndex);
+            if (idxs.isEmpty) {
+              return const SizedBox.shrink();
+            }
+            if (idxs.length == 1) {
               return Row(
                 children: [
-                  Expanded(child: _DoubleTapZoomImage(controller: controller, index: leftIdx)),
-                  if (rightIdx < total)
-                    Expanded(child: _DoubleTapZoomImage(controller: controller, index: rightIdx))
-                  else
-                    const Expanded(child: SizedBox.shrink()),
+                  Expanded(
+                    child: _DoubleTapZoomImage(
+                      controller: controller,
+                      index: idxs[0],
+                    ),
+                  ),
+                  const Expanded(child: SizedBox.shrink()),
                 ],
               );
-            },
-          ),
-        ));
+            }
+            return Row(
+              children: [
+                Expanded(
+                  child: _DoubleTapZoomImage(
+                    controller: controller,
+                    index: idxs[0],
+                  ),
+                ),
+                Expanded(
+                  child: _DoubleTapZoomImage(
+                    controller: controller,
+                    index: idxs[1],
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    });
   }
 }
 
@@ -895,6 +1302,67 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
   }
 }
 
+/// Image-page parse / proxy failure (online reader).
+Widget _webReaderImageErrorShell(
+  BuildContext context, {
+  required int pageIndex,
+  required String message,
+  required VoidCallback onRetry,
+  required bool isVertical,
+  required bool fitWidth,
+}) {
+  final sh = MediaQuery.sizeOf(context);
+  final h = isVertical || fitWidth ? sh.height * 0.85 : sh.height * 0.72;
+  return SizedBox(
+    width: double.infinity,
+    height: h,
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(message, style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+          ),
+          const SizedBox(height: 8),
+          Text('${pageIndex + 1}', style: const TextStyle(color: Colors.white38, fontSize: 14)),
+          const SizedBox(height: 12),
+          TextButton(onPressed: onRetry, child: Text('common.retry'.tr)),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Full-viewport-style loading shell for web reader (HTML resolve or network decode).
+Widget _webReaderImageLoadingShell(
+  BuildContext context, {
+  required int pageIndex,
+  required bool isVertical,
+  required bool fitWidth,
+}) {
+  final sh = MediaQuery.sizeOf(context);
+  final h = isVertical || fitWidth ? sh.height * 0.85 : sh.height * 0.72;
+  return SizedBox(
+    width: double.infinity,
+    height: h,
+    child: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(color: Colors.white54),
+          const SizedBox(height: 12),
+          Text('reader.loadingImage'.tr, style: const TextStyle(color: Colors.white54)),
+          const SizedBox(height: 8),
+          Text('${pageIndex + 1}', style: const TextStyle(color: Colors.white38, fontSize: 14)),
+        ],
+      ),
+    ),
+  );
+}
+
 class _ImagePage extends StatelessWidget {
   final WebReaderController controller;
   final int index;
@@ -921,31 +1389,45 @@ class _ImageContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final url = index < controller.imageUrls.length ? controller.imageUrls[index] : '';
+      controller.resolvingImageIndexes.contains(index);
+      final parseErr = controller.imageLoadErrors[index];
+      if (url.isEmpty &&
+          parseErr != null &&
+          parseErr.isNotEmpty &&
+          controller.mode == ReaderMode.online) {
+        return _webReaderImageErrorShell(
+          context,
+          pageIndex: index,
+          message: parseErr,
+          onRetry: () => controller.retryImage(index),
+          isVertical: isVertical,
+          fitWidth: fitWidth,
+        );
+      }
       if (url.isEmpty) {
-        return SizedBox(
-          height: isVertical ? MediaQuery.of(context).size.height * 0.8 : null,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(color: Colors.white54),
-                const SizedBox(height: 12),
-                Text('reader.loadingImage'.tr, style: const TextStyle(color: Colors.white54)),
-              ],
-            ),
-          ),
+        return _webReaderImageLoadingShell(
+          context,
+          pageIndex: index,
+          isVertical: isVertical,
+          fitWidth: fitWidth,
         );
       }
 
       return GestureDetector(
-        onLongPress: () => _showImageContextMenu(context, url),
-        onSecondaryTapUp: (details) => _showImageContextMenu(context, url, position: details.globalPosition),
+        onLongPress: () => showWebReaderImageContextMenu(context, controller, index),
+        onSecondaryTapUp: (details) => showWebReaderImageContextMenu(
+          context,
+          controller,
+          index,
+          position: details.globalPosition,
+        ),
         child: WebProxiedImage(
           sourceUrl: url,
           fit: (isVertical || fitWidth) ? BoxFit.fitWidth : BoxFit.contain,
           width: (isVertical || fitWidth) ? double.infinity : null,
           readerStyle: true,
           readerTallLoading: isVertical || fitWidth,
+          readerFillMinLoadingHeight: !isVertical && !fitWidth,
           readerErrorChild: SizedBox(
             height: isVertical ? 400 : null,
             child: Center(
@@ -968,27 +1450,23 @@ class _ImageContent extends StatelessWidget {
       );
     });
   }
-
-  void _showImageContextMenu(BuildContext context, String url, {Offset? position}) {
-    final pos = position ?? (context.findRenderObject() as RenderBox?)?.localToGlobal(const Offset(100, 100)) ?? Offset.zero;
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(pos.dx, pos.dy, pos.dx, pos.dy),
-      items: [
-        const PopupMenuItem(value: 'save', child: Text('Save Image')),
-        const PopupMenuItem(value: 'reload', child: Text('Reload')),
-      ],
-    ).then((value) {
-      if (value == 'save') {
-        if (!backendApiClient.shouldProxyImageUsePost(url)) {
-          web.window.open(backendApiClient.proxyImageUrl(url), '_blank');
-        }
-      } else if (value == 'reload') {
-        controller.retryImage(index);
-      }
-    });
-  }
 }
+
+IconData _webReadDirectionIcon(ReadDirection d) => switch (d) {
+      ReadDirection.ltr => Icons.arrow_forward,
+      ReadDirection.rtl => Icons.arrow_back,
+      ReadDirection.vertical => Icons.swap_vert,
+      ReadDirection.fitWidth => Icons.fit_screen,
+      ReadDirection.doubleColumn => Icons.view_column,
+    };
+
+String _webReadDirectionLabel(ReadDirection d) => switch (d) {
+      ReadDirection.ltr => 'reader.ltr'.tr,
+      ReadDirection.rtl => 'reader.rtl'.tr,
+      ReadDirection.vertical => 'reader.vertical'.tr,
+      ReadDirection.fitWidth => 'reader.fitWidth'.tr,
+      ReadDirection.doubleColumn => 'reader.doubleColumn'.tr,
+    };
 
 class _TopOverlay extends StatelessWidget {
   final WebReaderController controller;
@@ -1017,20 +1495,35 @@ class _TopOverlay extends StatelessWidget {
                   onPressed: () => _popOrExitWebReader(context, controller),
                 ),
                 Expanded(
-                  child: Obx(() => Text(
-                    '${controller.currentPage.value + 1} / ${controller.totalPages.value}',
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  )),
+                  child: Obx(() {
+                    final title = controller.galleryTitle.value.trim();
+                    final pageStr =
+                        '${controller.currentPage.value + 1} / ${controller.totalPages.value}';
+                    final text = title.isEmpty
+                        ? (controller.gid != 0 ? '$pageStr · gid:${controller.gid}' : pageStr)
+                        : '$title · $pageStr';
+                    return Text(
+                      text,
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    );
+                  }),
                 ),
                 Obx(() => IconButton(
-                  icon: Icon(
-                    controller.isAutoMode.value ? Icons.pause_circle : Icons.play_circle,
-                    color: controller.isAutoMode.value ? Colors.amber : Colors.white,
-                  ),
-                  tooltip: controller.isAutoMode.value ? 'reader.autoStop'.tr : 'reader.autoStart'.tr,
-                  onPressed: controller.toggleAutoMode,
-                )),
+                      icon: Icon(
+                        controller.isAutoMode.value ? Icons.pause_circle : Icons.play_circle,
+                        color: controller.isAutoMode.value ? Colors.amber : Colors.white,
+                      ),
+                      tooltip: controller.isAutoMode.value ? 'reader.autoStop'.tr : 'reader.autoStart'.tr,
+                      onPressed: controller.toggleAutoMode,
+                    )),
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  tooltip: 'reader.reloadImage'.tr,
+                  onPressed: controller.reloadCurrentImages,
+                ),
                 IconButton(
                   icon: const Icon(Icons.grid_view, color: Colors.white),
                   tooltip: 'thumbnails.grid'.tr,
@@ -1038,28 +1531,50 @@ class _TopOverlay extends StatelessWidget {
                       '/web/thumbnails/${controller.gid}/${controller.token}'),
                 ),
                 Obx(() {
-                  final icon = switch (controller.readDirection.value) {
-                    ReadDirection.ltr => Icons.arrow_forward,
-                    ReadDirection.rtl => Icons.arrow_back,
-                    ReadDirection.vertical => Icons.swap_vert,
-                    ReadDirection.fitWidth => Icons.fit_screen,
-                    ReadDirection.doubleColumn => Icons.view_column,
-                  };
-                  final label = switch (controller.readDirection.value) {
-                    ReadDirection.ltr => 'reader.ltr'.tr,
-                    ReadDirection.rtl => 'reader.rtl'.tr,
-                    ReadDirection.vertical => 'reader.vertical'.tr,
-                    ReadDirection.fitWidth => 'reader.fitWidth'.tr,
-                    ReadDirection.doubleColumn => 'reader.doubleColumn'.tr,
-                  };
-                  return Tooltip(
-                    message: 'reader.directionLabel'.trParams({'dir': label}),
-                    child: IconButton(
-                      icon: Icon(icon, color: Colors.white),
-                      onPressed: controller.cycleReadDirection,
+                  if (controller.readDirection.value != ReadDirection.doubleColumn) {
+                    return const SizedBox.shrink();
+                  }
+                  return IconButton(
+                    icon: Icon(
+                      Icons.filter_1,
+                      color: controller.displayFirstPageAlone.value ? Colors.amber : Colors.white,
                     ),
+                    tooltip: 'displayFirstPageAlone'.tr,
+                    onPressed: controller.toggleDisplayFirstPageAlone,
                   );
                 }),
+                IconButton(
+                  icon: const Icon(Icons.screen_rotation_outlined, color: Colors.white),
+                  tooltip: 'reader.deviceOrientation'.tr,
+                  onPressed: controller.showDeviceOrientationHint,
+                ),
+                Obx(() {
+                  final d = controller.readDirection.value;
+                  return PopupMenuButton<ReadDirection>(
+                    icon: Icon(_webReadDirectionIcon(d), color: Colors.white),
+                    tooltip: 'reader.directionLabel'.trParams({'dir': _webReadDirectionLabel(d)}),
+                    color: Colors.grey.shade900,
+                    onSelected: controller.setReadDirection,
+                    itemBuilder: (context) => [
+                      for (final e in ReadDirection.values)
+                        PopupMenuItem(
+                          value: e,
+                          child: Row(
+                            children: [
+                              Icon(_webReadDirectionIcon(e), size: 20),
+                              const SizedBox(width: 12),
+                              Text(_webReadDirectionLabel(e)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+                }),
+                IconButton(
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  tooltip: 'settings.readerSettings'.tr,
+                  onPressed: () => Get.toNamed('/web/settings/read'),
+                ),
               ],
             ),
           ),
