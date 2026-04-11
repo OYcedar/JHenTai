@@ -1,6 +1,7 @@
 # Miscellaneous
 .arts/
 .agents/
+skills-lock.json
 *.class
 *.log
 *.pyc
