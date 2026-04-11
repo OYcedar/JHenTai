@@ -76,6 +76,23 @@ class WebGalleryDetailController extends GetxController {
 
   Future<void> refreshDetail() => _loadDetail();
 
+  /// Query string for `/web/reader/$gid/$token` (includes gallery title when known).
+  String buildReaderQuery({int? startPage, String? mode}) {
+    final parts = <String>[];
+    if (startPage != null) {
+      parts.add('startPage=$startPage');
+    }
+    if (mode != null && mode.isNotEmpty) {
+      parts.add('mode=${Uri.encodeQueryComponent(mode)}');
+    }
+    final t = title.value.trim();
+    if (t.isNotEmpty) {
+      parts.add('title=${Uri.encodeQueryComponent(t)}');
+    }
+    if (parts.isEmpty) return '';
+    return '?${parts.join('&')}';
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -606,7 +623,8 @@ class WebGalleryDetailPage extends StatelessWidget {
             final page = int.tryParse(textCtrl.text);
             if (page != null && page >= 1 && page <= controller.pageCount.value) {
               Navigator.pop(ctx);
-              Get.toNamed('/web/reader/${controller.gid}/${controller.token}?startPage=${page - 1}');
+              Get.toNamed(
+                  '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: page - 1)}');
             }
           },
         ),
@@ -617,7 +635,8 @@ class WebGalleryDetailPage extends StatelessWidget {
               final page = int.tryParse(textCtrl.text);
               if (page != null && page >= 1 && page <= controller.pageCount.value) {
                 Navigator.pop(ctx);
-                Get.toNamed('/web/reader/${controller.gid}/${controller.token}?startPage=${page - 1}');
+                Get.toNamed(
+                  '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: page - 1)}');
               }
             },
             child: Text('common.ok'.tr),
@@ -978,8 +997,9 @@ class WebGalleryDetailPage extends StatelessWidget {
                   label: Text(label),
                   style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
                   onPressed: () {
-                    final startPage = progress > 0 ? '?startPage=$progress' : '';
-                    Get.toNamed('/web/reader/${controller.gid}/${controller.token}$startPage');
+                    final q = controller.buildReaderQuery(
+                        startPage: progress > 0 ? progress : null);
+                    Get.toNamed('/web/reader/${controller.gid}/${controller.token}$q');
                   },
                 );
               }),
@@ -993,7 +1013,8 @@ class WebGalleryDetailPage extends StatelessWidget {
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=downloaded'),
+                  onPressed: () => Get.toNamed(
+                      '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(mode: 'downloaded')}'),
                 ),
               _buildArchiveButton(context, aTask, aStatus),
               if (gTask != null || aTask != null)
@@ -1069,7 +1090,8 @@ class WebGalleryDetailPage extends StatelessWidget {
             backgroundColor: Colors.green.shade100,
             foregroundColor: Colors.green.shade900,
           ),
-          onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=downloaded'),
+          onPressed: () => Get.toNamed(
+              '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(mode: 'downloaded')}'),
         );
       case 4: // Failed
         return FilledButton.tonalIcon(
@@ -1134,7 +1156,8 @@ class WebGalleryDetailPage extends StatelessWidget {
           backgroundColor: Colors.green.shade100,
           foregroundColor: Colors.green.shade900,
         ),
-        onPressed: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?mode=archive'),
+        onPressed: () => Get.toNamed(
+            '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(mode: 'archive')}'),
       );
     }
     if (status == 7) {
@@ -1458,7 +1481,8 @@ class WebGalleryDetailPage extends StatelessWidget {
             itemBuilder: (ctx, index) {
               return InkWell(
                 borderRadius: BorderRadius.circular(8),
-                onTap: () => Get.toNamed('/web/reader/${controller.gid}/${controller.token}?startPage=$index'),
+                onTap: () => Get.toNamed(
+                    '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: index)}'),
                 child: Stack(
                   fit: StackFit.expand,
                   children: [

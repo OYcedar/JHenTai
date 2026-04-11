@@ -14,6 +14,18 @@ class WebEnUS {
       'common.unknown': 'Unknown',
       'common.images': '@count images',
       'common.pages': '@count pages',
+      'common.save': 'Save',
+
+      // reader / gallery actions (align with native .tr keys)
+      'share': 'Share',
+      'save': 'Save',
+      'reload': 'Reload',
+      'cancel': 'Cancel',
+      'resampleImage': 'Resample',
+      'originalImage': 'Original',
+      'reDownload': 'Re-Download',
+      'hasCopiedToClipboard': 'Copied to clipboard',
+      'displayFirstPageAlone': 'Display First Page Alone',
 
       // setup
       'setup.title': 'JHenTai Server Setup',
@@ -334,9 +346,6 @@ class WebEnUS {
       // tag suggest
       'tagSuggest.tag': 'Tag',
 
-      // common extras
-      'common.save': 'Save',
-
       // reader enhancements
       'reader.fitWidth': 'Fit Width',
       'reader.doubleColumn': 'Double Column',
@@ -421,6 +430,11 @@ class WebEnUS {
       'reader.imageSpacing': 'Image Spacing',
       'reader.autoInterval': 'Auto-mode Interval',
       'reader.startAutoMode': 'Start',
+      'reader.saveFailed': 'Could not save image',
+      'reader.redownloadHint': 'Open Downloads to retry or restart this gallery’s download.',
+      'reader.deviceOrientation': 'Device orientation',
+      'reader.deviceOrientationWebHint':
+          'Browsers cannot lock orientation like the app. Use the browser full-screen or your device rotation lock if needed.',
 
       // settings reader
       'settings.defaultFavoriteSlot': 'Default favorite folder',

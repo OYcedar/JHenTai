@@ -15,6 +15,16 @@ class WebZhTW {
       'common.images': '@count 張圖片',
       'common.pages': '@count 頁',
 
+      'share': '分享',
+      'save': '儲存',
+      'reload': '重新載入',
+      'cancel': '取消',
+      'resampleImage': '壓縮圖',
+      'originalImage': '原圖',
+      'reDownload': '重新下載',
+      'hasCopiedToClipboard': '已複製到剪貼簿',
+      'displayFirstPageAlone': '單獨顯示首頁',
+
       // setup
       'setup.title': 'JHenTai 伺服器設定',
       'setup.description': '請輸入伺服器記錄中顯示的 API Token 以連線。',
@@ -404,6 +414,11 @@ class WebZhTW {
       'reader.imageSpacing': '圖片間距',
       'reader.autoInterval': '自動閱讀間隔',
       'reader.startAutoMode': '開始',
+      'reader.saveFailed': '無法儲存圖片',
+      'reader.redownloadHint': '請開啟「下載」頁面重試或重新開始此畫廊下載。',
+      'reader.deviceOrientation': '裝置方向',
+      'reader.deviceOrientationWebHint':
+          '網頁版無法像應用程式一樣鎖定螢幕方向。請使用瀏覽器全螢幕或系統旋轉鎖定。',
 
       // settings reader
       'settings.defaultFavoriteSlot': '預設收藏夾',
