@@ -202,16 +202,18 @@ void _precacheNetworkImage(String proxyGetUrl) {
 
 /// Pop the reader route when the navigator stack allows; otherwise replace with
 /// gallery detail or local list (browser deep-link / refresh leaves no route to pop).
+///
+/// Uses [Navigator.maybePop] on the root navigator so Web history stays aligned with
+/// the real stack (avoids canPop/Get.back occasionally disagreeing on Flutter Web).
 void _popOrExitWebReader(BuildContext context, WebReaderController c) {
-  if (Navigator.of(context).canPop()) {
-    Get.back();
-    return;
-  }
-  if (c.gid == 0 && c.token == 'local') {
-    Get.offNamed('/web/local');
-  } else {
-    Get.offNamed('/web/gallery/${c.gid}/${c.token}');
-  }
+  Navigator.of(context, rootNavigator: true).maybePop().then((didPop) {
+    if (didPop) return;
+    if (c.gid == 0 && c.token == 'local') {
+      Get.offNamed('/web/local');
+    } else {
+      Get.offNamed('/web/gallery/${c.gid}/${c.token}');
+    }
+  });
 }
 
 enum ReaderMode { online, downloaded, archive, local }
@@ -988,7 +990,7 @@ class _ReaderBody extends StatelessWidget {
       child: Stack(
         children: [
           GestureDetector(
-            behavior: HitTestBehavior.translucent,
+            behavior: HitTestBehavior.deferToChild,
             onTap: controller.toggleOverlay,
             child: Obx(() {
               final dir = controller.readDirection.value;
@@ -1474,113 +1476,144 @@ class _TopOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() => AnimatedOpacity(
-      opacity: controller.showOverlay.value ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 200),
-      child: IgnorePointer(
-        ignoring: !controller.showOverlay.value,
-        child: Container(
-          height: kToolbarHeight + MediaQuery.of(context).padding.top,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [Colors.black87, Colors.transparent],
-            ),
-          ),
-          child: SafeArea(
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => _popOrExitWebReader(context, controller),
-                ),
-                Expanded(
-                  child: Obx(() {
-                    final title = controller.galleryTitle.value.trim();
-                    final pageStr =
-                        '${controller.currentPage.value + 1} / ${controller.totalPages.value}';
-                    final text = title.isEmpty
-                        ? (controller.gid != 0 ? '$pageStr · gid:${controller.gid}' : pageStr)
-                        : '$title · $pageStr';
-                    return Text(
-                      text,
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    );
-                  }),
-                ),
-                Obx(() => IconButton(
-                      icon: Icon(
-                        controller.isAutoMode.value ? Icons.pause_circle : Icons.play_circle,
-                        color: controller.isAutoMode.value ? Colors.amber : Colors.white,
-                      ),
-                      tooltip: controller.isAutoMode.value ? 'reader.autoStop'.tr : 'reader.autoStart'.tr,
-                      onPressed: controller.toggleAutoMode,
-                    )),
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: Colors.white),
-                  tooltip: 'reader.reloadImage'.tr,
-                  onPressed: controller.reloadCurrentImages,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.grid_view, color: Colors.white),
-                  tooltip: 'thumbnails.grid'.tr,
-                  onPressed: () => Get.toNamed(
-                      '/web/thumbnails/${controller.gid}/${controller.token}'),
-                ),
-                Obx(() {
-                  if (controller.readDirection.value != ReadDirection.doubleColumn) {
-                    return const SizedBox.shrink();
-                  }
-                  return IconButton(
-                    icon: Icon(
-                      Icons.filter_1,
-                      color: controller.displayFirstPageAlone.value ? Colors.amber : Colors.white,
+    final barHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+    return Obx(() {
+      final show = controller.showOverlay.value;
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: AnimatedOpacity(
+              opacity: show ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: IgnorePointer(
+                child: Container(
+                  height: barHeight,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.black87, Colors.transparent],
                     ),
-                    tooltip: 'displayFirstPageAlone'.tr,
-                    onPressed: controller.toggleDisplayFirstPageAlone,
-                  );
-                }),
-                IconButton(
-                  icon: const Icon(Icons.screen_rotation_outlined, color: Colors.white),
-                  tooltip: 'reader.deviceOrientation'.tr,
-                  onPressed: controller.showDeviceOrientationHint,
+                  ),
                 ),
-                Obx(() {
-                  final d = controller.readDirection.value;
-                  return PopupMenuButton<ReadDirection>(
-                    icon: Icon(_webReadDirectionIcon(d), color: Colors.white),
-                    tooltip: 'reader.directionLabel'.trParams({'dir': _webReadDirectionLabel(d)}),
-                    color: Colors.grey.shade900,
-                    onSelected: controller.setReadDirection,
-                    itemBuilder: (context) => [
-                      for (final e in ReadDirection.values)
-                        PopupMenuItem(
-                          value: e,
-                          child: Row(
-                            children: [
-                              Icon(_webReadDirectionIcon(e), size: 20),
-                              const SizedBox(width: 12),
-                              Text(_webReadDirectionLabel(e)),
-                            ],
-                          ),
-                        ),
-                    ],
-                  );
-                }),
-                IconButton(
-                  icon: const Icon(Icons.settings, color: Colors.white),
-                  tooltip: 'settings.readerSettings'.tr,
-                  onPressed: () => Get.toNamed('/web/settings/read'),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
-    ));
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              ignoring: !show,
+              child: Visibility(
+                visible: show,
+                maintainState: true,
+                maintainAnimation: true,
+                child: SizedBox(
+                  height: barHeight,
+                  child: SafeArea(
+                    bottom: false,
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => _popOrExitWebReader(context, controller),
+                        ),
+                        Expanded(
+                          child: Obx(() {
+                            final title = controller.galleryTitle.value.trim();
+                            final pageStr =
+                                '${controller.currentPage.value + 1} / ${controller.totalPages.value}';
+                            final text = title.isEmpty
+                                ? (controller.gid != 0 ? '$pageStr · gid:${controller.gid}' : pageStr)
+                                : '$title · $pageStr';
+                            return Text(
+                              text,
+                              style: const TextStyle(color: Colors.white, fontSize: 15),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          }),
+                        ),
+                        Obx(() => IconButton(
+                              icon: Icon(
+                                controller.isAutoMode.value ? Icons.pause_circle : Icons.play_circle,
+                                color: controller.isAutoMode.value ? Colors.amber : Colors.white,
+                              ),
+                              tooltip: controller.isAutoMode.value ? 'reader.autoStop'.tr : 'reader.autoStart'.tr,
+                              onPressed: controller.toggleAutoMode,
+                            )),
+                        IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white),
+                          tooltip: 'reader.reloadImage'.tr,
+                          onPressed: controller.reloadCurrentImages,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.grid_view, color: Colors.white),
+                          tooltip: 'thumbnails.grid'.tr,
+                          onPressed: () => Get.toNamed(
+                              '/web/thumbnails/${controller.gid}/${controller.token}'),
+                        ),
+                        Obx(() {
+                          if (controller.readDirection.value != ReadDirection.doubleColumn) {
+                            return const SizedBox.shrink();
+                          }
+                          return IconButton(
+                            icon: Icon(
+                              Icons.filter_1,
+                              color: controller.displayFirstPageAlone.value ? Colors.amber : Colors.white,
+                            ),
+                            tooltip: 'displayFirstPageAlone'.tr,
+                            onPressed: controller.toggleDisplayFirstPageAlone,
+                          );
+                        }),
+                        IconButton(
+                          icon: const Icon(Icons.screen_rotation_outlined, color: Colors.white),
+                          tooltip: 'reader.deviceOrientation'.tr,
+                          onPressed: controller.showDeviceOrientationHint,
+                        ),
+                        Obx(() {
+                          final d = controller.readDirection.value;
+                          return PopupMenuButton<ReadDirection>(
+                            icon: Icon(_webReadDirectionIcon(d), color: Colors.white),
+                            tooltip: 'reader.directionLabel'.trParams({'dir': _webReadDirectionLabel(d)}),
+                            color: Colors.grey.shade900,
+                            onSelected: controller.setReadDirection,
+                            itemBuilder: (context) => [
+                              for (final e in ReadDirection.values)
+                                PopupMenuItem(
+                                  value: e,
+                                  child: Row(
+                                    children: [
+                                      Icon(_webReadDirectionIcon(e), size: 20),
+                                      const SizedBox(width: 12),
+                                      Text(_webReadDirectionLabel(e)),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          );
+                        }),
+                        IconButton(
+                          icon: const Icon(Icons.settings, color: Colors.white),
+                          tooltip: 'settings.readerSettings'.tr,
+                          onPressed: () => Get.toNamed('/web/settings/read'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    });
   }
 }
 
