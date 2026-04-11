@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:drift/drift.dart';
 import 'package:jhentai/src/database/dao/gallery_history_dao.dart';
 import 'package:jhentai/src/enum/config_enum.dart';
 import 'package:jhentai/src/extension/list_extension.dart';
@@ -751,16 +750,16 @@ class MigrateStorageConfigHandler implements UpdateHandler {
       });
 
       if (gid2ReadIndexMap.isNotEmpty) {
-        List<LocalConfigCompanion> localConfigs = gid2ReadIndexMap.entries.map((entry) {
-          return LocalConfigCompanion(
-            configKey: Value(ConfigEnum.readIndexRecord.key),
-            subConfigKey: Value(entry.key),
-            value: Value(entry.value.toString()),
-            utime: Value(DateTime.now().toString()),
+        List<LocalConfig> localConfigs = gid2ReadIndexMap.entries.map((entry) {
+          return LocalConfig(
+            configKey: ConfigEnum.readIndexRecord,
+            subConfigKey: entry.key,
+            value: entry.value.toString(),
+            utime: DateTime.now().toString(),
           );
         }).toList();
 
-        for (List<LocalConfigCompanion> localConfigCompanions in localConfigs.partition(200)) {
+        for (List<LocalConfig> localConfigCompanions in localConfigs.partition(200)) {
           await localConfigService.batchWrite(localConfigCompanions);
           await Future.delayed(const Duration(milliseconds: 200));
         }

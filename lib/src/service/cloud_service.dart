@@ -1,5 +1,4 @@
 import 'package:collection/collection.dart';
-import 'package:drift/drift.dart';
 import 'package:jhentai/src/enum/config_enum.dart';
 import 'package:jhentai/src/enum/config_type_enum.dart';
 import 'package:jhentai/src/model/config.dart';
@@ -42,14 +41,7 @@ class CloudConfigService with JHLifeCircleBeanErrorCatch implements JHLifeCircle
       case CloudConfigTypeEnum.readIndexRecord:
         List list = await isolateService.jsonDecodeAsync(config.config);
         List<LocalConfig> readIndexRecords = list.map((e) => LocalConfig.fromJson(e)).toList();
-        await localConfigService.batchWrite(readIndexRecords
-            .map((e) => LocalConfigCompanion(
-                  configKey: Value(e.configKey.key),
-                  subConfigKey: Value(e.subConfigKey),
-                  value: Value(e.value),
-                  utime: Value(e.utime),
-                ))
-            .toList());
+        await localConfigService.batchWrite(readIndexRecords);
         break;
       case CloudConfigTypeEnum.quickSearch:
         await localConfigService.write(configKey: ConfigEnum.quickSearch, value: config.config);

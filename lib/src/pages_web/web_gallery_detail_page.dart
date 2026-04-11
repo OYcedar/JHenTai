@@ -1200,7 +1200,11 @@ class WebGalleryDetailPage extends StatelessWidget {
                       children: entry.value.map((tag) {
                         final translated = controller.getTranslatedTag(entry.key, tag);
                         final showTranslated = translated != tag;
-                        final watchedBgArgb = accountWatchedBg['${entry.key}:$tag'];
+                        final watchedBgArgb = WebWatchedTagStylesController.lookupBackgroundArgb(
+                          accountWatchedBg,
+                          entry.key,
+                          tag,
+                        );
                         final bg = watchedBgArgb != null ? Color(watchedBgArgb) : null;
                         final fg = bg == null
                             ? null
