@@ -219,19 +219,26 @@ class WebGalleryDetailController extends GetxController {
       final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
       final thumbs = (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
       final gt = result['galleryThumbnails'] as List?;
-      final total = result['totalPages'] as int?;
+      final total = (result['totalPages'] as num?)?.toInt();
 
-      if (pages.isNotEmpty) {
+      if (pages.isNotEmpty &&
+          (imagePageUrls.isEmpty || pages.length >= imagePageUrls.length)) {
         imagePageUrls.value = pages;
       }
-      if (thumbs.isNotEmpty) {
+      if (thumbs.isNotEmpty &&
+          (thumbnailImageUrls.isEmpty || thumbs.length >= thumbnailImageUrls.length)) {
         thumbnailImageUrls.value = thumbs;
       }
       if (gt != null && gt.isNotEmpty) {
-        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        if (galleryThumbnails.isEmpty || gt.length >= galleryThumbnails.length) {
+          galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
       }
       if (total != null && total > 0) {
-        pageCount.value = total;
+        final current = pageCount.value;
+        if (current == 0 || total >= current) {
+          pageCount.value = total;
+        }
       }
       thumbnailImageUrls.refresh();
       galleryThumbnails.refresh();
@@ -990,7 +997,7 @@ class WebGalleryDetailPage extends StatelessWidget {
               Obx(() {
                 final progress = controller.readProgress.value;
                 final label = progress > 0
-                    ? '${'detail.readOnline'.tr} (P${progress + 1})'
+                    ? 'detail.readOnlineResume'.trParams({'page': '${progress + 1}'})
                     : 'detail.readOnline'.tr;
                 return FilledButton.icon(
                   icon: const Icon(Icons.menu_book),

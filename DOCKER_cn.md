@@ -12,7 +12,7 @@
 - [本地画廊扫描](#本地画廊扫描)
 - [数据备份](#数据备份)
 - [反向代理](#反向代理)
-- [Docker Hub 自动发布](#docker-hub-自动发布)
+- [Docker Hub 手动发布](#docker-hub-手动发布)
 - [安全说明](#安全说明)
 - [常见问题](#常见问题)
 
@@ -228,32 +228,27 @@ labels:
 
 ---
 
-## Docker Hub 自动发布
+## Docker Hub 手动发布
 
-GitHub Actions 工作流 `.github/workflows/docker-publish.yml` 会在以下情况自动构建并推送镜像到 Docker Hub：
+本 fork **不再**通过 GitHub Actions 自动推送镜像。在已执行 **`docker login`** 的机器上本地构建并推送（或使用你自建的 CI）。面向 Cursor 的检查清单见 [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md)。
 
-- 推送 `v*` 格式的 Tag（版本发布，例如 `v8.0.12`）
-- 向 `master` 分支推送了涉及服务端或 Web 前端源码的提交
+**一键脚本**（在仓库根目录执行，标签为 `x.y.z-hhh`）：
 
-**需要在 GitHub 仓库中配置以下 Secrets：**
+- **Linux / macOS / Git Bash：** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
+- **Windows PowerShell：** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`
 
+若 Docker Hub 命名空间不是 **`hemumoe`**，请设置环境变量 **`DOCKERHUB_USERNAME`**。
 
-| Secret            | 值                                |
-| ----------------- | -------------------------------- |
-| `DOCKERHUB_TOKEN` | Docker Hub **Access Token**（非密码） |
+**标签规则：**
 
+| 段 | 来源 |
+| --- | --- |
+| `x.y.z` | `pubspec.yaml` 里 `version:` 中 **`+` 前面** |
+| `hhh` | **`docker/fork_revision`** 的十六进制（三位小写，十进制 **0–4095**）。无该文件时用 `pubspec` 的 **`+` 后构建号** |
 
-创建 Docker Hub Token：Docker Hub → Account Settings → Security → New Access Token。
+**Fork 版本号：** 发布新镜像前修改 **`docker/fork_revision`**（单行十进制）。例：十进制 **311** → 十六进制 **`137`** → 标签 **`8.0.12-137`**（在应用版本为 `8.0.12` 时）。
 
-**发布的镜像标签：**
-
-
-| 标签          | 触发时机                                                                                |
-| ----------- | ----------------------------------------------------------------------------------- |
-| `x.y.z-hhh` | 每次工作流构建；`hhh` 为 fork 版本号的十六进制（见 `docker/fork_revision`，若无该文件则用 `pubspec` 的 `+` 构建号） |
-
-
-**Fork 版本号：** 发布本 fork 的 Docker 镜像时，修改 `**docker/fork_revision`**（单行十进制 **0–4095**）。未提交该文件时，使用 `pubspec.yaml` 里 `version:` `**+` 后面的数字**。
+**登录：** 使用 Docker Hub → Account Settings → Security 中的 **Access Token** 配合 `docker login`（勿用账户密码）。
 
 **删除 Docker Hub 上的旧标签**（如 `latest`、裸 `8.0.12`、`8.0`、`*-web`、`docker-web-`* 等）：
 
@@ -297,3 +292,15 @@ chmod +x scripts/dockerhub-delete-tags.sh
 
 **ExHentai 内容无法加载**  
 → 进入 **设置 → 站点**，切换至 **ExHentai**，并使用有效的 ExHentai Cookie 登录
+
+**Unraid / 局域网直连：封面能出，画廊内页或阅读器大图 500（`*.hath.network` 报 `HandshakeException`）**  
+Web 端大量图片走 **`/api/proxy/image`** 由**服务端代拉**。封面常在 **`ehgt.org`**（可能正常），而分页大图多在 **H@H 节点**（`*.hath.network`）。若服务端日志或 500 正文中出现 **`HandshakeException: Connection terminated during handshake`**，说明**容器内**与该主机的 **TLS 握手失败**（IPv6 路径、MTU、防火墙、证书链等），一般不是 Flutter Web 本身问题。
+
+1. **H@H 优先 IPv4 为可选项**：默认对 **`*.hath.network`** 使用常规 HTTPS（与 EH 一致）。若确认 **`HandshakeException`** 且怀疑仅 IPv6 到 H@H 异常，再在容器环境变量中设置 **`JH_HATH_PREFER_IPV4=1`**（或 `true`）并重启。本地 / Windows 上 Docker **一般不要设置**。
+2. **在容器内自检**（把主机名换成失败 URL 中的 H@H 节点）：  
+   `openssl s_client -connect 节点名.hath.network:443 -servername 节点名.hath.network`  
+   或 `curl -vI 'https://节点名.hath.network/…'`  
+   若容器内失败而 Unraid 宿主机成功，重点查 **Docker 网络**、**IPv6**、**MTU**、**防火墙** 对桥接/自定义网络的策略。
+3. **反代与 414**：排查时可先 **直连容器端口**（如 **`8088:8080`**）。很长的大图 URL 应使用 **`POST /api/proxy/image`**（URL 放在 JSON body），避免查询串过长触发前置 Nginx/Caddy 的 **414 URI Too Large**。
+4. **Token**：画廊相关请求会通过查询参数 **`?token=<API Token>`** 调用图片代理；该路由**不依赖** `Authorization` 头。若缩略图 401/403，请在 **设置** 中确认 Token 正确。
+5. **EX 画廊**：需在服务端配置 **有效的 ExHentai Cookie**；仅有 EH Cookie 无法访问仅 EX 可见的内容。

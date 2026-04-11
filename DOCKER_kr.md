@@ -12,7 +12,7 @@
 - [로컬 갤러리 스캔](#로컬-갤러리-스캔)
 - [백업](#백업)
 - [리버스 프록시](#리버스-프록시)
-- [Docker Hub CI/CD](#docker-hub-cicd)
+- [Docker Hub 수동 게시](#docker-hub-수동-게시)
 - [보안](#보안)
 - [문제 해결](#문제-해결)
 
@@ -209,26 +209,27 @@ labels:
 
 ---
 
-## Docker Hub CI/CD
+## Docker Hub 수동 게시
 
-GitHub Actions 워크플로 `.github/workflows/docker-publish.yml`은 다음 상황에서 자동으로 이미지를 빌드하고 Docker Hub에 푸시합니다:
+이 fork는 GitHub Actions로 Docker 이미지를 푸시하지 않습니다. **`docker login`** 후 로컬(또는 자체 CI)에서 빌드·푸시하세요. Cursor용 체크리스트는 [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md)를 참고하세요.
 
-- `v*` 형식의 태그가 푸시된 경우 (버전 릴리스, 예: `v8.0.12`)
-- 서버 또는 웹 프론트엔드 소스 파일이 변경된 커밋이 `master`에 푸시된 경우
+**원스크립트** (저장소 루트, 태그 `x.y.z-hhh`):
 
-**GitHub 저장소에 다음 Secrets를 설정해야 합니다:**
+- **Linux / macOS / Git Bash:** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
+- **Windows PowerShell:** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`
 
-| Secret | 값 |
+네임스페이스가 **`hemumoe`**가 아니면 **`DOCKERHUB_USERNAME`**을 설정하세요.
+
+**태그 구성:**
+
+| 부분 | 출처 |
 |---|---|
-| `DOCKERHUB_TOKEN` | Docker Hub **Access Token** (비밀번호 아님) |
+| `x.y.z` | `pubspec.yaml`의 `version:`에서 `+` 앞 |
+| `hhh` | **`docker/fork_revision`**의 16진수(소문자 3자리, 10진수 0–4095). 파일이 없으면 `pubspec`의 `+` 뒤 빌드 번호 |
 
-Docker Hub 토큰 생성: Docker Hub → Account Settings → Security → New Access Token.
+**Fork 리비전:** 새 이미지를 낼 때 **`docker/fork_revision`**을 갱신하세요.
 
-**게시되는 이미지 태그:**
-
-| 태그 | 트리거 조건 |
-|---|---|
-| `x.y.z-hhh` | 워크플로 실행 시마다; `hhh`는 fork 리비전의 16진수(`docker/fork_revision` 또는 `pubspec`의 `+` 빌드 번호) |
+**로그인:** Docker Hub → Account Settings → Security의 **Access Token**으로 `docker login`을 사용하세요.
 
 **구 태그 삭제**(`latest`, `8.0.12`, `8.0`, `*-web` 등): `scripts/dockerhub-delete-tags.sh` 및 [DOCKER.md](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md)의 예시를 참고하세요.
 

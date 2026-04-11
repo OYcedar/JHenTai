@@ -78,7 +78,10 @@ class SettingRoutes {
   Future<Response> _getSetting(Request request, String key) async {
     final value = db.readConfig(key);
     if (value == null) {
-      return Response.notFound(jsonEncode({'error': 'Setting not found'}));
+      return Response.ok(
+        jsonEncode({'key': key, 'value': null}),
+        headers: {'Content-Type': 'application/json'},
+      );
     }
 
     dynamic parsed;

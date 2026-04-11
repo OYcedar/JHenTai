@@ -34,6 +34,8 @@ services:
       # NO_PROXY=e-hentai.org,exhentai.org,ehgt.org,forums.e-hentai.org,api.e-hentai.org,upld.e-hentai.org,*.ehgt.org,*.hath.network
       # Unraid / reverse proxy: very long /api/proxy/image?url=... GETs can return 414; increase nginx
       # large_client_header_buffers or rely on the Web UI POST image proxy for long CDN URLs.
+      # Optional: prefer IPv4 for *.hath.network only (TLS to H@H fails on broken IPv6). Usually omit on local Docker.
+      # - JH_HATH_PREFER_IPV4=1
     restart: unless-stopped
     mem_limit: 1g
 
