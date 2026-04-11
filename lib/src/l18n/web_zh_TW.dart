@@ -115,6 +115,7 @@ class WebZhTW {
       'detail.rateFailed': '評分失敗: @error',
       'detail.rateLoginRequired': '無法評分 — 需要登入',
       'detail.readOnline': '線上閱讀',
+      'detail.readOnlineResume': '線上閱讀（上次第 @page 頁）',
       'detail.downloadGallery': '下載畫廊',
       'detail.archiveResample': '封存（壓縮）',
       'detail.archiveOriginal': '封存（原圖）',

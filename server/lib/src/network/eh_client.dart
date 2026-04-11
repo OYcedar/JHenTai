@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
 
@@ -42,9 +43,44 @@ bool _ehGalleryHtmlLooksBlocked(String body) {
   return false;
 }
 
+/// Prefer IPv4 for H@H hosts. Installed on [_dioHath] **only** when `JH_HATH_PREFER_IPV4` is true (default off).
+/// Never use this on the main [Dio] — custom `connectionFactory` breaks TLS to `e-hentai.org` / Cloudflare
+/// (`400 The plain HTTP request was sent to HTTPS port`).
+Future<ConnectionTask<Socket>> _hathIpv4ConnectionFactory(
+  Uri uri,
+  String? proxyHost,
+  int? proxyPort,
+) async {
+  if (proxyHost != null && proxyPort != null) {
+    return Socket.startConnect(proxyHost, proxyPort);
+  }
+  final host = uri.host;
+  final port = uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 80);
+  final addresses = await InternetAddress.lookup(host);
+  InternetAddress? target;
+  for (final a in addresses) {
+    if (a.type == InternetAddressType.IPv4) {
+      target = a;
+      break;
+    }
+  }
+  target ??= addresses.isNotEmpty ? addresses.first : null;
+  if (target == null) {
+    throw SocketException('Failed host lookup: $host');
+  }
+  return Socket.startConnect(target, port);
+}
+
 class EHClient {
   late Dio _dio;
+  /// Separate client for `*.hath.network` so IPv4 preference does not break EH/EX front domains.
+  late Dio _dioHath;
   late ServerCookieManager cookieManager;
+
+  Dio _dioForUrl(String url) {
+    final host = Uri.tryParse(url)?.host.toLowerCase() ?? '';
+    return host.endsWith('.hath.network') ? _dioHath : _dio;
+  }
 
   String _site = 'EH';
 
@@ -242,12 +278,33 @@ class EHClient {
 
   Future<void> init(ServerCookieManager cm, {int connectTimeout = 6000, int receiveTimeout = 6000}) async {
     cookieManager = cm;
-    _dio = Dio(BaseOptions(
+    final opts = BaseOptions(
       connectTimeout: Duration(milliseconds: connectTimeout),
       receiveTimeout: Duration(milliseconds: receiveTimeout),
-    ));
+    );
+    _dio = Dio(opts);
     _dio.interceptors.add(cookieManager);
     _dio.interceptors.add(_ErrorInterceptor());
+
+    _dioHath = Dio(opts);
+    final preferHathIpv4 = _parseEnvBool(Platform.environment['JH_HATH_PREFER_IPV4']);
+    if (preferHathIpv4) {
+      _dioHath.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          client.connectionFactory = _hathIpv4ConnectionFactory;
+          return client;
+        },
+      );
+    }
+    _dioHath.interceptors.add(cookieManager);
+    _dioHath.interceptors.add(_ErrorInterceptor());
+  }
+
+  static bool _parseEnvBool(String? raw) {
+    if (raw == null) return false;
+    final v = raw.trim().toLowerCase();
+    return v == '1' || v == 'true' || v == 'yes' || v == 'on';
   }
 
   // --- Raw proxy for frontend ---
@@ -356,18 +413,24 @@ class EHClient {
     ProgressCallback? onProgress,
     CancelToken? cancelToken,
   }) {
-    return _dio.download(url, savePath,
+    return _dioForUrl(url).download(url, savePath,
       onReceiveProgress: onProgress,
       cancelToken: cancelToken,
     );
   }
 
   Future<List<int>> downloadBytes(String url) async {
-    final response = await _dio.get<List<int>>(
-      url,
-      options: Options(responseType: ResponseType.bytes),
-    );
-    return response.data ?? [];
+    try {
+      final response = await _dioForUrl(url).get<List<int>>(
+        url,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data ?? [];
+    } on DioException catch (e) {
+      final host = Uri.tryParse(url)?.host;
+      log.warning('downloadBytes failed host=$host type=${e.type} error=$e', e);
+      rethrow;
+    }
   }
 
   // --- Archive operations (parity with Flutter [ArchiveDownloadService] / [EHSpiderParser]) ---

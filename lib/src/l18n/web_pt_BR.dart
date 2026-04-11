@@ -115,6 +115,7 @@ class WebPtBR {
       'detail.rateFailed': 'Falha na avaliação: @error',
       'detail.rateLoginRequired': 'Não é possível avaliar — login necessário',
       'detail.readOnline': 'Ler Online',
+      'detail.readOnlineResume': 'Ler online (retomar na página @page)',
       'detail.downloadGallery': 'Baixar Galeria',
       'detail.archiveResample': 'Arquivo (Comprimido)',
       'detail.archiveOriginal': 'Arquivo (Original)',

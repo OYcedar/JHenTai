@@ -113,6 +113,7 @@ class WebZhCN {
       'detail.rateFailed': '评分失败: @error',
       'detail.rateLoginRequired': '无法评分 — 需要登录',
       'detail.readOnline': '在线阅读',
+      'detail.readOnlineResume': '在线阅读（上次第 @page 页）',
       'detail.downloadGallery': '下载画廊',
       'detail.archiveResample': '归档（压缩）',
       'detail.archiveOriginal': '归档（原图）',

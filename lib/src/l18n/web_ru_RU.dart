@@ -115,6 +115,7 @@ class WebRuRU {
       'detail.rateFailed': 'Ошибка оценки: @error',
       'detail.rateLoginRequired': 'Для оценки нужен вход',
       'detail.readOnline': 'Читать онлайн',
+      'detail.readOnlineResume': 'Читать онлайн (продолжить со стр. @page)',
       'detail.downloadGallery': 'Скачать галерею',
       'detail.archiveResample': 'Архив (сжатый)',
       'detail.archiveOriginal': 'Архив (оригинал)',

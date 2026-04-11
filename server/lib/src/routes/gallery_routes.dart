@@ -12,6 +12,35 @@ import '../utils/eh_tag_style_parse.dart';
 import '../utils/gallery_stats_parser.dart';
 import 'block_rule_routes.dart';
 
+/// Parses total image count from EH/EX `.gpc` thumbnail pager text (English + common variants).
+int _parseThumbGridTotalPages(String gpcText) {
+  final t = gpcText.replaceAll('\u00a0', ' ').trim();
+  if (t.isEmpty) return 0;
+
+  int parseDigits(String raw) {
+    final cleaned = raw.replaceAll(RegExp(r'[,\s]'), '');
+    return int.tryParse(cleaned) ?? 0;
+  }
+
+  final patterns = <RegExp>[
+    RegExp(r'of\s+([\d,\s]+)\s*$', caseSensitive: false),
+    RegExp(r'of\s+([\d,\s]+)', caseSensitive: false),
+    RegExp(r'/\s*([\d,\s]+)\s*$', caseSensitive: false),
+    RegExp(r'/\s*([\d,\s]+)', caseSensitive: false),
+    RegExp(r'(\d+)\s*pages?\b', caseSensitive: false),
+    RegExp(r'(\d+)\s*ページ', caseSensitive: false),
+    RegExp(r'(\d+)\s*张', caseSensitive: false),
+  ];
+  for (final re in patterns) {
+    final m = re.firstMatch(t);
+    if (m != null) {
+      final n = parseDigits(m.group(1)!);
+      if (n > 0) return n;
+    }
+  }
+  return 0;
+}
+
 class GalleryRoutes {
   final EHClient _client;
 
@@ -336,6 +365,7 @@ class GalleryRoutes {
       final baseUri = Uri.parse(galleryUrl);
       var thumbPageIndex = 0;
       var totalPages = 0;
+      var hitCap = false;
 
       while (true) {
         final q = Map<String, String>.from(baseUri.queryParameters);
@@ -348,8 +378,7 @@ class GalleryRoutes {
 
         if (totalPages == 0) {
           final pageCountText = doc.querySelector('.gpc')?.text ?? '';
-          final countMatch = RegExp(r'of (\d+)').firstMatch(pageCountText);
-          totalPages = int.tryParse(countMatch?.group(1) ?? '') ?? 0;
+          totalPages = _parseThumbGridTotalPages(pageCountText);
         }
 
         final countBefore = allPageUrls.length;
@@ -359,8 +388,20 @@ class GalleryRoutes {
         if (allPageUrls.length == countBefore) break;
 
         final cap = totalPages > 0 ? (totalPages + 9) ~/ 10 + 10 : 50;
-        if (thumbPageIndex >= cap) break;
+        if (thumbPageIndex >= cap) {
+          hitCap = true;
+          break;
+        }
         thumbPageIndex++;
+      }
+
+      final int reportedTotal;
+      if (totalPages > 0) {
+        reportedTotal = totalPages;
+      } else if (!hitCap && allPageUrls.isNotEmpty) {
+        reportedTotal = allPageUrls.length;
+      } else {
+        reportedTotal = 0;
       }
 
       return Response.ok(
@@ -368,7 +409,7 @@ class GalleryRoutes {
           'imagePageUrls': allPageUrls,
           'thumbnailImageUrls': allThumbUrls,
           'galleryThumbnails': allGalleryThumbs,
-          'totalPages': totalPages > 0 ? totalPages : allPageUrls.length,
+          'totalPages': reportedTotal,
         }),
         headers: {'Content-Type': 'application/json'},
       );

@@ -12,7 +12,7 @@ English | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_c
 - [Local Gallery Scanning](#local-gallery-scanning)
 - [Backup](#backup)
 - [Reverse Proxy](#reverse-proxy)
-- [Docker Hub CI/CD](#docker-hub-cicd)
+- [Docker Hub publish (manual)](#docker-hub-publish-manual)
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
 
@@ -228,28 +228,27 @@ labels:
 
 ---
 
-## Docker Hub CI/CD
+## Docker Hub publish (manual)
 
-The GitHub Actions workflow `.github/workflows/docker-publish.yml` automatically builds and pushes the image to Docker Hub whenever:
+This fork does **not** use GitHub Actions to push Docker images. Build and push from your machine (or any CI you control) after **`docker login`**. A Cursor-oriented checklist lives in [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md).
 
-- A `v*` tag is pushed (versioned release, e.g. `v8.0.12`)
-- A commit is pushed to `master` that touches server or web source files
+**One-shot scripts** (from the repo root; tag = `x.y.z-hhh`):
 
-**Required GitHub Secrets:**
+- **Linux / macOS / Git Bash:** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
+- **Windows PowerShell:** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`
 
-| Secret | Value |
+Set **`DOCKERHUB_USERNAME`** if your Hub namespace is not **`hemumoe`**.
+
+**Tag format:**
+
+| Part | Source |
 |---|---|
-| `DOCKERHUB_TOKEN` | A Docker Hub **Access Token** (not your password) |
+| `x.y.z` | `pubspec.yaml` `version:` before `+` |
+| `hhh` | Lowercase hex of **`docker/fork_revision`** (decimal **0–4095**). If the file is missing, the number after **`+`** in `pubspec.yaml` is used. |
 
-To create a Docker Hub token: Docker Hub → Account Settings → Security → New Access Token.
+**Fork revision:** Edit **`docker/fork_revision`** when you cut a new Hub image. Example: revision **311** → hex **`137`** → tag **`8.0.12-137`** (with semver `8.0.12`).
 
-**Image tags published:**
-
-| Tag | When |
-|---|---|
-| `x.y.z-hhh` | Every workflow run; `hhh` = hex of fork revision (file `docker/fork_revision`, or else `pubspec` `+` build number) |
-
-**Fork revision:** Edit **`docker/fork_revision`** (one line, decimal **0–4095**) when you release this fork’s Docker image. If the file is missing, the number after **`+`** in `pubspec.yaml` `version:` is used instead.
+**Docker Hub token:** create an **Access Token** under Docker Hub → Account Settings → Security if you use `docker login` with token auth (not your account password).
 
 **Removing old Hub tags** (`latest`, bare `8.0.12`, `8.0`, `*-web`, `docker-web-*`, etc.):
 
@@ -293,3 +292,15 @@ Adjust the tag list to match what still exists on [Docker Hub](https://hub.docke
 
 **ExHentai content not loading**  
 → Go to **Settings → Site** and switch to **ExHentai**, then log in with valid ExHentai cookies
+
+**Unraid / direct LAN: cover loads but in-gallery / reader images 500 (`HandshakeException` on `*.hath.network`)**  
+The web UI loads many images via **`/api/proxy/image`**. Covers often use **`ehgt.org`** (which may work) while page images use **H@H hosts** (`*.hath.network`). If the **server** logs or the 500 body mention **`HandshakeException: Connection terminated during handshake`**, TLS to the H@H node is failing inside the container (IPv6 routing, MTU, firewall, or CA issues—not the Flutter web app).
+
+1. **H@H IPv4 preference is opt-in**: by default the server uses normal HTTPS to **`*.hath.network`** (same as EH). If you see **`HandshakeException`** and suspect broken IPv6 to H@H only, set **`JH_HATH_PREFER_IPV4=1`** (or `true`) in the container environment and restart. Local / Windows Docker usually should **leave this unset**.
+2. **Verify inside the container** (replace host with one from a failing URL):  
+   `openssl s_client -connect YOURNODE.hath.network:443 -servername YOURNODE.hath.network`  
+   or `curl -vI 'https://YOURNODE.hath.network/…'`  
+   If this fails in the container but works on the Unraid host, inspect **Docker networking**, **IPv6**, **MTU**, and **firewall** rules for the bridge.
+3. **Bypass reverse-proxy limits**: map the container port directly (e.g. **`8088:8080`**) when testing. Long image URLs need **`POST /api/proxy/image`** with the URL in the JSON body so the query string stays short—otherwise you may see **414 URI Too Large** from Nginx/Caddy in front of the app.
+4. **Auth**: gallery pages call the proxy with **`?token=<API token>`** (query param). The **`Authorization`** header is not required for that route; keep the token in **Settings** if thumbnails return 401/403.
+5. **EX galleries**: ensure **ExHentai** cookies are valid in server settings; EH cookies alone will not load EX-only content.

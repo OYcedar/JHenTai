@@ -116,6 +116,7 @@ class WebEnUS {
       'detail.rateFailed': 'Rating failed: @error',
       'detail.rateLoginRequired': 'Cannot rate — login required',
       'detail.readOnline': 'Read Online',
+      'detail.readOnlineResume': 'Read online (resume page @page)',
       'detail.downloadGallery': 'Download Gallery',
       'detail.archiveResample': 'Archive (Resample)',
       'detail.archiveOriginal': 'Archive (Original)',

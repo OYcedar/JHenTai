@@ -722,6 +722,7 @@ class BackendApiClient {
       final response = await _dio.get('/api/setting/$key');
       final data = response.data as Map<String, dynamic>;
       final value = data['value'];
+      if (value == null) return null;
       return value is String ? value : jsonEncode(value);
     } catch (_) {
       return null;
