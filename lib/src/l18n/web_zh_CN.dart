@@ -131,6 +131,8 @@ class WebZhCN {
       'reader.wheelActionPage': '翻页',
       'reader.wheelActionZoom': '缩放图片',
       'reader.wheelActionVerticalHint': '竖向与适应宽度模式始终滚动列表；本选项仅作用于从左到右、从右到左与双页模式。',
+      'reader.wheelInvertPageTurn': '反转滚轮翻页方向',
+      'reader.wheelInvertPageTurnSubtitle': '交换滚轮/触控板滚动时「下一页」与「上一页」的对应方向。',
 
       // downloads
       'downloads.title': '下载',
@@ -223,6 +225,8 @@ class WebZhCN {
       'settings.about': '关于',
       'settings.appVersion': '版本 @version（@build）',
       'settings.hubMenu': '设置菜单',
+      'settings.menuWebDocker': '网页与服务器',
+      'settings.menuWebDockerSubtitle': '下载入口、Docker 路径、网络/代理说明，以及性能与安全提示（仅 Web 版）。',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': '样式',
       'settings.menuRead': '阅读',

@@ -258,6 +258,12 @@ class GalleryRoutes {
         }),
         headers: {'Content-Type': 'application/json'},
       );
+    } on GalleryDetailAccessException catch (e) {
+      return Response(
+        403,
+        body: jsonEncode({'error': e.message}),
+        headers: {'Content-Type': 'application/json'},
+      );
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'Failed to fetch gallery detail: $e'}),
@@ -496,7 +502,7 @@ class GalleryRoutes {
       if (seen.contains(dedupeKey)) continue;
       seen.add(dedupeKey);
 
-      final style = tagEl.attributes['style'] ?? '';
+      final style = _mergedInlineStyles(tagEl);
       final colorArgb = _parseEhTagForegroundArgb(style);
       final bgArgb = _parseEhTagWatchedBackgroundArgb(style);
 
@@ -508,18 +514,58 @@ class GalleryRoutes {
     return tags;
   }
 
-  static final _ehTagColorRe = RegExp(r'color:#([0-9a-fA-F]{6})');
-  static final _ehTagBgGradRe = RegExp(r'background:radial-gradient\(#.*,#([0-9a-fA-F]{6})\)');
+  /// EH may put `style` on the tag node or an ancestor; merge a few levels for robustness.
+  String _mergedInlineStyles(Element? el, {int maxDepth = 5}) {
+    final sb = StringBuffer();
+    Element? cur = el;
+    for (var i = 0; i < maxDepth && cur != null; i++) {
+      final s = cur.attributes['style'];
+      if (s != null && s.isNotEmpty) {
+        sb.write(s);
+        if (!s.endsWith(';')) sb.write(';');
+      }
+      final p = cur.parent;
+      cur = p is Element ? p : null;
+    }
+    return sb.toString();
+  }
 
   int? _parseEhTagForegroundArgb(String style) {
-    final m = _ehTagColorRe.firstMatch(style);
+    var m = RegExp(r'color\s*:\s*#([0-9a-fA-F]{6})\b', caseSensitive: false).firstMatch(style);
+    m ??= RegExp(r'color\s*:\s*#([0-9a-fA-F]{3})\b', caseSensitive: false).firstMatch(style);
     if (m == null) return null;
-    return int.tryParse('FF${m.group(1)}', radix: 16);
+    var hex = m.group(1)!;
+    if (hex.length == 3) {
+      hex = hex.split('').map((c) => '$c$c').join();
+    }
+    return int.tryParse('FF$hex', radix: 16);
   }
 
   int? _parseEhTagWatchedBackgroundArgb(String style) {
-    final m = _ehTagBgGradRe.firstMatch(style);
-    if (m == null) return null;
-    return int.tryParse('FF${m.group(1)}', radix: 16);
+    final twoStop = RegExp(
+      r'(?:background\s*:\s*)?radial-gradient\([^#]*#([0-9a-fA-F]{6})[^#]*,\s*#([0-9a-fA-F]{6})',
+      caseSensitive: false,
+    ).firstMatch(style);
+    if (twoStop != null && twoStop.groupCount >= 2) {
+      final outer = twoStop.group(2);
+      if (outer != null) return int.tryParse('FF$outer', radix: 16);
+    }
+    final oneStop = RegExp(
+      r'(?:background\s*:\s*)?radial-gradient\([^)]*#([0-9a-fA-F]{6})',
+      caseSensitive: false,
+    ).firstMatch(style);
+    if (oneStop != null) {
+      final g = oneStop.group(1);
+      if (g != null) return int.tryParse('FF$g', radix: 16);
+    }
+    final solid = RegExp(
+      r'background(?:-color)?\s*:\s*#([0-9a-fA-F]{6})\b',
+      caseSensitive: false,
+    ).firstMatch(style);
+    if (solid != null) {
+      final g = solid.group(1);
+      if (g != null) return int.tryParse('FF$g', radix: 16);
+    }
+    return null;
   }
 }

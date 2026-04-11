@@ -9,6 +9,8 @@ import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
+import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
 
 class WebHomeController extends GetxController {
@@ -79,6 +81,7 @@ class WebHomeController extends GetxController {
     loadSearchHistory();
     loadQuickSearches();
     scrollController.addListener(_onScroll);
+    unawaited(Get.find<WebWatchedTagStylesController>().refresh());
   }
 
   void _loadAdvancedSearchFromStorage() {
@@ -903,16 +906,6 @@ class _SinglePaneHome extends StatelessWidget {
             onPressed: () => _showQuickSearchDialog(context),
             tooltip: 'quickSearch.title'.tr,
           ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Get.toNamed('/web/history'),
-            tooltip: 'home.history'.tr,
-          ),
-          IconButton(
-            icon: const Icon(Icons.folder),
-            onPressed: () => Get.toNamed('/web/local'),
-            tooltip: 'home.localGalleries'.tr,
-          ),
         ],
       ),
       body: WebHomePage.buildHomeContent(context, controller),
@@ -1116,16 +1109,6 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
             onPressed: controller.pickImageAndSearch,
             tooltip: 'home.imageSearch'.tr,
           ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Get.toNamed('/web/history'),
-            tooltip: 'home.history'.tr,
-          ),
-          IconButton(
-            icon: const Icon(Icons.folder),
-            onPressed: () => Get.toNamed('/web/local'),
-            tooltip: 'home.localGalleries'.tr,
-          ),
         ],
       ),
       body: Row(
@@ -1204,13 +1187,16 @@ class _EmbeddedDetailPanel extends StatefulWidget {
 }
 
 class _EmbeddedDetailPanelState extends State<_EmbeddedDetailPanel> {
-  late WebGalleryDetailController _ctrl;
-  final String _tag = 'embedded_detail';
+  late final String _tag;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = Get.put(
+    // Unique tag per gallery: Get.put with a fixed tag races with the previous
+    // panel's dispose (Flutter may run new initState before old dispose). Reusing
+    // the same tag makes Get.return the stale controller and then delete removes it.
+    _tag = 'embedded_detail_${widget.gid}_${widget.token}';
+    Get.put(
       WebGalleryDetailController(gid: widget.gid, token: widget.token),
       tag: _tag,
     );
@@ -1834,6 +1820,7 @@ bool _tagEntryIsWatched(dynamic raw) {
 List<Widget> _buildHomePageTagChips(
   Map<String, dynamic> tags, {
   required RxMap<String, String> tagTranslations,
+  Map<String, int> accountWatchedBackgroundArgb = const {},
   int maxTags = 12,
 }) {
   final entries = <({String namespace, dynamic raw})>[];
@@ -1860,7 +1847,14 @@ List<Widget> _buildHomePageTagChips(
     if (label.isEmpty) continue;
     final display = tagTranslations['${e.namespace}:$key'] ?? label;
     final showOriginalTooltip = display != key;
-    final (cInt, bInt) = _parseTagListEntryColors(e.raw);
+    var (cInt, bInt) = _parseTagListEntryColors(e.raw);
+    final mk = '${e.namespace}:$key';
+    if (cInt == null && bInt == null) {
+      final fromAccount = accountWatchedBackgroundArgb[mk];
+      if (fromAccount != null) {
+        bInt = fromAccount;
+      }
+    }
     final watched = cInt != null || bInt != null;
 
     late final Color fg;
@@ -1878,7 +1872,8 @@ List<Widget> _buildHomePageTagChips(
           (ThemeData.estimateBrightnessForColor(bg) == Brightness.light
               ? const Color(0xFF090909)
               : const Color(0xFFF1F1F1));
-      borderColor = Color(bInt ?? cInt!).withValues(alpha: 0.9);
+      final borderArgb = bInt ?? cInt;
+      borderColor = borderArgb != null ? Color(borderArgb).withValues(alpha: 0.9) : Colors.grey.shade400;
     }
 
     final chip = Container(
@@ -1990,6 +1985,8 @@ class _GalleryListTile extends StatelessWidget {
                             children: _buildHomePageTagChips(
                               tags,
                               tagTranslations: homeController.tagTranslations,
+                              accountWatchedBackgroundArgb:
+                                  Get.find<WebWatchedTagStylesController>().backgroundArgbByTagKey.value,
                               maxTags: 12,
                             ),
                           )),
@@ -2068,19 +2065,11 @@ class _GalleryCard extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   coverUrl.isNotEmpty
-                      ? Image.network(
-                          backendApiClient.proxyImageUrl(coverUrl),
+                      ? WebProxiedImage(
+                          sourceUrl: coverUrl,
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                              child: const Center(
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            );
-                          },
-                          errorBuilder: (_, __, ___) => Container(
+                          surfaceLoadingPlaceholder: true,
+                          readerErrorChild: Container(
                             color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             child: const Center(
                               child: Icon(Icons.broken_image, size: 32, color: Colors.grey),
@@ -2115,6 +2104,8 @@ class _GalleryCard extends StatelessWidget {
                       children: _buildHomePageTagChips(
                         tags,
                         tagTranslations: homeController.tagTranslations,
+                        accountWatchedBackgroundArgb:
+                            Get.find<WebWatchedTagStylesController>().backgroundArgbByTagKey.value,
                         maxTags: 8,
                       ),
                     )),
@@ -2161,10 +2152,10 @@ class _CoverWithBadge extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             coverUrl.isNotEmpty
-                ? Image.network(
-                    backendApiClient.proxyImageUrl(coverUrl),
+                ? WebProxiedImage(
+                    sourceUrl: coverUrl,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    readerErrorChild: Container(
                       color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
                     ),

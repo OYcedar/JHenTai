@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 
 /// Web counterpart to [EHThumbnail]: large = single image URL; small = sprite strip + cover into cell.
 /// Uses canvas (not extended_image) so `flutter build web` works with current SDK.
@@ -42,6 +43,14 @@ class WebEhThumbnail extends StatefulWidget {
     return data['offSet'] == null;
   }
 
+  static bool useSpriteSheet(Map<String, dynamic> data) {
+    if (_isLarge(data)) return false;
+    final off = _num(data, 'offSet');
+    final tw = _num(data, 'thumbWidth');
+    final th = _num(data, 'thumbHeight');
+    return off != null && tw != null && tw > 0 && th != null && th > 0;
+  }
+
   @override
   State<WebEhThumbnail> createState() => _WebEhThumbnailState();
 }
@@ -51,12 +60,23 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
   String? _loadError;
   ImageStream? _imageStream;
   ImageStreamListener? _listener;
-  String? _resolvedUrl;
+  /// Source thumb URL (ehgt) we decoded for sprite mode; GET path uses proxy URL in [_resolveNetworkSprite].
+  String? _resolvedSourceUrl;
+  bool _spriteImageFromCodec = false;
 
   @override
   void dispose() {
     _cancelStream();
+    _disposeOwnedSpriteImage();
     super.dispose();
+  }
+
+  void _disposeOwnedSpriteImage() {
+    if (_spriteImageFromCodec && _image != null) {
+      _image!.dispose();
+    }
+    _spriteImageFromCodec = false;
+    _image = null;
   }
 
   void _cancelStream() {
@@ -67,30 +87,59 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     _listener = null;
   }
 
-  void _resolveImage(String proxyUrl) {
-    if (_resolvedUrl == proxyUrl && _image != null) {
+  Future<void> _loadSpriteImage(String thumbUrl) async {
+    if (_resolvedSourceUrl == thumbUrl && _image != null && _loadError == null) {
       return;
     }
     _cancelStream();
-    _resolvedUrl = proxyUrl;
-    _image = null;
+    _disposeOwnedSpriteImage();
+    _resolvedSourceUrl = thumbUrl;
     _loadError = null;
 
-    final provider = NetworkImage(proxyUrl);
-    final stream = provider.resolve(createLocalImageConfiguration(context));
-    _imageStream = stream;
-    _listener = ImageStreamListener(
-      (ImageInfo info, bool _) {
-        if (!mounted) {
+    if (!mounted) return;
+
+    try {
+      if (backendApiClient.shouldProxyImageUsePost(thumbUrl)) {
+        final bytes = await backendApiClient.fetchProxiedImageBytes(thumbUrl);
+        if (!mounted || _resolvedSourceUrl != thumbUrl) return;
+        final codec = await ui.instantiateImageCodec(bytes);
+        final frame = await codec.getNextFrame();
+        if (!mounted || _resolvedSourceUrl != thumbUrl) {
+          frame.image.dispose();
           return;
         }
         setState(() {
+          _spriteImageFromCodec = true;
+          _image = frame.image;
+          _loadError = null;
+        });
+      } else {
+        _resolveNetworkSprite(backendApiClient.proxyImageUrl(thumbUrl), thumbUrl);
+      }
+    } catch (e) {
+      if (mounted && _resolvedSourceUrl == thumbUrl) {
+        setState(() {
+          _loadError = '$e';
+          _image = null;
+        });
+      }
+    }
+  }
+
+  void _resolveNetworkSprite(String proxyUrl, String thumbUrl) {
+    _listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        if (!mounted || _resolvedSourceUrl != thumbUrl) {
+          return;
+        }
+        setState(() {
+          _spriteImageFromCodec = false;
           _image = info.image;
           _loadError = null;
         });
       },
       onError: (Object e, StackTrace? _) {
-        if (!mounted) {
+        if (!mounted || _resolvedSourceUrl != thumbUrl) {
           return;
         }
         setState(() {
@@ -99,6 +148,9 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
         });
       },
     );
+    final provider = NetworkImage(proxyUrl);
+    final stream = provider.resolve(createLocalImageConfiguration(context));
+    _imageStream = stream;
     stream.addListener(_listener!);
   }
 
@@ -106,10 +158,10 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final thumbUrl = widget.data['thumbUrl'] as String? ?? '';
-    if (thumbUrl.isEmpty) {
+    if (thumbUrl.isEmpty || !WebEhThumbnail.useSpriteSheet(widget.data)) {
       return;
     }
-    _resolveImage(backendApiClient.proxyImageUrl(thumbUrl));
+    _loadSpriteImage(thumbUrl);
   }
 
   @override
@@ -117,18 +169,20 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     super.didUpdateWidget(oldWidget);
     final oldU = oldWidget.data['thumbUrl'] as String? ?? '';
     final newU = widget.data['thumbUrl'] as String? ?? '';
-    if (oldU != newU) {
-      final thumbUrl = widget.data['thumbUrl'] as String? ?? '';
-      if (thumbUrl.isEmpty) {
-        _cancelStream();
-        setState(() {
-          _image = null;
-          _resolvedUrl = null;
-        });
-      } else {
-        _resolveImage(backendApiClient.proxyImageUrl(thumbUrl));
-      }
+    if (oldU == newU && WebEhThumbnail.useSpriteSheet(widget.data) == WebEhThumbnail.useSpriteSheet(oldWidget.data)) {
+      return;
     }
+    final thumbUrl = widget.data['thumbUrl'] as String? ?? '';
+    if (thumbUrl.isEmpty || !WebEhThumbnail.useSpriteSheet(widget.data)) {
+      _cancelStream();
+      _disposeOwnedSpriteImage();
+      setState(() {
+        _loadError = null;
+        _resolvedSourceUrl = null;
+      });
+      return;
+    }
+    _loadSpriteImage(thumbUrl);
   }
 
   double _cellW(BoxConstraints c, double? explicitW) {
@@ -159,12 +213,10 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
       return Icon(Icons.image, color: Colors.grey.shade600, size: s);
     }
 
-    final proxy = backendApiClient.proxyImageUrl(thumbUrl);
-    final large = WebEhThumbnail._isLarge(widget.data);
     final off = WebEhThumbnail._num(widget.data, 'offSet');
     final tw = WebEhThumbnail._num(widget.data, 'thumbWidth');
     final th = WebEhThumbnail._num(widget.data, 'thumbHeight');
-    final useSprite = !large && off != null && tw != null && tw > 0 && th != null && th > 0;
+    final useSprite = WebEhThumbnail.useSpriteSheet(widget.data);
 
     if (!useSprite) {
       return LayoutBuilder(
@@ -176,13 +228,12 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
             child: SizedBox(
               width: cw,
               height: ch,
-              child: Image.network(
-                proxy,
+              child: WebProxiedImage(
+                sourceUrl: thumbUrl,
                 fit: BoxFit.cover,
                 width: cw,
                 height: ch,
-                errorBuilder: (_, __, ___) =>
-                    Icon(Icons.broken_image, color: Colors.grey.shade600, size: math.min(28, math.min(cw, ch))),
+                errorIconSize: math.min(28, math.min(cw, ch)),
               ),
             ),
           );
@@ -207,9 +258,9 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
       builder: (context, constraints) {
         final maxW = _cellW(constraints, widget.width);
         final maxH = _cellH(constraints, widget.height);
-        final o = off;
-        final twn = tw;
-        final thn = th;
+        final o = off!;
+        final twn = tw!;
+        final thn = th!;
         final src = Rect.fromLTRB(o, 0, o + twn, thn);
 
         return ClipRRect(

@@ -26,8 +26,23 @@ class AuthMiddleware {
       log.info('Use this token in the web UI setup page.');
       log.info('========================================');
     }
-    // Plain stderr line so `docker logs ... | grep` works (package:logger may format messages).
-    stderr.writeln('[JHenTai] API token for web UI (copy full line): $_token');
+    await _printTokenToConsole(_token);
+  }
+
+  /// Logger output can be noisy or reordered in Docker; duplicate to raw stdout/stderr and flush.
+  Future<void> _printTokenToConsole(String token) async {
+    const line = '================================================================================';
+    final buf = StringBuffer()
+      ..writeln(line)
+      ..writeln('JHenTai Web UI API token (copy entire line below, then paste in /web/setup):')
+      ..writeln(token)
+      ..writeln(line)
+      ..writeln('[JHenTai] API token (one-line): $token');
+    final text = buf.toString();
+    stderr.write(text);
+    stdout.write(text);
+    await stderr.flush();
+    await stdout.flush();
   }
 
   String get token => _token;

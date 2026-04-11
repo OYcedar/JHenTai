@@ -133,6 +133,9 @@ class WebEnUS {
       'reader.wheelActionZoom': 'Zoom image',
       'reader.wheelActionVerticalHint':
           'Vertical and fit-width modes always scroll the list. This option applies to LTR, RTL, and double-page modes.',
+      'reader.wheelInvertPageTurn': 'Invert wheel page turn',
+      'reader.wheelInvertPageTurnSubtitle':
+          'Swaps which scroll direction goes to the next vs previous page (wheel / trackpad).',
 
       // downloads
       'downloads.title': 'Downloads',
@@ -227,6 +230,9 @@ class WebEnUS {
       'settings.about': 'About',
       'settings.appVersion': 'Version @version (@build)',
       'settings.hubMenu': 'Settings menu',
+      'settings.menuWebDocker': 'Web UI & server',
+      'settings.menuWebDockerSubtitle':
+          'Downloads shortcut, Docker paths, network/proxy notes, performance and security (Web only).',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': 'Style',
       'settings.menuRead': 'Read',

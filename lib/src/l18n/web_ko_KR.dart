@@ -132,6 +132,9 @@ class WebKoKR {
       'reader.wheelActionZoom': '이미지 확대/축소',
       'reader.wheelActionVerticalHint':
           '세로 및 너비 맞춤 모드에서는 항상 목록이 스크롤됩니다. 이 옵션은 좌→우, 우→좌, 두 페이지 모드에만 적용됩니다.',
+      'reader.wheelInvertPageTurn': '휠 페이지 넘김 방향 반전',
+      'reader.wheelInvertPageTurnSubtitle':
+          '휠/트랙패드 스크롤 시 다음 페이지와 이전 페이지에 대응하는 방향을 바꿉니다.',
 
       // downloads
       'downloads.title': '다운로드',
@@ -225,6 +228,9 @@ class WebKoKR {
       'settings.about': '정보',
       'settings.appVersion': '버전 @version (@build)',
       'settings.hubMenu': '설정 메뉴',
+      'settings.menuWebDocker': '웹 UI 및 서버',
+      'settings.menuWebDockerSubtitle':
+          '다운로드 바로가기, Docker 경로, 네트워크·프록시 안내, 성능·보안(Web 전용).',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': '스타일',
       'settings.menuRead': '읽기',

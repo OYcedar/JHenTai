@@ -7,6 +7,21 @@ import 'package:html/parser.dart' as html_parser;
 import '../core/log.dart';
 import 'cookie_manager.dart';
 
+/// Thrown when gallery HTML looks like EX sad panda / block page instead of a real gallery.
+class GalleryDetailAccessException implements Exception {
+  GalleryDetailAccessException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
+bool _ehGalleryHtmlLooksBlocked(String body) {
+  final lower = body.toLowerCase();
+  if (lower.contains('sadpanda')) return true;
+  if (body.length < 280) return true;
+  return false;
+}
+
 class EHClient {
   late Dio _dio;
   late ServerCookieManager cookieManager;
@@ -271,6 +286,11 @@ class EHClient {
   Future<GalleryDetailResult> fetchGalleryDetail(String galleryUrl) async {
     final response = await _dio.get(galleryUrl, queryParameters: {'hc': 1});
     final body = response.data.toString();
+    if (_ehGalleryHtmlLooksBlocked(body)) {
+      throw GalleryDetailAccessException(
+        'Gallery page unavailable. For ExHentai, use valid cookies including igneous.',
+      );
+    }
     return _parseGalleryDetail(body, galleryUrl);
   }
 

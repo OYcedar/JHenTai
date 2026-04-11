@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 
 /// Watched / hidden tags (EH My Tags), proxied by the server.
 class WebTagSetsPage extends StatefulWidget {
@@ -65,6 +68,7 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
       );
       _tagCtrl.clear();
       Get.snackbar('common.success'.tr, 'usertags.added'.tr, snackPosition: SnackPosition.BOTTOM);
+      unawaited(Get.find<WebWatchedTagStylesController>().refresh());
       await _load();
     } catch (e) {
       Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM,
@@ -79,6 +83,7 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
     try {
       await backendApiClient.deleteUsertag(watchedTagId: watchedTagId, tagSetNo: _tagSetNo);
       Get.snackbar('common.success'.tr, 'usertags.deleted'.tr, snackPosition: SnackPosition.BOTTOM);
+      unawaited(Get.find<WebWatchedTagStylesController>().refresh());
       await _load();
     } catch (e) {
       Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM,

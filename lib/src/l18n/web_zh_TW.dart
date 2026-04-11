@@ -133,6 +133,8 @@ class WebZhTW {
       'reader.wheelActionPage': '翻頁',
       'reader.wheelActionZoom': '縮放圖片',
       'reader.wheelActionVerticalHint': '直向與適應寬度模式一律捲動清單；本選項僅適用於由左至右、由右至左與雙頁模式。',
+      'reader.wheelInvertPageTurn': '反轉滾輪翻頁方向',
+      'reader.wheelInvertPageTurnSubtitle': '交換滾輪／觸控板捲動時「下一頁」與「上一頁」的對應方向。',
 
       // downloads
       'downloads.title': '下載',
@@ -223,6 +225,8 @@ class WebZhTW {
       'settings.about': '關於',
       'settings.appVersion': '版本 @version（@build）',
       'settings.hubMenu': '設定選單',
+      'settings.menuWebDocker': '網頁與伺服器',
+      'settings.menuWebDockerSubtitle': '下載捷徑、Docker 路徑、網路／代理說明，以及效能與安全提示（僅 Web 版）。',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': '樣式',
       'settings.menuRead': '閱讀',

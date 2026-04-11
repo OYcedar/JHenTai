@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 
 enum WebDownloadSort { priorityDesc, timeDesc, title, status }
 
@@ -482,10 +483,10 @@ class _GalleryTaskCard extends StatelessWidget {
               width: 80,
               height: 110,
               child: coverUrl.isNotEmpty
-                  ? Image.network(
-                      backendApiClient.proxyImageUrl(coverUrl),
+                  ? WebProxiedImage(
+                      sourceUrl: coverUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      readerErrorChild: Container(
                         color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         child: const Icon(Icons.photo_library, color: Colors.grey),
                       ),
@@ -687,10 +688,10 @@ class _ArchiveTaskCard extends StatelessWidget {
               width: 80,
               height: 110,
               child: coverUrl.isNotEmpty
-                  ? Image.network(
-                      backendApiClient.proxyImageUrl(coverUrl),
+                  ? WebProxiedImage(
+                      sourceUrl: coverUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      readerErrorChild: Container(
                         color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         child: const Icon(Icons.archive, color: Colors.grey),
                       ),

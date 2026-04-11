@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
@@ -135,8 +136,31 @@ class BackendApiClient {
 
   // --- Proxy image URL for display ---
 
+  /// Long GET URLs break some reverse proxies (414 / header buffer). Use [fetchProxiedImageBytes] when true.
+  static const int proxyImageGetMaxSafeLength = 2000;
+
   String proxyImageUrl(String imageUrl) {
     return '$_baseUrl/api/proxy/image?url=${Uri.encodeComponent(imageUrl)}&token=${Uri.encodeComponent(_token ?? '')}';
+  }
+
+  bool shouldProxyImageUsePost(String imageUrl) {
+    if (imageUrl.isEmpty) return false;
+    return proxyImageUrl(imageUrl).length > proxyImageGetMaxSafeLength;
+  }
+
+  Future<Uint8List> fetchProxiedImageBytes(String imageUrl) async {
+    final response = await _dio.post<List<int>>(
+      '/api/proxy/image',
+      queryParameters: _token != null && _token!.isNotEmpty ? {'token': _token} : null,
+      data: jsonEncode({'url': imageUrl}),
+      options: Options(
+        responseType: ResponseType.bytes,
+        contentType: Headers.jsonContentType,
+      ),
+    );
+    final data = response.data;
+    if (data == null) return Uint8List(0);
+    return Uint8List.fromList(data);
   }
 
   // --- Auth ---
@@ -365,8 +389,24 @@ class BackendApiClient {
 
   /// Detail includes `thumbnailImageUrls` and `galleryThumbnails` (per-page thumb metadata for sprites).
   Future<Map<String, dynamic>> fetchGalleryDetail(int gid, String token) async {
-    final response = await _dio.get('/api/gallery/detail/$gid/$token');
-    return response.data;
+    try {
+      final response = await _dio.get('/api/gallery/detail/$gid/$token');
+      return response.data is Map ? Map<String, dynamic>.from(response.data as Map) : {};
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map && data['error'] != null) {
+        return {'error': data['error'].toString()};
+      }
+      if (data is String && data.isNotEmpty) {
+        try {
+          final m = jsonDecode(data) as Map<String, dynamic>?;
+          if (m != null && m['error'] != null) {
+            return {'error': m['error'].toString()};
+          }
+        } catch (_) {}
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> fetchGalleryStats(int gid, String token) async {

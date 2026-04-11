@@ -20,14 +20,6 @@ class WebSettingsMouseWheelPage extends StatelessWidget {
               child: WebReaderWheelSettingSection(),
             ),
           ),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(Icons.local_library_outlined),
-            title: Text('settings.menuRead'.tr),
-            subtitle: Text('settings.mouseWheelReadHint'.tr),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Get.toNamed('/web/settings/read'),
-          ),
         ],
       ),
     );
