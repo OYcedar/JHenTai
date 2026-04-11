@@ -23,6 +23,26 @@ This workflow is for the **JHenTai-Docker** fork: Dockerfile at repo root, image
 - Host logged in to Docker Hub with push rights: `docker login` (account that may push `hemumoe/jhentai`).
 - Shell: on Windows use **PowerShell**; chain commands with **`;`**, not `&&`.
 
+## Multi-arch on Docker Desktop (Windows / macOS)
+
+The default **`docker`** buildx driver often only runs **`linux/amd64`** on the host. Building **`linux/arm64`** with `--platform linux/amd64,linux/arm64` then fails with **`exec format error`** on non-ARM machines.
+
+**Fix:** use a **`docker-container`** builder (BuildKit in a container with QEMU). Create once per machine, then select it before `buildx build`:
+
+```bash
+docker buildx create --name jhentai-multi --driver docker-container --bootstrap --use
+```
+
+From the repo root, run the **`docker buildx build ... --push`** commands below (they apply to the active builder).
+
+When finished, you can switch back for local **`docker compose`** (optional):
+
+```bash
+docker buildx use desktop-linux
+```
+
+(The exact default name may be **`default`** or **`desktop-linux`** — run **`docker buildx ls`**.)
+
 ## Compute the image tag
 
 1. Read **`pubspec.yaml`**: first line matching `^version:` → value like `8.0.12+309`. Let **`x.y.z`** = part before **`+`**.
