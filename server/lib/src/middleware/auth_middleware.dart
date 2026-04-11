@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:shelf/shelf.dart';
 
+import '../console_diag.dart';
 import '../core/database.dart';
 import '../core/log.dart';
 
@@ -63,10 +64,11 @@ class AuthMiddleware {
             final qState = q == null
                 ? 'absent'
                 : (q.isEmpty ? 'empty' : (q == _token ? 'valid' : 'invalid'));
-            log.warning(
-              '[auth] $path rejected: need ?token=<api_token> matching server (queryToken=$qState) '
-              'or Authorization: Bearer <api_token>',
-            );
+            final m =
+                '[auth] $path rejected: need ?token=<api_token> matching server (queryToken=$qState) '
+                'or Authorization: Bearer <api_token>';
+            log.warning(m);
+            jhStderrLine(m);
           }
           return Response.unauthorized(
             jsonEncode({'error': 'Missing or invalid Authorization header'}),
@@ -77,7 +79,9 @@ class AuthMiddleware {
         final providedToken = authHeader.substring(7);
         if (providedToken != _token) {
           if (_isImageRelatedPath(path)) {
-            log.warning('[auth] image/proxy request forbidden (Bearer token mismatch). path=$path');
+            final m = '[auth] image/proxy request forbidden (Bearer token mismatch). path=$path';
+            log.warning(m);
+            jhStderrLine(m);
           }
           return Response.forbidden(
             jsonEncode({'error': 'Invalid API token'}),
