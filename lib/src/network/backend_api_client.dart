@@ -4,6 +4,8 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/network/web_image_client_log_stub.dart'
+    if (dart.library.js_interop) 'package:jhentai/src/pages_web/web_image_client_log.dart';
 import 'package:web/web.dart' as web;
 
 typedef HtmlParser<T> = T Function(Headers headers, dynamic data);
@@ -149,18 +151,45 @@ class BackendApiClient {
   }
 
   Future<Uint8List> fetchProxiedImageBytes(String imageUrl) async {
-    final response = await _dio.post<List<int>>(
-      '/api/proxy/image',
-      queryParameters: _token != null && _token!.isNotEmpty ? {'token': _token} : null,
-      data: jsonEncode({'url': imageUrl}),
-      options: Options(
-        responseType: ResponseType.bytes,
-        contentType: Headers.jsonContentType,
-      ),
-    );
-    final data = response.data;
-    if (data == null) return Uint8List(0);
-    return Uint8List.fromList(data);
+    webImageClientLogVerbose('POST /api/proxy/image len(url)=${imageUrl.length}');
+    try {
+      final response = await _dio.post<List<int>>(
+        '/api/proxy/image',
+        queryParameters: _token != null && _token!.isNotEmpty ? {'token': _token} : null,
+        data: jsonEncode({'url': imageUrl}),
+        options: Options(
+          responseType: ResponseType.bytes,
+          contentType: Headers.jsonContentType,
+        ),
+      );
+      final data = response.data;
+      if (data == null) {
+        webImageClientLogError('POST /api/proxy/image empty body status=${response.statusCode}');
+        return Uint8List(0);
+      }
+      if (data.isEmpty) {
+        webImageClientLogError('POST /api/proxy/image 0 bytes status=${response.statusCode}');
+      } else {
+        webImageClientLogVerbose('POST /api/proxy/image ok bytes=${data.length}');
+      }
+      return Uint8List.fromList(data);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      final ct = e.response?.headers.value('content-type');
+      String? bodyHint;
+      final raw = e.response?.data;
+      if (raw is List<int>) {
+        bodyHint = String.fromCharCodes(raw.take(200));
+      } else if (raw != null) {
+        bodyHint = raw.toString();
+        if (bodyHint.length > 200) bodyHint = '${bodyHint.substring(0, 200)}…';
+      }
+      webImageClientLogError(
+        'POST /api/proxy/image DioException type=${e.type} status=$code contentType=$ct '
+        '${e.message ?? ''} body=${bodyHint ?? 'n/a'}',
+      );
+      rethrow;
+    }
   }
 
   // --- Auth ---

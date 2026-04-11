@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../core/log.dart';
+import '../debug_flags.dart';
 import '../network/eh_client.dart';
 
 const _allowedHosts = {
@@ -26,6 +28,11 @@ bool _isAllowedUrl(String url) {
       host.endsWith('.exhentai.org') ||
       host.endsWith('.ehgt.org') ||
       host.endsWith('.hath.network');
+}
+
+String _urlPreview(String url, {int max = 140}) {
+  if (url.length <= max) return url;
+  return '${url.substring(0, max)}…(len=${url.length})';
 }
 
 class ProxyRoutes {
@@ -113,15 +120,25 @@ class ProxyRoutes {
   Future<Response> _proxyImage(Request request) async {
     final url = request.url.queryParameters['url'];
     if (url == null || url.isEmpty) {
+      log.warning('[proxy/image] GET missing url query');
       return Response.badRequest(body: 'Missing url parameter');
     }
 
     if (!_isAllowedUrl(url)) {
+      log.warning('[proxy/image] GET host blocked: ${_urlPreview(url)}');
       return Response.forbidden('URL host not in allowlist');
     }
 
+    final sw = Stopwatch()..start();
     try {
       final imageBytes = await _client.downloadBytes(url);
+      sw.stop();
+      if (jhImageProxyDebugEnabled()) {
+        log.info(
+          '[proxy/image] GET ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
+          '${_urlPreview(url)}',
+        );
+      }
       final contentType = _guessImageContentType(url);
       return Response.ok(
         imageBytes,
@@ -130,7 +147,11 @@ class ProxyRoutes {
           'Cache-Control': 'public, max-age=86400',
         },
       );
-    } catch (e) {
+    } catch (e, st) {
+      sw.stop();
+      log.warning(
+        '[proxy/image] GET failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st',
+      );
       return Response.internalServerError(body: 'Failed to proxy image: $e');
     }
   }
@@ -142,20 +163,31 @@ class ProxyRoutes {
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
+      log.warning('[proxy/image] POST invalid JSON: $e');
       return Response.badRequest(body: 'Invalid JSON body');
     }
 
     final url = body['url'] as String?;
     if (url == null || url.isEmpty) {
+      log.warning('[proxy/image] POST missing url in body');
       return Response.badRequest(body: 'Missing url');
     }
 
     if (!_isAllowedUrl(url)) {
+      log.warning('[proxy/image] POST host blocked: ${_urlPreview(url)}');
       return Response.forbidden('URL host not in allowlist');
     }
 
+    final sw = Stopwatch()..start();
     try {
       final imageBytes = await _client.downloadBytes(url);
+      sw.stop();
+      if (jhImageProxyDebugEnabled()) {
+        log.info(
+          '[proxy/image] POST ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
+          '${_urlPreview(url)}',
+        );
+      }
       final contentType = _guessImageContentType(url);
       return Response.ok(
         imageBytes,
@@ -164,7 +196,11 @@ class ProxyRoutes {
           'Cache-Control': 'public, max-age=86400',
         },
       );
-    } catch (e) {
+    } catch (e, st) {
+      sw.stop();
+      log.warning(
+        '[proxy/image] POST failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st',
+      );
       return Response.internalServerError(body: 'Failed to proxy image: $e');
     }
   }
