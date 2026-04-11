@@ -56,17 +56,15 @@ void main() async {
 }
 
 class WebLayoutController extends GetxController {
-  final selectedGid = Rxn<int>();
-  final selectedToken = Rxn<String>();
+  /// Single reactive value so two-pane detail never sees a frame with mismatched gid/token.
+  final selectedGallery = Rxn<({int gid, String token})>();
 
   void selectGallery(int gid, String token) {
-    selectedGid.value = gid;
-    selectedToken.value = token;
+    selectedGallery.value = (gid: gid, token: token);
   }
 
   void clearSelection() {
-    selectedGid.value = null;
-    selectedToken.value = null;
+    selectedGallery.value = null;
   }
 }
 

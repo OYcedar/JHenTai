@@ -9,6 +9,7 @@ import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
+import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
@@ -61,6 +62,9 @@ class WebHomeController extends GetxController {
   static const _advancedSearchStorageKey = 'jh_web_advanced_search';
   static const _favSortStorageKey = 'jh_web_fav_sort';
   static const _favCatStorageKey = 'jh_web_fav_cat';
+
+  /// EH default thumbnail page length; when [nextUrl] parsing fails, treat a "full" page as maybe having more.
+  static const int _ehGalleryPageSizeHint = 25;
 
   @override
   void onInit() {
@@ -409,6 +413,8 @@ class WebHomeController extends GetxController {
 
     isLoading.value = true;
     errorMessage.value = '';
+    final snapshotPage = currentPage.value;
+    final snapshotGalleries = List<Map<String, dynamic>>.from(galleries);
     try {
       if (currentSection.value == 'favorites') {
         await _ensureFavoriteFolderNames();
@@ -434,13 +440,26 @@ class WebHomeController extends GetxController {
       );
 
       final galleryList = (result['galleries'] as List?) ?? [];
+      if (galleryList.isEmpty && snapshotPage > 0) {
+        // Optimistic page probe past the end — restore prior page instead of showing a blank list.
+        currentPage.value = snapshotPage - 1;
+        galleries.value = snapshotGalleries;
+        hasNextPage.value = false;
+        hasPrevPage.value = currentPage.value > 0;
+        return;
+      }
       galleries.value = galleryList.cast<Map<String, dynamic>>();
       unawaited(_fetchGalleryListTagTranslations());
 
       final nextUrl = result['nextUrl'] as String? ?? '';
       // Do not rely only on parsed prevUrl — on many EH layouts the < link is easy to miss;
       // we drive page index ourselves, so "previous" is available whenever not on first page.
-      hasNextPage.value = nextUrl.isNotEmpty;
+      if (nextUrl.isNotEmpty) {
+        hasNextPage.value = true;
+      } else {
+        // If EH hid/changed next links but returned a full page, allow one more `page` fetch.
+        hasNextPage.value = galleries.length >= _ehGalleryPageSizeHint;
+      }
       hasPrevPage.value = currentPage.value > 0;
     } catch (e) {
       errorMessage.value = 'home.loadFailed'.trParams({'error': '$e'});
@@ -797,7 +816,11 @@ class WebHomePage extends GetView<WebHomeController> {
 
   static Widget _buildPaginationBarStatic(BuildContext context, WebHomeController controller) {
     return Obx(() {
-      if (!controller.hasPrevPage.value && !controller.hasNextPage.value) {
+      final onSubsequentPage =
+          !controller.listByUrlMode.value && controller.currentPage.value > 0;
+      if (!controller.hasPrevPage.value &&
+          !controller.hasNextPage.value &&
+          !onSubsequentPage) {
         return const SizedBox.shrink();
       }
       return Padding(
@@ -1153,9 +1176,8 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
           ),
           Expanded(
             child: Obx(() {
-              final gid = layoutCtrl.selectedGid.value;
-              final token = layoutCtrl.selectedToken.value;
-              if (gid == null || token == null) {
+              final sel = layoutCtrl.selectedGallery.value;
+              if (sel == null) {
                 return Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -1168,7 +1190,11 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
                   ),
                 );
               }
-              return _EmbeddedDetailPanel(key: ValueKey('detail_${gid}_$token'), gid: gid, token: token);
+              return _EmbeddedDetailPanel(
+                key: ValueKey('detail_${sel.gid}_${sel.token}'),
+                gid: sel.gid,
+                token: sel.token,
+              );
             }),
           ),
         ],
@@ -1817,6 +1843,16 @@ bool _tagEntryIsWatched(dynamic raw) {
   return c != null || b != null;
 }
 
+String _lookupTagTranslation(RxMap<String, String> map, String namespace, String key, String fallback) {
+  final direct = map['$namespace:$key'];
+  if (direct != null && direct.isNotEmpty) return direct;
+  for (final v in webTagMapKeyVariants(namespace, key)) {
+    final t = map[v];
+    if (t != null && t.isNotEmpty) return t;
+  }
+  return fallback;
+}
+
 List<Widget> _buildHomePageTagChips(
   Map<String, dynamic> tags, {
   required RxMap<String, String> tagTranslations,
@@ -1845,12 +1881,15 @@ List<Widget> _buildHomePageTagChips(
     final key = _parseTagListEntryKey(e.raw);
     final label = _parseTagListEntryLabel(e.raw);
     if (label.isEmpty) continue;
-    final display = tagTranslations['${e.namespace}:$key'] ?? label;
+    final display = _lookupTagTranslation(tagTranslations, e.namespace, key, label);
     final showOriginalTooltip = display != key;
     var (cInt, bInt) = _parseTagListEntryColors(e.raw);
-    final mk = '${e.namespace}:$key';
     if (cInt == null && bInt == null) {
-      final fromAccount = accountWatchedBackgroundArgb[mk];
+      final fromAccount = WebWatchedTagStylesController.lookupBackgroundArgb(
+        accountWatchedBackgroundArgb,
+        e.namespace,
+        key,
+      );
       if (fromAccount != null) {
         bInt = fromAccount;
       }

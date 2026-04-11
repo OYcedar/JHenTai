@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/config/ui_config.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
 import 'package:jhentai/src/utils/color_util.dart';
 
 /// Merges EH `/mytags` colors into gallery list/detail (parity with native
@@ -18,6 +20,12 @@ class WebWatchedTagStylesController extends GetxController {
     return (a << 24) | (r << 16) | (g << 8) | b;
   }
 
+  void _putWatchedBackground(Map<String, int> into, String namespace, String key, int argb) {
+    for (final variant in webTagMapKeyVariants(namespace, key)) {
+      into[variant] = argb;
+    }
+  }
+
   void _mergeTagSetResponse(Map<String, dynamic> data, Map<String, int> into) {
     final setBg = aRGBString2Color(data['tagSetBackgroundColor'] as String?);
     final tags = (data['tags'] as List?) ?? [];
@@ -27,10 +35,9 @@ class WebWatchedTagStylesController extends GetxController {
       final ns = raw['namespace']?.toString() ?? '';
       final key = raw['key']?.toString() ?? '';
       if (ns.isEmpty || key.isEmpty) continue;
-      final mk = '$ns:$key';
       final tc = aRGBString2Color(raw['tagColor'] as String?);
       final bg = tc ?? setBg ?? UIConfig.ehWatchedTagDefaultBackGroundColor;
-      into[mk] = _colorToArgb(bg);
+      _putWatchedBackground(into, ns, key, _colorToArgb(bg));
     }
   }
 
@@ -50,9 +57,24 @@ class WebWatchedTagStylesController extends GetxController {
         try {
           final m = await backendApiClient.listUsertags(tagset: n);
           _mergeTagSetResponse(m, merged);
-        } catch (_) {}
+        } catch (e, st) {
+          debugPrint('WebWatchedTagStylesController: tagset $n failed: $e');
+          debugPrint('$st');
+        }
       }
       backgroundArgbByTagKey.value = merged;
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('WebWatchedTagStylesController.refresh failed: $e');
+      debugPrint('$st');
+    }
+  }
+
+  /// Resolve `/mytags` background color using the same key variants as [_mergeTagSetResponse].
+  static int? lookupBackgroundArgb(Map<String, int> map, String namespace, String tagKey) {
+    for (final k in webTagMapKeyVariants(namespace, tagKey)) {
+      final v = map[k];
+      if (v != null) return v;
+    }
+    return null;
   }
 }

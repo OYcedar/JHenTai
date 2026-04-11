@@ -155,6 +155,7 @@ class GalleryRoutes {
       _ => _client.baseUrl,
     };
 
+    // EH/EX gallery index uses `page` as 0-based offset pages (same as WebHomeController.currentPage).
     final queryParams = <String, dynamic>{};
     if (page != null) queryParams['page'] = page;
     if (search != null && search.isNotEmpty) queryParams['f_search'] = search;
@@ -204,6 +205,20 @@ class GalleryRoutes {
       final result = await _client.proxyGet(url, queryParams: queryParams.isNotEmpty ? queryParams : null);
       final html = result['data']?.toString() ?? '';
       final galleries = _parseGalleryListHtml(html);
+
+      // Make list API match list-by-url: absolute prev/next and gallery hrefs (client expects full URLs).
+      final origin = _client.baseUrl;
+      galleries['prevUrl'] = _normalizeListHref(galleries['prevUrl'] as String?, origin);
+      galleries['nextUrl'] = _normalizeListHref(galleries['nextUrl'] as String?, origin);
+      final listForNorm = galleries['galleries'] as List<Map<String, dynamic>>?;
+      if (listForNorm != null) {
+        for (final g in listForNorm) {
+          final u = g['url'] as String? ?? '';
+          if (u.isNotEmpty) {
+            g['url'] = _normalizeListHref(u, origin);
+          }
+        }
+      }
 
       final blockRules = db.selectAllBlockRules();
       if (blockRules.isNotEmpty) {
@@ -317,6 +332,150 @@ class GalleryRoutes {
     }
   }
 
+  Element? _pttLinkAdjacentToCurrent(Document doc, {required bool next}) {
+    final tr = doc.querySelector('.ptt > tbody > tr') ?? doc.querySelector('table.ptt tr');
+    if (tr == null) return null;
+    final cells = tr.children.whereType<Element>().toList();
+    for (var i = 0; i < cells.length; i++) {
+      if (cells[i].localName != 'td') continue;
+      if (!cells[i].classes.contains('ptds')) continue;
+      if (next) {
+        if (i + 1 < cells.length) {
+          return cells[i + 1].querySelector('a');
+        }
+      } else {
+        if (i > 0) {
+          return cells[i - 1].querySelector('a');
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Prev/next gallery list URLs — layered fallbacks when EH changes `.ptt` or drops `#unext` / `#uprev`.
+  ({String prevUrl, String nextUrl}) _parsePaginationUrls(Document doc) {
+    var prevUrl = '';
+    var nextUrl = '';
+
+    String? href(Element? e) {
+      final h = e?.attributes['href'];
+      if (h == null || h.isEmpty) return null;
+      return h;
+    }
+
+    bool isFirstPageJump(Element a) {
+      final t = a.text.trim();
+      return t == '<<' || t == '«' || t.toLowerCase() == 'first';
+    }
+
+    bool isLastPageJump(Element a) {
+      final t = a.text.trim();
+      return t == '>>' || t == '»' || t.toLowerCase() == 'last';
+    }
+
+    bool looksLikeNextNav(Element a) {
+      final t = a.text.trim();
+      if (t == '>' || t == '›' || t.toLowerCase() == 'next') return true;
+      final rel = a.attributes['rel']?.toLowerCase();
+      return rel == 'next';
+    }
+
+    bool looksLikePrevNav(Element a) {
+      final t = a.text.trim();
+      if (t == '<' || t == '‹' || t.toLowerCase() == 'prev' || t.toLowerCase() == 'previous') return true;
+      final rel = a.attributes['rel']?.toLowerCase();
+      return rel == 'prev';
+    }
+
+    bool pageishHref(String h) {
+      return h.contains('page=') || RegExp(r'[?&]p(age)?=').hasMatch(h);
+    }
+
+    Element? nextEl = doc.querySelector('#unext');
+    nextEl ??= doc.querySelector('a#dnext');
+    nextEl ??= doc.querySelector('a[id="dnext"]');
+    nextUrl = href(nextEl) ?? '';
+
+    if (nextUrl.isEmpty) {
+      nextUrl = href(doc.querySelector('a[rel="next"]')) ?? '';
+    }
+
+    if (nextUrl.isEmpty) {
+      nextEl = doc.querySelector('.ptt td:nth-last-child(2) a');
+      if (nextEl != null && !isLastPageJump(nextEl) && looksLikeNextNav(nextEl)) {
+        nextUrl = href(nextEl) ?? '';
+      }
+    }
+
+    if (nextUrl.isEmpty) {
+      final adj = _pttLinkAdjacentToCurrent(doc, next: true);
+      if (adj != null && !isLastPageJump(adj)) {
+        nextUrl = href(adj) ?? '';
+      }
+    }
+
+    if (nextUrl.isEmpty) {
+      final last = doc.querySelector('.ptt td:last-child a');
+      if (last != null && looksLikeNextNav(last) && !isLastPageJump(last)) {
+        nextUrl = href(last) ?? '';
+      }
+    }
+
+    if (nextUrl.isEmpty) {
+      for (final a in doc.querySelectorAll('.ptt a')) {
+        final h = href(a);
+        if (h == null) continue;
+        if (looksLikeNextNav(a) && !isLastPageJump(a) && pageishHref(h)) {
+          nextUrl = h;
+          break;
+        }
+      }
+    }
+
+    Element? prevEl = doc.querySelector('#uprev');
+    prevEl ??= doc.querySelector('a#dprev');
+    prevEl ??= doc.querySelector('a[id="dprev"]');
+    prevUrl = href(prevEl) ?? '';
+
+    if (prevUrl.isEmpty) {
+      prevUrl = href(doc.querySelector('a[rel="prev"]')) ?? '';
+    }
+
+    if (prevUrl.isEmpty) {
+      prevEl = doc.querySelector('.ptt td:nth-child(2) a');
+      if (prevEl != null && !isFirstPageJump(prevEl) && looksLikePrevNav(prevEl)) {
+        prevUrl = href(prevEl) ?? '';
+      }
+    }
+
+    if (prevUrl.isEmpty) {
+      prevEl = doc.querySelector('.ptt td:first-child a');
+      if (prevEl != null && !isFirstPageJump(prevEl) && looksLikePrevNav(prevEl)) {
+        prevUrl = href(prevEl) ?? '';
+      }
+    }
+
+    if (prevUrl.isEmpty) {
+      final adj = _pttLinkAdjacentToCurrent(doc, next: false);
+      if (adj != null && !isFirstPageJump(adj)) {
+        prevUrl = href(adj) ?? '';
+      }
+    }
+
+    if (prevUrl.isEmpty) {
+      for (final a in doc.querySelectorAll('.ptt a')) {
+        final h = href(a);
+        if (h == null) continue;
+        if (looksLikePrevNav(a) && !isFirstPageJump(a) && pageishHref(h)) {
+          prevUrl = h;
+          break;
+        }
+      }
+    }
+
+    return (prevUrl: prevUrl, nextUrl: nextUrl);
+  }
+
   Map<String, dynamic> _parseGalleryListHtml(String html) {
     final doc = html_parser.parse(html);
     final galleries = <Map<String, dynamic>>[];
@@ -402,24 +561,10 @@ class GalleryRoutes {
       }
     }
 
-    // Parse pagination from various page types
-    String prevUrl = '';
-    String nextUrl = '';
-    // Prefer explicit IDs; `.ptt td:last-child` is often "last page" (>>), not "next" (>).
-    Element? prevEl = doc.querySelector('#uprev');
-    prevEl ??= doc.querySelector('a#dprev');
-    prevEl ??= doc.querySelector('a[id="dprev"]');
-    prevEl ??= doc.querySelector('.ptt td:nth-child(2) a');
-    prevEl ??= doc.querySelector('.ptt td:first-child a');
-
-    Element? nextEl = doc.querySelector('#unext');
-    nextEl ??= doc.querySelector('a#dnext');
-    nextEl ??= doc.querySelector('a[id="dnext"]');
-    nextEl ??= doc.querySelector('.ptt td:nth-last-child(2) a');
-    nextEl ??= doc.querySelector('.ptt td:last-child a');
-
-    if (prevEl != null) prevUrl = prevEl.attributes['href'] ?? '';
-    if (nextEl != null) nextUrl = nextEl.attributes['href'] ?? '';
+    // Parse pagination from various page types (EH DOM changes often — use layered fallbacks).
+    final pn = _parsePaginationUrls(doc);
+    var prevUrl = pn.prevUrl;
+    var nextUrl = pn.nextUrl;
 
     // Ranklist toplist.php uses different pagination - look for page links
     if (prevUrl.isEmpty && nextUrl.isEmpty) {
@@ -474,8 +619,10 @@ class GalleryRoutes {
 
     // Tags: compact (.gt*) and extended (gl2e…) — EH highlights watched tags via inline style
     // (same as EHSpiderParser._parseCompactGalleryTags / _parseExtendedGalleryTags).
+    // Extra selectors cover newer table/thumbnail layouts where tags moved to sibling cells.
     final tagElements = <Element>[
-      ...element.querySelectorAll('.gt, .gtl, .gtw'),
+      ...element.querySelectorAll('.gt, .gtl, .gtw, div.gt, div.gtl, div.gtw, a.gt'),
+      ...element.querySelectorAll('.gl1e .gtl, .gl1e .gt, .gl5c .gtl, .gl3c .gtl, .gl4c .gtl'),
       ...element.querySelectorAll(
         '.gl2e > div > a > div > div:nth-child(1) > table > tbody > tr > td > div',
       ),
