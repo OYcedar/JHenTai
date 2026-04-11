@@ -36,6 +36,8 @@ services:
       # large_client_header_buffers or rely on the Web UI POST image proxy for long CDN URLs.
       # Optional: prefer IPv4 for *.hath.network only (TLS to H@H fails on broken IPv6). Usually omit on local Docker.
       # - JH_HATH_PREFER_IPV4=1
+      # Verbose server logs for /api/proxy/image and /api/image (success + timing). Browser: localStorage jh_image_debug=1 then reload.
+      # - JH_IMAGE_PROXY_DEBUG=1
     restart: unless-stopped
     mem_limit: 1g
 

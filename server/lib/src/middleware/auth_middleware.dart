@@ -58,6 +58,16 @@ class AuthMiddleware {
 
         final authHeader = request.headers['authorization'];
         if (authHeader == null || !authHeader.startsWith('Bearer ')) {
+          if (_isImageRelatedPath(path)) {
+            final q = request.url.queryParameters['token'];
+            final qState = q == null
+                ? 'absent'
+                : (q.isEmpty ? 'empty' : (q == _token ? 'valid' : 'invalid'));
+            log.warning(
+              '[auth] $path rejected: need ?token=<api_token> matching server (queryToken=$qState) '
+              'or Authorization: Bearer <api_token>',
+            );
+          }
           return Response.unauthorized(
             jsonEncode({'error': 'Missing or invalid Authorization header'}),
             headers: {'Content-Type': 'application/json'},
@@ -66,6 +76,9 @@ class AuthMiddleware {
 
         final providedToken = authHeader.substring(7);
         if (providedToken != _token) {
+          if (_isImageRelatedPath(path)) {
+            log.warning('[auth] image/proxy request forbidden (Bearer token mismatch). path=$path');
+          }
           return Response.forbidden(
             jsonEncode({'error': 'Invalid API token'}),
             headers: {'Content-Type': 'application/json'},
@@ -90,6 +103,10 @@ class AuthMiddleware {
       return qToken == _token;
     }
     return false;
+  }
+
+  bool _isImageRelatedPath(String path) {
+    return path.startsWith('api/proxy/image') || path.startsWith('api/image/');
   }
 
   String _generateToken() {

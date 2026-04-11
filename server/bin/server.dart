@@ -8,6 +8,7 @@ import 'package:shelf_static/shelf_static.dart';
 import 'package:jhentai_server/src/config/server_config.dart';
 import 'package:jhentai_server/src/core/database.dart';
 import 'package:jhentai_server/src/core/log.dart';
+import 'package:jhentai_server/src/debug_flags.dart';
 import 'package:jhentai_server/src/middleware/auth_middleware.dart';
 import 'package:jhentai_server/src/network/cookie_manager.dart';
 import 'package:jhentai_server/src/network/eh_client.dart';
@@ -103,6 +104,9 @@ Future<void> main(List<String> args) async {
 
   log.info('Server running at http://${server.address.host}:${server.port}');
   log.info('API available at http://${server.address.host}:${server.port}/api/');
+  if (jhImageProxyDebugEnabled()) {
+    log.info('JH_IMAGE_PROXY_DEBUG is on: verbose /api/proxy/image and /api/image success logs enabled');
+  }
 
   bool shuttingDown = false;
   Future<void> shutdown() async {

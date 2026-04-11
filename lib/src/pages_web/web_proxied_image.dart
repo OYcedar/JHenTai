@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_image_client_log.dart';
 
 /// Loads an EH/EX CDN image through the API proxy. Uses POST with body when the GET URL would be too long
 /// for reverse proxies (Unraid + Nginx, etc.).
@@ -60,8 +61,12 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
 
   void _syncPostFuture() {
     if (backendApiClient.shouldProxyImageUsePost(widget.sourceUrl)) {
+      webImageClientLogVerbose('WebProxiedImage POST path urlLen=${widget.sourceUrl.length}');
       _postFuture = backendApiClient.fetchProxiedImageBytes(widget.sourceUrl);
     } else {
+      webImageClientLogVerbose(
+        'WebProxiedImage GET path proxyLen=${backendApiClient.proxyImageUrl(widget.sourceUrl).length}',
+      );
       _postFuture = null;
     }
   }
@@ -83,12 +88,14 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
   Widget build(BuildContext context) {
     final u = widget.sourceUrl;
     if (u.isEmpty) {
+      webImageClientLogError('WebProxiedImage empty sourceUrl');
       return widget.readerErrorChild ?? _defaultError();
     }
 
     // Downloaded / archive / local reader uses `/api/image/...` on this app — not the EH CDN proxy allowlist.
     final base = backendApiClient.baseUrl;
     if (base.isNotEmpty && u.startsWith(base) && u.contains('/api/image/')) {
+      webImageClientLogVerbose('WebProxiedImage direct Image.network api/image');
       return Image.network(
         u,
         fit: widget.fit,
@@ -107,7 +114,10 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
                 );
               }
             : null,
-        errorBuilder: (_, __, ___) => widget.readerErrorChild ?? _defaultError(),
+        errorBuilder: (c, err, st) {
+          webImageClientLogError('api/image load failed $u — $err');
+          return widget.readerErrorChild ?? _defaultError();
+        },
       );
     }
 
@@ -141,10 +151,16 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
             );
           }
           if (snap.hasError) {
+            webImageClientLogError(
+              'WebProxiedImage POST future error ${_urlPreview(widget.sourceUrl)} — ${snap.error}',
+            );
             return widget.readerErrorChild ?? _defaultError();
           }
           final bytes = snap.data;
           if (bytes == null || bytes.isEmpty) {
+            webImageClientLogError(
+              'WebProxiedImage POST empty bytes ${_urlPreview(widget.sourceUrl)}',
+            );
             return widget.readerErrorChild ?? _defaultError();
           }
           return Image.memory(
@@ -159,8 +175,10 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       );
     }
 
+    final proxied = backendApiClient.proxyImageUrl(u);
+    webImageClientLogVerbose('WebProxiedImage Image.network GET ${_urlPreview(proxied, max: 160)}');
     return Image.network(
-      backendApiClient.proxyImageUrl(u),
+      proxied,
       fit: widget.fit,
       width: widget.width,
       height: widget.height,
@@ -187,7 +205,17 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
                   );
                 }
               : null,
-      errorBuilder: (_, __, ___) => widget.readerErrorChild ?? _defaultError(),
+      errorBuilder: (c, err, st) {
+        webImageClientLogError(
+          'WebProxiedImage GET proxy load failed ${_urlPreview(u)} — $err',
+        );
+        return widget.readerErrorChild ?? _defaultError();
+      },
     );
   }
+}
+
+String _urlPreview(String url, {int max = 120}) {
+  if (url.length <= max) return url;
+  return '${url.substring(0, max)}…(len=${url.length})';
 }
