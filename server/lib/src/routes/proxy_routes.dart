@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
+import '../console_diag.dart';
 import '../core/log.dart';
 import '../debug_flags.dart';
 import '../network/eh_client.dart';
@@ -120,12 +121,16 @@ class ProxyRoutes {
   Future<Response> _proxyImage(Request request) async {
     final url = request.url.queryParameters['url'];
     if (url == null || url.isEmpty) {
-      log.warning('[proxy/image] GET missing url query');
+      const m = '[proxy/image] GET missing url query';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.badRequest(body: 'Missing url parameter');
     }
 
     if (!_isAllowedUrl(url)) {
-      log.warning('[proxy/image] GET host blocked: ${_urlPreview(url)}');
+      final m = '[proxy/image] GET host blocked: ${_urlPreview(url)}';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.forbidden('URL host not in allowlist');
     }
 
@@ -134,10 +139,11 @@ class ProxyRoutes {
       final imageBytes = await _client.downloadBytes(url);
       sw.stop();
       if (jhImageProxyDebugEnabled()) {
-        log.info(
-          '[proxy/image] GET ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
-          '${_urlPreview(url)}',
-        );
+        final m =
+            '[proxy/image] GET ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
+            '${_urlPreview(url)}';
+        log.info(m);
+        jhStderrLine(m);
       }
       final contentType = _guessImageContentType(url);
       return Response.ok(
@@ -149,9 +155,10 @@ class ProxyRoutes {
       );
     } catch (e, st) {
       sw.stop();
-      log.warning(
-        '[proxy/image] GET failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st',
-      );
+      final m =
+          '[proxy/image] GET failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.internalServerError(body: 'Failed to proxy image: $e');
     }
   }
@@ -163,18 +170,24 @@ class ProxyRoutes {
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      log.warning('[proxy/image] POST invalid JSON: $e');
+      final m = '[proxy/image] POST invalid JSON: $e';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.badRequest(body: 'Invalid JSON body');
     }
 
     final url = body['url'] as String?;
     if (url == null || url.isEmpty) {
-      log.warning('[proxy/image] POST missing url in body');
+      const m = '[proxy/image] POST missing url in body';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.badRequest(body: 'Missing url');
     }
 
     if (!_isAllowedUrl(url)) {
-      log.warning('[proxy/image] POST host blocked: ${_urlPreview(url)}');
+      final m = '[proxy/image] POST host blocked: ${_urlPreview(url)}';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.forbidden('URL host not in allowlist');
     }
 
@@ -183,10 +196,11 @@ class ProxyRoutes {
       final imageBytes = await _client.downloadBytes(url);
       sw.stop();
       if (jhImageProxyDebugEnabled()) {
-        log.info(
-          '[proxy/image] POST ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
-          '${_urlPreview(url)}',
-        );
+        final m =
+            '[proxy/image] POST ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
+            '${_urlPreview(url)}';
+        log.info(m);
+        jhStderrLine(m);
       }
       final contentType = _guessImageContentType(url);
       return Response.ok(
@@ -198,9 +212,10 @@ class ProxyRoutes {
       );
     } catch (e, st) {
       sw.stop();
-      log.warning(
-        '[proxy/image] POST failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st',
-      );
+      final m =
+          '[proxy/image] POST failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.internalServerError(body: 'Failed to proxy image: $e');
     }
   }

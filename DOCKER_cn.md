@@ -303,5 +303,5 @@ Web 端大量图片走 **`/api/proxy/image`** 由**服务端代拉**。封面常
    若容器内失败而 Unraid 宿主机成功，重点查 **Docker 网络**、**IPv6**、**MTU**、**防火墙** 对桥接/自定义网络的策略。
 3. **反代与 414**：排查时可先 **直连容器端口**（如 **`8088:8080`**）。很长的大图 URL 应使用 **`POST /api/proxy/image`**（URL 放在 JSON body），避免查询串过长触发前置 Nginx/Caddy 的 **414 URI Too Large**。
 4. **Token**：画廊相关请求会通过查询参数 **`?token=<API Token>`** 调用图片代理；该路由**不依赖** `Authorization` 头。若缩略图 401/403，请在 **设置** 中确认 Token 正确。
-5. **排查图片加载**：容器环境变量 **`JH_IMAGE_PROXY_DEBUG=1`** 后重启，可在 **`docker logs`** 中看到每次 `/api/proxy/image`、`/api/image` 的成功/失败详情。浏览器控制台：执行 **`localStorage.setItem('jh_image_debug','1')`** 后刷新，会输出带 **`[JH image]`** 前缀的客户端日志（失败默认打印，详细路径需开启该项）。
+5. **排查图片加载**：容器环境变量 **`JH_IMAGE_PROXY_DEBUG=1`** 后重启，可在 **`docker logs`** 中看到每次 `/api/proxy/image`、`/api/image` 的成功/失败详情（搜索 **`[proxy/image]`** / **`[api/image]`**；失败行会同步写到 **stderr**，与前面的 **`GET [500] /api/proxy/image`** 访问日志不是同一种格式）。请 **`docker pull`** 使用含该功能的镜像版本。浏览器控制台：执行 **`localStorage.setItem('jh_image_debug','1')`** 后刷新，会输出带 **`[JH image]`** 前缀的客户端日志（失败默认打印，详细路径需开启该项）。
 6. **EX 画廊**：需在服务端配置 **有效的 ExHentai Cookie**；仅有 EH Cookie 无法访问仅 EX 可见的内容。

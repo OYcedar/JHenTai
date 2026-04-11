@@ -19,8 +19,11 @@ class Log {
 
     await _cleanOldLogs();
 
+    // AOT release (`dart compile exe`) defaults Logger to ProductionFilter, which drops `info`.
+    // Use DevelopmentFilter for stdout so Docker logs show startup + JH_IMAGE_PROXY_DEBUG lines.
     _console = Logger(
-      printer: PrettyPrinter(methodCount: 0),
+      filter: DevelopmentFilter(),
+      printer: PrettyPrinter(methodCount: 0, colors: false),
     );
 
     final fileName = DateFormat('yyyy-MM-dd_HH-mm-ss').format(DateTime.now());

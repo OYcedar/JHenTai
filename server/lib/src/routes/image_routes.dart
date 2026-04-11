@@ -6,6 +6,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../config/server_config.dart';
+import '../console_diag.dart';
 import '../core/log.dart';
 import '../debug_flags.dart';
 
@@ -43,20 +44,26 @@ class ImageRoutes {
 
   Response _serveFile(String filePath) {
     if (!_isAllowedPath(filePath)) {
-      log.warning('[api/image] forbidden path not under allowed roots: $filePath');
+      final m = '[api/image] forbidden path not under allowed roots: $filePath';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.forbidden('Access denied');
     }
 
     final file = File(filePath);
     if (!file.existsSync()) {
-      log.warning('[api/image] file not found: $filePath');
+      final m = '[api/image] file not found: $filePath';
+      log.warning(m);
+      jhStderrLine(m);
       return Response.notFound('File not found');
     }
 
     final mimeType = lookupMimeType(filePath) ?? 'application/octet-stream';
     final length = file.lengthSync();
     if (jhImageProxyDebugEnabled()) {
-      log.info('[api/image] ok $filePath bytes=$length type=$mimeType');
+      final m = '[api/image] ok $filePath bytes=$length type=$mimeType';
+      log.info(m);
+      jhStderrLine(m);
     }
 
     return Response.ok(
