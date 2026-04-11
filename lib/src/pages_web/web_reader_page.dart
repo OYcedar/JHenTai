@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
 
 /// Same intent as UIConfig.scrollBehaviourWithoutScrollBarWithMouse: PageView /
@@ -26,8 +27,8 @@ final ScrollBehavior _webReaderScrollBehavior =
 );
 
 /// Start decoding network images into GPU cache (aligned with native reader preload).
-void _precacheNetworkImage(String url) {
-  final provider = NetworkImage(url);
+void _precacheNetworkImage(String proxyGetUrl) {
+  final provider = NetworkImage(proxyGetUrl);
   final stream = provider.resolve(const ImageConfiguration());
   late ImageStreamListener listener;
   listener = ImageStreamListener(
@@ -59,6 +60,8 @@ class WebReaderController extends GetxController {
   final readDirection = ReadDirection.ltr.obs;
   /// Mouse wheel over image: page turn vs zoom (PageView modes only; see [kWebReaderWheelActionKey]).
   final wheelAction = WebReaderWheelAction.page.obs;
+  /// When wheel turns pages, invert next/prev mapping (see [kWebReaderWheelInvertPageKey]).
+  final wheelInvertPageTurn = false.obs;
 
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
@@ -146,6 +149,8 @@ class WebReaderController extends GetxController {
     try {
       final raw = await backendApiClient.getSetting(kWebReaderWheelActionKey);
       wheelAction.value = webReaderWheelActionFromStorage(raw);
+      final inv = await backendApiClient.getSetting(kWebReaderWheelInvertPageKey);
+      wheelInvertPageTurn.value = webReaderWheelInvertPageFromStorage(inv);
     } catch (_) {}
   }
 
@@ -312,13 +317,14 @@ class WebReaderController extends GetxController {
       }
 
       if (imageUrl != null) {
-        final proxiedUrl = backendApiClient.proxyImageUrl(imageUrl);
-        _loadedImageUrls[index] = proxiedUrl;
+        _loadedImageUrls[index] = imageUrl;
         if (index < imageUrls.length) {
-          imageUrls[index] = proxiedUrl;
+          imageUrls[index] = imageUrl;
           imageUrls.refresh();
         }
-        _precacheNetworkImage(proxiedUrl);
+        if (!backendApiClient.shouldProxyImageUsePost(imageUrl)) {
+          _precacheNetworkImage(backendApiClient.proxyImageUrl(imageUrl));
+        }
       }
     } catch (e) {
       debugPrint('Failed to load image $index: $e');
@@ -705,6 +711,8 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
   TapDownDetails? _doubleTapDetails;
   /// When false, [InteractiveViewer] does not pan so mouse drags reach the parent [PageView].
   bool _pannable = false;
+  DateTime? _lastWheelPageTurnAt;
+  static const _wheelPageTurnCooldown = Duration(milliseconds: 220);
 
   @override
   void initState() {
@@ -749,6 +757,29 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
   static const double _minScale = 0.5;
   static const double _maxScale = 4.0;
 
+  void _applyWheelPageTurn(PointerScrollEvent e) {
+    final now = DateTime.now();
+    if (_lastWheelPageTurnAt != null &&
+        now.difference(_lastWheelPageTurnAt!) < _wheelPageTurnCooldown) {
+      return;
+    }
+
+    final dx = e.scrollDelta.dx;
+    final dy = e.scrollDelta.dy;
+    var delta = dx.abs() >= dy.abs() ? dx : dy;
+    if (widget.controller.wheelInvertPageTurn.value) {
+      delta = -delta;
+    }
+    if (delta.abs() < 0.25) return;
+
+    _lastWheelPageTurnAt = now;
+    if (delta > 0) {
+      widget.controller.nextPage();
+    } else {
+      widget.controller.prevPage();
+    }
+  }
+
   void _applyWheelZoom(PointerScrollEvent e) {
     final delta = e.scrollDelta.dy + e.scrollDelta.dx;
     if (delta.abs() < 0.25) return;
@@ -780,19 +811,34 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
         child: InteractiveViewer(
           transformationController: _transformationController,
           panEnabled: _pannable,
+          scaleEnabled: zoomWheel || _pannable,
+          trackpadScrollCausesScale: zoomWheel,
           minScale: _minScale,
           maxScale: _maxScale,
           child: Center(child: _ImageContent(controller: widget.controller, index: widget.index)),
         ),
       );
 
-      if (!zoomWheel) return viewer;
+      /// Web: [InteractiveViewer] still scales on wheel when [trackpadScrollCausesScale] is ignored
+      /// or mis-detected; claim [PointerScrollEvent] so [PageView] / our handler wins.
+      if (zoomWheel) {
+        return Listener(
+          onPointerSignal: (signal) {
+            if (signal is! PointerScrollEvent) return;
+            GestureBinding.instance.pointerSignalResolver.register(signal, (PointerSignalEvent e) {
+              if (e is PointerScrollEvent) _applyWheelZoom(e);
+            });
+          },
+          child: viewer,
+        );
+      }
 
       return Listener(
         onPointerSignal: (signal) {
           if (signal is! PointerScrollEvent) return;
+          if (_transformationController.value.getMaxScaleOnAxis() > 1.02) return;
           GestureBinding.instance.pointerSignalResolver.register(signal, (PointerSignalEvent e) {
-            if (e is PointerScrollEvent) _applyWheelZoom(e);
+            if (e is PointerScrollEvent) _applyWheelPageTurn(e);
           });
         },
         child: viewer,
@@ -846,20 +892,13 @@ class _ImageContent extends StatelessWidget {
       return GestureDetector(
         onLongPress: () => _showImageContextMenu(context, url),
         onSecondaryTapUp: (details) => _showImageContextMenu(context, url, position: details.globalPosition),
-        child: Image.network(
-          url,
+        child: WebProxiedImage(
+          sourceUrl: url,
           fit: (isVertical || fitWidth) ? BoxFit.fitWidth : BoxFit.contain,
           width: (isVertical || fitWidth) ? double.infinity : null,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            final total = loadingProgress.expectedTotalBytes;
-            final progress = total != null ? loadingProgress.cumulativeBytesLoaded / total : null;
-            return SizedBox(
-              height: isVertical ? MediaQuery.of(context).size.height * 0.8 : null,
-              child: Center(child: CircularProgressIndicator(value: progress, color: Colors.white54)),
-            );
-          },
-          errorBuilder: (_, error, __) => SizedBox(
+          readerStyle: true,
+          readerTallLoading: isVertical || fitWidth,
+          readerErrorChild: SizedBox(
             height: isVertical ? 400 : null,
             child: Center(
               child: Column(
@@ -893,7 +932,9 @@ class _ImageContent extends StatelessWidget {
       ],
     ).then((value) {
       if (value == 'save') {
-        web.window.open(url, '_blank');
+        if (!backendApiClient.shouldProxyImageUsePost(url)) {
+          web.window.open(backendApiClient.proxyImageUrl(url), '_blank');
+        }
       } else if (value == 'reload') {
         controller.retryImage(index);
       }
@@ -994,12 +1035,13 @@ Widget _readerStripThumb(WebReaderController controller, int pageIndex, String p
     }
   }
   if (proxiedFullImageUrl.isNotEmpty) {
-    return Image.network(
-      proxiedFullImageUrl,
+    return WebProxiedImage(
+      sourceUrl: proxiedFullImageUrl,
       fit: BoxFit.cover,
       width: 40,
       height: 40,
-      errorBuilder: (_, __, ___) => const Icon(Icons.image, color: Colors.white24, size: 16),
+      errorIconSize: 16,
+      readerErrorChild: const Icon(Icons.image, color: Colors.white24, size: 16),
     );
   }
   return const Center(child: Icon(Icons.image, color: Colors.white24, size: 16));

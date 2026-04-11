@@ -134,6 +134,9 @@ class WebPtBR {
       'reader.wheelActionZoom': 'Ampliar imagem',
       'reader.wheelActionVerticalHint':
           'Modos vertical e largura ajustada sempre rolam a lista. Esta opção vale para LTR, RTL e página dupla.',
+      'reader.wheelInvertPageTurn': 'Inverter direção da roda (página)',
+      'reader.wheelInvertPageTurnSubtitle':
+          'Troca qual direção de rolagem da roda/trackpad vai para a próxima vs página anterior.',
 
       // downloads
       'downloads.title': 'Downloads',
@@ -225,6 +228,9 @@ class WebPtBR {
       'settings.about': 'Sobre',
       'settings.appVersion': 'Versão @version (@build)',
       'settings.hubMenu': 'Menu de configurações',
+      'settings.menuWebDocker': 'Interface web e servidor',
+      'settings.menuWebDockerSubtitle':
+          'Atalho de downloads, caminhos Docker, rede/proxy, desempenho e segurança (somente Web).',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': 'Estilo',
       'settings.menuRead': 'Leitura',

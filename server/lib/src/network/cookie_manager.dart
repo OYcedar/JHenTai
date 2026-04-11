@@ -35,6 +35,17 @@ class ServerCookieManager extends Interceptor {
 
   bool isEHHost(String host) => allHostAndIPs.contains(host);
 
+  /// EH session cookies (igneous, ipb_*, etc.) must be sent to gallery HTML hosts and to
+  /// image CDNs — same as a real browser. [isEHHost] is still used for merging Set-Cookie.
+  bool shouldAttachEhSessionCookies(String host) {
+    final h = host.toLowerCase();
+    if (isEHHost(h)) return true;
+    if (h == 'ehgt.org' || h.endsWith('.ehgt.org')) return true;
+    if (h.endsWith('.hath.network')) return true;
+    if (h.endsWith('.e-hentai.org') || h.endsWith('.exhentai.org')) return true;
+    return false;
+  }
+
   Future<void> init() async {
     final stored = db.readConfig(_configKey);
     if (stored != null) {
@@ -81,7 +92,7 @@ class ServerCookieManager extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (isEHHost(options.uri.host)) {
+    if (shouldAttachEhSessionCookies(options.uri.host)) {
       options.headers[HttpHeaders.cookieHeader] = cookieHeader();
     }
     handler.next(options);

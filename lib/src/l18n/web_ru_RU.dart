@@ -134,6 +134,9 @@ class WebRuRU {
       'reader.wheelActionZoom': 'Масштабировать',
       'reader.wheelActionVerticalHint':
           'В вертикальном режиме и «по ширине» всегда прокручивается список. Опция действует для LTR, RTL и двухстраничного режима.',
+      'reader.wheelInvertPageTurn': 'Инвертировать листание колёсиком',
+      'reader.wheelInvertPageTurnSubtitle':
+          'Меняет, какое направление прокрутки колёсика/тачпада перелистывает вперёд или назад.',
 
       // downloads
       'downloads.title': 'Загрузки',
@@ -225,6 +228,9 @@ class WebRuRU {
       'settings.about': 'О приложении',
       'settings.appVersion': 'Версия @version (@build)',
       'settings.hubMenu': 'Меню настроек',
+      'settings.menuWebDocker': 'Веб-интерфейс и сервер',
+      'settings.menuWebDockerSubtitle':
+          'Загрузки, пути Docker, сеть и прокси, производительность и безопасность (только Web).',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': 'Стиль',
       'settings.menuRead': 'Чтение',

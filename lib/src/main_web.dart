@@ -28,8 +28,10 @@ import 'package:jhentai/src/pages_web/settings/web_settings_performance_page.dar
 import 'package:jhentai/src/pages_web/settings/web_settings_preference_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_read_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_security_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_web_docker_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_style_page.dart';
 import 'package:jhentai/src/pages_web/web_theme_controller.dart';
+import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_stats_page.dart';
 import 'package:jhentai/src/pages_web/web_tag_sets_page.dart';
 import 'package:jhentai/src/pages_web/web_thumbnails_page.dart';
@@ -48,6 +50,7 @@ void main() async {
   Get.put(ThemeController());
   Get.put(WebLayoutController());
   Get.put(WebDownloadService());
+  Get.put(WebWatchedTagStylesController(), permanent: true);
 
   runApp(const JHenTaiWebApp());
 }
@@ -338,6 +341,11 @@ final _webRoutes = [
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(
+    name: '/web/settings/web-docker',
+    page: () => const WebSettingsWebDockerPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
     name: '/web/settings/network',
     page: () => const WebSettingsNetworkPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
@@ -599,6 +607,8 @@ class _WebSetupPageState extends State<WebSetupPage> {
     if (valid) {
       backendApiClient.setToken(token);
       web.window.localStorage.setItem('jh_api_token', token);
+      unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+      Get.find<WebDownloadService>().activate();
       Get.offAllNamed('/web/home');
     } else {
       setState(() {

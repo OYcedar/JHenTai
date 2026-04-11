@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 
 class WebHistoryController extends GetxController {
   final items = <Map<String, dynamic>>[].obs;
@@ -133,11 +134,11 @@ class WebHistoryPage extends GetView<WebHistoryController> {
               width: 50,
               height: 70,
               child: coverUrl.isNotEmpty
-                  ? Image.network(
-                      backendApiClient.proxyImageUrl(coverUrl),
+                  ? WebProxiedImage(
+                      sourceUrl: coverUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.broken_image, color: Colors.grey),
+                      errorIconSize: 24,
+                      readerErrorChild: const Icon(Icons.broken_image, color: Colors.grey),
                     )
                   : const Icon(Icons.photo_library, color: Colors.grey),
             ),

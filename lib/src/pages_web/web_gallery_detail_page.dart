@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
+import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
 
 Map<String, dynamic> _thumbMapForDetail(WebGalleryDetailController c, int index) {
@@ -77,6 +81,7 @@ class WebGalleryDetailController extends GetxController {
     token = _paramToken ?? (Get.parameters['token'] ?? '');
     _loadDetail().then((_) => _loadReadProgress());
     _loadSiteAndFavNames();
+    unawaited(Get.find<WebWatchedTagStylesController>().refresh());
   }
 
   Future<void> _loadSiteAndFavNames() async {
@@ -104,6 +109,11 @@ class WebGalleryDetailController extends GetxController {
     errorMessage.value = '';
     try {
       final result = await backendApiClient.fetchGalleryDetail(gid, token);
+      final err = result['error'] as String?;
+      if (err != null && err.isNotEmpty) {
+        errorMessage.value = err;
+        return;
+      }
       title.value = result['title'] as String? ?? 'Unknown';
       titleJpn.value = result['titleJpn'] as String? ?? '';
       category.value = result['category'] as String? ?? '';
@@ -659,10 +669,12 @@ class WebGalleryDetailPage extends StatelessWidget {
             width: width,
             height: height,
             child: url.isNotEmpty
-                ? Image.network(
-                    backendApiClient.proxyImageUrl(url),
+                ? WebProxiedImage(
+                    sourceUrl: url,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    width: width,
+                    height: height,
+                    readerErrorChild: Container(
                       color: Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.photo_library, size: 48, color: Colors.grey),
                     ),
@@ -688,10 +700,11 @@ class WebGalleryDetailPage extends StatelessWidget {
           children: [
             InteractiveViewer(
               maxScale: 5.0,
-              child: Image.network(
-                backendApiClient.proxyImageUrl(url),
+              child: WebProxiedImage(
+                sourceUrl: url,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Center(
+                errorIconSize: 64,
+                readerErrorChild: const Center(
                   child: Icon(Icons.broken_image, size: 64, color: Colors.white54),
                 ),
               ),
@@ -1157,6 +1170,8 @@ class WebGalleryDetailPage extends StatelessWidget {
     return Obx(() {
       if (controller.tags.isEmpty) return const SizedBox.shrink();
 
+      final accountWatchedBg = Get.find<WebWatchedTagStylesController>().backgroundArgbByTagKey.value;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1185,6 +1200,13 @@ class WebGalleryDetailPage extends StatelessWidget {
                       children: entry.value.map((tag) {
                         final translated = controller.getTranslatedTag(entry.key, tag);
                         final showTranslated = translated != tag;
+                        final watchedBgArgb = accountWatchedBg['${entry.key}:$tag'];
+                        final bg = watchedBgArgb != null ? Color(watchedBgArgb) : null;
+                        final fg = bg == null
+                            ? null
+                            : (ThemeData.estimateBrightnessForColor(bg) == Brightness.light
+                                ? const Color(0xFF090909)
+                                : const Color(0xFFF1F1F1));
                         return GestureDetector(
                           onSecondaryTapUp: (details) {
                             _showTagContextMenu(context, details.globalPosition, entry.key, tag);
@@ -1195,7 +1217,12 @@ class WebGalleryDetailPage extends StatelessWidget {
                           child: Tooltip(
                             message: showTranslated ? tag : '',
                             child: ActionChip(
-                              label: Text(showTranslated ? translated : tag, style: const TextStyle(fontSize: 12)),
+                              label: Text(
+                                showTranslated ? translated : tag,
+                                style: TextStyle(fontSize: 12, color: fg),
+                              ),
+                              backgroundColor: bg,
+                              side: bg != null ? BorderSide(color: bg.withValues(alpha: 0.9)) : null,
                               visualDensity: VisualDensity.compact,
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               onPressed: () {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 
-/// Main settings hub: mirrors native [SettingPage] entries plus data & tools shortcuts.
+/// Settings hub: entries that are not duplicated from the home drawer (downloads, history, local).
 class WebSettingsPage extends GetView<WebSettingsController> {
   const WebSettingsPage({super.key});
 
@@ -17,58 +17,6 @@ class WebSettingsPage extends GetView<WebSettingsController> {
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           children: [
-            Text(
-              'settings.sectionData'.tr,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              margin: EdgeInsets.zero,
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.download_outlined),
-                    title: Text('settings.openDownloads'.tr),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Get.toNamed('/web/downloads'),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.history),
-                    title: Text('settings.openHistory'.tr),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Get.toNamed('/web/history'),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.folder_open_outlined),
-                    title: Text('settings.openLocal'.tr),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Get.toNamed('/web/local'),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.bolt_outlined),
-                    title: Text('settings.openQuickSearch'.tr),
-                    subtitle: Text('quickSearch.title'.tr, style: Theme.of(context).textTheme.bodySmall),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Get.toNamed('/web/quick-search'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'settings.hubMenu'.tr,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: 8),
             ListTile(
               leading: const Icon(Icons.account_circle),
               title: Text('settings.account'.tr),
@@ -103,43 +51,19 @@ class WebSettingsPage extends GetView<WebSettingsController> {
               onTap: () => Get.toNamed('/web/settings/preference'),
             ),
             ListTile(
-              leading: const Icon(Icons.wifi),
-              title: Text('settings.menuNetwork'.tr),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Get.toNamed('/web/settings/network'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.download),
-              title: Text('settings.menuDownload'.tr),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Get.toNamed('/web/settings/download'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.electric_bolt),
-              title: Text('settings.menuPerformance'.tr),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Get.toNamed('/web/settings/performance'),
-            ),
-            ListTile(
               leading: const Icon(Icons.mouse),
               title: Text('settings.menuMouseWheel'.tr),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Get.toNamed('/web/settings/mouse-wheel'),
             ),
             ListTile(
-              leading: const Icon(Icons.settings_suggest),
-              title: Text('settings.menuAdvanced'.tr),
+              leading: const Icon(Icons.storage_outlined),
+              title: Text('settings.menuWebDocker'.tr),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Get.toNamed('/web/settings/advanced'),
+              onTap: () => Get.toNamed('/web/settings/web-docker'),
             ),
             ListTile(
-              leading: const Icon(Icons.security),
-              title: Text('settings.menuSecurity'.tr),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Get.toNamed('/web/settings/security'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.info),
+              leading: const Icon(Icons.info_outline),
               title: Text('settings.about'.tr),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Get.toNamed('/web/settings/about'),

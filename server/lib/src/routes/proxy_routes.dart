@@ -39,6 +39,7 @@ class ProxyRoutes {
     router.get('/get', _proxyGet);
     router.post('/post', _proxyPost);
     router.get('/image', _proxyImage);
+    router.post('/image', _proxyImagePost);
 
     return router;
   }
@@ -113,6 +114,40 @@ class ProxyRoutes {
     final url = request.url.queryParameters['url'];
     if (url == null || url.isEmpty) {
       return Response.badRequest(body: 'Missing url parameter');
+    }
+
+    if (!_isAllowedUrl(url)) {
+      return Response.forbidden('URL host not in allowlist');
+    }
+
+    try {
+      final imageBytes = await _client.downloadBytes(url);
+      final contentType = _guessImageContentType(url);
+      return Response.ok(
+        imageBytes,
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'public, max-age=86400',
+        },
+      );
+    } catch (e) {
+      return Response.internalServerError(body: 'Failed to proxy image: $e');
+    }
+  }
+
+  /// Same as [_proxyImage] but reads the target URL from JSON body so long CDN URLs are not in the query string
+  /// (avoids reverse-proxy `414` / small header buffers, e.g. Unraid + Nginx).
+  Future<Response> _proxyImagePost(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: 'Invalid JSON body');
+    }
+
+    final url = body['url'] as String?;
+    if (url == null || url.isEmpty) {
+      return Response.badRequest(body: 'Missing url');
     }
 
     if (!_isAllowedUrl(url)) {
