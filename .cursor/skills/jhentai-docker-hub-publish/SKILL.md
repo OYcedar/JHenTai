@@ -1,21 +1,23 @@
 ---
 name: jhentai-docker-hub-publish
 description: >-
-  Builds multi-arch (linux/amd64, linux/arm64) JHenTai Docker images and pushes
-  them to Docker Hub as hemumoe/jhentai with the computed x.y.z-hhh tag and
-  latest simultaneously. Use when the user asks to update or publish the Docker
-  image locally, push to Docker Hub after changes, refresh the container
-  registry, or sync Hub with the repo.
+  Every Hub push MUST be multi-arch linux/amd64 + linux/arm64 for hemumoe/jhentai,
+  with both the computed x.y.z-hhh tag and latest. Builds with docker buildx
+  (docker-container driver on Windows/macOS when needed). Use when the user asks
+  to publish or push the Docker image to Docker Hub, sync the registry, or
+  refresh Hub after code changes — never push a single-arch image to these tags.
 ---
 
 # JHenTai Docker Hub — local build and push
 
 ## When this applies
 
-This workflow is for the **JHenTai-Docker** fork: Dockerfile at repo root, image **`hemumoe/jhentai`**. Each push must publish **two tags** for the same manifest:
+This workflow is for the **JHenTai-Docker** fork: Dockerfile at repo root, image **`hemumoe/jhentai`**.
 
-1. **Version tag** **`x.y.z-hhh`** (computed below; stable pin for compose/README).
-2. **`latest`** (always points at the same multi-arch image as that release).
+**Hard requirements for every push:**
+
+1. **Architectures:** **`linux/amd64` and `linux/arm64` together** in one manifest list. Do **not** push only `linux/amd64` (or only `linux/arm64`) to **`hemumoe/jhentai`** — that overwrites the tag with a single-arch manifest and breaks users on the other architecture.
+2. **Tags:** **`x.y.z-hhh`** (computed below) **and** **`latest`**, same manifest list for both.
 
 ## Prerequisites
 
@@ -23,27 +25,21 @@ This workflow is for the **JHenTai-Docker** fork: Dockerfile at repo root, image
 - Host logged in to Docker Hub with push rights: `docker login` (account that may push `hemumoe/jhentai`).
 - Shell: on Windows use **PowerShell**; chain commands with **`;`**, not `&&`.
 
-## Multi-arch on Docker Desktop (Windows / macOS)
+## Step 1 — Builder that can build both architectures
 
-The default **`docker`** buildx driver often only runs **`linux/amd64`** on the host. Building **`linux/arm64`** with `--platform linux/amd64,linux/arm64` then fails with **`exec format error`** on non-ARM machines.
+The default **`docker`** buildx driver often only runs **`linux/amd64`** on the host. **`--platform linux/amd64,linux/arm64`** then fails with **`exec format error`** on x86 Windows/macOS.
 
-**Fix:** use a **`docker-container`** builder (BuildKit in a container with QEMU). Create once per machine, then select it before `buildx build`:
+**Before every multi-arch push**, ensure the active builder is **`docker-container`** (BuildKit + QEMU). Create once per machine if missing:
 
 ```bash
 docker buildx create --name jhentai-multi --driver docker-container --bootstrap --use
 ```
 
-From the repo root, run the **`docker buildx build ... --push`** commands below (they apply to the active builder).
+If **`jhentai-multi`** already exists: **`docker buildx use jhentai-multi`**.
 
-When finished, you can switch back for local **`docker compose`** (optional):
+Confirm: **`docker buildx inspect`** shows the builder in use. Optional after push, switch back for local compose: **`docker buildx use desktop-linux`** (name from **`docker buildx ls`**).
 
-```bash
-docker buildx use desktop-linux
-```
-
-(The exact default name may be **`default`** or **`desktop-linux`** — run **`docker buildx ls`**.)
-
-## Compute the image tag
+## Step 2 — Compute the image tag
 
 1. Read **`pubspec.yaml`**: first line matching `^version:` → value like `8.0.12+309`. Let **`x.y.z`** = part before **`+`**.
 2. Fork revision (decimal **0–4095**):
@@ -52,11 +48,11 @@ docker buildx use desktop-linux
 3. Validate integer **0–4095**. Convert with 10#-safe arithmetic, then **`hhh`** = `printf '%03x' "$DEC"` (lowercase hex).
 4. **Tag** = `x.y.z-hhh` (example: fork file `310` on `8.0.12` → **`8.0.12-136`**).
 
-Match the same logic as `.github/workflows/docker-publish.yml` (`Image tag` step), when the workflow is configured to use the same tagging scheme.
+Same logic as `.github/workflows/docker-publish.yml` (`Image tag` step).
 
-## Commands (run from repository root)
+## Step 3 — Build and push (always both platforms, both tags)
 
-Replace `TAG` with the computed tag (e.g. `8.0.12-136`). **Always pass both `-t` flags** so Hub gets the version pin and **`latest`** in one build.
+Run from **repository root**. Replace **`TAG`** with the computed tag.
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 \
@@ -65,19 +61,17 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   --push .
 ```
 
-Single line (e.g. PowerShell copy-paste):
+Single line (e.g. PowerShell):
 
 ```bash
 docker buildx build --platform linux/amd64,linux/arm64 -t hemumoe/jhentai:TAG -t hemumoe/jhentai:latest --push .
 ```
 
-PowerShell: `Set-Location` to the repo root, then the same `docker buildx build` line (substitute the computed `TAG`).
-
 First build can take a long time; cached rebuilds are faster.
 
 ## After push
 
-Verify multi-arch manifest for **both** tags (same digest/manifest list):
+Verify **both** tags expose **two** architectures:
 
 ```bash
 docker manifest inspect hemumoe/jhentai:TAG
@@ -90,13 +84,15 @@ Expect **`linux/amd64`** and **`linux/arm64`** under `manifests` for each.
 
 - Change app line in **`pubspec.yaml`** if needed.
 - Increment **`docker/fork_revision`** (or `+` build if file absent) so **`hhh`** changes and the version tag is new.
-- After push, **`latest`** on Hub matches that build.
+- After push, **`latest`** on Hub matches that multi-arch build.
 
 ## Optional: remove legacy Hub tags
 
-See **`scripts/dockerhub-delete-tags.sh`** and **`DOCKER.md`** / **`DOCKER_cn.md`** for cleaning up obsolete tag names (e.g. old `*-web` aliases). **Do not** treat `latest` as legacy if you are actively maintaining it via this skill.
+See **`scripts/dockerhub-delete-tags.sh`** and **`DOCKER.md`** / **`DOCKER_cn.md`**. **Do not** treat **`latest`** as legacy if you maintain it via this skill.
 
 ## If push fails
 
-- `denied` / `unauthorized`: run **`docker login`** with a user that can push **`hemumoe/jhentai`**.
-- `no matching manifest for linux/amd64`: ensure **`--platform linux/amd64,linux/arm64`** (multi-arch index).
+- **`denied` / `unauthorized`:** **`docker login`** with a user that can push **`hemumoe/jhentai`**.
+- **`exec format error`:** use **`docker-container`** builder (Step 1); do **not** “fix” by pushing **`--platform linux/amd64`** only.
+- **Transient `apt-get` / mirror errors:** retry the same **`linux/amd64,linux/arm64`** build; do not downgrade to single-arch.
+- Manifest missing an arch: ensure **`--platform linux/amd64,linux/arm64`** and inspect output above.
