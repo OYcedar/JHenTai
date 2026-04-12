@@ -119,6 +119,7 @@ class WebZhTW {
       'detail.downloadGallery': '下載畫廊',
       'detail.archiveResample': '封存（壓縮）',
       'detail.archiveOriginal': '封存（原圖）',
+      'detail.downloadArchive': '下載歸檔',
       'detail.downloadStarted': '下載已開始',
       'detail.galleryQueued': '畫廊下載已加入佇列',
       'detail.archiveQueued': '封存下載已加入佇列',
@@ -132,6 +133,9 @@ class WebZhTW {
 
       // reader
       'reader.loading': '載入畫廊中...',
+      'reader.loadingGalleryMeta': '正在載入頁面列表...',
+      'reader.resolvingFirstPages': '正在解析圖片頁...',
+      'reader.resolvingImagePage': '正在解析頁面...',
       'reader.loadingImage': '載入圖片中...',
       'reader.loadFailed': '載入畫廊失敗: @error',
       'reader.imageFailed': '圖片載入失敗',
@@ -466,6 +470,8 @@ class WebZhTW {
       'downloads.sortTime': '時間',
       'downloads.sortTitle': '標題',
       'downloads.sortStatus': '狀態',
+      'downloads.allCategories': '全部分類',
+      'downloads.categoryFilter': '站點分類',
       'downloads.setPriority': '優先級',
       'downloads.setGroup': '分組',
       'downloads.priorityLabel': '優先級 @n',
@@ -475,6 +481,8 @@ class WebZhTW {
 
       'detail.startDownloadTitle': '開始下載',
       'detail.downloadGroup': '分組',
+      'existingGroup': '現有分組',
+      'groupName': '分組名稱',
       'detail.downloadPriority': '優先級（越大越優先）',
       'detail.stats': '統計',
       'detail.similarByTitle': '相似標題',

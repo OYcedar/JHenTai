@@ -8,7 +8,26 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
 import 'package:web/web.dart' as web;
+
+List<String> _sortedDownloadGroupCandidates(WebDownloadService svc) {
+  final set = <String>{};
+  for (final t in svc.galleryTasks.values) {
+    set.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
+  }
+  for (final t in svc.archiveTasks.values) {
+    set.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
+  }
+  if (set.isEmpty) set.add('default');
+  final list = set.toList();
+  list.sort((a, b) {
+    if (a == 'default') return -1;
+    if (b == 'default') return 1;
+    return a.compareTo(b);
+  });
+  return list;
+}
 
 Map<String, dynamic> _thumbMapForDetail(WebGalleryDetailController c, int index) {
   if (index < c.galleryThumbnails.length) {
@@ -389,7 +408,11 @@ class WebGalleryDetailController extends GetxController {
     }
   }
 
-  Future<void> startArchiveDownload({bool isOriginal = false}) async {
+  Future<void> startArchiveDownload({
+    bool isOriginal = false,
+    String group = 'default',
+    int priority = 0,
+  }) async {
     if (archiverUrl.isEmpty) {
       Get.snackbar('common.error'.tr, 'detail.noArchive'.tr, snackPosition: SnackPosition.BOTTOM);
       return;
@@ -406,9 +429,12 @@ class WebGalleryDetailController extends GetxController {
         coverUrl: coverUrl.value,
         uploader: uploader.value,
         isOriginal: isOriginal,
+        group: group,
+        priority: priority,
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.archiveQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
+      await Get.find<WebDownloadService>().refresh();
     } catch (e) {
       Get.snackbar('common.error'.tr, 'detail.archiveFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
@@ -525,44 +551,125 @@ class WebGalleryDetailPage extends StatelessWidget {
   }
 
   void _showStartGalleryDownloadDialog(BuildContext context) {
-    final groupCtrl = TextEditingController(text: 'default');
-    final priorityCtrl = TextEditingController(text: '0');
+    final svc = Get.find<WebDownloadService>();
+    final candidates = _sortedDownloadGroupCandidates(svc);
+    final rawG = web.window.localStorage.getItem('jh_web_default_gallery_group');
+    var group = (rawG != null && rawG.isNotEmpty) ? rawG : 'default';
+    final priorityCtrl = TextEditingController(
+      text: web.window.localStorage.getItem('jh_web_default_gallery_priority') ?? '0',
+    );
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('detail.startDownloadTitle'.tr),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: groupCtrl,
-              decoration: InputDecoration(
-                labelText: 'detail.downloadGroup'.tr,
-                border: const OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              WebGroupNameSelector(
+                currentGroup: group,
+                candidates: candidates,
+                listener: (g) => group = g,
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: priorityCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'detail.downloadPriority'.tr,
-                border: const OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: priorityCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'detail.downloadPriority'.tr,
+                  border: const OutlineInputBorder(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
           FilledButton(
             onPressed: () async {
-              Navigator.pop(ctx);
-              final g = groupCtrl.text.trim().isEmpty ? 'default' : groupCtrl.text.trim();
+              final g = group.trim().isEmpty ? 'default' : group.trim();
               final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
+              web.window.localStorage.setItem('jh_web_default_gallery_group', g);
+              web.window.localStorage.setItem('jh_web_default_gallery_priority', '$p');
+              Navigator.pop(ctx);
               await controller.startGalleryDownload(group: g, priority: p);
             },
             child: Text('common.ok'.tr),
           ),
+        ],
+      ),
+    );
+  }
+
+  void _showStartArchiveDownloadDialog(BuildContext context) {
+    final svc = Get.find<WebDownloadService>();
+    final candidates = _sortedDownloadGroupCandidates(svc);
+    final rawG = web.window.localStorage.getItem('jh_web_default_archive_group');
+    var group = (rawG != null && rawG.isNotEmpty) ? rawG : 'default';
+    final priorityCtrl = TextEditingController(
+      text: web.window.localStorage.getItem('jh_web_default_archive_priority') ?? '0',
+    );
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('detail.startDownloadTitle'.tr),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              WebGroupNameSelector(
+                currentGroup: group,
+                candidates: candidates,
+                listener: (g) => group = g,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: priorityCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'detail.downloadPriority'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.archive),
+                    label: Text('detail.archiveResample'.tr),
+                    onPressed: () async {
+                      final g = group.trim().isEmpty ? 'default' : group.trim();
+                      final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
+                      web.window.localStorage.setItem('jh_web_default_archive_group', g);
+                      web.window.localStorage.setItem('jh_web_default_archive_priority', '$p');
+                      Navigator.pop(ctx);
+                      await controller.startArchiveDownload(isOriginal: false, group: g, priority: p);
+                    },
+                  ),
+                  FilledButton.icon(
+                    icon: const Icon(Icons.archive_outlined),
+                    label: Text('detail.archiveOriginal'.tr),
+                    onPressed: () async {
+                      final g = group.trim().isEmpty ? 'default' : group.trim();
+                      final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
+                      web.window.localStorage.setItem('jh_web_default_archive_group', g);
+                      web.window.localStorage.setItem('jh_web_default_archive_priority', '$p');
+                      Navigator.pop(ctx);
+                      await controller.startArchiveDownload(isOriginal: true, group: g, priority: p);
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
         ],
       ),
     );
@@ -1122,20 +1229,11 @@ class WebGalleryDetailPage extends StatelessWidget {
         final newer = controller.newerVersionUrl.value;
         final m = newer != null ? RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(newer) : null;
         final buttons = controller.archiverUrl.isNotEmpty
-            ? Wrap(
-                spacing: 8,
-                children: [
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.archive),
-                    label: Text('detail.archiveResample'.tr),
-                    onPressed: () => controller.startArchiveDownload(isOriginal: false),
-                  ),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.archive_outlined),
-                    label: Text('detail.archiveOriginal'.tr),
-                    onPressed: () => controller.startArchiveDownload(isOriginal: true),
-                  ),
-                ],
+            ? OutlinedButton.icon(
+                icon: const Icon(Icons.archive_outlined),
+                label: Text('detail.downloadArchive'.tr),
+                style: OutlinedButton.styleFrom(minimumSize: const Size(160, 44)),
+                onPressed: () => _showStartArchiveDownloadDialog(context),
               )
             : const SizedBox.shrink();
         if (m == null) return buttons;

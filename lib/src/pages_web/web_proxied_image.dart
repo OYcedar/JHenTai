@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_image_client_log.dart';
 
@@ -110,7 +111,20 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
                 return SizedBox(
                   height: _readerLoadingBoxHeight(context),
                   width: double.infinity,
-                  child: Center(child: CircularProgressIndicator(value: progress, color: Colors.white54)),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(value: progress, color: Colors.white54),
+                        const SizedBox(height: 10),
+                        Text(
+                          'reader.loadingImage'.tr,
+                          style: const TextStyle(color: Colors.white54, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               }
             : null,
@@ -131,7 +145,20 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
               return SizedBox(
                 height: _readerLoadingBoxHeight(context),
                 width: double.infinity,
-                child: const Center(child: CircularProgressIndicator(color: Colors.white54)),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: Colors.white54),
+                      const SizedBox(height: 10),
+                      Text(
+                        'reader.loadingImage'.tr,
+                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
             if (widget.surfaceLoadingPlaceholder) {
@@ -191,7 +218,20 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
               return SizedBox(
                 height: _readerLoadingBoxHeight(context),
                 width: double.infinity,
-                child: Center(child: CircularProgressIndicator(value: progress, color: Colors.white54)),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(value: progress, color: Colors.white54),
+                      const SizedBox(height: 10),
+                      Text(
+                        'reader.loadingImage'.tr,
+                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
               );
             }
           : widget.surfaceLoadingPlaceholder
