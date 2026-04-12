@@ -117,6 +117,7 @@ class WebZhCN {
       'detail.downloadGallery': '下载画廊',
       'detail.archiveResample': '归档（压缩）',
       'detail.archiveOriginal': '归档（原图）',
+      'detail.downloadArchive': '下载归档',
       'detail.downloadStarted': '下载已开始',
       'detail.galleryQueued': '画廊下载已加入队列',
       'detail.archiveQueued': '归档下载已加入队列',
@@ -130,6 +131,9 @@ class WebZhCN {
 
       // reader
       'reader.loading': '加载画廊中...',
+      'reader.loadingGalleryMeta': '正在加载页面列表...',
+      'reader.resolvingFirstPages': '正在解析图片页...',
+      'reader.resolvingImagePage': '正在解析页面...',
       'reader.loadingImage': '加载图片中...',
       'reader.loadFailed': '加载画廊失败: @error',
       'reader.imageFailed': '图片加载失败',
@@ -474,6 +478,8 @@ class WebZhCN {
       'downloads.sortTime': '时间',
       'downloads.sortTitle': '标题',
       'downloads.sortStatus': '状态',
+      'downloads.allCategories': '全部分类',
+      'downloads.categoryFilter': '站点分类',
       'downloads.setPriority': '优先级',
       'downloads.setGroup': '分组',
       'downloads.priorityLabel': '优先级 @n',
@@ -484,6 +490,8 @@ class WebZhCN {
       // detail download dialog
       'detail.startDownloadTitle': '开始下载',
       'detail.downloadGroup': '分组',
+      'existingGroup': '现有分组',
+      'groupName': '分组名称',
       'detail.downloadPriority': '优先级（越大越优先）',
       'detail.stats': '统计',
       'detail.similarByTitle': '相似标题',

@@ -230,6 +230,8 @@ class WebReaderController extends GetxController {
   final totalPages = 0.obs;
   final isLoading = true.obs;
   final errorMessage = ''.obs;
+  /// i18n key for the full-screen loading line under the spinner ([WebReaderPage]).
+  final readerLoadingLabelKey = 'reader.loading'.obs;
   final showOverlay = true.obs;
   final readDirection = ReadDirection.ltr.obs;
   /// Mouse wheel over image: page turn vs zoom (PageView modes only; see [kWebReaderWheelActionKey]).
@@ -259,6 +261,8 @@ class WebReaderController extends GetxController {
   final imageLoadErrors = <int, String>{}.obs;
   int _resolveGeneration = 0;
   final _activeResolveGeneration = <int, int>{};
+  /// Join concurrent [Future.wait] / [bootstrap] calls waiting on the same index.
+  final Map<int, Completer<void>> _pendingImageResolve = {};
 
   late PageController pageController;
   final scrollController = ScrollController();
@@ -279,8 +283,6 @@ class WebReaderController extends GetxController {
     _readWebRouteAndQueryParams();
 
     pageController = PageController();
-    _loadSavedDirection();
-    _loadDisplayFirstPageAlone();
     _refreshEhLoggedInForOriginal();
     _loadWheelAction();
     _loadGallery();
@@ -506,7 +508,14 @@ class WebReaderController extends GetxController {
   Future<void> _loadGallery() async {
     isLoading.value = true;
     errorMessage.value = '';
+    if (mode == ReaderMode.online) {
+      readerLoadingLabelKey.value = 'reader.loadingGalleryMeta';
+    } else {
+      readerLoadingLabelKey.value = 'reader.loading';
+    }
     try {
+      await _loadSavedDirection();
+      await _loadDisplayFirstPageAlone();
       switch (mode) {
         case ReaderMode.online:
           await _loadOnline();
@@ -523,6 +532,8 @@ class WebReaderController extends GetxController {
       }
       await _restoreProgress();
       if (mode == ReaderMode.online) {
+        readerLoadingLabelKey.value = 'reader.resolvingFirstPages';
+        await _bootstrapIndicesForImagePage(currentPage.value);
         _preloadAround(currentPage.value);
       }
     } catch (e) {
@@ -531,6 +542,25 @@ class WebReaderController extends GetxController {
       isLoading.value = false;
       // Strip mounts only after loading; align once if progress was restored earlier.
       _scheduleScrollThumbnailStripToCurrent();
+    }
+  }
+
+  /// Online: await CDN URL resolution for the visible page(s) before hiding the global loading overlay.
+  Future<void> _bootstrapIndicesForImagePage(int page) async {
+    if (mode != ReaderMode.online) return;
+    if (_imagePageUrls.isEmpty) return;
+    final t = totalPages.value;
+    if (t <= 0) return;
+    final p = page.clamp(0, t - 1);
+    if (readDirection.value == ReadDirection.doubleColumn) {
+      final screen = doubleColumnScreenIndexForImagePage(p);
+      final idxs = doubleColumnIndicesForScreen(screen)
+          .where((i) => i >= 0 && i < _imagePageUrls.length)
+          .toList();
+      if (idxs.isEmpty) return;
+      await Future.wait(idxs.map((i) => _loadImageAtIndex(i)));
+    } else {
+      await _loadImageAtIndex(p);
     }
   }
 
@@ -551,7 +581,6 @@ class WebReaderController extends GetxController {
     } else {
       galleryThumbnails.value = [];
     }
-    _preloadAround(0);
     imageUrls.refresh();
   }
 
@@ -602,8 +631,13 @@ class WebReaderController extends GetxController {
   Future<void> _loadImageAtIndex(int index, {String? nl}) async {
     if (index < 0 || index >= _imagePageUrls.length) return;
     if (_loadedImageUrls.containsKey(index)) return;
-    if (resolvingImageIndexes.contains(index)) return;
+    if (_pendingImageResolve.containsKey(index)) {
+      await _pendingImageResolve[index]!.future;
+      return;
+    }
 
+    final completer = Completer<void>();
+    _pendingImageResolve[index] = completer;
     final gen = ++_resolveGeneration;
     _activeResolveGeneration[index] = gen;
     resolvingImageIndexes.add(index);
@@ -620,6 +654,10 @@ class WebReaderController extends GetxController {
         _activeResolveGeneration.remove(index);
         resolvingImageIndexes.remove(index);
       }
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+      _pendingImageResolve.remove(index);
     }
   }
 
@@ -933,6 +971,7 @@ class WebReaderPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Obx(() {
+        final _ = controller.readerLoadingLabelKey.value;
         if (controller.isLoading.value) {
           return Center(
             child: Column(
@@ -940,7 +979,14 @@ class WebReaderPage extends StatelessWidget {
               children: [
                 const CircularProgressIndicator(color: Colors.white),
                 const SizedBox(height: 16),
-                Text('reader.loading'.tr, style: const TextStyle(color: Colors.white70)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    controller.readerLoadingLabelKey.value.tr,
+                    style: const TextStyle(color: Colors.white70),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ],
             ),
           );
@@ -1344,9 +1390,14 @@ Widget _webReaderImageLoadingShell(
   required int pageIndex,
   required bool isVertical,
   required bool fitWidth,
+  Map<String, dynamic>? thumbData,
+  required bool isResolving,
 }) {
   final sh = MediaQuery.sizeOf(context);
   final h = isVertical || fitWidth ? sh.height * 0.85 : sh.height * 0.72;
+  final thumbUrl = thumbData != null ? (thumbData['thumbUrl'] as String? ?? '') : '';
+  final subtitle =
+      isResolving ? 'reader.resolvingImagePage'.tr : 'reader.loadingImage'.tr;
   return SizedBox(
     width: double.infinity,
     height: h,
@@ -1354,9 +1405,21 @@ Widget _webReaderImageLoadingShell(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (thumbUrl.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: WebEhThumbnail(
+                data: Map<String, dynamic>.from(thumbData!),
+                height: 120,
+                width: 90,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
           const CircularProgressIndicator(color: Colors.white54),
           const SizedBox(height: 12),
-          Text('reader.loadingImage'.tr, style: const TextStyle(color: Colors.white54)),
+          Text(subtitle, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 8),
           Text('${pageIndex + 1}', style: const TextStyle(color: Colors.white38, fontSize: 14)),
         ],
@@ -1391,8 +1454,13 @@ class _ImageContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final url = index < controller.imageUrls.length ? controller.imageUrls[index] : '';
-      controller.resolvingImageIndexes.contains(index);
+      final _ = controller.resolvingImageIndexes.length;
+      final isResolving = controller.resolvingImageIndexes.contains(index);
       final parseErr = controller.imageLoadErrors[index];
+      Map<String, dynamic>? thumbData;
+      if (index < controller.galleryThumbnails.length) {
+        thumbData = controller.galleryThumbnails[index];
+      }
       if (url.isEmpty &&
           parseErr != null &&
           parseErr.isNotEmpty &&
@@ -1412,6 +1480,8 @@ class _ImageContent extends StatelessWidget {
           pageIndex: index,
           isVertical: isVertical,
           fitWidth: fitWidth,
+          thumbData: thumbData,
+          isResolving: isResolving,
         );
       }
 

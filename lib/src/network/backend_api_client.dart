@@ -24,10 +24,11 @@ class BackendApiClient {
   void init({required String baseUrl, String? token}) {
     _baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
     _token = token;
+    // Web Docker / EH proxy: first connection or cold server can exceed 10s; reader init uses these defaults.
     _dio = Dio(BaseOptions(
       baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 30),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 120),
     ));
     if (_token != null) {
       _applyToken(_token!);
@@ -73,9 +74,12 @@ class BackendApiClient {
 
   Future<bool> verifyToken(String token) async {
     try {
-      final response = await Dio(BaseOptions(baseUrl: _baseUrl))
-          .post('/api/auth/token/verify', data: jsonEncode({'token': token}),
-              options: Options(headers: {'Content-Type': 'application/json'}));
+      final response = await Dio(BaseOptions(
+        baseUrl: _baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 60),
+      )).post('/api/auth/token/verify', data: jsonEncode({'token': token}),
+          options: Options(headers: {'Content-Type': 'application/json'}));
       return response.data['valid'] == true;
     } catch (_) {
       return false;

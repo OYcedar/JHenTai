@@ -1,26 +1,121 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:web/web.dart' as web;
 
 enum WebDownloadSort { priorityDesc, timeDesc, title, status }
 
 class WebDownloadsController extends GetxController with GetSingleTickerProviderStateMixin {
   late TabController tabController;
 
+  static const _kGalleryGroupsExpanded = 'jh_web_downloads_gallery_groups_expanded';
+  static const _kArchiveGroupsExpanded = 'jh_web_downloads_archive_groups_expanded';
+
   final searchQuery = ''.obs;
-  final selectedGroup = Rxn<String>();
+  final selectedCategoryFilter = Rxn<String>();
   final gallerySort = WebDownloadSort.priorityDesc.obs;
   final archiveSort = WebDownloadSort.priorityDesc.obs;
 
+  final galleryGroupExpanded = RxMap<String, bool>();
+  final archiveGroupExpanded = RxMap<String, bool>();
+
   WebDownloadService get _svc => Get.find<WebDownloadService>();
+
+  static String _taskGroupName(Map<String, dynamic> t) =>
+      (t['group_name'] ?? t['groupName'] ?? 'default') as String;
+
+  static String _taskCategoryKey(Map<String, dynamic> t) => (t['category'] as String? ?? '').trim();
+
+  static List<String> sortedGroupNames(Iterable<String> names) {
+    final list = names.toSet().toList();
+    list.sort((a, b) {
+      if (a == 'default') return -1;
+      if (b == 'default') return 1;
+      return a.compareTo(b);
+    });
+    return list;
+  }
+
+  List<String> get galleryCategoriesForFilter {
+    final s = <String>{};
+    for (final t in _svc.galleryTasks.values) {
+      final c = _taskCategoryKey(t);
+      if (c.isNotEmpty) s.add(c);
+    }
+    final list = s.toList();
+    list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return list;
+  }
+
+  List<String> get archiveCategoriesForFilter {
+    final s = <String>{};
+    for (final t in _svc.archiveTasks.values) {
+      final c = _taskCategoryKey(t);
+      if (c.isNotEmpty) s.add(c);
+    }
+    final list = s.toList();
+    list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    return list;
+  }
+
+  void _loadExpandedFromStorage() {
+    _mergeExpandedMap(_kGalleryGroupsExpanded, galleryGroupExpanded);
+    _mergeExpandedMap(_kArchiveGroupsExpanded, archiveGroupExpanded);
+  }
+
+  void _mergeExpandedMap(String key, RxMap<String, bool> target) {
+    try {
+      final raw = web.window.localStorage.getItem(key);
+      if (raw == null || raw.isEmpty) return;
+      final m = jsonDecode(raw) as Map<String, dynamic>;
+      m.forEach((k, v) {
+        if (v is bool) target[k] = v;
+      });
+    } catch (_) {}
+  }
+
+  void _persistGalleryExpanded() {
+    try {
+      web.window.localStorage.setItem(
+        _kGalleryGroupsExpanded,
+        jsonEncode(Map<String, bool>.from(galleryGroupExpanded)),
+      );
+    } catch (_) {}
+  }
+
+  void _persistArchiveExpanded() {
+    try {
+      web.window.localStorage.setItem(
+        _kArchiveGroupsExpanded,
+        jsonEncode(Map<String, bool>.from(archiveGroupExpanded)),
+      );
+    } catch (_) {}
+  }
+
+  void toggleGalleryGroup(String groupName) {
+    final cur = galleryGroupExpanded[groupName] ?? true;
+    galleryGroupExpanded[groupName] = !cur;
+    galleryGroupExpanded.refresh();
+    _persistGalleryExpanded();
+  }
+
+  void toggleArchiveGroup(String groupName) {
+    final cur = archiveGroupExpanded[groupName] ?? true;
+    archiveGroupExpanded[groupName] = !cur;
+    archiveGroupExpanded.refresh();
+    _persistArchiveExpanded();
+  }
 
   List<Map<String, dynamic>> get filteredGalleryTasks {
     var list = _svc.galleryTasks.values.toList();
-    final group = selectedGroup.value;
-    if (group != null) {
-      list = list.where((t) => (t['group_name'] ?? t['groupName'] ?? 'default') == group).toList();
+    final cat = selectedCategoryFilter.value;
+    if (cat != null && cat.isNotEmpty) {
+      final needle = cat.toLowerCase();
+      list = list.where((t) => _taskCategoryKey(t).toLowerCase() == needle).toList();
     }
     final q = searchQuery.value.toLowerCase();
     if (q.isNotEmpty) {
@@ -91,9 +186,10 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
 
   List<Map<String, dynamic>> get filteredArchiveTasks {
     var list = _svc.archiveTasks.values.toList();
-    final group = selectedGroup.value;
-    if (group != null) {
-      list = list.where((t) => (t['group_name'] ?? t['groupName'] ?? 'default') == group).toList();
+    final cat = selectedCategoryFilter.value;
+    if (cat != null && cat.isNotEmpty) {
+      final needle = cat.toLowerCase();
+      list = list.where((t) => _taskCategoryKey(t).toLowerCase() == needle).toList();
     }
     final q = searchQuery.value.toLowerCase();
     if (q.isNotEmpty) {
@@ -140,25 +236,26 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
     return list;
   }
 
-  Set<String> get allGroups {
-    final groups = <String>{};
-    for (final t in _svc.galleryTasks.values) {
-      groups.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
+  void _syncCategoryFilterWithTab() {
+    final galleryTab = tabController.index == 0;
+    final cats = galleryTab ? galleryCategoriesForFilter : archiveCategoriesForFilter;
+    final sel = selectedCategoryFilter.value;
+    if (sel != null && !cats.contains(sel)) {
+      selectedCategoryFilter.value = null;
     }
-    for (final t in _svc.archiveTasks.values) {
-      groups.add((t['group_name'] ?? t['groupName'] ?? 'default') as String);
-    }
-    return groups;
   }
 
   @override
   void onInit() {
     super.onInit();
     tabController = TabController(length: 2, vsync: this);
+    _loadExpandedFromStorage();
+    tabController.addListener(_syncCategoryFilterWithTab);
   }
 
   @override
   void onClose() {
+    tabController.removeListener(_syncCategoryFilterWithTab);
     tabController.dispose();
     super.onClose();
   }
@@ -235,7 +332,6 @@ class _DownloadFilterBar extends StatelessWidget {
     final svc = Get.find<WebDownloadService>();
     return Obx(() {
       final _ = svc.galleryTasks.length + svc.archiveTasks.length;
-      final groups = controller.allGroups;
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
         child: AnimatedBuilder(
@@ -244,71 +340,99 @@ class _DownloadFilterBar extends StatelessWidget {
             final galleryTab = controller.tabController.index == 0;
             return Obx(() {
               final sort = galleryTab ? controller.gallerySort.value : controller.archiveSort.value;
-              return Row(
+              final categories =
+                  galleryTab ? controller.galleryCategoriesForFilter : controller.archiveCategoriesForFilter;
+              final rawCat = controller.selectedCategoryFilter.value;
+              if (rawCat != null && !categories.contains(rawCat)) {
+                Future.microtask(() {
+                  if (controller.selectedCategoryFilter.value == rawCat) {
+                    controller.selectedCategoryFilter.value = null;
+                  }
+                });
+              }
+              final categoryFieldValue =
+                  rawCat == null || categories.contains(rawCat) ? rawCat : null;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: TextField(
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'downloads.search'.tr,
+                            prefixIcon: const Icon(Icons.search, size: 20),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            border: const OutlineInputBorder(),
+                          ),
+                          onChanged: (v) => controller.searchQuery.value = v,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 150,
+                        child: DropdownButtonFormField<WebDownloadSort>(
+                          value: sort,
+                          isDense: true,
+                          decoration: InputDecoration(
+                            labelText: 'downloads.sortBy'.tr,
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: WebDownloadSort.priorityDesc,
+                              child: Text('downloads.sortPriority'.tr, overflow: TextOverflow.ellipsis),
+                            ),
+                            DropdownMenuItem(
+                              value: WebDownloadSort.timeDesc,
+                              child: Text('downloads.sortTime'.tr, overflow: TextOverflow.ellipsis),
+                            ),
+                            DropdownMenuItem(
+                              value: WebDownloadSort.title,
+                              child: Text('downloads.sortTitle'.tr, overflow: TextOverflow.ellipsis),
+                            ),
+                            DropdownMenuItem(
+                              value: WebDownloadSort.status,
+                              child: Text('downloads.sortStatus'.tr, overflow: TextOverflow.ellipsis),
+                            ),
+                          ],
+                          onChanged: (v) {
+                            if (v == null) return;
+                            if (galleryTab) {
+                              controller.gallerySort.value = v;
+                            } else {
+                              controller.archiveSort.value = v;
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (categories.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String?>(
+                      value: categoryFieldValue,
+                      isDense: true,
                       decoration: InputDecoration(
-                        hintText: 'downloads.search'.tr,
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        isDense: true,
+                        labelText: 'downloads.categoryFilter'.tr,
+                        border: const OutlineInputBorder(),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        border: const OutlineInputBorder(),
-                      ),
-                      onChanged: (v) => controller.searchQuery.value = v,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 150,
-                    child: DropdownButtonFormField<WebDownloadSort>(
-                      value: sort,
-                      isDense: true,
-                      decoration: InputDecoration(
-                        labelText: 'downloads.sortBy'.tr,
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       ),
                       items: [
-                        DropdownMenuItem(
-                          value: WebDownloadSort.priorityDesc,
-                          child: Text('downloads.sortPriority'.tr, overflow: TextOverflow.ellipsis),
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('downloads.allCategories'.tr),
                         ),
-                        DropdownMenuItem(
-                          value: WebDownloadSort.timeDesc,
-                          child: Text('downloads.sortTime'.tr, overflow: TextOverflow.ellipsis),
-                        ),
-                        DropdownMenuItem(
-                          value: WebDownloadSort.title,
-                          child: Text('downloads.sortTitle'.tr, overflow: TextOverflow.ellipsis),
-                        ),
-                        DropdownMenuItem(
-                          value: WebDownloadSort.status,
-                          child: Text('downloads.sortStatus'.tr, overflow: TextOverflow.ellipsis),
+                        ...categories.map(
+                          (c) => DropdownMenuItem<String?>(
+                            value: c,
+                            child: Text(c, overflow: TextOverflow.ellipsis),
+                          ),
                         ),
                       ],
-                      onChanged: (v) {
-                        if (v == null) return;
-                        if (galleryTab) {
-                          controller.gallerySort.value = v;
-                        } else {
-                          controller.archiveSort.value = v;
-                        }
-                      },
-                    ),
-                  ),
-                  if (groups.length > 1) ...[
-                    const SizedBox(width: 8),
-                    DropdownButton<String?>(
-                      value: controller.selectedGroup.value,
-                      hint: Text('downloads.allGroups'.tr),
-                      items: [
-                        DropdownMenuItem<String?>(value: null, child: Text('downloads.allGroups'.tr)),
-                        ...groups.map((g) => DropdownMenuItem(value: g, child: Text(g))),
-                      ],
-                      onChanged: (v) => controller.selectedGroup.value = v,
-                      underline: const SizedBox.shrink(),
-                      isDense: true,
+                      onChanged: (v) => controller.selectedCategoryFilter.value = v,
                     ),
                   ],
                 ],
@@ -318,6 +442,58 @@ class _DownloadFilterBar extends StatelessWidget {
         ),
       );
     });
+  }
+}
+
+class _DownloadGroupHeader extends StatelessWidget {
+  final String groupName;
+  final int count;
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _DownloadGroupHeader({
+    required this.groupName,
+    required this.count,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(Icons.folder_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  groupName,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(
+                '($count)',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+              ),
+              const SizedBox(width: 8),
+              AnimatedRotation(
+                turns: expanded ? 0.25 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: const Icon(Icons.chevron_right, size: 22),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -427,19 +603,33 @@ class _GalleryTaskList extends StatelessWidget {
   Widget build(BuildContext context) {
     final svc = Get.find<WebDownloadService>();
     return Obx(() {
-      // Touch the reactive map to ensure rebuild on changes
-      final _ = svc.galleryTasks.length;
+      final _ = svc.galleryTasks.length + controller.galleryGroupExpanded.length;
       final tasks = controller.sortedFilteredGalleryTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noGallery'.tr));
       }
-      return ListView.builder(
+      final byGroup = <String, List<Map<String, dynamic>>>{};
+      for (final t in tasks) {
+        final g = WebDownloadsController._taskGroupName(t);
+        byGroup.putIfAbsent(g, () => []).add(t);
+      }
+      final groups = WebDownloadsController.sortedGroupNames(byGroup.keys);
+      return ListView(
         padding: const EdgeInsets.all(8),
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          return _GalleryTaskCard(task: task, controller: controller);
-        },
+        children: [
+          for (final g in groups) ...[
+            _DownloadGroupHeader(
+              groupName: g,
+              count: byGroup[g]!.length,
+              expanded: controller.galleryGroupExpanded[g] ?? true,
+              onTap: () => controller.toggleGalleryGroup(g),
+            ),
+            const SizedBox(height: 6),
+            if (controller.galleryGroupExpanded[g] ?? true)
+              ...byGroup[g]!.map((task) => _GalleryTaskCard(task: task, controller: controller)),
+            const SizedBox(height: 10),
+          ],
+        ],
       );
     });
   }
@@ -634,18 +824,33 @@ class _ArchiveTaskList extends StatelessWidget {
   Widget build(BuildContext context) {
     final svc = Get.find<WebDownloadService>();
     return Obx(() {
-      final _ = svc.archiveTasks.length;
+      final _ = svc.archiveTasks.length + controller.archiveGroupExpanded.length;
       final tasks = controller.sortedFilteredArchiveTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noArchive'.tr));
       }
-      return ListView.builder(
+      final byGroup = <String, List<Map<String, dynamic>>>{};
+      for (final t in tasks) {
+        final g = WebDownloadsController._taskGroupName(t);
+        byGroup.putIfAbsent(g, () => []).add(t);
+      }
+      final groups = WebDownloadsController.sortedGroupNames(byGroup.keys);
+      return ListView(
         padding: const EdgeInsets.all(8),
-        itemCount: tasks.length,
-        itemBuilder: (context, index) {
-          final task = tasks[index];
-          return _ArchiveTaskCard(task: task, controller: controller);
-        },
+        children: [
+          for (final g in groups) ...[
+            _DownloadGroupHeader(
+              groupName: g,
+              count: byGroup[g]!.length,
+              expanded: controller.archiveGroupExpanded[g] ?? true,
+              onTap: () => controller.toggleArchiveGroup(g),
+            ),
+            const SizedBox(height: 6),
+            if (controller.archiveGroupExpanded[g] ?? true)
+              ...byGroup[g]!.map((task) => _ArchiveTaskCard(task: task, controller: controller)),
+            const SizedBox(height: 10),
+          ],
+        ],
       );
     });
   }

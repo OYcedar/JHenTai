@@ -120,6 +120,7 @@ class WebEnUS {
       'detail.downloadGallery': 'Download Gallery',
       'detail.archiveResample': 'Archive (Resample)',
       'detail.archiveOriginal': 'Archive (Original)',
+      'detail.downloadArchive': 'Download archive',
       'detail.downloadStarted': 'Download Started',
       'detail.galleryQueued': 'Gallery download has been queued',
       'detail.archiveQueued': 'Archive download has been queued',
@@ -133,6 +134,9 @@ class WebEnUS {
 
       // reader
       'reader.loading': 'Loading gallery...',
+      'reader.loadingGalleryMeta': 'Loading page list...',
+      'reader.resolvingFirstPages': 'Resolving image pages...',
+      'reader.resolvingImagePage': 'Resolving page...',
       'reader.loadingImage': 'Loading image...',
       'reader.loadFailed': 'Failed to load gallery: @error',
       'reader.imageFailed': 'Failed to load image',
@@ -483,6 +487,8 @@ class WebEnUS {
       'downloads.sortTime': 'Time',
       'downloads.sortTitle': 'Title',
       'downloads.sortStatus': 'Status',
+      'downloads.allCategories': 'All categories',
+      'downloads.categoryFilter': 'EH category',
       'downloads.setPriority': 'Priority',
       'downloads.setGroup': 'Group',
       'downloads.priorityLabel': 'Priority @n',
@@ -492,6 +498,8 @@ class WebEnUS {
 
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',
+      'existingGroup': 'Existing Group',
+      'groupName': 'Group name',
       'detail.downloadPriority': 'Priority (higher runs first)',
       'detail.stats': 'Statistics',
       'detail.similarByTitle': 'Similar title',
