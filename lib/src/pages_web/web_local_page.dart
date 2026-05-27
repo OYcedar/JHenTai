@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 
 class WebLocalController extends GetxController {
   final galleries = <Map<String, dynamic>>[].obs;
@@ -159,7 +160,7 @@ class WebLocalPage extends GetView<WebLocalController> {
             final gallery = controller.galleries[index];
             return Card(
               child: ListTile(
-                leading: const Icon(Icons.photo_library, size: 40),
+                leading: _buildGalleryCover(gallery),
                 title: Text(
                   gallery['title'] as String? ?? '',
                   maxLines: 1,
@@ -185,6 +186,28 @@ class WebLocalPage extends GetView<WebLocalController> {
             );
           },
         ));
+  }
+
+  Widget _buildGalleryCover(Map<String, dynamic> gallery) {
+    final coverPath = gallery['coverPath'] as String? ?? '';
+    if (coverPath.isEmpty) {
+      return const SizedBox(
+        width: 52,
+        height: 72,
+        child: Icon(Icons.photo_library, size: 40),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(6),
+      child: WebProxiedImage(
+        sourceUrl: backendApiClient.imageFileUrl(coverPath),
+        width: 52,
+        height: 72,
+        fit: BoxFit.cover,
+        errorIconSize: 32,
+      ),
+    );
   }
 
   Future<void> _confirmDeleteLocalGallery(
