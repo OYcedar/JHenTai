@@ -271,6 +271,14 @@ class WebPtBR {
           'Entre em Conta para alterar o site e o estado dos cookies.',
       'settings.ehWebMoreSoon':
           'Perfil da galeria, cotas e Minhas tags podem ser adicionados quando houver APIs no servidor.',
+      'settings.ehMyTags': 'Minhas tags',
+      'settings.ehMyTagsHint': 'Gerencie tags observadas e ocultas online',
+      'settings.ehSiteSetting': 'Configurações do site',
+      'settings.ehSiteSettingHint':
+          'Abrir a página de configurações E-Hentai / ExHentai em uma nova aba',
+      'settings.ehProfileAndQuota': 'Perfil, cota e recursos',
+      'settings.ehProfileAndQuotaHint':
+          'Esses valores ainda dependem da leitura das páginas do site. Por enquanto, veja-os nas configurações do site.',
       'settings.styleWebMoreSoon':
           'Opções de layout de lista podem ser adicionadas depois.',
       'settings.galleryListStyle': 'Estilo da lista de galerias',

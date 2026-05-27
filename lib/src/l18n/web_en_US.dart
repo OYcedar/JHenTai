@@ -274,6 +274,14 @@ class WebEnUS {
           'Log in from Account to change site and cookie status.',
       'settings.ehWebMoreSoon':
           'Gallery profile, quotas, and My Tags may be added when server APIs are available.',
+      'settings.ehMyTags': 'My Tags',
+      'settings.ehMyTagsHint': 'Manage watched and hidden tags online',
+      'settings.ehSiteSetting': 'Site settings',
+      'settings.ehSiteSettingHint':
+          'Open the E-Hentai / ExHentai settings page in a new tab',
+      'settings.ehProfileAndQuota': 'Profile, quota, and assets',
+      'settings.ehProfileAndQuotaHint':
+          'These values still depend on site-page parsing. You can view them from the site settings page for now.',
       'settings.styleWebMoreSoon':
           'List layout options may be added in a future update.',
       'settings.galleryListStyle': 'Gallery list style',

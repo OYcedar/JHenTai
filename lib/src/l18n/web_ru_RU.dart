@@ -268,6 +268,15 @@ class WebRuRU {
           'Войдите в разделе «Аккаунт», чтобы менять сайт и состояние cookie.',
       'settings.ehWebMoreSoon':
           'Профиль галереи, квоты и «Мои теги» могут появиться при готовности API сервера.',
+      'settings.ehMyTags': 'Мои теги',
+      'settings.ehMyTagsHint':
+          'Управление отслеживаемыми и скрытыми тегами онлайн',
+      'settings.ehSiteSetting': 'Настройки сайта',
+      'settings.ehSiteSettingHint':
+          'Открыть страницу настроек E-Hentai / ExHentai в новой вкладке',
+      'settings.ehProfileAndQuota': 'Профиль, квота и активы',
+      'settings.ehProfileAndQuotaHint':
+          'Эти значения всё ещё зависят от разбора страниц сайта. Пока их можно посмотреть в настройках сайта.',
       'settings.styleWebMoreSoon':
           'Варианты макета списка могут быть добавлены позже.',
       'settings.galleryListStyle': 'Вид списка галерей',

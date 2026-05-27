@@ -262,6 +262,13 @@ class WebKoKR {
       'settings.ehRequiresLogin': '계정에서 로그인한 뒤 사이트와 쿠키 상태를 변경하세요.',
       'settings.ehWebMoreSoon':
           '갤러리 프로필, 할당량, 내 태그 등은 서버 API가 준비되면 추가될 수 있습니다.',
+      'settings.ehMyTags': '내 태그',
+      'settings.ehMyTagsHint': '온라인 관심 및 숨김 태그 관리',
+      'settings.ehSiteSetting': '사이트 설정',
+      'settings.ehSiteSettingHint': 'E-Hentai / ExHentai 설정 페이지를 새 탭에서 엽니다',
+      'settings.ehProfileAndQuota': '프로필, 할당량 및 자산',
+      'settings.ehProfileAndQuotaHint':
+          '이 값들은 아직 사이트 페이지 파싱에 의존합니다. 지금은 사이트 설정 페이지에서 확인하세요.',
       'settings.styleWebMoreSoon': '목록 레이아웃 등은 이후 업데이트에서 제공될 수 있습니다.',
       'settings.galleryListStyle': '갤러리 목록 스타일',
       'settings.listModeGrid': '그리드',
