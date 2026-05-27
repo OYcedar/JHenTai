@@ -1161,6 +1161,20 @@ class EHClient {
       final date = dateMatch?.group(1) ?? '';
       final scoreEl = c.querySelector('.c5 span');
       final score = scoreEl?.text ?? '';
+      final scoreDetails = c
+          .querySelector('.c7')
+          ?.text
+          .split(',')
+          .map((detail) => detail.trim())
+          .where((detail) => detail.isNotEmpty)
+          .toList();
+      final fromMe = c.querySelector('.c4.nosel a')?.text == 'Edit';
+      final votedUp =
+          c.querySelector('.c4.nosel a[style*="color:blue"]:nth-child(1)') !=
+              null;
+      final votedDown =
+          c.querySelector('.c4.nosel a[style*="color:blue"]:nth-child(3)') !=
+              null;
       final bodyEl = c.querySelector('.c6');
       final body = bodyEl?.innerHtml ?? '';
       final idAttr = c.parent?.attributes['id'] ?? '';
@@ -1174,6 +1188,10 @@ class EHClient {
         'userId': userId,
         'date': date,
         'score': score,
+        'scoreDetails': scoreDetails ?? [],
+        'fromMe': fromMe,
+        'votedUp': votedUp,
+        'votedDown': votedDown,
         'body': body,
       });
     }

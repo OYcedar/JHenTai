@@ -393,6 +393,7 @@ class WebPtBR {
       'comment.postedMsg': 'Seu comentário foi publicado',
       'comment.postFailed': 'Falha ao publicar comentário: @error',
       'comment.voteFailed': 'Falha ao votar: @error',
+      'comment.scoreDetails': 'Detalhes da Pontuação',
 
       // ranklist
       'ranklist.title': 'Ranking',

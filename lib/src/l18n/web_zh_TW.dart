@@ -364,6 +364,7 @@ class WebZhTW {
       'comment.postedMsg': '你的評論已發佈',
       'comment.postFailed': '傳送評論失敗: @error',
       'comment.voteFailed': '投票失敗: @error',
+      'comment.scoreDetails': '評分明細',
 
       // ranklist
       'ranklist.title': '排行榜',

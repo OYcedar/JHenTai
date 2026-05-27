@@ -364,6 +364,7 @@ class WebZhCN {
       'comment.postedMsg': '你的评论已发布',
       'comment.postFailed': '发送评论失败: @error',
       'comment.voteFailed': '投票失败: @error',
+      'comment.scoreDetails': '评分明细',
 
       // ranklist
       'ranklist.title': '排行榜',

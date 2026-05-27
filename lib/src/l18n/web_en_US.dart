@@ -398,6 +398,7 @@ class WebEnUS {
       'comment.postedMsg': 'Your comment has been posted',
       'comment.postFailed': 'Failed to post comment: @error',
       'comment.voteFailed': 'Failed to vote: @error',
+      'comment.scoreDetails': 'Score Details',
 
       // ranklist
       'ranklist.title': 'Ranklist',

@@ -391,6 +391,7 @@ class WebRuRU {
       'comment.postedMsg': 'Ваш комментарий опубликован',
       'comment.postFailed': 'Ошибка публикации: @error',
       'comment.voteFailed': 'Ошибка голосования: @error',
+      'comment.scoreDetails': 'Детали оценки',
 
       // ranklist
       'ranklist.title': 'Рейтинг',

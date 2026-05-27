@@ -377,6 +377,7 @@ class WebKoKR {
       'comment.postedMsg': '댓글이 게시되었습니다',
       'comment.postFailed': '댓글 게시 실패: @error',
       'comment.voteFailed': '투표 실패: @error',
+      'comment.scoreDetails': '점수 상세',
 
       // ranklist
       'ranklist.title': '랭킹',

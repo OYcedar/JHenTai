@@ -516,12 +516,21 @@ class WebGalleryDetailController extends GetxController {
         commentId: commentId,
         vote: vote,
       );
+      if (result['success'] == false) {
+        throw result['message'] ?? result['error'] ?? 'Vote failed';
+      }
       final newScore = result['comment_score'];
-      if (newScore != null) {
-        final idx = comments.indexWhere((c) => c['id'] == commentId.toString());
-        if (idx >= 0) {
-          comments[idx] = {...comments[idx], 'score': '$newScore'};
-        }
+      final idx = comments.indexWhere((c) => c['id'] == commentId.toString());
+      if (idx >= 0) {
+        final current = Map<String, dynamic>.from(comments[idx]);
+        final wasVotedUp = current['votedUp'] == true;
+        final wasVotedDown = current['votedDown'] == true;
+        comments[idx] = {
+          ...current,
+          if (newScore != null) 'score': '$newScore',
+          'votedUp': vote > 0 ? !wasVotedUp : false,
+          'votedDown': vote < 0 ? !wasVotedDown : false,
+        };
       }
     } catch (e) {
       Get.snackbar(
@@ -2349,6 +2358,14 @@ class _CommentCard extends StatelessWidget {
     final author = comment['author'] as String? ?? 'detail.anonymous'.tr;
     final date = comment['date'] as String? ?? '';
     final score = comment['score'] as String? ?? '';
+    final scoreDetails = (comment['scoreDetails'] as List?)
+            ?.map((item) => item.toString())
+            .where((item) => item.isNotEmpty)
+            .toList() ??
+        [];
+    final votedUp = comment['votedUp'] == true;
+    final votedDown = comment['votedDown'] == true;
+    final fromMe = comment['fromMe'] == true;
     final body = comment['body'] as String? ?? '';
     final commentId = int.tryParse(comment['id']?.toString() ?? '');
     final plainBody = body
@@ -2375,39 +2392,70 @@ class _CommentCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis),
                 ),
                 if (score.isNotEmpty)
-                  Container(
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: scoreDetails.isEmpty
+                        ? null
+                        : () => _showScoreDetails(context, scoreDetails),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: score.startsWith('-')
+                            ? Colors.red.shade100
+                            : Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(score,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: score.startsWith('-')
+                                ? Colors.red.shade800
+                                : Colors.green.shade800,
+                          )),
+                    ),
+                  )
+                else
+                  Padding(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: score.startsWith('-')
-                          ? Colors.red.shade100
-                          : Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(score,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: score.startsWith('-')
-                              ? Colors.red.shade800
-                              : Colors.green.shade800,
-                        )),
+                    child: Text('uploader'.tr,
+                        style: Theme.of(context).textTheme.bodySmall),
                   ),
-                if (!compact && commentId != null && onVote != null) ...[
+                if (!compact &&
+                    score.isNotEmpty &&
+                    !fromMe &&
+                    commentId != null &&
+                    onVote != null) ...[
                   const SizedBox(width: 4),
                   InkWell(
                     borderRadius: BorderRadius.circular(4),
                     onTap: () => onVote!(commentId, 1),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Icon(Icons.thumb_up_outlined, size: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        votedUp ? Icons.thumb_up : Icons.thumb_up_outlined,
+                        size: 16,
+                        color: votedUp
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
                     ),
                   ),
                   InkWell(
                     borderRadius: BorderRadius.circular(4),
                     onTap: () => onVote!(commentId, -1),
-                    child: const Padding(
-                      padding: EdgeInsets.all(4),
-                      child: Icon(Icons.thumb_down_outlined, size: 16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(
+                        votedDown
+                            ? Icons.thumb_down
+                            : Icons.thumb_down_outlined,
+                        size: 16,
+                        color: votedDown
+                            ? Theme.of(context).colorScheme.primary
+                            : null,
+                      ),
                     ),
                   ),
                 ],
@@ -2442,6 +2490,26 @@ class _CommentCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showScoreDetails(BuildContext context, List<String> scoreDetails) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('comment.scoreDetails'.tr),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: scoreDetails.map(Text.new).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.ok'.tr),
+          ),
+        ],
       ),
     );
   }
