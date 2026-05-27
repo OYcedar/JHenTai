@@ -29,17 +29,22 @@ class WebEnUS {
 
       // setup
       'setup.title': 'JHenTai Server Setup',
-      'setup.description': 'Enter the API token shown in the server logs to connect.',
+      'setup.description':
+          'Enter the API token shown in the server logs to connect.',
       'setup.tokenLabel': 'API Token',
       'setup.connect': 'Connect',
       'setup.emptyToken': 'Please enter a token',
-      'setup.invalidToken': 'Invalid token. Check your server logs for the correct token.',
-      'setup.tokenHint': 'The token is 64 hex characters on one line — copy the full string, not half.',
+      'setup.invalidToken':
+          'Invalid token. Check your server logs for the correct token.',
+      'setup.tokenHint':
+          'The token is 64 hex characters on one line — copy the full string, not half.',
       'setup.tokenPasteHint': 'Paste the complete 64-character token from logs',
       'setup.tokenCharCount': '@current / @total characters',
-      'setup.tokenWrongLength': 'Token must be exactly 64 hexadecimal characters (full line from docker logs).',
+      'setup.tokenWrongLength':
+          'Token must be exactly 64 hexadecimal characters (full line from docker logs).',
       'setup.tokenHelpTitle': 'How to find the token in logs',
-      'setup.tokenHelpP1': 'On the host running Docker, open a terminal and run:',
+      'setup.tokenHelpP1':
+          'On the host running Docker, open a terminal and run:',
       'setup.tokenHelpP2':
           'Find the line starting with [JHenTai] API token for web UI. Copy the 64 hexadecimal characters after the colon (the full token on one line). If your container name is not jhentai, replace it in the commands below.',
       'setup.tokenHelpAlt':
@@ -51,7 +56,8 @@ class WebEnUS {
       'home.advancedSearch': 'Advanced search',
       'home.searchFilterSheetTitle': 'Categories & filters',
       'home.leftPaneWidthPx': '@w px',
-      'home.twoPaneDividerTooltip': 'Left pane @w px · double-click divider to restore default width',
+      'home.twoPaneDividerTooltip':
+          'Left pane @w px · double-click divider to restore default width',
       'home.downloads': 'Downloads',
       'home.localGalleries': 'Local Galleries',
       'home.settings': 'Settings',
@@ -186,7 +192,8 @@ class WebEnUS {
       // local
       'local.title': 'Local Galleries',
       'local.noGalleries': 'No local galleries found',
-      'local.helpText': 'Mount directories into the Docker container\nor place galleries in the local_gallery folder',
+      'local.helpText':
+          'Mount directories into the Docker container\nor place galleries in the local_gallery folder',
       'local.scanNow': 'Scan Now',
       'local.empty': 'Empty',
       'local.noImages': 'No images found in this gallery',
@@ -201,15 +208,18 @@ class WebEnUS {
       'settings.logoutSuccess': 'Logged out',
       'settings.logoutFailed': 'Logout failed: @error',
       'settings.cookieLogin': 'Login with cookies (recommended)',
-      'settings.cookieHint': 'EH forum login is blocked by Cloudflare in server environments. '
+      'settings.cookieHint':
+          'EH forum login is blocked by Cloudflare in server environments. '
           'Please login via browser, then copy cookies here.\n'
           'Steps: Login at e-hentai.org → F12 → Application → Cookies → copy values below.',
-      'settings.cookiePlaceholder': 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+      'settings.cookiePlaceholder':
+          'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Set Cookies',
       'settings.cookieSuccess': 'Cookies set successfully',
       'settings.cookieFailed': 'Failed to set cookies: @error',
       'settings.cookieEmpty': 'Please paste cookies',
-      'settings.credentialLogin': 'Login with credentials (may fail due to Cloudflare)',
+      'settings.credentialLogin':
+          'Login with credentials (may fail due to Cloudflare)',
       'settings.username': 'Username',
       'settings.password': 'Password',
       'settings.login': 'Login',
@@ -260,9 +270,12 @@ class WebEnUS {
       'settings.menuMouseWheel': 'Mouse wheel',
       'settings.menuAdvanced': 'Advanced',
       'settings.menuSecurity': 'Security',
-      'settings.ehRequiresLogin': 'Log in from Account to change site and cookie status.',
-      'settings.ehWebMoreSoon': 'Gallery profile, quotas, and My Tags may be added when server APIs are available.',
-      'settings.styleWebMoreSoon': 'List layout options may be added in a future update.',
+      'settings.ehRequiresLogin':
+          'Log in from Account to change site and cookie status.',
+      'settings.ehWebMoreSoon':
+          'Gallery profile, quotas, and My Tags may be added when server APIs are available.',
+      'settings.styleWebMoreSoon':
+          'List layout options may be added in a future update.',
       'settings.networkWebStub':
           'Per-request proxy, domain fronting, and timeouts are not configurable in this UI yet.',
       'settings.downloadWebStub':
@@ -270,7 +283,19 @@ class WebEnUS {
       'settings.performanceWebStub':
           'CPU and memory tuning apply to the native app. The web client runs in your browser.',
       'settings.advancedWebStub':
-          'Logs and experimental options from the desktop app are not available on web.',
+          'Server logs can be viewed and cleared here. Experimental native options are not exposed on web.',
+      'settings.advancedWebIntro':
+          'View server logs and basic Docker path information for this web instance.',
+      'settings.serverLogs': 'Server logs',
+      'settings.clearLogsTitle': 'Clear server logs?',
+      'settings.clearLogsConfirm':
+          'This will delete all current server log files.',
+      'settings.clearLogsFailed': 'Failed to clear logs: @error',
+      'settings.loadLogsFailed': 'Failed to load logs: @error',
+      'settings.loadLogFailed': 'Failed to load log: @error',
+      'settings.noLogs': 'No logs yet',
+      'settings.copyLog': 'Copy log',
+      'settings.emptyLog': 'This log is empty',
       'settings.securityWebStub':
           'You connected with an API token at setup. To rotate it, update the server and paste a new token in setup, or clear site data and reconnect.',
       'settings.mouseWheelIntro':
@@ -289,7 +314,8 @@ class WebEnUS {
       'history.empty': 'No browsing history',
       'history.clearAll': 'Clear All',
       'history.clearTitle': 'Clear History',
-      'history.clearConfirm': 'Are you sure you want to clear all browsing history?',
+      'history.clearConfirm':
+          'Are you sure you want to clear all browsing history?',
       'history.loadFailed': 'Failed to load history: @error',
 
       // search history
@@ -403,7 +429,8 @@ class WebEnUS {
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (includes igneous — EX ready)',
-      'settings.cookieStatusNoIgneous': 'Cookies set but missing igneous — EX may not work',
+      'settings.cookieStatusNoIgneous':
+          'Cookies set but missing igneous — EX may not work',
       'settings.cookieStatusNone': 'No login cookies set',
       'settings.siteSwitched': 'Switched to @site',
 
@@ -436,7 +463,8 @@ class WebEnUS {
       'reader.autoInterval': 'Auto-mode Interval',
       'reader.startAutoMode': 'Start',
       'reader.saveFailed': 'Could not save image',
-      'reader.redownloadHint': 'Open Downloads to retry or restart this gallery’s download.',
+      'reader.redownloadHint':
+          'Open Downloads to retry or restart this gallery’s download.',
       'reader.deviceOrientation': 'Device orientation',
       'reader.deviceOrientationWebHint':
           'Browsers cannot lock orientation like the app. Use the browser full-screen or your device rotation lock if needed.',

@@ -147,7 +147,8 @@ class WebZhTW {
       'reader.wheelAction': '圖片上的滑鼠滾輪',
       'reader.wheelActionPage': '翻頁',
       'reader.wheelActionZoom': '縮放圖片',
-      'reader.wheelActionVerticalHint': '直向與適應寬度模式一律捲動清單；本選項僅適用於由左至右、由右至左與雙頁模式。',
+      'reader.wheelActionVerticalHint':
+          '直向與適應寬度模式一律捲動清單；本選項僅適用於由左至右、由右至左與雙頁模式。',
       'reader.wheelInvertPageTurn': '反轉滾輪翻頁方向',
       'reader.wheelInvertPageTurnSubtitle': '交換滾輪／觸控板捲動時「下一頁」與「上一頁」的對應方向。',
 
@@ -196,10 +197,12 @@ class WebZhTW {
       'settings.logoutSuccess': '已登出',
       'settings.logoutFailed': '登出失敗: @error',
       'settings.cookieLogin': '使用 Cookie 登入（建議）',
-      'settings.cookieHint': 'EH 論壇登入在伺服器環境中被 Cloudflare 攔截。'
+      'settings.cookieHint':
+          'EH 論壇登入在伺服器環境中被 Cloudflare 攔截。'
           '請在瀏覽器中登入後複製 Cookie 到此處。\n'
           '步驟: 登入 e-hentai.org → F12 → 應用程式 → Cookie → 複製以下值。',
-      'settings.cookiePlaceholder': 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+      'settings.cookiePlaceholder':
+          'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': '設定 Cookie',
       'settings.cookieSuccess': 'Cookie 設定成功',
       'settings.cookieFailed': '設定 Cookie 失敗: @error',
@@ -236,12 +239,14 @@ class WebZhTW {
       'settings.openLocal': '本機畫廊',
       'settings.openQuickSearch': '快速搜尋',
       'settings.networkNote': '網路與代理',
-      'settings.networkWebBody': '代理等網路選項在伺服器或 Docker 環境中設定，不在此網頁內。部署說明見文件（反向代理、HTTPS、Cookie 登入等）。',
+      'settings.networkWebBody':
+          '代理等網路選項在伺服器或 Docker 環境中設定，不在此網頁內。部署說明見文件（反向代理、HTTPS、Cookie 登入等）。',
       'settings.about': '關於',
       'settings.appVersion': '版本 @version（@build）',
       'settings.hubMenu': '設定選單',
       'settings.menuWebDocker': '網頁與伺服器',
-      'settings.menuWebDockerSubtitle': '下載捷徑、Docker 路徑、網路／代理說明，以及效能與安全提示（僅 Web 版）。',
+      'settings.menuWebDockerSubtitle':
+          '下載捷徑、Docker 路徑、網路／代理說明，以及效能與安全提示（僅 Web 版）。',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': '樣式',
       'settings.menuRead': '閱讀',
@@ -258,8 +263,19 @@ class WebZhTW {
       'settings.networkWebStub': '單次請求代理、網域前置、逾時等暫不可在此介面設定。',
       'settings.downloadWebStub': '進行中與已完成的下載請在「下載工作」頁管理；進階下載選項尚未在網頁端開放。',
       'settings.performanceWebStub': 'CPU、記憶體等效能調校針對原生用戶端；網頁端在瀏覽器中執行。',
-      'settings.advancedWebStub': '桌面端的日誌與實驗性功能在網頁端不可用。',
-      'settings.securityWebStub': '首次連線時使用了 API Token。更換 Token 請更新伺服器後在設定精靈貼上新 Token，或清除網站資料後重新連線。',
+      'settings.advancedWebStub': '可在這裡檢視並清理伺服器日誌；原生端實驗性功能暫未在網頁端開放。',
+      'settings.advancedWebIntro': '檢視目前 Web 實例的伺服器日誌與 Docker 路徑資訊。',
+      'settings.serverLogs': '伺服器日誌',
+      'settings.clearLogsTitle': '清理伺服器日誌？',
+      'settings.clearLogsConfirm': '這會刪除目前所有伺服器日誌檔案。',
+      'settings.clearLogsFailed': '清理日誌失敗：@error',
+      'settings.loadLogsFailed': '載入日誌列表失敗：@error',
+      'settings.loadLogFailed': '載入日誌失敗：@error',
+      'settings.noLogs': '暫無日誌',
+      'settings.copyLog': '複製日誌',
+      'settings.emptyLog': '此日誌為空',
+      'settings.securityWebStub':
+          '首次連線時使用了 API Token。更換 Token 請更新伺服器後在設定精靈貼上新 Token，或清除網站資料後重新連線。',
       'settings.mouseWheelIntro': '選擇閱讀器中滑鼠滾輪在圖片上的行為（橫向翻頁模式）。',
       'settings.mouseWheelReadHint': '閱讀方向、預載入等全部選項',
       'settings.aboutVersionLabel': '版本',
@@ -422,8 +438,7 @@ class WebZhTW {
       'reader.saveFailed': '無法儲存圖片',
       'reader.redownloadHint': '請開啟「下載」頁面重試或重新開始此畫廊下載。',
       'reader.deviceOrientation': '裝置方向',
-      'reader.deviceOrientationWebHint':
-          '網頁版無法像應用程式一樣鎖定螢幕方向。請使用瀏覽器全螢幕或系統旋轉鎖定。',
+      'reader.deviceOrientationWebHint': '網頁版無法像應用程式一樣鎖定螢幕方向。請使用瀏覽器全螢幕或系統旋轉鎖定。',
 
       // settings reader
       'settings.defaultFavoriteSlot': '預設收藏夾',

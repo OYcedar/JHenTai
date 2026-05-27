@@ -27,20 +27,24 @@ class WebRuRU {
 
       // setup
       'setup.title': 'Настройка сервера JHenTai',
-      'setup.description': 'Введите API-токен из логов сервера для подключения.',
+      'setup.description':
+          'Введите API-токен из логов сервера для подключения.',
       'setup.tokenLabel': 'API-токен',
       'setup.connect': 'Подключить',
       'setup.emptyToken': 'Пожалуйста, введите токен',
       'setup.invalidToken': 'Недействительный токен. Проверьте логи сервера.',
-      'setup.tokenHint': 'Токен — 64 шестнадцатеричных символа в одной строке. Копируйте строку целиком.',
+      'setup.tokenHint':
+          'Токен — 64 шестнадцатеричных символа в одной строке. Копируйте строку целиком.',
       'setup.tokenPasteHint': 'Вставьте полный 64-символьный токен из логов',
       'setup.tokenCharCount': '@current / @total символов',
-      'setup.tokenWrongLength': 'Токен должен быть ровно из 64 шестнадцатеричных символов (полная строка из docker logs).',
+      'setup.tokenWrongLength':
+          'Токен должен быть ровно из 64 шестнадцатеричных символов (полная строка из docker logs).',
       'setup.tokenHelpTitle': 'Как найти токен в логах',
       'setup.tokenHelpP1': 'На хосте с Docker откройте терминал и выполните:',
       'setup.tokenHelpP2':
           'Найдите строку, начинающуюся с [JHenTai] API token for web UI. Скопируйте 64 шестнадцатеричных символа после двоеточия (весь токен в одной строке). Если имя контейнера не jhentai, замените его в командах ниже.',
-      'setup.tokenHelpAlt': 'Если такой строки нет, прочитайте токен из базы (имя контейнера по умолчанию jhentai, каталог данных /data):',
+      'setup.tokenHelpAlt':
+          'Если такой строки нет, прочитайте токен из базы (имя контейнера по умолчанию jhentai, каталог данных /data):',
 
       // home
       'home.title': 'JHenTai',
@@ -48,7 +52,8 @@ class WebRuRU {
       'home.advancedSearch': 'Расширенный поиск',
       'home.searchFilterSheetTitle': 'Категории и фильтры',
       'home.leftPaneWidthPx': '@w px',
-      'home.twoPaneDividerTooltip': 'Левая панель @w px · двойной щелчок по разделителю — ширина по умолчанию',
+      'home.twoPaneDividerTooltip':
+          'Левая панель @w px · двойной щелчок по разделителю — ширина по умолчанию',
       'home.downloads': 'Загрузки',
       'home.localGalleries': 'Локальные галереи',
       'home.settings': 'Настройки',
@@ -183,7 +188,8 @@ class WebRuRU {
       // local
       'local.title': 'Локальные галереи',
       'local.noGalleries': 'Локальные галереи не найдены',
-      'local.helpText': 'Смонтируйте каталоги в Docker-контейнер\nили поместите галереи в папку local_gallery',
+      'local.helpText':
+          'Смонтируйте каталоги в Docker-контейнер\nили поместите галереи в папку local_gallery',
       'local.scanNow': 'Сканировать',
       'local.empty': 'Пусто',
       'local.noImages': 'Нет изображений в этой галерее',
@@ -198,15 +204,18 @@ class WebRuRU {
       'settings.logoutSuccess': 'Вы вышли',
       'settings.logoutFailed': 'Ошибка выхода: @error',
       'settings.cookieLogin': 'Вход через cookies (рекомендуется)',
-      'settings.cookieHint': 'Вход на форум EH заблокирован Cloudflare. '
+      'settings.cookieHint':
+          'Вход на форум EH заблокирован Cloudflare. '
           'Войдите через браузер и скопируйте cookies сюда.\n'
           'Шаги: Вход на e-hentai.org → F12 → Application → Cookies → скопируйте значения.',
-      'settings.cookiePlaceholder': 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+      'settings.cookiePlaceholder':
+          'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Установить Cookies',
       'settings.cookieSuccess': 'Cookies установлены',
       'settings.cookieFailed': 'Ошибка установки cookies: @error',
       'settings.cookieEmpty': 'Вставьте cookies',
-      'settings.credentialLogin': 'Вход по логину (может не работать из-за Cloudflare)',
+      'settings.credentialLogin':
+          'Вход по логину (может не работать из-за Cloudflare)',
       'settings.username': 'Имя пользователя',
       'settings.password': 'Пароль',
       'settings.login': 'Войти',
@@ -256,24 +265,44 @@ class WebRuRU {
       'settings.menuMouseWheel': 'Колёсико мыши',
       'settings.menuAdvanced': 'Дополнительно',
       'settings.menuSecurity': 'Безопасность',
-      'settings.ehRequiresLogin': 'Войдите в разделе «Аккаунт», чтобы менять сайт и состояние cookie.',
-      'settings.ehWebMoreSoon': 'Профиль галереи, квоты и «Мои теги» могут появиться при готовности API сервера.',
-      'settings.styleWebMoreSoon': 'Варианты макета списка могут быть добавлены позже.',
-      'settings.networkWebStub': 'Прокси на запрос, domain fronting и таймауты пока нельзя настроить здесь.',
+      'settings.ehRequiresLogin':
+          'Войдите в разделе «Аккаунт», чтобы менять сайт и состояние cookie.',
+      'settings.ehWebMoreSoon':
+          'Профиль галереи, квоты и «Мои теги» могут появиться при готовности API сервера.',
+      'settings.styleWebMoreSoon':
+          'Варианты макета списка могут быть добавлены позже.',
+      'settings.networkWebStub':
+          'Прокси на запрос, domain fronting и таймауты пока нельзя настроить здесь.',
       'settings.downloadWebStub':
           'Активные и завершённые загрузки — на странице загрузок. Расширенные настройки загрузки в веб-интерфейсе недоступны.',
-      'settings.performanceWebStub': 'Настройки CPU и памяти относятся к нативному приложению. Веб-клиент работает в браузере.',
-      'settings.advancedWebStub': 'Журналы и экспериментальные функции десктопа в веб-версии недоступны.',
+      'settings.performanceWebStub':
+          'Настройки CPU и памяти относятся к нативному приложению. Веб-клиент работает в браузере.',
+      'settings.advancedWebStub':
+          'Здесь можно просматривать и очищать журналы сервера. Экспериментальные функции нативного клиента в веб-версии не показаны.',
+      'settings.advancedWebIntro':
+          'Просмотр журналов сервера и путей Docker для этого веб-экземпляра.',
+      'settings.serverLogs': 'Журналы сервера',
+      'settings.clearLogsTitle': 'Очистить журналы сервера?',
+      'settings.clearLogsConfirm':
+          'Будут удалены все текущие файлы журналов сервера.',
+      'settings.clearLogsFailed': 'Не удалось очистить журналы: @error',
+      'settings.loadLogsFailed': 'Не удалось загрузить журналы: @error',
+      'settings.loadLogFailed': 'Не удалось загрузить журнал: @error',
+      'settings.noLogs': 'Журналов пока нет',
+      'settings.copyLog': 'Копировать журнал',
+      'settings.emptyLog': 'Этот журнал пуст',
       'settings.securityWebStub':
           'Подключение выполнялось с API-токеном. Чтобы сменить его, обновите сервер и введите новый токен в мастере или очистите данные сайта.',
-      'settings.mouseWheelIntro': 'Поведение колёсика над изображением в читалке (горизонтальные режимы страниц).',
+      'settings.mouseWheelIntro':
+          'Поведение колёсика над изображением в читалке (горизонтальные режимы страниц).',
       'settings.mouseWheelReadHint': 'Направление, предзагрузка и другое',
       'settings.aboutVersionLabel': 'Версия',
       'settings.aboutAuthorLabel': 'Автор',
       'settings.aboutTelegramTitle': 'Telegram (в основном китайский)',
       'settings.aboutTelegramHint': 'Ссылка на сообщество',
       'settings.aboutQA': 'Вопросы и ответы',
-      'settings.aboutWebForkNote': 'Этот веб-интерфейс из форка JHenTai Docker; исходный проект указан выше.',
+      'settings.aboutWebForkNote':
+          'Этот веб-интерфейс из форка JHenTai Docker; исходный проект указан выше.',
 
       // history
       'history.title': 'История',
@@ -393,7 +422,8 @@ class WebRuRU {
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (включая igneous — EX доступен)',
-      'settings.cookieStatusNoIgneous': 'Cookies установлены, но нет igneous — EX может не работать',
+      'settings.cookieStatusNoIgneous':
+          'Cookies установлены, но нет igneous — EX может не работать',
       'settings.cookieStatusNone': 'Cookies для входа не установлены',
       'settings.siteSwitched': 'Переключено на @site',
 
@@ -426,7 +456,8 @@ class WebRuRU {
       'reader.autoInterval': 'Интервал автопролистывания',
       'reader.startAutoMode': 'Начать',
       'reader.saveFailed': 'Не удалось сохранить изображение',
-      'reader.redownloadHint': 'Откройте «Загрузки», чтобы повторить или перезапустить загрузку этой галереи.',
+      'reader.redownloadHint':
+          'Откройте «Загрузки», чтобы повторить или перезапустить загрузку этой галереи.',
       'reader.deviceOrientation': 'Ориентация устройства',
       'reader.deviceOrientationWebHint':
           'Браузер не может заблокировать ориентацию как приложение. Используйте полноэкранный режим или системную блокировку поворота.',

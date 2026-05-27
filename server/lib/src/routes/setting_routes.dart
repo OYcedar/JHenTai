@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
+import 'package:path/path.dart' as p;
 
 import '../config/server_config.dart';
 import '../core/database.dart';
@@ -17,6 +19,9 @@ class SettingRoutes {
 
     router.get('/', _getSettings);
     router.put('/', _updateSettings);
+    router.get('/logs', _listLogs);
+    router.get('/logs/<name>', _readLog);
+    router.delete('/logs', _clearLogs);
     router.get('/<key>', _getSetting);
     router.put('/<key>', _updateSetting);
     router.delete('/<key>', _deleteSetting);
@@ -24,10 +29,78 @@ class SettingRoutes {
     return router;
   }
 
+  Directory get _logDir => Directory(_config.logDir);
+
+  List<File> _logFiles() {
+    final dir = _logDir;
+    if (!dir.existsSync()) return [];
+    final files = dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => p.extension(f.path).toLowerCase() == '.log')
+        .toList();
+    files.sort((a, b) => b.path.compareTo(a.path));
+    return files;
+  }
+
+  Future<Response> _listLogs(Request request) async {
+    final logs = _logFiles().map((file) {
+      final stat = file.statSync();
+      return {
+        'name': p.basename(file.path),
+        'size': stat.size,
+        'modified': stat.modified.toIso8601String(),
+      };
+    }).toList();
+    final totalSize =
+        logs.fold<int>(0, (sum, item) => sum + (item['size'] as int));
+
+    return Response.ok(
+      jsonEncode({'logs': logs, 'totalSize': totalSize}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _readLog(Request request, String name) async {
+    final safeName = p.basename(Uri.decodeComponent(name));
+    final file = File(p.join(_config.logDir, safeName));
+    if (!file.existsSync() ||
+        !_logFiles().any((f) => p.basename(f.path) == safeName)) {
+      return Response.notFound(
+        jsonEncode({'error': 'Log not found'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final text = await file.readAsString();
+    return Response.ok(
+      jsonEncode({'name': safeName, 'content': text}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _clearLogs(Request request) async {
+    var deleted = 0;
+    for (final file in _logFiles()) {
+      try {
+        await file.delete();
+        deleted++;
+      } catch (_) {}
+    }
+    return Response.ok(
+      jsonEncode({'success': true, 'deleted': deleted}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
   Future<Response> _getSettings(Request request) async {
     final settingKeys = [
-      'EHSetting', 'networkSetting', 'downloadSetting',
-      'userSetting', 'preferenceSetting', 'styleSetting',
+      'EHSetting',
+      'networkSetting',
+      'downloadSetting',
+      'userSetting',
+      'preferenceSetting',
+      'styleSetting',
     ];
 
     final settings = <String, dynamic>{};
@@ -60,12 +133,14 @@ class SettingRoutes {
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
 
     for (final entry in body.entries) {
       if (_reservedKeys.contains(entry.key)) continue;
-      final value = entry.value is String ? entry.value : jsonEncode(entry.value);
+      final value =
+          entry.value is String ? entry.value : jsonEncode(entry.value);
       db.writeConfig(entry.key, value);
     }
 
@@ -108,7 +183,8 @@ class SettingRoutes {
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
     final value = body['value'];
     final valueStr = value is String ? value : jsonEncode(value);

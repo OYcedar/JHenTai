@@ -22,29 +22,35 @@ class BackendApiClient {
   BackendApiClient();
 
   void init({required String baseUrl, String? token}) {
-    _baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
+    _baseUrl = baseUrl.endsWith('/')
+        ? baseUrl.substring(0, baseUrl.length - 1)
+        : baseUrl;
     _token = token;
     // Web Docker / EH proxy: first connection or cold server can exceed 10s; reader init uses these defaults.
-    _dio = Dio(BaseOptions(
-      baseUrl: _baseUrl,
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 120),
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: _baseUrl,
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 120),
+      ),
+    );
     if (_token != null) {
       _applyToken(_token!);
     }
-    _dio.interceptors.add(InterceptorsWrapper(
-      onError: (DioException e, ErrorInterceptorHandler handler) {
-        final code = e.response?.statusCode;
-        final path = e.requestOptions.path;
-        if ((code == 401 || code == 403) &&
-            path.contains('/api/') &&
-            !path.contains('/api/auth/token/verify')) {
-          _sessionInvalidatedByServer();
-        }
-        handler.next(e);
-      },
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (DioException e, ErrorInterceptorHandler handler) {
+          final code = e.response?.statusCode;
+          final path = e.requestOptions.path;
+          if ((code == 401 || code == 403) &&
+              path.contains('/api/') &&
+              !path.contains('/api/auth/token/verify')) {
+            _sessionInvalidatedByServer();
+          }
+          handler.next(e);
+        },
+      ),
+    );
   }
 
   static bool _redirectingToSetup = false;
@@ -74,12 +80,18 @@ class BackendApiClient {
 
   Future<bool> verifyToken(String token) async {
     try {
-      final response = await Dio(BaseOptions(
-        baseUrl: _baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 60),
-      )).post('/api/auth/token/verify', data: jsonEncode({'token': token}),
-          options: Options(headers: {'Content-Type': 'application/json'}));
+      final response =
+          await Dio(
+            BaseOptions(
+              baseUrl: _baseUrl,
+              connectTimeout: const Duration(seconds: 30),
+              receiveTimeout: const Duration(seconds: 60),
+            ),
+          ).post(
+            '/api/auth/token/verify',
+            data: jsonEncode({'token': token}),
+            options: Options(headers: {'Content-Type': 'application/json'}),
+          );
       return response.data['valid'] == true;
     } catch (_) {
       return false;
@@ -93,10 +105,10 @@ class BackendApiClient {
     Map<String, dynamic>? queryParameters,
     HtmlParser<T>? parser,
   }) async {
-    final response = await _dio.get('/api/proxy/get', queryParameters: {
-      'url': url,
-      ...?queryParameters,
-    });
+    final response = await _dio.get(
+      '/api/proxy/get',
+      queryParameters: {'url': url, ...?queryParameters},
+    );
 
     final result = response.data as Map<String, dynamic>;
     if (parser != null) {
@@ -119,12 +131,15 @@ class BackendApiClient {
     String? contentType,
     HtmlParser<T>? parser,
   }) async {
-    final response = await _dio.post('/api/proxy/post', data: {
-      'url': url,
-      'data': data,
-      'queryParams': queryParameters,
-      'contentType': contentType,
-    });
+    final response = await _dio.post(
+      '/api/proxy/post',
+      data: {
+        'url': url,
+        'data': data,
+        'queryParams': queryParameters,
+        'contentType': contentType,
+      },
+    );
 
     final result = response.data as Map<String, dynamic>;
     if (parser != null) {
@@ -155,11 +170,15 @@ class BackendApiClient {
   }
 
   Future<Uint8List> fetchProxiedImageBytes(String imageUrl) async {
-    webImageClientLogVerbose('POST /api/proxy/image len(url)=${imageUrl.length}');
+    webImageClientLogVerbose(
+      'POST /api/proxy/image len(url)=${imageUrl.length}',
+    );
     try {
       final response = await _dio.post<List<int>>(
         '/api/proxy/image',
-        queryParameters: _token != null && _token!.isNotEmpty ? {'token': _token} : null,
+        queryParameters: _token != null && _token!.isNotEmpty
+            ? {'token': _token}
+            : null,
         data: jsonEncode({'url': imageUrl}),
         options: Options(
           responseType: ResponseType.bytes,
@@ -168,13 +187,19 @@ class BackendApiClient {
       );
       final data = response.data;
       if (data == null) {
-        webImageClientLogError('POST /api/proxy/image empty body status=${response.statusCode}');
+        webImageClientLogError(
+          'POST /api/proxy/image empty body status=${response.statusCode}',
+        );
         return Uint8List(0);
       }
       if (data.isEmpty) {
-        webImageClientLogError('POST /api/proxy/image 0 bytes status=${response.statusCode}');
+        webImageClientLogError(
+          'POST /api/proxy/image 0 bytes status=${response.statusCode}',
+        );
       } else {
-        webImageClientLogVerbose('POST /api/proxy/image ok bytes=${data.length}');
+        webImageClientLogVerbose(
+          'POST /api/proxy/image ok bytes=${data.length}',
+        );
       }
       return Uint8List.fromList(data);
     } on DioException catch (e) {
@@ -199,10 +224,10 @@ class BackendApiClient {
   // --- Auth ---
 
   Future<Map<String, dynamic>> login(String userName, String passWord) async {
-    final response = await _dio.post('/api/auth/login', data: {
-      'userName': userName,
-      'passWord': passWord,
-    });
+    final response = await _dio.post(
+      '/api/auth/login',
+      data: {'userName': userName, 'passWord': passWord},
+    );
     return response.data;
   }
 
@@ -226,7 +251,9 @@ class BackendApiClient {
 
   Future<Map<String, dynamic>> setSite(String site) async {
     final response = await _dio.put('/api/auth/site', data: {'site': site});
-    return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data)
+        : {'success': true};
   }
 
   // --- Gallery downloads ---
@@ -248,32 +275,39 @@ class BackendApiClient {
     String group = 'default',
     int priority = 0,
   }) async {
-    await _dio.post('/api/download/gallery/start', data: {
-      'gid': gid,
-      'token': token,
-      'title': title,
-      'category': category,
-      'pageCount': pageCount,
-      'galleryUrl': galleryUrl,
-      'coverUrl': coverUrl,
-      'uploader': uploader,
-      'group': group,
-      'priority': priority,
-    });
+    await _dio.post(
+      '/api/download/gallery/start',
+      data: {
+        'gid': gid,
+        'token': token,
+        'title': title,
+        'category': category,
+        'pageCount': pageCount,
+        'galleryUrl': galleryUrl,
+        'coverUrl': coverUrl,
+        'uploader': uploader,
+        'group': group,
+        'priority': priority,
+      },
+    );
   }
 
   Future<Map<String, dynamic>> upgradeGalleryDownload({
     required int fromGid,
     required String newerVersionUrl,
   }) async {
-    final response = await _dio.post('/api/download/gallery/upgrade', data: {
-      'fromGid': fromGid,
-      'newerVersionUrl': newerVersionUrl,
-    });
+    final response = await _dio.post(
+      '/api/download/gallery/upgrade',
+      data: {'fromGid': fromGid, 'newerVersionUrl': newerVersionUrl},
+    );
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
-  Future<void> patchGalleryDownload(int gid, {int? priority, String? group}) async {
+  Future<void> patchGalleryDownload(
+    int gid, {
+    int? priority,
+    String? group,
+  }) async {
     final body = <String, dynamic>{};
     if (priority != null) body['priority'] = priority;
     if (group != null) body['group'] = group;
@@ -290,9 +324,10 @@ class BackendApiClient {
   }
 
   Future<void> deleteGalleryDownload(int gid, {bool deleteFiles = true}) async {
-    await _dio.delete('/api/download/gallery/$gid', queryParameters: {
-      'deleteFiles': deleteFiles.toString(),
-    });
+    await _dio.delete(
+      '/api/download/gallery/$gid',
+      queryParameters: {'deleteFiles': deleteFiles.toString()},
+    );
   }
 
   // --- Archive downloads ---
@@ -317,24 +352,31 @@ class BackendApiClient {
     String group = 'default',
     int priority = 0,
   }) async {
-    await _dio.post('/api/download/archive/start', data: {
-      'gid': gid,
-      'token': token,
-      'title': title,
-      'category': category,
-      'pageCount': pageCount,
-      'galleryUrl': galleryUrl,
-      'archivePageUrl': archivePageUrl,
-      'coverUrl': coverUrl,
-      'uploader': uploader,
-      'size': size,
-      'isOriginal': isOriginal,
-      'group': group,
-      'priority': priority,
-    });
+    await _dio.post(
+      '/api/download/archive/start',
+      data: {
+        'gid': gid,
+        'token': token,
+        'title': title,
+        'category': category,
+        'pageCount': pageCount,
+        'galleryUrl': galleryUrl,
+        'archivePageUrl': archivePageUrl,
+        'coverUrl': coverUrl,
+        'uploader': uploader,
+        'size': size,
+        'isOriginal': isOriginal,
+        'group': group,
+        'priority': priority,
+      },
+    );
   }
 
-  Future<void> patchArchiveDownload(int gid, {int? priority, String? group}) async {
+  Future<void> patchArchiveDownload(
+    int gid, {
+    int? priority,
+    String? group,
+  }) async {
     final body = <String, dynamic>{};
     if (priority != null) body['priority'] = priority;
     if (group != null) body['group'] = group;
@@ -351,9 +393,10 @@ class BackendApiClient {
   }
 
   Future<void> deleteArchiveDownload(int gid, {bool deleteFiles = true}) async {
-    await _dio.delete('/api/download/archive/$gid', queryParameters: {
-      'deleteFiles': deleteFiles.toString(),
-    });
+    await _dio.delete(
+      '/api/download/archive/$gid',
+      queryParameters: {'deleteFiles': deleteFiles.toString()},
+    );
   }
 
   // --- Local galleries ---
@@ -368,7 +411,10 @@ class BackendApiClient {
   }
 
   Future<List<String>> getLocalGalleryImages(String path) async {
-    final response = await _dio.get('/api/local/images', queryParameters: {'path': path});
+    final response = await _dio.get(
+      '/api/local/images',
+      queryParameters: {'path': path},
+    );
     return ((response.data['images'] as List?) ?? []).cast<String>();
   }
 
@@ -403,14 +449,18 @@ class BackendApiClient {
   Future<Map<String, dynamic>> fetchGalleryList({
     String section = 'home',
     String? page,
+
     /// EH gallery index `next=` gid (native [requestGalleryPage]).
     String? next,
+
     /// EH gallery index `prev=` gid.
     String? prev,
     String? search,
     Map<String, dynamic>? advancedParams,
+
     /// EH `inline_set`: `fs_f` (favorited time) or `fs_p` (published time). Used when [section] is `favorites`.
     String? favSort,
+
     /// Filter favorites list to one folder (0–9). Used when [section] is `favorites`.
     int? favcat,
   }) async {
@@ -422,7 +472,10 @@ class BackendApiClient {
     if (advancedParams != null) params.addAll(advancedParams);
     if (favSort != null && favSort.isNotEmpty) params['fav_sort'] = favSort;
     if (favcat != null) params['favcat'] = favcat;
-    final response = await _dio.get('/api/gallery/list', queryParameters: params);
+    final response = await _dio.get(
+      '/api/gallery/list',
+      queryParameters: params,
+    );
     return response.data;
   }
 
@@ -430,7 +483,9 @@ class BackendApiClient {
   Future<Map<String, dynamic>> fetchGalleryDetail(int gid, String token) async {
     try {
       final response = await _dio.get('/api/gallery/detail/$gid/$token');
-      return response.data is Map ? Map<String, dynamic>.from(response.data as Map) : {};
+      return response.data is Map
+          ? Map<String, dynamic>.from(response.data as Map)
+          : {};
     } on DioException catch (e) {
       final data = e.response?.data;
       if (data is Map && data['error'] != null) {
@@ -454,21 +509,32 @@ class BackendApiClient {
   }
 
   Future<Map<String, dynamic>> fetchGalleryListByUrl(String url) async {
-    final response = await _dio.get('/api/gallery/list-by-url', queryParameters: {'url': url});
+    final response = await _dio.get(
+      '/api/gallery/list-by-url',
+      queryParameters: {'url': url},
+    );
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
-  Future<String?> imageLookupBase64(String imageBase64, {String filename = 'upload.jpg'}) async {
-    final response = await _dio.post('/api/gallery/image-lookup', data: {
-      'imageBase64': imageBase64,
-      'filename': filename,
-    });
-    final m = response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  Future<String?> imageLookupBase64(
+    String imageBase64, {
+    String filename = 'upload.jpg',
+  }) async {
+    final response = await _dio.post(
+      '/api/gallery/image-lookup',
+      data: {'imageBase64': imageBase64, 'filename': filename},
+    );
+    final m = response.data is Map
+        ? Map<String, dynamic>.from(response.data)
+        : {};
     return m['redirectUrl'] as String?;
   }
 
   Future<Map<String, dynamic>> listUsertags({int tagset = 1}) async {
-    final response = await _dio.get('/api/usertags/list', queryParameters: {'tagset': tagset});
+    final response = await _dio.get(
+      '/api/usertags/list',
+      queryParameters: {'tagset': tagset},
+    );
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
@@ -480,46 +546,58 @@ class BackendApiClient {
     int weight = 10,
     String tagColor = '',
   }) async {
-    await _dio.post('/api/usertags/add', data: {
-      'tagSetNo': tagSetNo,
-      'tag': tag,
-      'watch': watch,
-      'hidden': hidden,
-      'weight': weight,
-      'tagColor': tagColor,
-    });
+    await _dio.post(
+      '/api/usertags/add',
+      data: {
+        'tagSetNo': tagSetNo,
+        'tag': tag,
+        'watch': watch,
+        'hidden': hidden,
+        'weight': weight,
+        'tagColor': tagColor,
+      },
+    );
   }
 
-  Future<void> deleteUsertag({required int watchedTagId, int tagSetNo = 1}) async {
-    await _dio.post('/api/usertags/delete', data: {
-      'tagSetNo': tagSetNo,
-      'watchedTagId': watchedTagId,
-    });
+  Future<void> deleteUsertag({
+    required int watchedTagId,
+    int tagSetNo = 1,
+  }) async {
+    await _dio.post(
+      '/api/usertags/delete',
+      data: {'tagSetNo': tagSetNo, 'watchedTagId': watchedTagId},
+    );
   }
 
   /// Returns `imagePageUrls`, `thumbnailImageUrls`, `galleryThumbnails` (sprite metadata), and `totalPages`.
-  Future<Map<String, dynamic>> fetchGalleryImagePages(int gid, String token) async {
+  Future<Map<String, dynamic>> fetchGalleryImagePages(
+    int gid,
+    String token,
+  ) async {
     final response = await _dio.get('/api/gallery/images/$gid/$token');
     return response.data as Map<String, dynamic>;
   }
 
   // --- Favorites ---
 
-  Future<Map<String, dynamic>> addFavorite(int gid, String token, {int favcat = 0, String favnote = ''}) async {
-    final response = await _dio.post('/api/favorite/add', data: {
-      'gid': gid,
-      'token': token,
-      'favcat': favcat,
-      'favnote': favnote,
-    });
+  Future<Map<String, dynamic>> addFavorite(
+    int gid,
+    String token, {
+    int favcat = 0,
+    String favnote = '',
+  }) async {
+    final response = await _dio.post(
+      '/api/favorite/add',
+      data: {'gid': gid, 'token': token, 'favcat': favcat, 'favnote': favnote},
+    );
     return response.data;
   }
 
   Future<Map<String, dynamic>> removeFavorite(int gid, String token) async {
-    final response = await _dio.post('/api/favorite/remove', data: {
-      'gid': gid,
-      'token': token,
-    });
+    final response = await _dio.post(
+      '/api/favorite/remove',
+      data: {'gid': gid, 'token': token},
+    );
     return response.data;
   }
 
@@ -532,27 +610,49 @@ class BackendApiClient {
     required String apikey,
     required double rating,
   }) async {
-    final response = await _dio.post('/api/rating/rate', data: {
-      'gid': gid,
-      'token': token,
-      'apiuid': apiuid,
-      'apikey': apikey,
-      'rating': rating,
-    });
+    final response = await _dio.post(
+      '/api/rating/rate',
+      data: {
+        'gid': gid,
+        'token': token,
+        'apiuid': apiuid,
+        'apikey': apikey,
+        'rating': rating,
+      },
+    );
     return response.data;
   }
 
   // --- History ---
 
-  Future<Map<String, dynamic>> fetchHistory({int limit = 50, int offset = 0}) async {
-    final response = await _dio.get('/api/history/list', queryParameters: {'limit': limit, 'offset': offset});
+  Future<Map<String, dynamic>> fetchHistory({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final response = await _dio.get(
+      '/api/history/list',
+      queryParameters: {'limit': limit, 'offset': offset},
+    );
     return response.data;
   }
 
-  Future<void> recordHistory({required int gid, String token = '', String title = '', String coverUrl = '', String category = ''}) async {
-    await _dio.post('/api/history/record', data: {
-      'gid': gid, 'token': token, 'title': title, 'coverUrl': coverUrl, 'category': category,
-    });
+  Future<void> recordHistory({
+    required int gid,
+    String token = '',
+    String title = '',
+    String coverUrl = '',
+    String category = '',
+  }) async {
+    await _dio.post(
+      '/api/history/record',
+      data: {
+        'gid': gid,
+        'token': token,
+        'title': title,
+        'coverUrl': coverUrl,
+        'category': category,
+      },
+    );
   }
 
   Future<void> clearHistory() async {
@@ -566,7 +666,10 @@ class BackendApiClient {
   // --- Search history ---
 
   Future<List<dynamic>> fetchSearchHistory({int limit = 20}) async {
-    final response = await _dio.get('/api/search-history/list', queryParameters: {'limit': limit});
+    final response = await _dio.get(
+      '/api/search-history/list',
+      queryParameters: {'limit': limit},
+    );
     return (response.data['items'] as List?) ?? [];
   }
 
@@ -584,10 +687,15 @@ class BackendApiClient {
 
   // --- Comments ---
 
-  Future<Map<String, dynamic>> postComment({required int gid, required String token, required String comment}) async {
-    final response = await _dio.post('/api/comment/post', data: {
-      'gid': gid, 'token': token, 'comment': comment,
-    });
+  Future<Map<String, dynamic>> postComment({
+    required int gid,
+    required String token,
+    required String comment,
+  }) async {
+    final response = await _dio.post(
+      '/api/comment/post',
+      data: {'gid': gid, 'token': token, 'comment': comment},
+    );
     return response.data;
   }
 
@@ -599,18 +707,29 @@ class BackendApiClient {
     required int commentId,
     required int vote,
   }) async {
-    final response = await _dio.post('/api/comment/vote', data: {
-      'gid': gid, 'token': token, 'apiuid': apiuid, 'apikey': apikey, 'commentId': commentId, 'vote': vote,
-    });
+    final response = await _dio.post(
+      '/api/comment/vote',
+      data: {
+        'gid': gid,
+        'token': token,
+        'apiuid': apiuid,
+        'apikey': apikey,
+        'commentId': commentId,
+        'vote': vote,
+      },
+    );
     return response.data;
   }
 
   // --- Favorite folders (names + counts per slot) ---
 
-  Future<({List<String> names, List<int> counts})> fetchFavoriteFolders() async {
+  Future<({List<String> names, List<int> counts})>
+  fetchFavoriteFolders() async {
     final response = await _dio.get('/api/favorite/names');
     final data = response.data as Map<String, dynamic>? ?? {};
-    final names = ((data['names'] as List?) ?? []).map((e) => e.toString()).toList();
+    final names = ((data['names'] as List?) ?? [])
+        .map((e) => e.toString())
+        .toList();
     final countsRaw = data['counts'] as List?;
     final counts = <int>[];
     if (countsRaw != null) {
@@ -657,16 +776,24 @@ class BackendApiClient {
     return response.data;
   }
 
-  Future<Map<String, String>> translateTags(List<Map<String, String>> tags) async {
-    final response = await _dio.post('/api/tag/batch',
-        data: jsonEncode({'tags': tags}),
-        options: Options(headers: {'Content-Type': 'application/json'}));
-    final translations = response.data['translations'] as Map<String, dynamic>? ?? {};
+  Future<Map<String, String>> translateTags(
+    List<Map<String, String>> tags,
+  ) async {
+    final response = await _dio.post(
+      '/api/tag/batch',
+      data: jsonEncode({'tags': tags}),
+      options: Options(headers: {'Content-Type': 'application/json'}),
+    );
+    final translations =
+        response.data['translations'] as Map<String, dynamic>? ?? {};
     return translations.map((k, v) => MapEntry(k, v.toString()));
   }
 
   Future<List<dynamic>> searchTags(String query, {int limit = 20}) async {
-    final response = await _dio.get('/api/tag/search', queryParameters: {'q': query, 'limit': limit});
+    final response = await _dio.get(
+      '/api/tag/search',
+      queryParameters: {'q': query, 'limit': limit},
+    );
     return (response.data['results'] as List?) ?? [];
   }
 
@@ -677,10 +804,15 @@ class BackendApiClient {
     return (response.data['items'] as List?) ?? [];
   }
 
-  Future<void> saveQuickSearch(String name, String config, {int sortOrder = 0}) async {
-    await _dio.post('/api/quick-search/save', data: {
-      'name': name, 'config': config, 'sortOrder': sortOrder,
-    });
+  Future<void> saveQuickSearch(
+    String name,
+    String config, {
+    int sortOrder = 0,
+  }) async {
+    await _dio.post(
+      '/api/quick-search/save',
+      data: {'name': name, 'config': config, 'sortOrder': sortOrder},
+    );
   }
 
   Future<void> deleteQuickSearch(String name) async {
@@ -702,14 +834,17 @@ class BackendApiClient {
     required String pattern,
     required String expression,
   }) async {
-    final response = await _dio.post('/api/block-rule/save', data: {
-      if (id != null) 'id': id,
-      'group_id': groupId,
-      'target': target,
-      'attribute': attribute,
-      'pattern': pattern,
-      'expression': expression,
-    });
+    final response = await _dio.post(
+      '/api/block-rule/save',
+      data: {
+        if (id != null) 'id': id,
+        'group_id': groupId,
+        'target': target,
+        'attribute': attribute,
+        'pattern': pattern,
+        'expression': expression,
+      },
+    );
     return response.data;
   }
 
@@ -732,10 +867,18 @@ class BackendApiClient {
     required String tag,
     required int vote,
   }) async {
-    final response = await _dio.post('/api/tag/vote', data: {
-      'gid': gid, 'token': token, 'apiuid': apiuid, 'apikey': apikey,
-      'namespace': namespace, 'tag': tag, 'vote': vote,
-    });
+    final response = await _dio.post(
+      '/api/tag/vote',
+      data: {
+        'gid': gid,
+        'token': token,
+        'apiuid': apiuid,
+        'apikey': apikey,
+        'namespace': namespace,
+        'tag': tag,
+        'vote': vote,
+      },
+    );
     return response.data;
   }
 
@@ -763,8 +906,30 @@ class BackendApiClient {
   }
 
   Future<void> putSetting(String key, dynamic value) async {
-    await _dio.put('/api/setting/$key', data: jsonEncode({'value': value}),
-        options: Options(headers: {'Content-Type': 'application/json'}));
+    await _dio.put(
+      '/api/setting/$key',
+      data: jsonEncode({'value': value}),
+      options: Options(headers: {'Content-Type': 'application/json'}),
+    );
+  }
+
+  Future<Map<String, dynamic>> listServerLogs() async {
+    final response = await _dio.get('/api/setting/logs');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<String> readServerLog(String name) async {
+    final response = await _dio.get(
+      '/api/setting/logs/${Uri.encodeComponent(name)}',
+    );
+    final data = response.data is Map
+        ? Map<String, dynamic>.from(response.data)
+        : {};
+    return data['content']?.toString() ?? '';
+  }
+
+  Future<void> clearServerLogs() async {
+    await _dio.delete('/api/setting/logs');
   }
 
   // --- Health ---

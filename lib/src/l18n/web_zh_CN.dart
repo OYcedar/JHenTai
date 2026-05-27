@@ -145,7 +145,8 @@ class WebZhCN {
       'reader.wheelAction': '图片上的鼠标滚轮',
       'reader.wheelActionPage': '翻页',
       'reader.wheelActionZoom': '缩放图片',
-      'reader.wheelActionVerticalHint': '竖向与适应宽度模式始终滚动列表；本选项仅作用于从左到右、从右到左与双页模式。',
+      'reader.wheelActionVerticalHint':
+          '竖向与适应宽度模式始终滚动列表；本选项仅作用于从左到右、从右到左与双页模式。',
       'reader.wheelInvertPageTurn': '反转滚轮翻页方向',
       'reader.wheelInvertPageTurnSubtitle': '交换滚轮/触控板滚动时「下一页」与「上一页」的对应方向。',
 
@@ -196,10 +197,12 @@ class WebZhCN {
       'settings.logoutSuccess': '已退出登录',
       'settings.logoutFailed': '退出登录失败: @error',
       'settings.cookieLogin': '使用 Cookie 登录（推荐）',
-      'settings.cookieHint': 'EH 论坛登录在服务器环境中被 Cloudflare 拦截。'
+      'settings.cookieHint':
+          'EH 论坛登录在服务器环境中被 Cloudflare 拦截。'
           '请在浏览器中登录后复制 Cookie 到此处。\n'
           '步骤: 登录 e-hentai.org → F12 → 应用 → Cookie → 复制以下值。',
-      'settings.cookiePlaceholder': 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+      'settings.cookiePlaceholder':
+          'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': '设置 Cookie',
       'settings.cookieSuccess': 'Cookie 设置成功',
       'settings.cookieFailed': '设置 Cookie 失败: @error',
@@ -236,12 +239,14 @@ class WebZhCN {
       'settings.openLocal': '本地画廊',
       'settings.openQuickSearch': '快速搜索',
       'settings.networkNote': '网络与代理',
-      'settings.networkWebBody': '代理等网络选项在服务器或 Docker 环境中配置，不在此网页内设置。部署说明见文档（反向代理、HTTPS、Cookie 登录等）。',
+      'settings.networkWebBody':
+          '代理等网络选项在服务器或 Docker 环境中配置，不在此网页内设置。部署说明见文档（反向代理、HTTPS、Cookie 登录等）。',
       'settings.about': '关于',
       'settings.appVersion': '版本 @version（@build）',
       'settings.hubMenu': '设置菜单',
       'settings.menuWebDocker': '网页与服务器',
-      'settings.menuWebDockerSubtitle': '下载入口、Docker 路径、网络/代理说明，以及性能与安全提示（仅 Web 版）。',
+      'settings.menuWebDockerSubtitle':
+          '下载入口、Docker 路径、网络/代理说明，以及性能与安全提示（仅 Web 版）。',
       'settings.menuEH': 'E-Hentai',
       'settings.menuStyle': '样式',
       'settings.menuRead': '阅读',
@@ -258,8 +263,19 @@ class WebZhCN {
       'settings.networkWebStub': '单次请求代理、域名前置、超时等暂不可在此界面配置。',
       'settings.downloadWebStub': '进行中的与已完成的下载请在「下载任务」页管理；高级下载选项尚未在网页端开放。',
       'settings.performanceWebStub': 'CPU、内存等性能调优针对原生客户端；网页端在浏览器中运行。',
-      'settings.advancedWebStub': '桌面端的日志与实验性功能在网页端不可用。',
-      'settings.securityWebStub': '首次连接时使用了 API Token。更换 Token 请更新服务端后在设置向导中粘贴新 Token，或清除站点数据后重新连接。',
+      'settings.advancedWebStub': '可在这里查看并清理服务器日志；原生端实验性功能暂未在网页端开放。',
+      'settings.advancedWebIntro': '查看当前 Web 实例的服务器日志与 Docker 路径信息。',
+      'settings.serverLogs': '服务器日志',
+      'settings.clearLogsTitle': '清理服务器日志？',
+      'settings.clearLogsConfirm': '这会删除当前所有服务器日志文件。',
+      'settings.clearLogsFailed': '清理日志失败：@error',
+      'settings.loadLogsFailed': '加载日志列表失败：@error',
+      'settings.loadLogFailed': '加载日志失败：@error',
+      'settings.noLogs': '暂无日志',
+      'settings.copyLog': '复制日志',
+      'settings.emptyLog': '此日志为空',
+      'settings.securityWebStub':
+          '首次连接时使用了 API Token。更换 Token 请更新服务端后在设置向导中粘贴新 Token，或清除站点数据后重新连接。',
       'settings.mouseWheelIntro': '选择阅读器中鼠标滚轮在图片上的行为（横向翻页模式）。',
       'settings.mouseWheelReadHint': '阅读方向、预加载等全部选项',
       'settings.aboutVersionLabel': '版本',
@@ -426,8 +442,7 @@ class WebZhCN {
       'reader.saveFailed': '保存图片失败',
       'reader.redownloadHint': '请打开「下载」页面重试或重新开始该画廊下载。',
       'reader.deviceOrientation': '设备方向',
-      'reader.deviceOrientationWebHint':
-          '网页版无法像客户端一样锁定屏幕方向。请使用浏览器全屏或系统旋转锁定。',
+      'reader.deviceOrientationWebHint': '网页版无法像客户端一样锁定屏幕方向。请使用浏览器全屏或系统旋转锁定。',
 
       // settings reader
       'settings.defaultFavoriteSlot': '默认收藏夹',

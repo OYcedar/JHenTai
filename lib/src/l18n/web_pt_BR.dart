@@ -27,20 +27,26 @@ class WebPtBR {
 
       // setup
       'setup.title': 'Configuração do Servidor JHenTai',
-      'setup.description': 'Insira o token API mostrado nos logs do servidor para conectar.',
+      'setup.description':
+          'Insira o token API mostrado nos logs do servidor para conectar.',
       'setup.tokenLabel': 'Token API',
       'setup.connect': 'Conectar',
       'setup.emptyToken': 'Por favor, insira um token',
-      'setup.invalidToken': 'Token inválido. Verifique os logs do servidor para o token correto.',
-      'setup.tokenHint': 'O token tem 64 caracteres hex em uma linha — copie a linha inteira.',
+      'setup.invalidToken':
+          'Token inválido. Verifique os logs do servidor para o token correto.',
+      'setup.tokenHint':
+          'O token tem 64 caracteres hex em uma linha — copie a linha inteira.',
       'setup.tokenPasteHint': 'Cole o token completo de 64 caracteres dos logs',
       'setup.tokenCharCount': '@current / @total caracteres',
-      'setup.tokenWrongLength': 'O token deve ter exatamente 64 caracteres hexadecimais (linha completa do docker logs).',
+      'setup.tokenWrongLength':
+          'O token deve ter exatamente 64 caracteres hexadecimais (linha completa do docker logs).',
       'setup.tokenHelpTitle': 'Como encontrar o token nos logs',
-      'setup.tokenHelpP1': 'No host onde o Docker está em execução, abra um terminal e execute:',
+      'setup.tokenHelpP1':
+          'No host onde o Docker está em execução, abra um terminal e execute:',
       'setup.tokenHelpP2':
           'Procure a linha que começa com [JHenTai] API token for web UI. Copie os 64 caracteres hexadecimais após os dois pontos (o token inteiro em uma linha). Se o nome do contêiner não for jhentai, substitua nos comandos abaixo.',
-      'setup.tokenHelpAlt': 'Se essa linha não existir, leia o token no banco de dados do servidor (nome padrão do contêiner jhentai, diretório de dados /data):',
+      'setup.tokenHelpAlt':
+          'Se essa linha não existir, leia o token no banco de dados do servidor (nome padrão do contêiner jhentai, diretório de dados /data):',
 
       // home
       'home.title': 'JHenTai',
@@ -48,7 +54,8 @@ class WebPtBR {
       'home.advancedSearch': 'Pesquisa avançada',
       'home.searchFilterSheetTitle': 'Categorias e filtros',
       'home.leftPaneWidthPx': '@w px',
-      'home.twoPaneDividerTooltip': 'Painel esquerdo @w px · clique duas vezes no divisor para largura padrão',
+      'home.twoPaneDividerTooltip':
+          'Painel esquerdo @w px · clique duas vezes no divisor para largura padrão',
       'home.downloads': 'Downloads',
       'home.localGalleries': 'Galerias Locais',
       'home.settings': 'Configurações',
@@ -183,7 +190,8 @@ class WebPtBR {
       // local
       'local.title': 'Galerias Locais',
       'local.noGalleries': 'Nenhuma galeria local encontrada',
-      'local.helpText': 'Monte diretórios no contêiner Docker\nou coloque galerias na pasta local_gallery',
+      'local.helpText':
+          'Monte diretórios no contêiner Docker\nou coloque galerias na pasta local_gallery',
       'local.scanNow': 'Escanear Agora',
       'local.empty': 'Vazio',
       'local.noImages': 'Nenhuma imagem encontrada nesta galeria',
@@ -198,15 +206,18 @@ class WebPtBR {
       'settings.logoutSuccess': 'Desconectado',
       'settings.logoutFailed': 'Falha ao sair: @error',
       'settings.cookieLogin': 'Login com cookies (recomendado)',
-      'settings.cookieHint': 'O login no fórum EH é bloqueado pelo Cloudflare em ambientes de servidor. '
+      'settings.cookieHint':
+          'O login no fórum EH é bloqueado pelo Cloudflare em ambientes de servidor. '
           'Faça login pelo navegador e copie os cookies aqui.\n'
           'Passos: Login em e-hentai.org → F12 → Aplicação → Cookies → copie os valores abaixo.',
-      'settings.cookiePlaceholder': 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+      'settings.cookiePlaceholder':
+          'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Definir Cookies',
       'settings.cookieSuccess': 'Cookies definidos com sucesso',
       'settings.cookieFailed': 'Falha ao definir cookies: @error',
       'settings.cookieEmpty': 'Por favor, cole os cookies',
-      'settings.credentialLogin': 'Login com credenciais (pode falhar devido ao Cloudflare)',
+      'settings.credentialLogin':
+          'Login com credenciais (pode falhar devido ao Cloudflare)',
       'settings.username': 'Usuário',
       'settings.password': 'Senha',
       'settings.login': 'Entrar',
@@ -256,24 +267,44 @@ class WebPtBR {
       'settings.menuMouseWheel': 'Roda do mouse',
       'settings.menuAdvanced': 'Avançado',
       'settings.menuSecurity': 'Segurança',
-      'settings.ehRequiresLogin': 'Entre em Conta para alterar o site e o estado dos cookies.',
-      'settings.ehWebMoreSoon': 'Perfil da galeria, cotas e Minhas tags podem ser adicionados quando houver APIs no servidor.',
-      'settings.styleWebMoreSoon': 'Opções de layout de lista podem ser adicionadas depois.',
-      'settings.networkWebStub': 'Proxy por requisição, domain fronting e timeouts ainda não são configuráveis aqui.',
+      'settings.ehRequiresLogin':
+          'Entre em Conta para alterar o site e o estado dos cookies.',
+      'settings.ehWebMoreSoon':
+          'Perfil da galeria, cotas e Minhas tags podem ser adicionados quando houver APIs no servidor.',
+      'settings.styleWebMoreSoon':
+          'Opções de layout de lista podem ser adicionadas depois.',
+      'settings.networkWebStub':
+          'Proxy por requisição, domain fronting e timeouts ainda não são configuráveis aqui.',
       'settings.downloadWebStub':
           'Gerencie downloads ativos e concluídos na página de downloads. Configurações avançadas de download não estão na web.',
-      'settings.performanceWebStub': 'Ajustes de CPU e memória são do app nativo. O cliente web roda no navegador.',
-      'settings.advancedWebStub': 'Logs e opções experimentais do app desktop não estão disponíveis na web.',
+      'settings.performanceWebStub':
+          'Ajustes de CPU e memória são do app nativo. O cliente web roda no navegador.',
+      'settings.advancedWebStub':
+          'Você pode ver e limpar logs do servidor aqui. Opções experimentais nativas não aparecem na web.',
+      'settings.advancedWebIntro':
+          'Veja logs do servidor e informações de caminhos Docker desta instância web.',
+      'settings.serverLogs': 'Logs do servidor',
+      'settings.clearLogsTitle': 'Limpar logs do servidor?',
+      'settings.clearLogsConfirm':
+          'Isso apagará todos os arquivos atuais de log do servidor.',
+      'settings.clearLogsFailed': 'Falha ao limpar logs: @error',
+      'settings.loadLogsFailed': 'Falha ao carregar logs: @error',
+      'settings.loadLogFailed': 'Falha ao carregar log: @error',
+      'settings.noLogs': 'Sem logs ainda',
+      'settings.copyLog': 'Copiar log',
+      'settings.emptyLog': 'Este log está vazio',
       'settings.securityWebStub':
           'Você conectou com um token de API na configuração. Para trocar, atualize o servidor e cole um novo token, ou limpe os dados do site.',
-      'settings.mouseWheelIntro': 'Escolha o comportamento da roda do mouse sobre as imagens no leitor (modos de página horizontais).',
+      'settings.mouseWheelIntro':
+          'Escolha o comportamento da roda do mouse sobre as imagens no leitor (modos de página horizontais).',
       'settings.mouseWheelReadHint': 'Direção, pré-carregamento e mais',
       'settings.aboutVersionLabel': 'Versão',
       'settings.aboutAuthorLabel': 'Autor',
       'settings.aboutTelegramTitle': 'Telegram (principalmente chinês)',
       'settings.aboutTelegramHint': 'Link da comunidade',
       'settings.aboutQA': 'Perguntas e respostas',
-      'settings.aboutWebForkNote': 'Esta UI web vem do fork JHenTai Docker; o projeto original está linkado acima.',
+      'settings.aboutWebForkNote':
+          'Esta UI web vem do fork JHenTai Docker; o projeto original está linkado acima.',
 
       // history
       'history.title': 'Histórico',
@@ -393,7 +424,8 @@ class WebPtBR {
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (inclui igneous — EX pronto)',
-      'settings.cookieStatusNoIgneous': 'Cookies definidos mas falta igneous — EX pode não funcionar',
+      'settings.cookieStatusNoIgneous':
+          'Cookies definidos mas falta igneous — EX pode não funcionar',
       'settings.cookieStatusNone': 'Nenhum cookie de login definido',
       'settings.siteSwitched': 'Alterado para @site',
 
@@ -426,7 +458,8 @@ class WebPtBR {
       'reader.autoInterval': 'Intervalo Auto-leitura',
       'reader.startAutoMode': 'Iniciar',
       'reader.saveFailed': 'Não foi possível salvar a imagem',
-      'reader.redownloadHint': 'Abra Downloads para tentar novamente ou reiniciar o download desta galeria.',
+      'reader.redownloadHint':
+          'Abra Downloads para tentar novamente ou reiniciar o download desta galeria.',
       'reader.deviceOrientation': 'Orientação do dispositivo',
       'reader.deviceOrientationWebHint':
           'O navegador não pode fixar a orientação como o app. Use tela cheia ou o bloqueio de rotação do sistema.',

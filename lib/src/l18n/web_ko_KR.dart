@@ -40,7 +40,8 @@ class WebKoKR {
       'setup.tokenHelpP1': 'Docker가 실행 중인 호스트에서 터미널을 열고 다음을 실행하세요.',
       'setup.tokenHelpP2':
           '[JHenTai] API token for web UI 로 시작하는 줄을 찾아 콜론 뒤의 64자리 16진수를 복사하세요(한 줄 전체). 컨테이너 이름이 jhentai가 아니면 아래 명령의 이름을 바꾸세요.',
-      'setup.tokenHelpAlt': '해당 줄이 없으면 서버 DB에서 읽을 수 있습니다(기본 컨테이너 이름 jhentai, 데이터 디렉터리 /data):',
+      'setup.tokenHelpAlt':
+          '해당 줄이 없으면 서버 DB에서 읽을 수 있습니다(기본 컨테이너 이름 jhentai, 데이터 디렉터리 /data):',
 
       // home
       'home.title': 'JHenTai',
@@ -183,7 +184,8 @@ class WebKoKR {
       // local
       'local.title': '로컬 갤러리',
       'local.noGalleries': '로컬 갤러리를 찾을 수 없습니다',
-      'local.helpText': 'Docker 컨테이너에 디렉토리를 마운트하거나\nlocal_gallery 폴더에 갤러리를 넣으세요',
+      'local.helpText':
+          'Docker 컨테이너에 디렉토리를 마운트하거나\nlocal_gallery 폴더에 갤러리를 넣으세요',
       'local.scanNow': '지금 스캔',
       'local.empty': '비어 있음',
       'local.noImages': '이 갤러리에 이미지가 없습니다',
@@ -198,10 +200,12 @@ class WebKoKR {
       'settings.logoutSuccess': '로그아웃되었습니다',
       'settings.logoutFailed': '로그아웃 실패: @error',
       'settings.cookieLogin': '쿠키로 로그인 (권장)',
-      'settings.cookieHint': 'EH 포럼 로그인은 서버 환경에서 Cloudflare에 의해 차단됩니다. '
+      'settings.cookieHint':
+          'EH 포럼 로그인은 서버 환경에서 Cloudflare에 의해 차단됩니다. '
           '브라우저에서 로그인한 후 쿠키를 여기에 복사하세요.\n'
           '단계: e-hentai.org 로그인 → F12 → 애플리케이션 → 쿠키 → 아래 값 복사.',
-      'settings.cookiePlaceholder': 'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
+      'settings.cookiePlaceholder':
+          'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': '쿠키 설정',
       'settings.cookieSuccess': '쿠키가 설정되었습니다',
       'settings.cookieFailed': '쿠키 설정 실패: @error',
@@ -257,12 +261,27 @@ class WebKoKR {
       'settings.menuAdvanced': '고급',
       'settings.menuSecurity': '보안',
       'settings.ehRequiresLogin': '계정에서 로그인한 뒤 사이트와 쿠키 상태를 변경하세요.',
-      'settings.ehWebMoreSoon': '갤러리 프로필, 할당량, 내 태그 등은 서버 API가 준비되면 추가될 수 있습니다.',
+      'settings.ehWebMoreSoon':
+          '갤러리 프로필, 할당량, 내 태그 등은 서버 API가 준비되면 추가될 수 있습니다.',
       'settings.styleWebMoreSoon': '목록 레이아웃 등은 이후 업데이트에서 제공될 수 있습니다.',
-      'settings.networkWebStub': '요청별 프록시, 도메인 프론팅, 타임아웃 등은 아직 이 UI에서 설정할 수 없습니다.',
-      'settings.downloadWebStub': '진행 중·완료된 다운로드는 다운로드 페이지에서 관리하세요. 고급 다운로드 설정은 웹 UI에 없습니다.',
-      'settings.performanceWebStub': 'CPU·메모리 조정은 네이티브 앱용입니다. 웹 클라이언트는 브라우저에서 실행됩니다.',
-      'settings.advancedWebStub': '데스크톱 앱의 로그와 실험적 기능은 웹에서 사용할 수 없습니다.',
+      'settings.networkWebStub':
+          '요청별 프록시, 도메인 프론팅, 타임아웃 등은 아직 이 UI에서 설정할 수 없습니다.',
+      'settings.downloadWebStub':
+          '진행 중·완료된 다운로드는 다운로드 페이지에서 관리하세요. 고급 다운로드 설정은 웹 UI에 없습니다.',
+      'settings.performanceWebStub':
+          'CPU·메모리 조정은 네이티브 앱용입니다. 웹 클라이언트는 브라우저에서 실행됩니다.',
+      'settings.advancedWebStub':
+          '여기서 서버 로그를 보고 지울 수 있습니다. 네이티브 실험 기능은 웹에서 제공되지 않습니다.',
+      'settings.advancedWebIntro': '이 웹 인스턴스의 서버 로그와 Docker 경로 정보를 확인합니다.',
+      'settings.serverLogs': '서버 로그',
+      'settings.clearLogsTitle': '서버 로그를 지울까요?',
+      'settings.clearLogsConfirm': '현재 서버 로그 파일이 모두 삭제됩니다.',
+      'settings.clearLogsFailed': '로그 삭제 실패: @error',
+      'settings.loadLogsFailed': '로그 목록 로드 실패: @error',
+      'settings.loadLogFailed': '로그 로드 실패: @error',
+      'settings.noLogs': '로그 없음',
+      'settings.copyLog': '로그 복사',
+      'settings.emptyLog': '이 로그는 비어 있습니다',
       'settings.securityWebStub':
           '설정 시 API 토큰으로 연결했습니다. 토큰을 바꾸려면 서버를 갱신한 뒤 설정에서 새 토큰을 붙여넣거나 사이트 데이터를 지우고 다시 연결하세요.',
       'settings.mouseWheelIntro': '뷰어에서 이미지 위 마우스 휠 동작을 선택합니다(가로 페이지 모드).',
@@ -272,7 +291,8 @@ class WebKoKR {
       'settings.aboutTelegramTitle': 'Telegram(주로 중국어)',
       'settings.aboutTelegramHint': '커뮤니티 링크',
       'settings.aboutQA': 'Q&A',
-      'settings.aboutWebForkNote': '이 웹 UI는 JHenTai Docker 포크에서 제공됩니다. 상위 프로젝트는 위 링크를 참고하세요.',
+      'settings.aboutWebForkNote':
+          '이 웹 UI는 JHenTai Docker 포크에서 제공됩니다. 상위 프로젝트는 위 링크를 참고하세요.',
 
       // history
       'history.title': '방문 기록',
@@ -396,7 +416,8 @@ class WebKoKR {
 
       // settings extras
       'settings.cookieStatusFull': '쿠키 정상 (igneous 포함 — EX 사용 가능)',
-      'settings.cookieStatusNoIgneous': '쿠키가 설정되었지만 igneous 누락 — EX가 작동하지 않을 수 있음',
+      'settings.cookieStatusNoIgneous':
+          '쿠키가 설정되었지만 igneous 누락 — EX가 작동하지 않을 수 있음',
       'settings.cookieStatusNone': '로그인 쿠키가 설정되지 않음',
       'settings.siteSwitched': '@site로 전환되었습니다',
 
