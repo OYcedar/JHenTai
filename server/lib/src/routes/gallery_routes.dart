@@ -67,7 +67,8 @@ class GalleryRoutes {
     return '$origin/$href';
   }
 
-  Future<Response> _galleryStats(Request request, String gid, String token) async {
+  Future<Response> _galleryStats(
+      Request request, String gid, String token) async {
     final id = int.tryParse(gid);
     if (id == null) {
       return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
@@ -82,7 +83,8 @@ class GalleryRoutes {
           headers: {'Content-Type': 'application/json'},
         );
       }
-      return Response.ok(jsonEncode(stats), headers: {'Content-Type': 'application/json'});
+      return Response.ok(jsonEncode(stats),
+          headers: {'Content-Type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'Failed to fetch stats: $e'}),
@@ -93,7 +95,8 @@ class GalleryRoutes {
   Future<Response> _galleryListByUrl(Request request) async {
     final raw = request.url.queryParameters['url'];
     if (raw == null || raw.isEmpty) {
-      return Response.badRequest(body: jsonEncode({'error': 'Missing url query parameter'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Missing url query parameter'}));
     }
     final decoded = Uri.decodeComponent(raw);
     final fetchUrl = _normalizeListHref(decoded, _client.baseUrl);
@@ -110,8 +113,10 @@ class GalleryRoutes {
       }
       final galleries = _parseGalleryListHtml(html);
       final origin = Uri.parse(fetchUrl).origin;
-      galleries['prevUrl'] = _normalizeListHref(galleries['prevUrl'] as String?, origin);
-      galleries['nextUrl'] = _normalizeListHref(galleries['nextUrl'] as String?, origin);
+      galleries['prevUrl'] =
+          _normalizeListHref(galleries['prevUrl'] as String?, origin);
+      galleries['nextUrl'] =
+          _normalizeListHref(galleries['nextUrl'] as String?, origin);
       final list = galleries['galleries'] as List<Map<String, dynamic>>?;
       if (list != null) {
         for (final g in list) {
@@ -121,9 +126,11 @@ class GalleryRoutes {
       }
       final blockRules = db.selectAllBlockRules();
       if (blockRules.isNotEmpty && list != null) {
-        list.removeWhere((g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
+        list.removeWhere(
+            (g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
       }
-      return Response.ok(jsonEncode(galleries), headers: {'Content-Type': 'application/json'});
+      return Response.ok(jsonEncode(galleries),
+          headers: {'Content-Type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'Failed to fetch list: $e'}),
@@ -141,7 +148,8 @@ class GalleryRoutes {
     final b64 = body['imageBase64'] as String?;
     final filename = body['filename'] as String? ?? 'upload.jpg';
     if (b64 == null || b64.isEmpty) {
-      return Response.badRequest(body: jsonEncode({'error': 'Missing imageBase64'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Missing imageBase64'}));
     }
     try {
       final bytes = base64Decode(b64);
@@ -254,14 +262,17 @@ class GalleryRoutes {
     }
 
     try {
-      final result = await _client.proxyGet(url, queryParams: queryParams.isNotEmpty ? queryParams : null);
+      final result = await _client.proxyGet(url,
+          queryParams: queryParams.isNotEmpty ? queryParams : null);
       final html = result['data']?.toString() ?? '';
       final galleries = _parseGalleryListHtml(html);
 
       // Make list API match list-by-url: absolute prev/next and gallery hrefs (client expects full URLs).
       final origin = _client.baseUrl;
-      galleries['prevUrl'] = _normalizeListHref(galleries['prevUrl'] as String?, origin);
-      galleries['nextUrl'] = _normalizeListHref(galleries['nextUrl'] as String?, origin);
+      galleries['prevUrl'] =
+          _normalizeListHref(galleries['prevUrl'] as String?, origin);
+      galleries['nextUrl'] =
+          _normalizeListHref(galleries['nextUrl'] as String?, origin);
       final listForNorm = galleries['galleries'] as List<Map<String, dynamic>>?;
       if (listForNorm != null) {
         for (final g in listForNorm) {
@@ -277,10 +288,12 @@ class GalleryRoutes {
       var parsedPrevGid = EhGalleryListNavigation.parsePrevGid(html);
       final nu = galleries['nextUrl'] as String? ?? '';
       final pu = galleries['prevUrl'] as String? ?? '';
-      parsedNextGid ??=
-          RegExp(r'[?&]next=([\d-]+)', caseSensitive: false).firstMatch(nu)?.group(1);
-      parsedPrevGid ??=
-          RegExp(r'[?&]prev=([\d-]+)', caseSensitive: false).firstMatch(pu)?.group(1);
+      parsedNextGid ??= RegExp(r'[?&]next=([\d-]+)', caseSensitive: false)
+          .firstMatch(nu)
+          ?.group(1);
+      parsedPrevGid ??= RegExp(r'[?&]prev=([\d-]+)', caseSensitive: false)
+          .firstMatch(pu)
+          ?.group(1);
       galleries['nextGid'] = parsedNextGid;
       galleries['prevGid'] = parsedPrevGid;
       galleries['hasMore'] =
@@ -292,7 +305,8 @@ class GalleryRoutes {
       if (blockRules.isNotEmpty) {
         final list = galleries['galleries'] as List<Map<String, dynamic>>?;
         if (list != null) {
-          list.removeWhere((g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
+          list.removeWhere(
+              (g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
         }
       }
 
@@ -307,7 +321,8 @@ class GalleryRoutes {
     }
   }
 
-  Future<Response> _galleryDetail(Request request, String gid, String token) async {
+  Future<Response> _galleryDetail(
+      Request request, String gid, String token) async {
     final galleryUrl = '${_client.baseUrl}/g/$gid/$token/';
 
     try {
@@ -355,7 +370,8 @@ class GalleryRoutes {
     }
   }
 
-  Future<Response> _galleryImagePages(Request request, String gid, String token) async {
+  Future<Response> _galleryImagePages(
+      Request request, String gid, String token) async {
     final galleryUrl = '${_client.baseUrl}/g/$gid/$token/';
 
     try {
@@ -382,7 +398,8 @@ class GalleryRoutes {
         }
 
         final countBefore = allPageUrls.length;
-        _client.appendGalleryThumbPageData(html, pageUrl, allPageUrls, allThumbUrls, allGalleryThumbs);
+        _client.appendGalleryThumbPageData(
+            html, pageUrl, allPageUrls, allThumbUrls, allGalleryThumbs);
 
         if (totalPages > 0 && allPageUrls.length >= totalPages) break;
         if (allPageUrls.length == countBefore) break;
@@ -421,7 +438,8 @@ class GalleryRoutes {
   }
 
   Element? _pttLinkAdjacentToCurrent(Document doc, {required bool next}) {
-    final tr = doc.querySelector('.ptt > tbody > tr') ?? doc.querySelector('table.ptt tr');
+    final tr = doc.querySelector('.ptt > tbody > tr') ??
+        doc.querySelector('table.ptt tr');
     if (tr == null) return null;
     final cells = tr.children.whereType<Element>().toList();
     for (var i = 0; i < cells.length; i++) {
@@ -470,7 +488,10 @@ class GalleryRoutes {
 
     bool looksLikePrevNav(Element a) {
       final t = a.text.trim();
-      if (t == '<' || t == '‹' || t.toLowerCase() == 'prev' || t.toLowerCase() == 'previous') return true;
+      if (t == '<' ||
+          t == '‹' ||
+          t.toLowerCase() == 'prev' ||
+          t.toLowerCase() == 'previous') return true;
       final rel = a.attributes['rel']?.toLowerCase();
       return rel == 'prev';
     }
@@ -489,8 +510,13 @@ class GalleryRoutes {
     }
 
     if (nextUrl.isEmpty) {
-      nextEl = doc.querySelector('.ptt td:nth-last-child(2) a');
-      if (nextEl != null && !isLastPageJump(nextEl) && looksLikeNextNav(nextEl)) {
+      final pttCells = doc.querySelectorAll('.ptt td');
+      nextEl = pttCells.length >= 2
+          ? pttCells[pttCells.length - 2].querySelector('a')
+          : null;
+      if (nextEl != null &&
+          !isLastPageJump(nextEl) &&
+          looksLikeNextNav(nextEl)) {
         nextUrl = href(nextEl) ?? '';
       }
     }
@@ -503,7 +529,9 @@ class GalleryRoutes {
     }
 
     if (nextUrl.isEmpty) {
-      final last = doc.querySelector('.ptt td:last-child a');
+      final pttCells = doc.querySelectorAll('.ptt td');
+      final last =
+          pttCells.isNotEmpty ? pttCells.last.querySelector('a') : null;
       if (last != null && looksLikeNextNav(last) && !isLastPageJump(last)) {
         nextUrl = href(last) ?? '';
       }
@@ -531,14 +559,18 @@ class GalleryRoutes {
 
     if (prevUrl.isEmpty) {
       prevEl = doc.querySelector('.ptt td:nth-child(2) a');
-      if (prevEl != null && !isFirstPageJump(prevEl) && looksLikePrevNav(prevEl)) {
+      if (prevEl != null &&
+          !isFirstPageJump(prevEl) &&
+          looksLikePrevNav(prevEl)) {
         prevUrl = href(prevEl) ?? '';
       }
     }
 
     if (prevUrl.isEmpty) {
       prevEl = doc.querySelector('.ptt td:first-child a');
-      if (prevEl != null && !isFirstPageJump(prevEl) && looksLikePrevNav(prevEl)) {
+      if (prevEl != null &&
+          !isFirstPageJump(prevEl) &&
+          looksLikePrevNav(prevEl)) {
         prevUrl = href(prevEl) ?? '';
       }
     }
@@ -568,7 +600,8 @@ class GalleryRoutes {
     final doc = html_parser.parse(html);
     final galleries = <Map<String, dynamic>>[];
 
-    final rows = doc.querySelectorAll('.glte, .gl1t, .gl3t, tr.gtr0, tr.gtr1, .itg tr');
+    final rows =
+        doc.querySelectorAll('.glte, .gl1t, .gl3t, tr.gtr0, tr.gtr1, .itg tr');
 
     if (rows.isEmpty) {
       final galleryLinks = doc.querySelectorAll('a[href*="/g/"]');
@@ -684,7 +717,8 @@ class GalleryRoutes {
     final ratingEl = element.querySelector('.ir');
     if (ratingEl != null) {
       final style = ratingEl.attributes['style'] ?? '';
-      final posMatch = RegExp(r'background-position:\s*(-?\d+)px\s+(-?\d+)px').firstMatch(style);
+      final posMatch = RegExp(r'background-position:\s*(-?\d+)px\s+(-?\d+)px')
+          .firstMatch(style);
       if (posMatch != null) {
         final x = int.tryParse(posMatch.group(1)!) ?? 0;
         final y = int.tryParse(posMatch.group(2)!) ?? 0;
@@ -698,7 +732,12 @@ class GalleryRoutes {
     }
 
     // Uploader from common link selectors
-    for (final sel in ['.gl3e a', '.gl4c a', 'td.glhide a', 'a[href*="uploader"]']) {
+    for (final sel in [
+      '.gl3e a',
+      '.gl4c a',
+      'td.glhide a',
+      'a[href*="uploader"]'
+    ]) {
       final el = element.querySelector(sel);
       if (el != null) {
         final text = el.text.trim();
@@ -713,8 +752,10 @@ class GalleryRoutes {
     // (same as EHSpiderParser._parseCompactGalleryTags / _parseExtendedGalleryTags).
     // Extra selectors cover newer table/thumbnail layouts where tags moved to sibling cells.
     final tagElements = <Element>[
-      ...element.querySelectorAll('.gt, .gtl, .gtw, div.gt, div.gtl, div.gtw, a.gt'),
-      ...element.querySelectorAll('.gl1e .gtl, .gl1e .gt, .gl5c .gtl, .gl3c .gtl, .gl4c .gtl'),
+      ...element
+          .querySelectorAll('.gt, .gtl, .gtw, div.gt, div.gtl, div.gtw, a.gt'),
+      ...element.querySelectorAll(
+          '.gl1e .gtl, .gl1e .gt, .gl5c .gtl, .gl3c .gtl, .gl4c .gtl'),
       ...element.querySelectorAll(
         '.gl2e > div > a > div > div:nth-child(1) > table > tbody > tr > td > div',
       ),
@@ -726,7 +767,8 @@ class GalleryRoutes {
   }
 
   /// Per-namespace list of `{tag, color?, backgroundColor?}` (ARGB ints) for watched-tag styling.
-  Map<String, List<Map<String, dynamic>>> _parseGalleryRowTags(List<Element> tagElements) {
+  Map<String, List<Map<String, dynamic>>> _parseGalleryRowTags(
+      List<Element> tagElements) {
     final tags = <String, List<Map<String, dynamic>>>{};
     final seen = <String>{};
 

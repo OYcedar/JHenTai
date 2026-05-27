@@ -126,8 +126,10 @@ class WebHomeController extends GetxController {
       final searchQuery = args['search'] as String;
       searchController.text = searchQuery;
       _currentSearch = searchQuery;
+      currentSearchText.value = searchQuery;
     }
     _loadHomePage();
+    _loadDashboardPreviews();
     loadSearchHistory();
     loadQuickSearches();
     scrollController.addListener(_onScroll);
@@ -189,8 +191,13 @@ class WebHomeController extends GetxController {
 
   /// Gallery list section: `home`, `popular`, `favorites`, etc. Filters apply only on [home].
   final currentSection = 'home'.obs;
+  final currentSearchText = ''.obs;
   String _currentSearch = '';
   String _ranklistTl = '15';
+
+  final dashboardRanklist = <Map<String, dynamic>>[].obs;
+  final dashboardPopular = <Map<String, dynamic>>[].obs;
+  final isDashboardLoading = false.obs;
 
   /// EH file lookup → [fetchGalleryListByUrl] pagination chain.
   final listByUrlMode = false.obs;
@@ -246,6 +253,7 @@ class WebHomeController extends GetxController {
       _clearPaginationCursors();
       listByUrlHumanPage.value = 1;
       _currentSearch = '';
+      currentSearchText.value = '';
       searchController.clear();
       currentSection.value = 'home';
       await _fetchListByUrl(redirect);
@@ -343,6 +351,7 @@ class WebHomeController extends GetxController {
     _exitListByUrlMode();
     currentSection.value = 'home';
     if (_currentSearch.isEmpty) _currentSearch = '';
+    currentSearchText.value = _currentSearch;
     currentPage.value = 0;
     _clearPaginationCursors();
     await _fetchGalleryList();
@@ -351,6 +360,7 @@ class WebHomeController extends GetxController {
   Future<void> search(String keyword) async {
     _exitListByUrlMode();
     _currentSearch = keyword;
+    currentSearchText.value = keyword;
     currentSection.value = 'home';
     currentPage.value = 0;
     _clearPaginationCursors();
@@ -418,6 +428,9 @@ class WebHomeController extends GetxController {
       }
       return;
     }
+    if (currentSection.value == 'home' && _currentSearch.trim().isEmpty) {
+      unawaited(_loadDashboardPreviews(force: true));
+    }
     // Match native [handleRefresh]: reload first page of current list/search.
     currentPage.value = 0;
     _clearPaginationCursors();
@@ -428,6 +441,7 @@ class WebHomeController extends GetxController {
     _exitListByUrlMode();
     currentSection.value = section;
     _currentSearch = '';
+    currentSearchText.value = '';
     currentPage.value = 0;
     _clearPaginationCursors();
     if (tl != null) _ranklistTl = tl;
@@ -704,6 +718,7 @@ class WebHomeController extends GetxController {
       final keyword = config['keyword'] as String? ?? '';
       searchController.text = keyword;
       _currentSearch = keyword;
+      currentSearchText.value = keyword;
       categoryFilter.value = config['categoryFilter'] as int? ?? 0;
       minimumRating.value = config['minimumRating'] as int? ?? 0;
       searchInName.value = config['searchInName'] as bool? ?? true;
@@ -725,6 +740,33 @@ class WebHomeController extends GetxController {
   Future<void> deleteQuickSearch(String name) async {
     await backendApiClient.deleteQuickSearch(name);
     loadQuickSearches();
+  }
+
+  Future<void> _loadDashboardPreviews({bool force = false}) async {
+    if (isDashboardLoading.value) return;
+    if (!force && dashboardRanklist.isNotEmpty && dashboardPopular.isNotEmpty) {
+      return;
+    }
+    isDashboardLoading.value = true;
+    try {
+      final rankResult = await backendApiClient.fetchGalleryList(
+        section: 'ranklist',
+        advancedParams: {'tl': '15'},
+      );
+      dashboardRanklist.value = ((rankResult['galleries'] as List?) ?? [])
+          .cast<Map<String, dynamic>>()
+          .take(10)
+          .toList();
+    } catch (_) {}
+    try {
+      final popularResult =
+          await backendApiClient.fetchGalleryList(section: 'popular');
+      dashboardPopular.value = ((popularResult['galleries'] as List?) ?? [])
+          .cast<Map<String, dynamic>>()
+          .take(10)
+          .toList();
+    } catch (_) {}
+    isDashboardLoading.value = false;
   }
 }
 
@@ -793,6 +835,17 @@ class WebHomePage extends GetView<WebHomeController> {
                     onDeleted: () => controller.exitImageSearchMode(),
                   ),
                 ),
+              );
+            }),
+            Obx(() {
+              final shouldShow = controller.currentSection.value == 'home' &&
+                  controller.currentSearchText.value.trim().isEmpty &&
+                  !controller.listByUrlMode.value &&
+                  controller.currentPage.value == 0;
+              if (!shouldShow) return const SizedBox.shrink();
+              return _DashboardPreview(
+                controller: controller,
+                isLeftPane: isLeftPane,
               );
             }),
             Obx(() {
@@ -1086,6 +1139,246 @@ class WebHomePage extends GetView<WebHomeController> {
       });
     });
   }
+}
+
+class _DashboardPreview extends StatelessWidget {
+  final WebHomeController controller;
+  final bool isLeftPane;
+
+  const _DashboardPreview({
+    required this.controller,
+    required this.isLeftPane,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final ranklist = controller.dashboardRanklist.toList();
+      final popular = controller.dashboardPopular.toList();
+      if (controller.isDashboardLoading.value &&
+          ranklist.isEmpty &&
+          popular.isEmpty) {
+        return const Padding(
+          padding: EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: LinearProgressIndicator(minHeight: 2),
+        );
+      }
+      if (ranklist.isEmpty && popular.isEmpty) return const SizedBox.shrink();
+      final height = isLeftPane ? 148.0 : 172.0;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+        child: Column(
+          children: [
+            if (ranklist.isNotEmpty)
+              _DashboardStrip(
+                icon: Icons.leaderboard,
+                title: 'home.ranklist'.tr,
+                galleries: ranklist,
+                height: height,
+                isLeftPane: isLeftPane,
+                onSeeAll: () => controller.loadUrl('ranklist', tl: '15'),
+              ),
+            if (popular.isNotEmpty)
+              _DashboardStrip(
+                icon: Icons.local_fire_department,
+                title: 'home.popular'.tr,
+                galleries: popular,
+                height: height,
+                isLeftPane: isLeftPane,
+                onSeeAll: () => controller.loadUrl('popular'),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _DashboardStrip extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final List<Map<String, dynamic>> galleries;
+  final double height;
+  final bool isLeftPane;
+  final VoidCallback onSeeAll;
+
+  const _DashboardStrip({
+    required this.icon,
+    required this.title,
+    required this.galleries,
+    required this.height,
+    required this.isLeftPane,
+    required this.onSeeAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              TextButton(
+                onPressed: onSeeAll,
+                child: Text('seeAll'.tr),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: height,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: galleries.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (context, index) => _DashboardGalleryCard(
+                gallery: galleries[index],
+                isLeftPane: isLeftPane,
+                width: isLeftPane ? 96 : 118,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardGalleryCard extends StatelessWidget {
+  final Map<String, dynamic> gallery;
+  final bool isLeftPane;
+  final double width;
+
+  const _DashboardGalleryCard({
+    required this.gallery,
+    required this.isLeftPane,
+    required this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = gallery['title'] as String? ?? '';
+    final category = gallery['category'] as String? ?? '';
+    final gid = gallery['gid'];
+    final token = gallery['token'];
+    final coverUrl = gallery['coverUrl'] as String? ?? '';
+    return SizedBox(
+      width: width,
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            if (gid is! int || token is! String) return;
+            if (isLeftPane) {
+              Get.find<WebLayoutController>().selectGallery(gid, token);
+            } else {
+              Get.toNamed('/web/gallery/$gid/$token');
+            }
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    coverUrl.isNotEmpty
+                        ? WebProxiedImage(
+                            sourceUrl: coverUrl,
+                            fit: BoxFit.cover,
+                            surfaceLoadingPlaceholder: true,
+                            readerErrorChild: Container(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child: const Icon(Icons.broken_image),
+                            ),
+                          )
+                        : Container(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            child: const Icon(Icons.photo_library),
+                          ),
+                    if (category.isNotEmpty)
+                      Positioned(
+                        left: 4,
+                        top: 4,
+                        right: 4,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: _dashboardCategoryColor(category)
+                                .withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            child: Text(
+                              category,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(6),
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _dashboardCategoryColor(String category) {
+  return switch (category.toLowerCase()) {
+    'doujinshi' => Colors.red.shade700,
+    'manga' => Colors.orange.shade700,
+    'artist cg' => Colors.amber.shade700,
+    'game cg' => Colors.green.shade700,
+    'western' => Colors.teal.shade700,
+    'non-h' => Colors.blue.shade700,
+    'image set' => Colors.indigo.shade700,
+    'cosplay' => Colors.purple.shade700,
+    'asian porn' => Colors.pink.shade700,
+    'misc' => Colors.grey.shade700,
+    _ => Colors.grey.shade700,
+  };
 }
 
 class _SinglePaneHome extends StatelessWidget {
