@@ -197,8 +197,7 @@ class WebZhCN {
       'settings.logoutSuccess': '已退出登录',
       'settings.logoutFailed': '退出登录失败: @error',
       'settings.cookieLogin': '使用 Cookie 登录（推荐）',
-      'settings.cookieHint':
-          'EH 论坛登录在服务器环境中被 Cloudflare 拦截。'
+      'settings.cookieHint': 'EH 论坛登录在服务器环境中被 Cloudflare 拦截。'
           '请在浏览器中登录后复制 Cookie 到此处。\n'
           '步骤: 登录 e-hentai.org → F12 → 应用 → Cookie → 复制以下值。',
       'settings.cookiePlaceholder':
@@ -262,6 +261,16 @@ class WebZhCN {
       'settings.styleWebMoreSoon': '列表布局等选项可能在后续版本中加入。',
       'settings.networkWebStub': '单次请求代理、域名前置、超时等暂不可在此界面配置。',
       'settings.downloadWebStub': '进行中的与已完成的下载请在「下载任务」页管理；高级下载选项尚未在网页端开放。',
+      'settings.downloadWebIntro': '设置网页下载弹窗使用的默认分组和优先级，并查看服务端 Docker 下载参数。',
+      'settings.downloadDefaults': '下载默认值',
+      'settings.downloadDefaultsSaved': '下载默认值已保存',
+      'settings.defaultGalleryDownload': '画廊下载',
+      'settings.defaultArchiveDownload': '归档下载',
+      'settings.customGroupName': '自定义分组名',
+      'settings.downloadServerRuntime': '服务端运行参数',
+      'settings.galleryConcurrency': '画廊并发',
+      'settings.archiveConcurrency': '归档并发',
+      'settings.downloadRuntimeHint': '并发与路径由 Docker 环境变量控制，修改后需重启服务端生效。',
       'settings.performanceWebStub': 'CPU、内存等性能调优针对原生客户端；网页端在浏览器中运行。',
       'settings.advancedWebStub': '可在这里查看并清理服务器日志；原生端实验性功能暂未在网页端开放。',
       'settings.advancedWebIntro': '查看当前 Web 实例的服务器日志与 Docker 路径信息。',
@@ -501,6 +510,11 @@ class WebZhCN {
       'downloads.groupLabel': '分组',
       'downloads.superseded': '已升级至 gid @gid',
       'downloads.editTask': '编辑任务',
+      'downloads.pauseVisible': '暂停当前列表任务',
+      'downloads.resumeVisible': '恢复当前列表任务',
+      'downloads.noBatchTargets': '当前列表没有可操作任务',
+      'downloads.batchPaused': '已暂停 @count 个任务',
+      'downloads.batchResumed': '已恢复 @count 个任务',
 
       // detail download dialog
       'detail.startDownloadTitle': '开始下载',

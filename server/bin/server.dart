@@ -63,10 +63,12 @@ Future<void> main(List<String> args) async {
 
   final eventBus = EventBus();
 
-  final galleryDownloadService = GalleryDownloadService(ehClient, config, eventBus);
+  final galleryDownloadService =
+      GalleryDownloadService(ehClient, config, eventBus);
   await galleryDownloadService.init();
 
-  final archiveDownloadService = ArchiveDownloadService(ehClient, config, eventBus);
+  final archiveDownloadService =
+      ArchiveDownloadService(ehClient, config, eventBus);
   await archiveDownloadService.init();
 
   final localGalleryService = LocalGalleryService(config);
@@ -103,9 +105,11 @@ Future<void> main(List<String> args) async {
   );
 
   log.info('Server running at http://${server.address.host}:${server.port}');
-  log.info('API available at http://${server.address.host}:${server.port}/api/');
+  log.info(
+      'API available at http://${server.address.host}:${server.port}/api/');
   if (jhImageProxyDebugEnabled()) {
-    log.info('JH_IMAGE_PROXY_DEBUG is on: verbose /api/proxy/image and /api/image success logs enabled');
+    log.info(
+        'JH_IMAGE_PROXY_DEBUG is on: verbose /api/proxy/image and /api/image success logs enabled');
   }
 
   bool shuttingDown = false;
@@ -130,13 +134,26 @@ Handler _buildHandler(Handler apiHandler, ServerConfig config) {
       webDir,
       defaultDocument: 'index.html',
     );
+    final indexFile = File('$webDir/index.html');
 
-    return (Request request) {
+    return (Request request) async {
       final path = request.url.path;
       if (path.startsWith('api/') || path.startsWith('ws/')) {
         return apiHandler(request);
       }
-      return staticHandler(request);
+      final response = await staticHandler(request);
+      if (request.method != 'GET' || response.statusCode != 404) {
+        return response;
+      }
+      final lastSegment =
+          request.url.pathSegments.isEmpty ? '' : request.url.pathSegments.last;
+      if (lastSegment.contains('.')) {
+        return response;
+      }
+      return Response.ok(
+        indexFile.openRead(),
+        headers: {'Content-Type': 'text/html; charset=utf-8'},
+      );
     };
   }
 

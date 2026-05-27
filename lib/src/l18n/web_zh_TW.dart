@@ -197,8 +197,7 @@ class WebZhTW {
       'settings.logoutSuccess': '已登出',
       'settings.logoutFailed': '登出失敗: @error',
       'settings.cookieLogin': '使用 Cookie 登入（建議）',
-      'settings.cookieHint':
-          'EH 論壇登入在伺服器環境中被 Cloudflare 攔截。'
+      'settings.cookieHint': 'EH 論壇登入在伺服器環境中被 Cloudflare 攔截。'
           '請在瀏覽器中登入後複製 Cookie 到此處。\n'
           '步驟: 登入 e-hentai.org → F12 → 應用程式 → Cookie → 複製以下值。',
       'settings.cookiePlaceholder':
@@ -262,6 +261,16 @@ class WebZhTW {
       'settings.styleWebMoreSoon': '列表版面等選項可能在後續版本加入。',
       'settings.networkWebStub': '單次請求代理、網域前置、逾時等暫不可在此介面設定。',
       'settings.downloadWebStub': '進行中與已完成的下載請在「下載工作」頁管理；進階下載選項尚未在網頁端開放。',
+      'settings.downloadWebIntro': '設定網頁下載對話框使用的預設分組與優先級，並檢視伺服器端 Docker 下載參數。',
+      'settings.downloadDefaults': '下載預設值',
+      'settings.downloadDefaultsSaved': '下載預設值已儲存',
+      'settings.defaultGalleryDownload': '畫廊下載',
+      'settings.defaultArchiveDownload': '封存下載',
+      'settings.customGroupName': '自訂分組名稱',
+      'settings.downloadServerRuntime': '伺服器執行參數',
+      'settings.galleryConcurrency': '畫廊並行數',
+      'settings.archiveConcurrency': '封存並行數',
+      'settings.downloadRuntimeHint': '並行數與路徑由 Docker 環境變數控制，修改後需重啟伺服器生效。',
       'settings.performanceWebStub': 'CPU、記憶體等效能調校針對原生用戶端；網頁端在瀏覽器中執行。',
       'settings.advancedWebStub': '可在這裡檢視並清理伺服器日誌；原生端實驗性功能暫未在網頁端開放。',
       'settings.advancedWebIntro': '檢視目前 Web 實例的伺服器日誌與 Docker 路徑資訊。',
@@ -493,6 +502,11 @@ class WebZhTW {
       'downloads.groupLabel': '分組',
       'downloads.superseded': '已升級至 gid @gid',
       'downloads.editTask': '編輯任務',
+      'downloads.pauseVisible': '暫停目前列表任務',
+      'downloads.resumeVisible': '恢復目前列表任務',
+      'downloads.noBatchTargets': '目前列表沒有可操作任務',
+      'downloads.batchPaused': '已暫停 @count 個任務',
+      'downloads.batchResumed': '已恢復 @count 個任務',
 
       'detail.startDownloadTitle': '開始下載',
       'detail.downloadGroup': '分組',

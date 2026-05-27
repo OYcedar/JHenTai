@@ -204,8 +204,7 @@ class WebRuRU {
       'settings.logoutSuccess': 'Вы вышли',
       'settings.logoutFailed': 'Ошибка выхода: @error',
       'settings.cookieLogin': 'Вход через cookies (рекомендуется)',
-      'settings.cookieHint':
-          'Вход на форум EH заблокирован Cloudflare. '
+      'settings.cookieHint': 'Вход на форум EH заблокирован Cloudflare. '
           'Войдите через браузер и скопируйте cookies сюда.\n'
           'Шаги: Вход на e-hentai.org → F12 → Application → Cookies → скопируйте значения.',
       'settings.cookiePlaceholder':
@@ -275,6 +274,18 @@ class WebRuRU {
           'Прокси на запрос, domain fronting и таймауты пока нельзя настроить здесь.',
       'settings.downloadWebStub':
           'Активные и завершённые загрузки — на странице загрузок. Расширенные настройки загрузки в веб-интерфейсе недоступны.',
+      'settings.downloadWebIntro':
+          'Настройте группы и приоритеты по умолчанию для веб-диалогов загрузки и проверьте параметры Docker на сервере.',
+      'settings.downloadDefaults': 'Параметры загрузки по умолчанию',
+      'settings.downloadDefaultsSaved': 'Параметры загрузки сохранены',
+      'settings.defaultGalleryDownload': 'Загрузка галереи',
+      'settings.defaultArchiveDownload': 'Загрузка архива',
+      'settings.customGroupName': 'Имя пользовательской группы',
+      'settings.downloadServerRuntime': 'Параметры сервера',
+      'settings.galleryConcurrency': 'Параллельные галереи',
+      'settings.archiveConcurrency': 'Параллельные архивы',
+      'settings.downloadRuntimeHint':
+          'Параллельность и пути задаются переменными окружения Docker и применяются после перезапуска сервера.',
       'settings.performanceWebStub':
           'Настройки CPU и памяти относятся к нативному приложению. Веб-клиент работает в браузере.',
       'settings.advancedWebStub':
@@ -512,6 +523,11 @@ class WebRuRU {
       'downloads.groupLabel': 'Group',
       'downloads.superseded': 'Upgraded to gid @gid',
       'downloads.editTask': 'Edit task',
+      'downloads.pauseVisible': 'Поставить видимые задачи на паузу',
+      'downloads.resumeVisible': 'Возобновить видимые задачи',
+      'downloads.noBatchTargets': 'В текущем списке нет подходящих задач',
+      'downloads.batchPaused': 'Поставлено на паузу: @count',
+      'downloads.batchResumed': 'Возобновлено: @count',
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',
       'existingGroup': 'Существующая группа',

@@ -9,11 +9,14 @@ import 'package:web/web.dart' as web;
 
 enum WebDownloadSort { priorityDesc, timeDesc, title, status }
 
-class WebDownloadsController extends GetxController with GetSingleTickerProviderStateMixin {
+class WebDownloadsController extends GetxController
+    with GetSingleTickerProviderStateMixin {
   late TabController tabController;
 
-  static const _kGalleryGroupsExpanded = 'jh_web_downloads_gallery_groups_expanded';
-  static const _kArchiveGroupsExpanded = 'jh_web_downloads_archive_groups_expanded';
+  static const _kGalleryGroupsExpanded =
+      'jh_web_downloads_gallery_groups_expanded';
+  static const _kArchiveGroupsExpanded =
+      'jh_web_downloads_archive_groups_expanded';
 
   final searchQuery = ''.obs;
   final selectedCategoryFilter = Rxn<String>();
@@ -28,7 +31,8 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
   static String _taskGroupName(Map<String, dynamic> t) =>
       (t['group_name'] ?? t['groupName'] ?? 'default') as String;
 
-  static String _taskCategoryKey(Map<String, dynamic> t) => (t['category'] as String? ?? '').trim();
+  static String _taskCategoryKey(Map<String, dynamic> t) =>
+      (t['category'] as String? ?? '').trim();
 
   static List<String> sortedGroupNames(Iterable<String> names) {
     final list = names.toSet().toList();
@@ -115,7 +119,9 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
     final cat = selectedCategoryFilter.value;
     if (cat != null && cat.isNotEmpty) {
       final needle = cat.toLowerCase();
-      list = list.where((t) => _taskCategoryKey(t).toLowerCase() == needle).toList();
+      list = list
+          .where((t) => _taskCategoryKey(t).toLowerCase() == needle)
+          .toList();
     }
     final q = searchQuery.value.toLowerCase();
     if (q.isNotEmpty) {
@@ -123,7 +129,9 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
         final title = (t['title'] as String? ?? '').toLowerCase();
         final uploader = (t['uploader'] as String? ?? '').toLowerCase();
         final category = (t['category'] as String? ?? '').toLowerCase();
-        return title.contains(q) || uploader.contains(q) || category.contains(q);
+        return title.contains(q) ||
+            uploader.contains(q) ||
+            category.contains(q);
       }).toList();
     }
     return list;
@@ -189,7 +197,9 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
     final cat = selectedCategoryFilter.value;
     if (cat != null && cat.isNotEmpty) {
       final needle = cat.toLowerCase();
-      list = list.where((t) => _taskCategoryKey(t).toLowerCase() == needle).toList();
+      list = list
+          .where((t) => _taskCategoryKey(t).toLowerCase() == needle)
+          .toList();
     }
     final q = searchQuery.value.toLowerCase();
     if (q.isNotEmpty) {
@@ -197,7 +207,9 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
         final title = (t['title'] as String? ?? '').toLowerCase();
         final uploader = (t['uploader'] as String? ?? '').toLowerCase();
         final category = (t['category'] as String? ?? '').toLowerCase();
-        return title.contains(q) || uploader.contains(q) || category.contains(q);
+        return title.contains(q) ||
+            uploader.contains(q) ||
+            category.contains(q);
       }).toList();
     }
     return list;
@@ -238,7 +250,8 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
 
   void _syncCategoryFilterWithTab() {
     final galleryTab = tabController.index == 0;
-    final cats = galleryTab ? galleryCategoriesForFilter : archiveCategoriesForFilter;
+    final cats =
+        galleryTab ? galleryCategoriesForFilter : archiveCategoriesForFilter;
     final sel = selectedCategoryFilter.value;
     if (sel != null && !cats.contains(sel)) {
       selectedCategoryFilter.value = null;
@@ -269,13 +282,61 @@ class WebDownloadsController extends GetxController with GetSingleTickerProvider
 
   Future<void> refresh() => _svc.refresh();
 
+  Future<void> pauseVisibleTasks() async {
+    final galleryTab = tabController.index == 0;
+    final tasks =
+        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final ids = tasks
+        .where((t) => galleryTab
+            ? (t['status'] == 1)
+            : ({1, 2, 3, 4, 5}.contains(t['status'])))
+        .map((t) => (t['gid'] as num?)?.toInt())
+        .whereType<int>()
+        .toList();
+    if (ids.isEmpty) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    await Future.wait(ids.map(galleryTab ? pauseGallery : pauseArchive));
+    await refresh();
+    Get.snackbar('common.success'.tr,
+        'downloads.batchPaused'.trParams({'count': '${ids.length}'}),
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
+  Future<void> resumeVisibleTasks() async {
+    final galleryTab = tabController.index == 0;
+    final tasks =
+        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final ids = tasks
+        .where((t) => galleryTab
+            ? ({2, 4}.contains(t['status']))
+            : ({7, 8}.contains(t['status'])))
+        .map((t) => (t['gid'] as num?)?.toInt())
+        .whereType<int>()
+        .toList();
+    if (ids.isEmpty) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    await Future.wait(ids.map(galleryTab ? resumeGallery : resumeArchive));
+    await refresh();
+    Get.snackbar('common.success'.tr,
+        'downloads.batchResumed'.trParams({'count': '${ids.length}'}),
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
   Future<void> patchGalleryTask(int gid, {int? priority, String? group}) async {
-    await backendApiClient.patchGalleryDownload(gid, priority: priority, group: group);
+    await backendApiClient.patchGalleryDownload(gid,
+        priority: priority, group: group);
     await _svc.refresh();
   }
 
   Future<void> patchArchiveTask(int gid, {int? priority, String? group}) async {
-    await backendApiClient.patchArchiveDownload(gid, priority: priority, group: group);
+    await backendApiClient.patchArchiveDownload(gid,
+        priority: priority, group: group);
     await _svc.refresh();
   }
 }
@@ -289,12 +350,25 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
       appBar: AppBar(
         title: Text('downloads.title'.tr),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: controller.refresh),
+          IconButton(
+            icon: const Icon(Icons.pause_circle_outline),
+            tooltip: 'downloads.pauseVisible'.tr,
+            onPressed: controller.pauseVisibleTasks,
+          ),
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline),
+            tooltip: 'downloads.resumeVisible'.tr,
+            onPressed: controller.resumeVisibleTasks,
+          ),
+          IconButton(
+              icon: const Icon(Icons.refresh), onPressed: controller.refresh),
         ],
         bottom: TabBar(
           controller: controller.tabController,
           tabs: [
-            Tab(text: 'downloads.gallery'.tr, icon: const Icon(Icons.photo_library)),
+            Tab(
+                text: 'downloads.gallery'.tr,
+                icon: const Icon(Icons.photo_library)),
             Tab(text: 'downloads.archive'.tr, icon: const Icon(Icons.archive)),
           ],
         ),
@@ -339,9 +413,12 @@ class _DownloadFilterBar extends StatelessWidget {
           builder: (context, _) {
             final galleryTab = controller.tabController.index == 0;
             return Obx(() {
-              final sort = galleryTab ? controller.gallerySort.value : controller.archiveSort.value;
-              final categories =
-                  galleryTab ? controller.galleryCategoriesForFilter : controller.archiveCategoriesForFilter;
+              final sort = galleryTab
+                  ? controller.gallerySort.value
+                  : controller.archiveSort.value;
+              final categories = galleryTab
+                  ? controller.galleryCategoriesForFilter
+                  : controller.archiveCategoriesForFilter;
               final rawCat = controller.selectedCategoryFilter.value;
               if (rawCat != null && !categories.contains(rawCat)) {
                 Future.microtask(() {
@@ -363,7 +440,8 @@ class _DownloadFilterBar extends StatelessWidget {
                             hintText: 'downloads.search'.tr,
                             prefixIcon: const Icon(Icons.search, size: 20),
                             isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                             border: const OutlineInputBorder(),
                           ),
                           onChanged: (v) => controller.searchQuery.value = v,
@@ -378,24 +456,29 @@ class _DownloadFilterBar extends StatelessWidget {
                           decoration: InputDecoration(
                             labelText: 'downloads.sortBy'.tr,
                             border: const OutlineInputBorder(),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 8),
                           ),
                           items: [
                             DropdownMenuItem(
                               value: WebDownloadSort.priorityDesc,
-                              child: Text('downloads.sortPriority'.tr, overflow: TextOverflow.ellipsis),
+                              child: Text('downloads.sortPriority'.tr,
+                                  overflow: TextOverflow.ellipsis),
                             ),
                             DropdownMenuItem(
                               value: WebDownloadSort.timeDesc,
-                              child: Text('downloads.sortTime'.tr, overflow: TextOverflow.ellipsis),
+                              child: Text('downloads.sortTime'.tr,
+                                  overflow: TextOverflow.ellipsis),
                             ),
                             DropdownMenuItem(
                               value: WebDownloadSort.title,
-                              child: Text('downloads.sortTitle'.tr, overflow: TextOverflow.ellipsis),
+                              child: Text('downloads.sortTitle'.tr,
+                                  overflow: TextOverflow.ellipsis),
                             ),
                             DropdownMenuItem(
                               value: WebDownloadSort.status,
-                              child: Text('downloads.sortStatus'.tr, overflow: TextOverflow.ellipsis),
+                              child: Text('downloads.sortStatus'.tr,
+                                  overflow: TextOverflow.ellipsis),
                             ),
                           ],
                           onChanged: (v) {
@@ -418,7 +501,8 @@ class _DownloadFilterBar extends StatelessWidget {
                       decoration: InputDecoration(
                         labelText: 'downloads.categoryFilter'.tr,
                         border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                       ),
                       items: [
                         DropdownMenuItem<String?>(
@@ -432,7 +516,8 @@ class _DownloadFilterBar extends StatelessWidget {
                           ),
                         ),
                       ],
-                      onChanged: (v) => controller.selectedCategoryFilter.value = v,
+                      onChanged: (v) =>
+                          controller.selectedCategoryFilter.value = v,
                     ),
                   ],
                 ],
@@ -461,7 +546,10 @@ class _DownloadGroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
+      color: Theme.of(context)
+          .colorScheme
+          .surfaceContainerHighest
+          .withValues(alpha: 0.65),
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -470,18 +558,25 @@ class _DownloadGroupHeader extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           child: Row(
             children: [
-              Icon(Icons.folder_outlined, size: 20, color: Theme.of(context).colorScheme.primary),
+              Icon(Icons.folder_outlined,
+                  size: 20, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   groupName,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               Text(
                 '($count)',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Theme.of(context).hintColor),
               ),
               const SizedBox(width: 8),
               AnimatedRotation(
@@ -497,10 +592,13 @@ class _DownloadGroupHeader extends StatelessWidget {
   }
 }
 
-void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl, Map<String, dynamic> task) {
+void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
+    Map<String, dynamic> task) {
   final gid = task['gid'] as int;
-  final priCtrl = TextEditingController(text: '${(task['priority'] as num?)?.toInt() ?? 0}');
-  final grpCtrl = TextEditingController(text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
+  final priCtrl = TextEditingController(
+      text: '${(task['priority'] as num?)?.toInt() ?? 0}');
+  final grpCtrl = TextEditingController(
+      text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -527,11 +625,14 @@ void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl, 
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+        TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.cancel'.tr)),
         FilledButton(
           onPressed: () async {
             Navigator.pop(ctx);
-            final g = grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
+            final g =
+                grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
             await ctrl.patchGalleryTask(
               gid,
               priority: int.tryParse(priCtrl.text.trim()),
@@ -545,10 +646,13 @@ void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl, 
   );
 }
 
-void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl, Map<String, dynamic> task) {
+void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl,
+    Map<String, dynamic> task) {
   final gid = task['gid'] as int;
-  final priCtrl = TextEditingController(text: '${(task['priority'] as num?)?.toInt() ?? 0}');
-  final grpCtrl = TextEditingController(text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
+  final priCtrl = TextEditingController(
+      text: '${(task['priority'] as num?)?.toInt() ?? 0}');
+  final grpCtrl = TextEditingController(
+      text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -575,11 +679,14 @@ void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl, 
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+        TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.cancel'.tr)),
         FilledButton(
           onPressed: () async {
             Navigator.pop(ctx);
-            final g = grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
+            final g =
+                grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
             await ctrl.patchArchiveTask(
               gid,
               priority: int.tryParse(priCtrl.text.trim()),
@@ -603,7 +710,8 @@ class _GalleryTaskList extends StatelessWidget {
   Widget build(BuildContext context) {
     final svc = Get.find<WebDownloadService>();
     return Obx(() {
-      final _ = svc.galleryTasks.length + controller.galleryGroupExpanded.length;
+      final _ =
+          svc.galleryTasks.length + controller.galleryGroupExpanded.length;
       final tasks = controller.sortedFilteredGalleryTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noGallery'.tr));
@@ -626,7 +734,8 @@ class _GalleryTaskList extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             if (controller.galleryGroupExpanded[g] ?? true)
-              ...byGroup[g]!.map((task) => _GalleryTaskCard(task: task, controller: controller)),
+              ...byGroup[g]!.map((task) =>
+                  _GalleryTaskCard(task: task, controller: controller)),
             const SizedBox(height: 10),
           ],
         ],
@@ -648,7 +757,8 @@ class _GalleryTaskCard extends StatelessWidget {
     final category = task['category'] as String? ?? '';
     final uploader = task['uploader'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
-    final groupName = (task['group_name'] ?? task['groupName'] ?? 'default') as String;
+    final groupName =
+        (task['group_name'] ?? task['groupName'] ?? 'default') as String;
     final priority = (task['priority'] as num?)?.toInt() ?? 0;
     final supersededBy = task['supersededByGid'] as int?;
     final status = task['status'] as int? ?? 0;
@@ -677,13 +787,18 @@ class _GalleryTaskCard extends StatelessWidget {
                       sourceUrl: coverUrl,
                       fit: BoxFit.cover,
                       readerErrorChild: Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        child: const Icon(Icons.photo_library, color: Colors.grey),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
+                        child:
+                            const Icon(Icons.photo_library, color: Colors.grey),
                       ),
                     )
                   : Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.photo_library, color: Colors.grey),
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child:
+                          const Icon(Icons.photo_library, color: Colors.grey),
                     ),
             ),
             // Info
@@ -693,27 +808,39 @@ class _GalleryTaskCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                    Text(title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w500)),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         if (category.isNotEmpty) ...[
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
                               color: _categoryColor(category),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(category,
-                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(width: 8),
                         ],
                         if (uploader.isNotEmpty)
                           Flexible(
                             child: Text(uploader,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: Colors.grey),
                                 overflow: TextOverflow.ellipsis),
                           ),
                       ],
@@ -721,40 +848,52 @@ class _GalleryTaskCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _StatusBadge(statusIndex: status, statusName: statusName, isCompleted: isCompleted),
+                        _StatusBadge(
+                            statusIndex: status,
+                            statusName: statusName,
+                            isCompleted: isCompleted),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: Colors.purple.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'downloads.priorityLabel'.trParams({'n': '$priority'}),
-                            style: const TextStyle(fontSize: 10, color: Colors.purple),
+                            'downloads.priorityLabel'
+                                .trParams({'n': '$priority'}),
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.purple),
                           ),
                         ),
                         const SizedBox(width: 8),
                         if (groupName != 'default') ...[
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
                               color: Colors.blueGrey.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(groupName, style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
+                            child: Text(groupName,
+                                style: const TextStyle(
+                                    fontSize: 10, color: Colors.blueGrey)),
                           ),
                           const SizedBox(width: 8),
                         ],
-                        Text('$completed / $total', style: Theme.of(context).textTheme.bodySmall),
+                        Text('$completed / $total',
+                            style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
                     if (supersededBy != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
-                          'downloads.superseded'.trParams({'gid': '$supersededBy'}),
-                          style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
+                          'downloads.superseded'
+                              .trParams({'gid': '$supersededBy'}),
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.orange.shade800),
                         ),
                       ),
                     const SizedBox(height: 4),
@@ -769,19 +908,25 @@ class _GalleryTaskCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.tune, size: 20),
                   tooltip: 'downloads.editTask'.tr,
-                  onPressed: () => _showGalleryPatchDialog(context, controller, task),
+                  onPressed: () =>
+                      _showGalleryPatchDialog(context, controller, task),
                 ),
                 if (isCompleted)
                   IconButton(
                     icon: const Icon(Icons.menu_book, color: Colors.green),
                     tooltip: 'downloads.read'.tr,
-                    onPressed: () => Get.toNamed('/web/reader/$gid/$token?mode=downloaded'),
+                    onPressed: () =>
+                        Get.toNamed('/web/reader/$gid/$token?mode=downloaded'),
                   ),
                 if (status == 1)
-                  IconButton(icon: const Icon(Icons.pause), tooltip: 'downloads.pause'.tr,
+                  IconButton(
+                      icon: const Icon(Icons.pause),
+                      tooltip: 'downloads.pause'.tr,
                       onPressed: () => controller.pauseGallery(gid)),
                 if (status == 2 || status == 4)
-                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'downloads.resume'.tr,
+                  IconButton(
+                      icon: const Icon(Icons.play_arrow),
+                      tooltip: 'downloads.resume'.tr,
                       onPressed: () => controller.resumeGallery(gid)),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -803,10 +948,16 @@ class _GalleryTaskCard extends StatelessWidget {
         title: Text('downloads.deleteTitle'.tr),
         content: Text('downloads.deleteConfirm'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
           TextButton(
-            onPressed: () { Navigator.pop(ctx); controller.deleteGallery(gid); },
-            child: Text('common.delete'.tr, style: const TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              controller.deleteGallery(gid);
+            },
+            child: Text('common.delete'.tr,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -824,7 +975,8 @@ class _ArchiveTaskList extends StatelessWidget {
   Widget build(BuildContext context) {
     final svc = Get.find<WebDownloadService>();
     return Obx(() {
-      final _ = svc.archiveTasks.length + controller.archiveGroupExpanded.length;
+      final _ =
+          svc.archiveTasks.length + controller.archiveGroupExpanded.length;
       final tasks = controller.sortedFilteredArchiveTasks;
       if (tasks.isEmpty) {
         return Center(child: Text('downloads.noArchive'.tr));
@@ -847,7 +999,8 @@ class _ArchiveTaskList extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             if (controller.archiveGroupExpanded[g] ?? true)
-              ...byGroup[g]!.map((task) => _ArchiveTaskCard(task: task, controller: controller)),
+              ...byGroup[g]!.map((task) =>
+                  _ArchiveTaskCard(task: task, controller: controller)),
             const SizedBox(height: 10),
           ],
         ],
@@ -870,7 +1023,8 @@ class _ArchiveTaskCard extends StatelessWidget {
     final uploader = task['uploader'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
     final priority = (task['priority'] as num?)?.toInt() ?? 0;
-    final groupName = (task['group_name'] ?? task['groupName'] ?? 'default') as String;
+    final groupName =
+        (task['group_name'] ?? task['groupName'] ?? 'default') as String;
     final status = task['status'] as int? ?? 0;
     final downloaded = task['downloadedBytes'] as int? ?? 0;
     final total = task['totalBytes'] as int? ?? 0;
@@ -897,12 +1051,15 @@ class _ArchiveTaskCard extends StatelessWidget {
                       sourceUrl: coverUrl,
                       fit: BoxFit.cover,
                       readerErrorChild: Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest,
                         child: const Icon(Icons.archive, color: Colors.grey),
                       ),
                     )
                   : Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.archive, color: Colors.grey),
                     ),
             ),
@@ -913,27 +1070,39 @@ class _ArchiveTaskCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                    Text(title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w500)),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         if (category.isNotEmpty) ...[
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
                             decoration: BoxDecoration(
                               color: _categoryColor(category),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(category,
-                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(width: 8),
                         ],
                         if (uploader.isNotEmpty)
                           Flexible(
                             child: Text(uploader,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: Colors.grey),
                                 overflow: TextOverflow.ellipsis),
                           ),
                       ],
@@ -941,40 +1110,55 @@ class _ArchiveTaskCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _StatusBadge(statusIndex: status, statusName: statusName, isCompleted: isCompleted, isArchive: true),
+                        _StatusBadge(
+                            statusIndex: status,
+                            statusName: statusName,
+                            isCompleted: isCompleted,
+                            isArchive: true),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 5, vertical: 1),
                           decoration: BoxDecoration(
                             color: Colors.purple.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'downloads.priorityLabel'.trParams({'n': '$priority'}),
-                            style: const TextStyle(fontSize: 10, color: Colors.purple),
+                            'downloads.priorityLabel'
+                                .trParams({'n': '$priority'}),
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.purple),
                           ),
                         ),
                         if (groupName != 'default') ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
                               color: Colors.blueGrey.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(groupName, style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
+                            child: Text(groupName,
+                                style: const TextStyle(
+                                    fontSize: 10, color: Colors.blueGrey)),
                           ),
                         ],
                         const SizedBox(width: 8),
                         if (total > 0)
                           Flexible(
-                            child: Text('${_formatBytes(downloaded)} / ${_formatBytes(total)}',
-                                style: Theme.of(context).textTheme.bodySmall, overflow: TextOverflow.ellipsis),
+                            child: Text(
+                                '${_formatBytes(downloaded)} / ${_formatBytes(total)}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                                overflow: TextOverflow.ellipsis),
                           ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    LinearProgressIndicator(value: status == 3 ? progress : (isCompleted ? 1.0 : null)),
+                    LinearProgressIndicator(
+                        value: status == 3
+                            ? progress
+                            : (isCompleted ? 1.0 : null)),
                   ],
                 ),
               ),
@@ -986,19 +1170,25 @@ class _ArchiveTaskCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.tune, size: 20),
                   tooltip: 'downloads.editTask'.tr,
-                  onPressed: () => _showArchivePatchDialog(context, controller, task),
+                  onPressed: () =>
+                      _showArchivePatchDialog(context, controller, task),
                 ),
                 if (isCompleted)
                   IconButton(
                     icon: const Icon(Icons.menu_book, color: Colors.green),
                     tooltip: 'downloads.read'.tr,
-                    onPressed: () => Get.toNamed('/web/reader/$gid/$token?mode=archive'),
+                    onPressed: () =>
+                        Get.toNamed('/web/reader/$gid/$token?mode=archive'),
                   ),
                 if (status == 3)
-                  IconButton(icon: const Icon(Icons.pause), tooltip: 'downloads.pause'.tr,
+                  IconButton(
+                      icon: const Icon(Icons.pause),
+                      tooltip: 'downloads.pause'.tr,
                       onPressed: () => controller.pauseArchive(gid)),
                 if (status == 7 || status == 8)
-                  IconButton(icon: const Icon(Icons.play_arrow), tooltip: 'downloads.resume'.tr,
+                  IconButton(
+                      icon: const Icon(Icons.play_arrow),
+                      tooltip: 'downloads.resume'.tr,
                       onPressed: () => controller.resumeArchive(gid)),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
@@ -1020,10 +1210,16 @@ class _ArchiveTaskCard extends StatelessWidget {
         title: Text('downloads.deleteTitle'.tr),
         content: Text('downloads.deleteConfirm'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
           TextButton(
-            onPressed: () { Navigator.pop(ctx); controller.deleteArchive(gid); },
-            child: Text('common.delete'.tr, style: const TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              controller.deleteArchive(gid);
+            },
+            child: Text('common.delete'.tr,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1038,7 +1234,11 @@ class _StatusBadge extends StatelessWidget {
   final String statusName;
   final bool isCompleted;
   final bool isArchive;
-  const _StatusBadge({required this.statusIndex, required this.statusName, required this.isCompleted, this.isArchive = false});
+  const _StatusBadge(
+      {required this.statusIndex,
+      required this.statusName,
+      required this.isCompleted,
+      this.isArchive = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1051,7 +1251,9 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      child: Text(statusName, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600)),
+      child: Text(statusName,
+          style: TextStyle(
+              fontSize: 11, color: color, fontWeight: FontWeight.w600)),
     );
   }
 
@@ -1059,10 +1261,20 @@ class _StatusBadge extends StatelessWidget {
     if (isCompleted) return Colors.green;
     if (isArchive) {
       // archive: 3=Downloading, 7=Paused, 8=Failed
-      return switch (statusIndex) { 3 => Colors.blue, 7 => Colors.orange, 8 => Colors.red, _ => Colors.grey };
+      return switch (statusIndex) {
+        3 => Colors.blue,
+        7 => Colors.orange,
+        8 => Colors.red,
+        _ => Colors.grey
+      };
     }
     // gallery: 1=Downloading, 2=Paused, 4=Failed
-    return switch (statusIndex) { 1 => Colors.blue, 2 => Colors.orange, 4 => Colors.red, _ => Colors.grey };
+    return switch (statusIndex) {
+      1 => Colors.blue,
+      2 => Colors.orange,
+      4 => Colors.red,
+      _ => Colors.grey
+    };
   }
 }
 

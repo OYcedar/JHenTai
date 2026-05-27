@@ -120,6 +120,8 @@ class SettingRoutes {
       'downloadDir': _config.downloadDir,
       'localGalleryDir': _config.localGalleryDir,
       'extraScanPaths': _config.extraScanPaths,
+      'maxConcurrentGalleryDownloads': _config.maxConcurrentGalleryDownloads,
+      'maxConcurrentArchiveDownloads': _config.maxConcurrentArchiveDownloads,
     };
 
     return Response.ok(

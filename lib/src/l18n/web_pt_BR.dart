@@ -208,8 +208,8 @@ class WebPtBR {
       'settings.cookieLogin': 'Login com cookies (recomendado)',
       'settings.cookieHint':
           'O login no fórum EH é bloqueado pelo Cloudflare em ambientes de servidor. '
-          'Faça login pelo navegador e copie os cookies aqui.\n'
-          'Passos: Login em e-hentai.org → F12 → Aplicação → Cookies → copie os valores abaixo.',
+              'Faça login pelo navegador e copie os cookies aqui.\n'
+              'Passos: Login em e-hentai.org → F12 → Aplicação → Cookies → copie os valores abaixo.',
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Definir Cookies',
@@ -277,6 +277,18 @@ class WebPtBR {
           'Proxy por requisição, domain fronting e timeouts ainda não são configuráveis aqui.',
       'settings.downloadWebStub':
           'Gerencie downloads ativos e concluídos na página de downloads. Configurações avançadas de download não estão na web.',
+      'settings.downloadWebIntro':
+          'Defina grupos e prioridades padrão usados pelos diálogos de download da web e revise as opções Docker do servidor.',
+      'settings.downloadDefaults': 'Padrões de download',
+      'settings.downloadDefaultsSaved': 'Padrões de download salvos',
+      'settings.defaultGalleryDownload': 'Download de galeria',
+      'settings.defaultArchiveDownload': 'Download de arquivo',
+      'settings.customGroupName': 'Nome de grupo personalizado',
+      'settings.downloadServerRuntime': 'Execução do servidor',
+      'settings.galleryConcurrency': 'Concorrência de galerias',
+      'settings.archiveConcurrency': 'Concorrência de arquivos',
+      'settings.downloadRuntimeHint':
+          'Concorrência e caminhos são controlados por variáveis de ambiente Docker e valem após reiniciar o servidor.',
       'settings.performanceWebStub':
           'Ajustes de CPU e memória são do app nativo. O cliente web roda no navegador.',
       'settings.advancedWebStub':
@@ -514,6 +526,11 @@ class WebPtBR {
       'downloads.groupLabel': 'Group',
       'downloads.superseded': 'Upgraded to gid @gid',
       'downloads.editTask': 'Edit task',
+      'downloads.pauseVisible': 'Pausar tarefas visíveis',
+      'downloads.resumeVisible': 'Retomar tarefas visíveis',
+      'downloads.noBatchTargets': 'Nenhuma tarefa compatível na lista atual',
+      'downloads.batchPaused': '@count tarefas pausadas',
+      'downloads.batchResumed': '@count tarefas retomadas',
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',
       'existingGroup': 'Grupo existente',

@@ -200,8 +200,7 @@ class WebKoKR {
       'settings.logoutSuccess': '로그아웃되었습니다',
       'settings.logoutFailed': '로그아웃 실패: @error',
       'settings.cookieLogin': '쿠키로 로그인 (권장)',
-      'settings.cookieHint':
-          'EH 포럼 로그인은 서버 환경에서 Cloudflare에 의해 차단됩니다. '
+      'settings.cookieHint': 'EH 포럼 로그인은 서버 환경에서 Cloudflare에 의해 차단됩니다. '
           '브라우저에서 로그인한 후 쿠키를 여기에 복사하세요.\n'
           '단계: e-hentai.org 로그인 → F12 → 애플리케이션 → 쿠키 → 아래 값 복사.',
       'settings.cookiePlaceholder':
@@ -268,6 +267,18 @@ class WebKoKR {
           '요청별 프록시, 도메인 프론팅, 타임아웃 등은 아직 이 UI에서 설정할 수 없습니다.',
       'settings.downloadWebStub':
           '진행 중·완료된 다운로드는 다운로드 페이지에서 관리하세요. 고급 다운로드 설정은 웹 UI에 없습니다.',
+      'settings.downloadWebIntro':
+          '웹 다운로드 대화상자에서 사용할 기본 그룹과 우선순위를 설정하고 서버 Docker 다운로드 값을 확인합니다.',
+      'settings.downloadDefaults': '다운로드 기본값',
+      'settings.downloadDefaultsSaved': '다운로드 기본값이 저장되었습니다',
+      'settings.defaultGalleryDownload': '갤러리 다운로드',
+      'settings.defaultArchiveDownload': '아카이브 다운로드',
+      'settings.customGroupName': '사용자 지정 그룹 이름',
+      'settings.downloadServerRuntime': '서버 런타임',
+      'settings.galleryConcurrency': '갤러리 동시 다운로드',
+      'settings.archiveConcurrency': '아카이브 동시 다운로드',
+      'settings.downloadRuntimeHint':
+          '동시 다운로드 수와 경로는 Docker 환경 변수로 제어되며 서버 재시작 후 적용됩니다.',
       'settings.performanceWebStub':
           'CPU·메모리 조정은 네이티브 앱용입니다. 웹 클라이언트는 브라우저에서 실행됩니다.',
       'settings.advancedWebStub':
@@ -505,6 +516,11 @@ class WebKoKR {
       'downloads.groupLabel': 'Group',
       'downloads.superseded': 'Upgraded to gid @gid',
       'downloads.editTask': 'Edit task',
+      'downloads.pauseVisible': '현재 목록 작업 일시정지',
+      'downloads.resumeVisible': '현재 목록 작업 재개',
+      'downloads.noBatchTargets': '현재 목록에 처리할 작업이 없습니다',
+      'downloads.batchPaused': '@count개 작업을 일시정지했습니다',
+      'downloads.batchResumed': '@count개 작업을 재개했습니다',
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',
       'existingGroup': '기존 그룹',

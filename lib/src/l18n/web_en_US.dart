@@ -210,8 +210,8 @@ class WebEnUS {
       'settings.cookieLogin': 'Login with cookies (recommended)',
       'settings.cookieHint':
           'EH forum login is blocked by Cloudflare in server environments. '
-          'Please login via browser, then copy cookies here.\n'
-          'Steps: Login at e-hentai.org → F12 → Application → Cookies → copy values below.',
+              'Please login via browser, then copy cookies here.\n'
+              'Steps: Login at e-hentai.org → F12 → Application → Cookies → copy values below.',
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Set Cookies',
@@ -253,7 +253,7 @@ class WebEnUS {
       'settings.networkNote': 'Network & proxy',
       'settings.networkWebBody':
           'Proxy and advanced networking are configured on the server host or Docker environment, not in this web UI. '
-          'See deployment docs for reverse proxy, TLS, and cookie-based login.',
+              'See deployment docs for reverse proxy, TLS, and cookie-based login.',
       'settings.about': 'About',
       'settings.appVersion': 'Version @version (@build)',
       'settings.hubMenu': 'Settings menu',
@@ -280,6 +280,18 @@ class WebEnUS {
           'Per-request proxy, domain fronting, and timeouts are not configurable in this UI yet.',
       'settings.downloadWebStub':
           'Manage active and finished downloads from the downloads page. Advanced download settings are not exposed in the web UI yet.',
+      'settings.downloadWebIntro':
+          'Set default groups and priorities used by the web download dialogs, and review server-side Docker download settings.',
+      'settings.downloadDefaults': 'Download defaults',
+      'settings.downloadDefaultsSaved': 'Download defaults saved',
+      'settings.defaultGalleryDownload': 'Gallery download',
+      'settings.defaultArchiveDownload': 'Archive download',
+      'settings.customGroupName': 'Custom group name',
+      'settings.downloadServerRuntime': 'Server runtime',
+      'settings.galleryConcurrency': 'Gallery concurrency',
+      'settings.archiveConcurrency': 'Archive concurrency',
+      'settings.downloadRuntimeHint':
+          'Concurrency and paths are controlled by Docker environment variables and take effect after restarting the server.',
       'settings.performanceWebStub':
           'CPU and memory tuning apply to the native app. The web client runs in your browser.',
       'settings.advancedWebStub':
@@ -523,6 +535,11 @@ class WebEnUS {
       'downloads.groupLabel': 'Group',
       'downloads.superseded': 'Upgraded to gid @gid',
       'downloads.editTask': 'Edit task',
+      'downloads.pauseVisible': 'Pause visible tasks',
+      'downloads.resumeVisible': 'Resume visible tasks',
+      'downloads.noBatchTargets': 'No matching tasks in the current list',
+      'downloads.batchPaused': 'Paused @count tasks',
+      'downloads.batchResumed': 'Resumed @count tasks',
 
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',
