@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/main_web.dart';
+import 'package:jhentai/src/model/gallery_url.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
 import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
@@ -369,6 +370,28 @@ class WebHomeController extends GetxController {
       loadSearchHistory();
     }
     await _fetchGalleryList();
+  }
+
+  Future<void> searchOrOpenGalleryUrl(String input,
+      {bool isLeftPane = false}) async {
+    final galleryUrl = GalleryUrl.tryParse(input.trim());
+    if (galleryUrl != null) {
+      _exitListByUrlMode();
+      _currentSearch = '';
+      currentSearchText.value = '';
+      searchController.clear();
+      currentPage.value = 0;
+      _clearPaginationCursors();
+      if (isLeftPane) {
+        Get.find<WebLayoutController>()
+            .selectGallery(galleryUrl.gid, galleryUrl.token);
+      } else {
+        Get.toNamed('/web/gallery/${galleryUrl.gid}/${galleryUrl.token}');
+      }
+      return;
+    }
+
+    await search(input);
   }
 
   Future<void> nextPage() async {
@@ -796,7 +819,9 @@ class WebHomePage extends GetView<WebHomeController> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  Expanded(child: _SearchField(controller: controller)),
+                  Expanded(
+                      child: _SearchField(
+                          controller: controller, isLeftPane: isLeftPane)),
                   const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.image_search),
@@ -2084,7 +2109,8 @@ class _AdvancedSearchSheet extends StatelessWidget {
                       onPressed: () {
                         Navigator.pop(context);
                         controller.persistAdvancedSearchSettings();
-                        controller.search(controller.searchController.text);
+                        controller.searchOrOpenGalleryUrl(
+                            controller.searchController.text);
                       },
                       child: Text('home.applySearch'.tr),
                     ),
@@ -2130,7 +2156,8 @@ class _SearchSuggestion {
 
 class _SearchField extends StatefulWidget {
   final WebHomeController controller;
-  const _SearchField({required this.controller});
+  final bool isLeftPane;
+  const _SearchField({required this.controller, required this.isLeftPane});
 
   @override
   State<_SearchField> createState() => _SearchFieldState();
@@ -2279,7 +2306,10 @@ class _SearchFieldState extends State<_SearchField> {
                               widget.controller.searchController.text = s.text;
                             }
                             _removeOverlay();
-                            if (!s.isTag) widget.controller.search(s.text);
+                            if (!s.isTag) {
+                              widget.controller.searchOrOpenGalleryUrl(s.text,
+                                  isLeftPane: widget.isLeftPane);
+                            }
                           },
                           trailing: s.isTag
                               ? null
@@ -2346,7 +2376,8 @@ class _SearchFieldState extends State<_SearchField> {
         ),
         onSubmitted: (value) {
           _removeOverlay();
-          widget.controller.search(value);
+          widget.controller
+              .searchOrOpenGalleryUrl(value, isLeftPane: widget.isLeftPane);
         },
       ),
     );
