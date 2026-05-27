@@ -15,8 +15,13 @@ import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
 
 class WebHomeController extends GetxController {
+  static const listModeStorageKey = 'jh_web_list_mode';
+  static const gridColumnsStorageKey = 'jh_web_grid_columns';
+  static const listModes = ['grid', 'list', 'listCompact'];
+
   final searchController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
+
   /// Keys `namespace:tagKey` → translated name (from `/api/tag/batch`, same as gallery detail).
   final tagTranslations = <String, String>{}.obs;
   final isLoading = false.obs;
@@ -46,7 +51,8 @@ class WebHomeController extends GetxController {
     _lastPrevGid = null;
   }
 
-  static bool _sectionUsesRanklistPaging(String section) => section == 'ranklist';
+  static bool _sectionUsesRanklistPaging(String section) =>
+      section == 'ranklist';
 
   // Advanced search state
   final categoryFilter = 0.obs;
@@ -60,12 +66,16 @@ class WebHomeController extends GetxController {
   final filterLanguage = Rxn<String>();
   final disableFilterForLanguage = false.obs;
 
-  static final List<String> searchLanguageKeys = LocaleConsts.language2Abbreviation.keys
+  static final List<String> searchLanguageKeys = LocaleConsts
+      .language2Abbreviation.keys
       .where((k) => k != 'japanese')
       .toList();
 
   // List mode: grid, list, listCompact
   final listMode = 'grid'.obs;
+
+  /// `null` means responsive auto columns, otherwise fixed 1-6 columns for the main gallery grid.
+  final gridColumns = RxnInt(null);
 
   // Scroll-to-top FAB
   final scrollController = ScrollController();
@@ -75,8 +85,16 @@ class WebHomeController extends GetxController {
   final quickSearches = <Map<String, dynamic>>[].obs;
 
   static const _categoryKeys = [
-    'category.doujinshi', 'category.manga', 'category.artistCg', 'category.gameCg', 'category.western',
-    'category.nonH', 'category.imageSet', 'category.cosplay', 'category.asianPorn', 'category.misc',
+    'category.doujinshi',
+    'category.manga',
+    'category.artistCg',
+    'category.gameCg',
+    'category.western',
+    'category.nonH',
+    'category.imageSet',
+    'category.cosplay',
+    'category.asianPorn',
+    'category.misc',
   ];
 
   /// Bit = excluded category. Must match [SearchConfig._computeFCats] / EH (Asian Porn = 128, not 1024).
@@ -92,9 +110,14 @@ class WebHomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final savedMode = web.window.localStorage.getItem('jh_web_list_mode');
-    if (savedMode != null && ['grid', 'list', 'listCompact'].contains(savedMode)) {
+    final savedMode = web.window.localStorage.getItem(listModeStorageKey);
+    if (savedMode != null && listModes.contains(savedMode)) {
       listMode.value = savedMode;
+    }
+    final savedColumns = int.tryParse(
+        web.window.localStorage.getItem(gridColumnsStorageKey) ?? '');
+    if (savedColumns != null && savedColumns >= 1 && savedColumns <= 6) {
+      gridColumns.value = savedColumns;
     }
     _loadAdvancedSearchFromStorage();
     _loadFavoritesListPrefs();
@@ -129,7 +152,8 @@ class WebHomeController extends GetxController {
       showExpunged.value = m['showExpunged'] as bool? ?? false;
       final lang = m['filterLanguage'] as String?;
       filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
-      disableFilterForLanguage.value = m['disableFilterForLanguage'] as bool? ?? false;
+      disableFilterForLanguage.value =
+          m['disableFilterForLanguage'] as bool? ?? false;
     } catch (_) {}
   }
 
@@ -159,7 +183,8 @@ class WebHomeController extends GetxController {
   }
 
   void _onScroll() {
-    showFab.value = scrollController.hasClients && scrollController.offset > 300;
+    showFab.value =
+        scrollController.hasClients && scrollController.offset > 300;
   }
 
   /// Gallery list section: `home`, `popular`, `favorites`, etc. Filters apply only on [home].
@@ -199,7 +224,8 @@ class WebHomeController extends GetxController {
     final f = r.files.first;
     final bytes = f.bytes;
     if (bytes == null || bytes.isEmpty) {
-      Get.snackbar('common.error'.tr, 'home.imageSearchFailed'.trParams({'error': 'empty file'}),
+      Get.snackbar('common.error'.tr,
+          'home.imageSearchFailed'.trParams({'error': 'empty file'}),
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -207,9 +233,11 @@ class WebHomeController extends GetxController {
     errorMessage.value = '';
     try {
       final b64 = base64Encode(bytes);
-      final redirect = await backendApiClient.imageLookupBase64(b64, filename: f.name);
+      final redirect =
+          await backendApiClient.imageLookupBase64(b64, filename: f.name);
       if (redirect == null || redirect.isEmpty) {
-        Get.snackbar('common.error'.tr, 'home.imageSearchFailed'.trParams({'error': 'no redirect'}),
+        Get.snackbar('common.error'.tr,
+            'home.imageSearchFailed'.trParams({'error': 'no redirect'}),
             snackPosition: SnackPosition.BOTTOM);
         return;
       }
@@ -222,8 +250,10 @@ class WebHomeController extends GetxController {
       currentSection.value = 'home';
       await _fetchListByUrl(redirect);
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'home.imageSearchFailed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'home.imageSearchFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     } finally {
       isLoading.value = false;
     }
@@ -248,8 +278,10 @@ class WebHomeController extends GetxController {
 
   /// Favorites list only: `true` = fs_f (by favorited time), `false` = fs_p (by published time).
   final favoriteSortFavoritedFirst = true.obs;
+
   /// `null` = all folders; `0`–`9` = one EH favorite category.
   final favoriteCategoryFilter = Rxn<int>();
+
   /// Labels for the favorites folder strip (from EH).
   final favoriteFolderNames = <String>[].obs;
 
@@ -300,7 +332,10 @@ class WebHomeController extends GetxController {
   void loadSearchHistory() async {
     try {
       final items = await backendApiClient.fetchSearchHistory();
-      searchHistory.value = items.map((e) => (e['keyword'] as String?) ?? '').where((s) => s.isNotEmpty).toList();
+      searchHistory.value = items
+          .map((e) => (e['keyword'] as String?) ?? '')
+          .where((s) => s.isNotEmpty)
+          .toList();
     } catch (_) {}
   }
 
@@ -427,7 +462,11 @@ class WebHomeController extends GetxController {
       params['f_srdd'] = minimumRating.value.toString();
       hasAdvanced = true;
     }
-    if (hasAdvanced || !searchInName.value || !searchInTags.value || searchInDesc.value || showExpunged.value) {
+    if (hasAdvanced ||
+        !searchInName.value ||
+        !searchInTags.value ||
+        searchInDesc.value ||
+        showExpunged.value) {
       params['advsearch'] = '1';
       if (searchInName.value) params['f_sname'] = 'on';
       if (searchInTags.value) params['f_stags'] = 'on';
@@ -498,9 +537,7 @@ class WebHomeController extends GetxController {
       } else {
         nextStr = _pendingNextGid;
         prevStr = _pendingPrevGid;
-        if (nextStr == null &&
-            prevStr == null &&
-            currentPage.value > 0) {
+        if (nextStr == null && prevStr == null && currentPage.value > 0) {
           pageStr = currentPage.value.toString();
         }
       }
@@ -540,7 +577,8 @@ class WebHomeController extends GetxController {
       if (hasMore is bool) {
         hasNextPage.value = hasMore;
       } else {
-        if (nextUrl.isNotEmpty || (_lastNextGid != null && _lastNextGid!.isNotEmpty)) {
+        if (nextUrl.isNotEmpty ||
+            (_lastNextGid != null && _lastNextGid!.isNotEmpty)) {
           hasNextPage.value = true;
         } else {
           hasNextPage.value = galleries.length >= _ehGalleryPageSizeHint;
@@ -552,8 +590,9 @@ class WebHomeController extends GetxController {
         hasPrevPage.value = hasPrev || currentPage.value > 0;
       } else {
         final pu = result['prevUrl'] as String? ?? '';
-        hasPrevPage.value =
-            currentPage.value > 0 || pu.isNotEmpty || (_lastPrevGid != null && _lastPrevGid!.isNotEmpty);
+        hasPrevPage.value = currentPage.value > 0 ||
+            pu.isNotEmpty ||
+            (_lastPrevGid != null && _lastPrevGid!.isNotEmpty);
       }
     } catch (e) {
       errorMessage.value = 'home.loadFailed'.trParams({'error': '$e'});
@@ -606,10 +645,24 @@ class WebHomeController extends GetxController {
   }
 
   void cycleListMode() {
-    final modes = ['grid', 'list', 'listCompact'];
-    final idx = modes.indexOf(listMode.value);
-    listMode.value = modes[(idx + 1) % modes.length];
-    web.window.localStorage.setItem('jh_web_list_mode', listMode.value);
+    final idx = listModes.indexOf(listMode.value);
+    setListMode(listModes[(idx + 1) % listModes.length]);
+  }
+
+  void setListMode(String mode) {
+    if (!listModes.contains(mode)) return;
+    listMode.value = mode;
+    web.window.localStorage.setItem(listModeStorageKey, mode);
+  }
+
+  void setGridColumns(int? count) {
+    if (count != null && (count < 1 || count > 6)) return;
+    gridColumns.value = count;
+    if (count == null) {
+      web.window.localStorage.removeItem(gridColumnsStorageKey);
+    } else {
+      web.window.localStorage.setItem(gridColumnsStorageKey, '$count');
+    }
   }
 
   IconData get listModeIcon {
@@ -622,7 +675,8 @@ class WebHomeController extends GetxController {
 
   void loadQuickSearches() async {
     try {
-      quickSearches.value = (await backendApiClient.listQuickSearches()).cast<Map<String, dynamic>>();
+      quickSearches.value = (await backendApiClient.listQuickSearches())
+          .cast<Map<String, dynamic>>();
     } catch (_) {}
   }
 
@@ -645,7 +699,8 @@ class WebHomeController extends GetxController {
   void applyQuickSearch(Map<String, dynamic> item) {
     try {
       _exitListByUrlMode();
-      final config = jsonDecode(item['config'] as String? ?? '{}') as Map<String, dynamic>;
+      final config =
+          jsonDecode(item['config'] as String? ?? '{}') as Map<String, dynamic>;
       final keyword = config['keyword'] as String? ?? '';
       searchController.text = keyword;
       _currentSearch = keyword;
@@ -657,7 +712,8 @@ class WebHomeController extends GetxController {
       showExpunged.value = config['showExpunged'] as bool? ?? false;
       final lang = config['filterLanguage'] as String?;
       filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
-      disableFilterForLanguage.value = config['disableFilterForLanguage'] as bool? ?? false;
+      disableFilterForLanguage.value =
+          config['disableFilterForLanguage'] as bool? ?? false;
       currentPage.value = 0;
       _clearPaginationCursors();
       currentSection.value = 'home';
@@ -687,7 +743,9 @@ class WebHomePage extends GetView<WebHomeController> {
     );
   }
 
-  static Widget buildHomeContent(BuildContext context, WebHomeController controller, {bool isLeftPane = false}) {
+  static Widget buildHomeContent(
+      BuildContext context, WebHomeController controller,
+      {bool isLeftPane = false}) {
     return Stack(
       children: [
         Column(
@@ -710,7 +768,8 @@ class WebHomePage extends GetView<WebHomeController> {
                     return IconButton(
                       icon: const Icon(Icons.tune),
                       tooltip: 'home.searchFilterSheetTitle'.tr,
-                      onPressed: () => _showAdvancedSearchStatic(context, controller),
+                      onPressed: () =>
+                          _showAdvancedSearchStatic(context, controller),
                     );
                   }),
                   const SizedBox(width: 4),
@@ -722,7 +781,8 @@ class WebHomePage extends GetView<WebHomeController> {
               ),
             ),
             Obx(() {
-              if (!controller.listByUrlMode.value) return const SizedBox.shrink();
+              if (!controller.listByUrlMode.value)
+                return const SizedBox.shrink();
               return Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
                 child: Align(
@@ -747,7 +807,8 @@ class WebHomePage extends GetView<WebHomeController> {
                     IconButton(
                       icon: const Icon(Icons.sort),
                       tooltip: 'home.favSortTitle'.tr,
-                      onPressed: () => _showFavoriteSortDialog(context, controller),
+                      onPressed: () =>
+                          _showFavoriteSortDialog(context, controller),
                     ),
                     Expanded(
                       child: SingleChildScrollView(
@@ -758,9 +819,12 @@ class WebHomePage extends GetView<WebHomeController> {
                                   padding: const EdgeInsets.only(right: 4),
                                   child: FilterChip(
                                     label: Text('home.favAllFolders'.tr),
-                                    selected: controller.favoriteCategoryFilter.value == null,
+                                    selected: controller
+                                            .favoriteCategoryFilter.value ==
+                                        null,
                                     onSelected: (_) {
-                                      controller.favoriteCategoryFilter.value = null;
+                                      controller.favoriteCategoryFilter.value =
+                                          null;
                                       controller.persistFavoritesListPrefs();
                                       controller.currentPage.value = 0;
                                       controller.refresh();
@@ -768,16 +832,23 @@ class WebHomePage extends GetView<WebHomeController> {
                                   ),
                                 ),
                                 ...List.generate(10, (i) {
-                                  final name = controller.favoriteFolderNames.length > i
-                                      ? controller.favoriteFolderNames[i]
-                                      : 'home.favSlotShort'.trParams({'n': '$i'});
+                                  final name =
+                                      controller.favoriteFolderNames.length > i
+                                          ? controller.favoriteFolderNames[i]
+                                          : 'home.favSlotShort'
+                                              .trParams({'n': '$i'});
                                   return Padding(
                                     padding: const EdgeInsets.only(right: 4),
                                     child: FilterChip(
-                                      label: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      selected: controller.favoriteCategoryFilter.value == i,
+                                      label: Text(name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis),
+                                      selected: controller
+                                              .favoriteCategoryFilter.value ==
+                                          i,
                                       onSelected: (_) {
-                                        controller.favoriteCategoryFilter.value = i;
+                                        controller
+                                            .favoriteCategoryFilter.value = i;
                                         controller.persistFavoritesListPrefs();
                                         controller.currentPage.value = 0;
                                         controller.refresh();
@@ -803,7 +874,8 @@ class WebHomePage extends GetView<WebHomeController> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const Icon(Icons.error_outline,
+                            size: 48, color: Colors.red),
                         const SizedBox(height: 12),
                         Text(controller.errorMessage.value,
                             style: Theme.of(context).textTheme.bodyLarge),
@@ -825,7 +897,8 @@ class WebHomePage extends GetView<WebHomeController> {
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: () => controller.refresh(),
-                        child: _buildGalleryGridStatic(context, controller, isLeftPane: isLeftPane),
+                        child: _buildGalleryGridStatic(context, controller,
+                            isLeftPane: isLeftPane),
                       ),
                     ),
                     _buildPaginationBarStatic(context, controller),
@@ -853,7 +926,8 @@ class WebHomePage extends GetView<WebHomeController> {
     );
   }
 
-  static void _showAdvancedSearchStatic(BuildContext context, WebHomeController controller) {
+  static void _showAdvancedSearchStatic(
+      BuildContext context, WebHomeController controller) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -861,7 +935,8 @@ class WebHomePage extends GetView<WebHomeController> {
     );
   }
 
-  static void _showFavoriteSortDialog(BuildContext context, WebHomeController controller) {
+  static void _showFavoriteSortDialog(
+      BuildContext context, WebHomeController controller) {
     showDialog<void>(
       context: context,
       builder: (ctx) {
@@ -891,10 +966,13 @@ class WebHomePage extends GetView<WebHomeController> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('common.cancel'.tr)),
               FilledButton(
                 onPressed: () {
-                  controller.favoriteSortFavoritedFirst.value = sortFavoritedFirst;
+                  controller.favoriteSortFavoritedFirst.value =
+                      sortFavoritedFirst;
                   controller.persistFavoritesListPrefs();
                   controller.currentPage.value = 0;
                   Navigator.pop(ctx);
@@ -909,7 +987,8 @@ class WebHomePage extends GetView<WebHomeController> {
     );
   }
 
-  static Widget _buildPaginationBarStatic(BuildContext context, WebHomeController controller) {
+  static Widget _buildPaginationBarStatic(
+      BuildContext context, WebHomeController controller) {
     return Obx(() {
       final onSubsequentPage =
           !controller.listByUrlMode.value && controller.currentPage.value > 0;
@@ -926,20 +1005,23 @@ class WebHomePage extends GetView<WebHomeController> {
             TextButton.icon(
               icon: const Icon(Icons.chevron_left),
               label: Text('home.previous'.tr),
-              onPressed: controller.hasPrevPage.value ? controller.prevPage : null,
+              onPressed:
+                  controller.hasPrevPage.value ? controller.prevPage : null,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                   'home.page'.trParams({
-                    'page': '${controller.listByUrlMode.value ? controller.listByUrlHumanPage.value : controller.currentPage.value + 1}',
+                    'page':
+                        '${controller.listByUrlMode.value ? controller.listByUrlHumanPage.value : controller.currentPage.value + 1}',
                   }),
                   style: Theme.of(context).textTheme.bodyLarge),
             ),
             TextButton.icon(
               icon: const Icon(Icons.chevron_right),
               label: Text('home.next'.tr),
-              onPressed: controller.hasNextPage.value ? controller.nextPage : null,
+              onPressed:
+                  controller.hasNextPage.value ? controller.nextPage : null,
             ),
           ],
         ),
@@ -947,7 +1029,9 @@ class WebHomePage extends GetView<WebHomeController> {
     });
   }
 
-  static Widget _buildGalleryGridStatic(BuildContext context, WebHomeController controller, {bool isLeftPane = false}) {
+  static Widget _buildGalleryGridStatic(
+      BuildContext context, WebHomeController controller,
+      {bool isLeftPane = false}) {
     return LayoutBuilder(builder: (context, constraints) {
       return Obx(() {
         final mode = controller.listMode.value;
@@ -968,15 +1052,17 @@ class WebHomePage extends GetView<WebHomeController> {
             },
           );
         }
+        final configuredColumns = controller.gridColumns.value;
         final crossAxisCount = isLeftPane
             ? (constraints.maxWidth >= 420 ? 2 : 1)
-            : constraints.maxWidth > 1200
-                ? 4
-                : constraints.maxWidth > 800
-                    ? 3
-                    : constraints.maxWidth > 500
-                        ? 2
-                        : 1;
+            : configuredColumns ??
+                (constraints.maxWidth > 1200
+                    ? 4
+                    : constraints.maxWidth > 800
+                        ? 3
+                        : constraints.maxWidth > 500
+                            ? 2
+                            : 1);
         return GridView.builder(
           controller: controller.scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
@@ -1000,7 +1086,6 @@ class WebHomePage extends GetView<WebHomeController> {
       });
     });
   }
-
 }
 
 class _SinglePaneHome extends StatelessWidget {
@@ -1045,7 +1130,8 @@ class _SinglePaneHome extends StatelessWidget {
                 if (items.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text('quickSearch.empty'.tr, style: const TextStyle(color: Colors.grey)),
+                    child: Text('quickSearch.empty'.tr,
+                        style: const TextStyle(color: Colors.grey)),
                   )
                 else
                   ConstrainedBox(
@@ -1059,7 +1145,8 @@ class _SinglePaneHome extends StatelessWidget {
                         return ListTile(
                           dense: true,
                           leading: const Icon(Icons.bookmark_outline, size: 20),
-                          title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                          title: Text(name,
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
                           onTap: () {
                             Navigator.pop(ctx);
                             controller.applyQuickSearch(item);
@@ -1083,7 +1170,9 @@ class _SinglePaneHome extends StatelessWidget {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('common.cancel'.tr)),
           ],
         );
       }),
@@ -1111,7 +1200,9 @@ class _SinglePaneHome extends StatelessWidget {
           },
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
           FilledButton(
             onPressed: () {
               final name = nameController.text.trim();
@@ -1155,7 +1246,8 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
   }
 
   void _persistLeftWidth() {
-    web.window.localStorage.setItem(_leftWidthStorageKey, _leftPaneWidth.round().toString());
+    web.window.localStorage
+        .setItem(_leftWidthStorageKey, _leftPaneWidth.round().toString());
   }
 
   @override
@@ -1208,10 +1300,10 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
         ),
         actions: [
           Obx(() => IconButton(
-            icon: Icon(controller.listModeIcon),
-            onPressed: controller.cycleListMode,
-            tooltip: 'listMode.toggle'.tr,
-          )),
+                icon: Icon(controller.listModeIcon),
+                onPressed: controller.cycleListMode,
+                tooltip: 'listMode.toggle'.tr,
+              )),
           Obx(() {
             if (controller.currentSection.value != 'home') {
               return const SizedBox.shrink();
@@ -1219,7 +1311,8 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
             return IconButton(
               icon: const Icon(Icons.tune),
               tooltip: 'home.searchFilterSheetTitle'.tr,
-              onPressed: () => WebHomePage._showAdvancedSearchStatic(context, controller),
+              onPressed: () =>
+                  WebHomePage._showAdvancedSearchStatic(context, controller),
             );
           }),
         ],
@@ -1229,10 +1322,12 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
         children: [
           SizedBox(
             width: clamped,
-            child: WebHomePage.buildHomeContent(context, controller, isLeftPane: true),
+            child: WebHomePage.buildHomeContent(context, controller,
+                isLeftPane: true),
           ),
           Tooltip(
-            message: 'home.twoPaneDividerTooltip'.trParams({'w': '${clamped.round()}'}),
+            message: 'home.twoPaneDividerTooltip'
+                .trParams({'w': '${clamped.round()}'}),
             waitDuration: const Duration(milliseconds: 400),
             child: MouseRegion(
               cursor: SystemMouseCursors.resizeColumn,
@@ -1272,10 +1367,12 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.touch_app, size: 64, color: Colors.grey.shade400),
+                      Icon(Icons.touch_app,
+                          size: 64, color: Colors.grey.shade400),
                       const SizedBox(height: 16),
                       Text('home.selectGallery'.tr,
-                          style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
+                          style: TextStyle(
+                              fontSize: 16, color: Colors.grey.shade500)),
                     ],
                   ),
                 );
@@ -1296,7 +1393,8 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
 class _EmbeddedDetailPanel extends StatefulWidget {
   final int gid;
   final String token;
-  const _EmbeddedDetailPanel({super.key, required this.gid, required this.token});
+  const _EmbeddedDetailPanel(
+      {super.key, required this.gid, required this.token});
 
   @override
   State<_EmbeddedDetailPanel> createState() => _EmbeddedDetailPanelState();
@@ -1416,7 +1514,8 @@ class _HomeDrawer extends StatelessWidget {
                 return ListTile(
                   dense: true,
                   contentPadding: const EdgeInsets.only(left: 56, right: 16),
-                  title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  title:
+                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
                   onTap: () {
                     Navigator.pop(context);
                     controller.applyQuickSearch(item);
@@ -1462,19 +1561,31 @@ class _HomeDrawer extends StatelessWidget {
         title: Text('ranklist.title'.tr),
         children: [
           SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '15'); },
+            onPressed: () {
+              Navigator.pop(ctx);
+              controller.loadUrl('ranklist', tl: '15');
+            },
             child: Text('ranklist.allTime'.tr),
           ),
           SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '13'); },
+            onPressed: () {
+              Navigator.pop(ctx);
+              controller.loadUrl('ranklist', tl: '13');
+            },
             child: Text('ranklist.year'.tr),
           ),
           SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '12'); },
+            onPressed: () {
+              Navigator.pop(ctx);
+              controller.loadUrl('ranklist', tl: '12');
+            },
             child: Text('ranklist.month'.tr),
           ),
           SimpleDialogOption(
-            onPressed: () { Navigator.pop(ctx); controller.loadUrl('ranklist', tl: '11'); },
+            onPressed: () {
+              Navigator.pop(ctx);
+              controller.loadUrl('ranklist', tl: '11');
+            },
             child: Text('ranklist.yesterday'.tr),
           ),
         ],
@@ -1503,7 +1614,8 @@ class _AdvancedSearchSheet extends StatelessWidget {
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade400,
@@ -1516,44 +1628,52 @@ class _AdvancedSearchSheet extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              Text('home.categoryFilter'.tr, style: Theme.of(context).textTheme.titleMedium),
+              Text('home.categoryFilter'.tr,
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Obx(() => Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: List.generate(WebHomeController._categoryKeys.length, (i) {
-                  final enabled = controller.isCategoryEnabled(i);
-                  return FilterChip(
-                    label: Text(WebHomeController._categoryKeys[i].tr),
-                    selected: enabled,
-                    onSelected: (_) => controller.toggleCategory(i),
-                    selectedColor: _chipColor(i),
-                    checkmarkColor: Colors.white,
-                    labelStyle: TextStyle(
-                      color: enabled ? Colors.white : null,
-                      fontSize: 12,
-                    ),
-                  );
-                }),
-              )),
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: List.generate(
+                        WebHomeController._categoryKeys.length, (i) {
+                      final enabled = controller.isCategoryEnabled(i);
+                      return FilterChip(
+                        label: Text(WebHomeController._categoryKeys[i].tr),
+                        selected: enabled,
+                        onSelected: (_) => controller.toggleCategory(i),
+                        selectedColor: _chipColor(i),
+                        checkmarkColor: Colors.white,
+                        labelStyle: TextStyle(
+                          color: enabled ? Colors.white : null,
+                          fontSize: 12,
+                        ),
+                      );
+                    }),
+                  )),
               const SizedBox(height: 12),
-              Text('home.language'.tr, style: Theme.of(context).textTheme.titleSmall),
+              Text('home.language'.tr,
+                  style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 6),
               Obx(() => DropdownButtonFormField<String?>(
                     value: controller.filterLanguage.value,
                     isExpanded: true,
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                     ),
                     items: [
-                      DropdownMenuItem<String?>(value: null, child: Text('home.languageNone'.tr)),
-                      ...WebHomeController.searchLanguageKeys.map((k) => DropdownMenuItem<String?>(
-                            value: k,
-                            child: Text(
-                              k.isEmpty ? k : '${k[0].toUpperCase()}${k.substring(1)}',
-                            ),
-                          )),
+                      DropdownMenuItem<String?>(
+                          value: null, child: Text('home.languageNone'.tr)),
+                      ...WebHomeController.searchLanguageKeys
+                          .map((k) => DropdownMenuItem<String?>(
+                                value: k,
+                                child: Text(
+                                  k.isEmpty
+                                      ? k
+                                      : '${k[0].toUpperCase()}${k.substring(1)}',
+                                ),
+                              )),
                     ],
                     onChanged: (v) {
                       controller.filterLanguage.value = v;
@@ -1571,75 +1691,81 @@ class _AdvancedSearchSheet extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                   )),
               const SizedBox(height: 20),
-              Text('home.minimumRating'.tr, style: Theme.of(context).textTheme.titleMedium),
+              Text('home.minimumRating'.tr,
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
               Obx(() => Row(
-                children: [
-                  Expanded(
-                    child: Slider(
-                      value: controller.minimumRating.value.toDouble(),
-                      min: 0, max: 5, divisions: 5,
-                      label: controller.minimumRating.value == 0
-                          ? 'home.ratingAny'.tr
-                          : '${controller.minimumRating.value}+',
-                      onChanged: (v) {
-                        controller.minimumRating.value = v.round();
-                        controller.persistAdvancedSearchSettings();
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: 40,
-                    child: Text(
-                      controller.minimumRating.value == 0 ? 'home.ratingAny'.tr : '${controller.minimumRating.value}+',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              )),
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: controller.minimumRating.value.toDouble(),
+                          min: 0,
+                          max: 5,
+                          divisions: 5,
+                          label: controller.minimumRating.value == 0
+                              ? 'home.ratingAny'.tr
+                              : '${controller.minimumRating.value}+',
+                          onChanged: (v) {
+                            controller.minimumRating.value = v.round();
+                            controller.persistAdvancedSearchSettings();
+                          },
+                        ),
+                      ),
+                      SizedBox(
+                        width: 40,
+                        child: Text(
+                          controller.minimumRating.value == 0
+                              ? 'home.ratingAny'.tr
+                              : '${controller.minimumRating.value}+',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  )),
               const SizedBox(height: 16),
-              Text('home.searchIn'.tr, style: Theme.of(context).textTheme.titleMedium),
+              Text('home.searchIn'.tr,
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
               Obx(() => Column(
-                children: [
-                  CheckboxListTile(
-                    title: Text('home.galleryName'.tr),
-                    value: controller.searchInName.value,
-                    onChanged: (v) {
-                      controller.searchInName.value = v ?? true;
-                      controller.persistAdvancedSearchSettings();
-                    },
-                    dense: true,
-                  ),
-                  CheckboxListTile(
-                    title: Text('home.tags'.tr),
-                    value: controller.searchInTags.value,
-                    onChanged: (v) {
-                      controller.searchInTags.value = v ?? true;
-                      controller.persistAdvancedSearchSettings();
-                    },
-                    dense: true,
-                  ),
-                  CheckboxListTile(
-                    title: Text('home.description'.tr),
-                    value: controller.searchInDesc.value,
-                    onChanged: (v) {
-                      controller.searchInDesc.value = v ?? false;
-                      controller.persistAdvancedSearchSettings();
-                    },
-                    dense: true,
-                  ),
-                  CheckboxListTile(
-                    title: Text('home.showExpunged'.tr),
-                    value: controller.showExpunged.value,
-                    onChanged: (v) {
-                      controller.showExpunged.value = v ?? false;
-                      controller.persistAdvancedSearchSettings();
-                    },
-                    dense: true,
-                  ),
-                ],
-              )),
+                    children: [
+                      CheckboxListTile(
+                        title: Text('home.galleryName'.tr),
+                        value: controller.searchInName.value,
+                        onChanged: (v) {
+                          controller.searchInName.value = v ?? true;
+                          controller.persistAdvancedSearchSettings();
+                        },
+                        dense: true,
+                      ),
+                      CheckboxListTile(
+                        title: Text('home.tags'.tr),
+                        value: controller.searchInTags.value,
+                        onChanged: (v) {
+                          controller.searchInTags.value = v ?? true;
+                          controller.persistAdvancedSearchSettings();
+                        },
+                        dense: true,
+                      ),
+                      CheckboxListTile(
+                        title: Text('home.description'.tr),
+                        value: controller.searchInDesc.value,
+                        onChanged: (v) {
+                          controller.searchInDesc.value = v ?? false;
+                          controller.persistAdvancedSearchSettings();
+                        },
+                        dense: true,
+                      ),
+                      CheckboxListTile(
+                        title: Text('home.showExpunged'.tr),
+                        value: controller.showExpunged.value,
+                        onChanged: (v) {
+                          controller.showExpunged.value = v ?? false;
+                          controller.persistAdvancedSearchSettings();
+                        },
+                        dense: true,
+                      ),
+                    ],
+                  )),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -1681,8 +1807,16 @@ class _AdvancedSearchSheet extends StatelessWidget {
 
   Color _chipColor(int index) {
     const colors = [
-      Colors.red, Colors.orange, Colors.amber, Colors.green, Colors.teal,
-      Colors.blue, Colors.indigo, Colors.purple, Colors.pink, Colors.grey,
+      Colors.red,
+      Colors.orange,
+      Colors.amber,
+      Colors.green,
+      Colors.teal,
+      Colors.blue,
+      Colors.indigo,
+      Colors.purple,
+      Colors.pink,
+      Colors.grey,
     ];
     return colors[index % colors.length];
   }
@@ -1694,7 +1828,11 @@ class _SearchSuggestion {
   final bool isTag;
   final String? tagNamespace;
 
-  const _SearchSuggestion({required this.text, required this.displayText, this.isTag = false, this.tagNamespace});
+  const _SearchSuggestion(
+      {required this.text,
+      required this.displayText,
+      this.isTag = false,
+      this.tagNamespace});
 }
 
 class _SearchField extends StatefulWidget {
@@ -1749,14 +1887,16 @@ class _SearchFieldState extends State<_SearchField> {
         suggestions.add(_SearchSuggestion(text: h, displayText: h));
       }
     } else {
-      for (final h in history.where((s) => s.toLowerCase().contains(query)).take(5)) {
+      for (final h
+          in history.where((s) => s.toLowerCase().contains(query)).take(5)) {
         suggestions.add(_SearchSuggestion(text: h, displayText: h));
       }
 
       final lastToken = _extractLastToken(text);
       if (lastToken.length >= 2) {
         try {
-          final tagResults = await backendApiClient.searchTags(lastToken, limit: 8);
+          final tagResults =
+              await backendApiClient.searchTags(lastToken, limit: 8);
           for (final tag in tagResults) {
             final ns = tag['namespace']?.toString() ?? '';
             final key = tag['key']?.toString() ?? '';
@@ -1823,15 +1963,25 @@ class _SearchFieldState extends State<_SearchField> {
                         final s = _suggestions[index];
                         return ListTile(
                           dense: true,
-                          leading: Icon(s.isTag ? Icons.label : Icons.history, size: 18),
-                          title: Text(s.displayText, maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: s.isTag ? Text(s.text, style: const TextStyle(fontSize: 11, color: Colors.grey)) : null,
+                          leading: Icon(s.isTag ? Icons.label : Icons.history,
+                              size: 18),
+                          title: Text(s.displayText,
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                          subtitle: s.isTag
+                              ? Text(s.text,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.grey))
+                              : null,
                           onTap: () {
                             if (s.isTag) {
                               widget.controller.searchController.text =
-                                  _replaceLastToken(widget.controller.searchController.text, s.text);
-                              widget.controller.searchController.selection = TextSelection.collapsed(
-                                  offset: widget.controller.searchController.text.length);
+                                  _replaceLastToken(
+                                      widget.controller.searchController.text,
+                                      s.text);
+                              widget.controller.searchController.selection =
+                                  TextSelection.collapsed(
+                                      offset: widget.controller.searchController
+                                          .text.length);
                             } else {
                               widget.controller.searchController.text = s.text;
                             }
@@ -1843,8 +1993,11 @@ class _SearchFieldState extends State<_SearchField> {
                               : IconButton(
                                   icon: const Icon(Icons.close, size: 16),
                                   onPressed: () {
-                                    backendApiClient.deleteSearchHistoryItem(s.text).catchError((_) {});
-                                    widget.controller.searchHistory.remove(s.text);
+                                    backendApiClient
+                                        .deleteSearchHistoryItem(s.text)
+                                        .catchError((_) {});
+                                    widget.controller.searchHistory
+                                        .remove(s.text);
                                     _onTextChanged();
                                   },
                                 ),
@@ -1855,14 +2008,18 @@ class _SearchFieldState extends State<_SearchField> {
                   if (_suggestions.any((s) => !s.isTag))
                     InkWell(
                       onTap: () {
-                        backendApiClient.clearSearchHistory().catchError((_) {});
+                        backendApiClient
+                            .clearSearchHistory()
+                            .catchError((_) {});
                         widget.controller.searchHistory.clear();
                         _removeOverlay();
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: Text('searchHistory.clearAll'.tr,
-                            style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontSize: 13)),
                       ),
                     ),
                 ],
@@ -1891,7 +2048,8 @@ class _SearchFieldState extends State<_SearchField> {
           hintText: 'home.search'.tr,
           prefixIcon: const Icon(Icons.search),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
         onSubmitted: (value) {
           _removeOverlay();
@@ -1933,7 +2091,8 @@ bool _tagEntryIsWatched(dynamic raw) {
   return c != null || b != null;
 }
 
-String _lookupTagTranslation(RxMap<String, String> map, String namespace, String key, String fallback) {
+String _lookupTagTranslation(
+    RxMap<String, String> map, String namespace, String key, String fallback) {
   final direct = map['$namespace:$key'];
   if (direct != null && direct.isNotEmpty) return direct;
   for (final v in webTagMapKeyVariants(namespace, key)) {
@@ -1971,7 +2130,8 @@ List<Widget> _buildHomePageTagChips(
     final key = _parseTagListEntryKey(e.raw);
     final label = _parseTagListEntryLabel(e.raw);
     if (label.isEmpty) continue;
-    final display = _lookupTagTranslation(tagTranslations, e.namespace, key, label);
+    final display =
+        _lookupTagTranslation(tagTranslations, e.namespace, key, label);
     final showOriginalTooltip = display != key;
     var (cInt, bInt) = _parseTagListEntryColors(e.raw);
     if (cInt == null && bInt == null) {
@@ -2002,7 +2162,9 @@ List<Widget> _buildHomePageTagChips(
               ? const Color(0xFF090909)
               : const Color(0xFFF1F1F1));
       final borderArgb = bInt ?? cInt;
-      borderColor = borderArgb != null ? Color(borderArgb).withValues(alpha: 0.9) : Colors.grey.shade400;
+      borderColor = borderArgb != null
+          ? Color(borderArgb).withValues(alpha: 0.9)
+          : Colors.grey.shade400;
     }
 
     final chip = Container(
@@ -2057,7 +2219,8 @@ class _GalleryListTile extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (isLeftPane) {
-            Get.find<WebLayoutController>().selectGallery(gid as int, token as String);
+            Get.find<WebLayoutController>()
+                .selectGallery(gid as int, token as String);
           } else {
             Get.toNamed('/web/gallery/$gid/$token');
           }
@@ -2078,32 +2241,52 @@ class _GalleryListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+                    Text(title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w500)),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 6,
                       runSpacing: 4,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: _categoryColor(category),
                             borderRadius: BorderRadius.circular(3),
                           ),
-                          child: Text(category, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          child: Text(category,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold)),
                         ),
                         if (uploader.isNotEmpty)
-                          Text(uploader, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                          Text(uploader,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.grey)),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.star, size: 14, color: Colors.amber),
+                            const Icon(Icons.star,
+                                size: 14, color: Colors.amber),
                             const SizedBox(width: 2),
-                            Text(rating.toStringAsFixed(1), style: Theme.of(context).textTheme.bodySmall),
+                            Text(rating.toStringAsFixed(1),
+                                style: Theme.of(context).textTheme.bodySmall),
                           ],
                         ),
-                        Text('${pageCount}P', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                        Text('${pageCount}P',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: Colors.grey)),
                       ],
                     ),
                     if (!compact && tags != null && tags.isNotEmpty) ...[
@@ -2115,7 +2298,9 @@ class _GalleryListTile extends StatelessWidget {
                               tags,
                               tagTranslations: homeController.tagTranslations,
                               accountWatchedBackgroundArgb:
-                                  Get.find<WebWatchedTagStylesController>().backgroundArgbByTagKey.value,
+                                  Get.find<WebWatchedTagStylesController>()
+                                      .backgroundArgbByTagKey
+                                      .value,
                               maxTags: 12,
                             ),
                           )),
@@ -2172,7 +2357,8 @@ class _GalleryCard extends StatelessWidget {
       child: InkWell(
         onTap: () {
           if (isLeftPane) {
-            Get.find<WebLayoutController>().selectGallery(gid as int, token as String);
+            Get.find<WebLayoutController>()
+                .selectGallery(gid as int, token as String);
           } else {
             Get.toNamed('/web/gallery/$gid/$token');
           }
@@ -2185,7 +2371,10 @@ class _GalleryCard extends StatelessWidget {
               color: _categoryColor(category),
               child: Text(
                 category,
-                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -2199,16 +2388,22 @@ class _GalleryCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           surfaceLoadingPlaceholder: true,
                           readerErrorChild: Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                             child: const Center(
-                              child: Icon(Icons.broken_image, size: 32, color: Colors.grey),
+                              child: Icon(Icons.broken_image,
+                                  size: 32, color: Colors.grey),
                             ),
                           ),
                         )
                       : Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
                           child: const Center(
-                            child: Icon(Icons.photo_library, size: 48, color: Colors.grey),
+                            child: Icon(Icons.photo_library,
+                                size: 48, color: Colors.grey),
                           ),
                         ),
                   _DownloadBadgeOverlay(gid: gid is int ? gid : 0),
@@ -2234,7 +2429,9 @@ class _GalleryCard extends StatelessWidget {
                         tags,
                         tagTranslations: homeController.tagTranslations,
                         accountWatchedBackgroundArgb:
-                            Get.find<WebWatchedTagStylesController>().backgroundArgbByTagKey.value,
+                            Get.find<WebWatchedTagStylesController>()
+                                .backgroundArgbByTagKey
+                                .value,
                         maxTags: 8,
                       ),
                     )),
@@ -2268,7 +2465,11 @@ class _CoverWithBadge extends StatelessWidget {
   final double width;
   final double height;
 
-  const _CoverWithBadge({required this.coverUrl, required this.gid, required this.width, required this.height});
+  const _CoverWithBadge(
+      {required this.coverUrl,
+      required this.gid,
+      required this.width,
+      required this.height});
 
   @override
   Widget build(BuildContext context) {
@@ -2285,13 +2486,17 @@ class _CoverWithBadge extends StatelessWidget {
                     sourceUrl: coverUrl,
                     fit: BoxFit.cover,
                     readerErrorChild: Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.broken_image,
+                          size: 24, color: Colors.grey),
                     ),
                   )
                 : Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: const Icon(Icons.photo_library, size: 24, color: Colors.grey),
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.photo_library,
+                        size: 24, color: Colors.grey),
                   ),
             _DownloadBadgeOverlay(gid: gid),
           ],

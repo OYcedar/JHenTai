@@ -263,6 +263,13 @@ class WebKoKR {
       'settings.ehWebMoreSoon':
           '갤러리 프로필, 할당량, 내 태그 등은 서버 API가 준비되면 추가될 수 있습니다.',
       'settings.styleWebMoreSoon': '목록 레이아웃 등은 이후 업데이트에서 제공될 수 있습니다.',
+      'settings.galleryListStyle': '갤러리 목록 스타일',
+      'settings.listModeGrid': '그리드',
+      'settings.listModeList': '목록',
+      'settings.listModeCompact': '간단히',
+      'settings.gridColumns': '그리드 열 수',
+      'settings.gridColumnsAuto': '자동',
+      'settings.galleryListStyleHint': '웹 홈 갤러리 목록에 즉시 적용되며 이 브라우저에 저장됩니다.',
       'settings.networkWebStub':
           '요청별 프록시, 도메인 프론팅, 타임아웃 등은 아직 이 UI에서 설정할 수 없습니다.',
       'settings.downloadWebStub':

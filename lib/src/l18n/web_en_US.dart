@@ -276,6 +276,14 @@ class WebEnUS {
           'Gallery profile, quotas, and My Tags may be added when server APIs are available.',
       'settings.styleWebMoreSoon':
           'List layout options may be added in a future update.',
+      'settings.galleryListStyle': 'Gallery list style',
+      'settings.listModeGrid': 'Grid',
+      'settings.listModeList': 'List',
+      'settings.listModeCompact': 'Compact',
+      'settings.gridColumns': 'Grid columns',
+      'settings.gridColumnsAuto': 'Auto',
+      'settings.galleryListStyleHint':
+          'Applies to the web home gallery list immediately and is saved in this browser.',
       'settings.networkWebStub':
           'Per-request proxy, domain fronting, and timeouts are not configurable in this UI yet.',
       'settings.downloadWebStub':

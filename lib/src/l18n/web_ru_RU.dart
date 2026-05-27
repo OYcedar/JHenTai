@@ -270,6 +270,14 @@ class WebRuRU {
           'Профиль галереи, квоты и «Мои теги» могут появиться при готовности API сервера.',
       'settings.styleWebMoreSoon':
           'Варианты макета списка могут быть добавлены позже.',
+      'settings.galleryListStyle': 'Вид списка галерей',
+      'settings.listModeGrid': 'Сетка',
+      'settings.listModeList': 'Список',
+      'settings.listModeCompact': 'Компактно',
+      'settings.gridColumns': 'Колонки сетки',
+      'settings.gridColumnsAuto': 'Авто',
+      'settings.galleryListStyleHint':
+          'Применяется к списку галерей на веб-главной сразу и сохраняется в этом браузере.',
       'settings.networkWebStub':
           'Прокси на запрос, domain fronting и таймауты пока нельзя настроить здесь.',
       'settings.downloadWebStub':

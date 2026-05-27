@@ -273,6 +273,14 @@ class WebPtBR {
           'Perfil da galeria, cotas e Minhas tags podem ser adicionados quando houver APIs no servidor.',
       'settings.styleWebMoreSoon':
           'Opções de layout de lista podem ser adicionadas depois.',
+      'settings.galleryListStyle': 'Estilo da lista de galerias',
+      'settings.listModeGrid': 'Grade',
+      'settings.listModeList': 'Lista',
+      'settings.listModeCompact': 'Compacta',
+      'settings.gridColumns': 'Colunas da grade',
+      'settings.gridColumnsAuto': 'Automático',
+      'settings.galleryListStyleHint':
+          'Aplica imediatamente à lista de galerias da página inicial web e fica salvo neste navegador.',
       'settings.networkWebStub':
           'Proxy por requisição, domain fronting e timeouts ainda não são configuráveis aqui.',
       'settings.downloadWebStub':
