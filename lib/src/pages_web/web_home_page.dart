@@ -2595,7 +2595,7 @@ class _GalleryListTile extends StatelessWidget {
     final coverUrl = gallery['coverUrl'] as String? ?? '';
     final uploader = gallery['uploader'] as String? ?? '';
     final rating = (gallery['rating'] as num?)?.toDouble() ?? 0;
-    final pageCount = gallery['pageCount'] as int? ?? 0;
+    final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
     final tags = gallery['tags'] as Map<String, dynamic>?;
 
     return Card(
@@ -2672,6 +2672,10 @@ class _GalleryListTile extends StatelessWidget {
                                 .textTheme
                                 .bodySmall
                                 ?.copyWith(color: Colors.grey)),
+                        _WebGalleryReadProgressIndicator(
+                          gid: gid is int ? gid : 0,
+                          pageCount: pageCount,
+                        ),
                       ],
                     ),
                     if (!compact && tags != null && tags.isNotEmpty) ...[
@@ -2736,6 +2740,7 @@ class _GalleryCard extends StatelessWidget {
     final token = gallery['token'];
     final coverUrl = gallery['coverUrl'] as String? ?? '';
     final tags = gallery['tags'] as Map<String, dynamic>?;
+    final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -2792,6 +2797,15 @@ class _GalleryCard extends StatelessWidget {
                           ),
                         ),
                   _DownloadBadgeOverlay(gid: gid is int ? gid : 0),
+                  Positioned(
+                    left: 4,
+                    bottom: 4,
+                    child: _WebGalleryReadProgressIndicator(
+                      gid: gid is int ? gid : 0,
+                      pageCount: pageCount,
+                      overlay: true,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -2841,6 +2855,66 @@ class _GalleryCard extends StatelessWidget {
       'misc' => Colors.grey.shade700,
       _ => Colors.grey.shade700,
     };
+  }
+}
+
+class _WebGalleryReadProgressIndicator extends StatelessWidget {
+  final int gid;
+  final int pageCount;
+  final bool overlay;
+
+  const _WebGalleryReadProgressIndicator({
+    required this.gid,
+    required this.pageCount,
+    this.overlay = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (gid <= 0 || pageCount <= 0) return const SizedBox.shrink();
+    return FutureBuilder<String?>(
+      future: backendApiClient.getSetting('read_progress_$gid'),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox.shrink();
+        }
+        final readIndex = int.tryParse(snapshot.data ?? '') ?? 0;
+        if (readIndex <= 0) return const SizedBox.shrink();
+        final progress = ((readIndex + 1) / pageCount).clamp(0.0, 1.0);
+        final color = overlay
+            ? Colors.white
+            : Theme.of(context).colorScheme.onSurfaceVariant;
+        final indicator = SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            value: progress,
+            strokeWidth: 2,
+            backgroundColor: color.withValues(alpha: 0.25),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        );
+        if (!overlay) {
+          return Tooltip(
+            message: '${readIndex + 1} / $pageCount',
+            child: indicator,
+          );
+        }
+        return Tooltip(
+          message: '${readIndex + 1} / $pageCount',
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(3),
+              child: indicator,
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
