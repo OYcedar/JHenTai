@@ -302,6 +302,13 @@ class WebZhCN {
       'settings.archiveConcurrency': '归档并发',
       'settings.downloadRuntimeHint': '并发与路径由 Docker 环境变量控制，修改后需重启服务端生效。',
       'settings.performanceWebStub': 'CPU、内存等性能调优针对原生客户端；网页端在浏览器中运行。',
+      'settings.webPerformance': 'Web 性能',
+      'settings.performanceWebIntro': 'Web 端在浏览器中运行，这里提供会影响大列表交互流畅度的本机浏览器设置。',
+      'settings.webMaxGalleryNum4Animation': '下载分组动画阈值',
+      'settings.webMaxGalleryNum4AnimationHint':
+          '单个下载分组内任务数超过此值时，关闭展开/收起图标动画；0 表示始终关闭。',
+      'settings.resetPerformanceDefaults': '恢复默认性能设置',
+      'settings.performanceSaved': '性能设置已保存',
       'settings.advancedWebStub': '可在这里查看并清理服务器日志；原生端实验性功能暂未在网页端开放。',
       'settings.advancedWebIntro': '查看当前 Web 实例的服务器日志与 Docker 路径信息。',
       'settings.serverLogs': '服务器日志',

@@ -326,6 +326,15 @@ class WebPtBR {
           'Concorrência e caminhos são controlados por variáveis de ambiente Docker e valem após reiniciar o servidor.',
       'settings.performanceWebStub':
           'Ajustes de CPU e memória são do app nativo. O cliente web roda no navegador.',
+      'settings.webPerformance': 'Desempenho web',
+      'settings.performanceWebIntro':
+          'O cliente web roda no navegador. Estas opções locais afetam a fluidez de listas grandes.',
+      'settings.webMaxGalleryNum4Animation':
+          'Limite de animação de grupos de download',
+      'settings.webMaxGalleryNum4AnimationHint':
+          'Desativa a animação do ícone de expandir/recolher quando um grupo tem mais tarefas que este valor. Use 0 para desativar sempre.',
+      'settings.resetPerformanceDefaults': 'Restaurar padrões de desempenho',
+      'settings.performanceSaved': 'Configurações de desempenho salvas',
       'settings.advancedWebStub':
           'Você pode ver e limpar logs do servidor aqui. Opções experimentais nativas não aparecem na web.',
       'settings.advancedWebIntro':

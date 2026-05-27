@@ -330,6 +330,14 @@ class WebEnUS {
           'Concurrency and paths are controlled by Docker environment variables and take effect after restarting the server.',
       'settings.performanceWebStub':
           'CPU and memory tuning apply to the native app. The web client runs in your browser.',
+      'settings.webPerformance': 'Web performance',
+      'settings.performanceWebIntro':
+          'The web client runs in your browser. These local browser settings affect large-list interaction smoothness.',
+      'settings.webMaxGalleryNum4Animation': 'Download group animation limit',
+      'settings.webMaxGalleryNum4AnimationHint':
+          'Disable expand/collapse icon animation when a download group has more tasks than this value. Use 0 to always disable it.',
+      'settings.resetPerformanceDefaults': 'Reset performance defaults',
+      'settings.performanceSaved': 'Performance settings saved',
       'settings.advancedWebStub':
           'Server logs can be viewed and cleared here. Experimental native options are not exposed on web.',
       'settings.advancedWebIntro':

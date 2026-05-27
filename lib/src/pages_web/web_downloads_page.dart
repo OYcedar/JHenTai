@@ -13,6 +13,10 @@ class WebDownloadsController extends GetxController
     with GetSingleTickerProviderStateMixin {
   late TabController tabController;
 
+  static const maxGalleryNum4AnimationStorageKey =
+      'jh_web_max_gallery_num_for_animation';
+  static const defaultMaxGalleryNum4Animation = 30;
+
   static const _kGalleryGroupsExpanded =
       'jh_web_downloads_gallery_groups_expanded';
   static const _kArchiveGroupsExpanded =
@@ -27,6 +31,20 @@ class WebDownloadsController extends GetxController
   final archiveGroupExpanded = RxMap<String, bool>();
 
   WebDownloadService get _svc => Get.find<WebDownloadService>();
+
+  static int get maxGalleryNum4Animation {
+    final value = int.tryParse(
+      web.window.localStorage.getItem(maxGalleryNum4AnimationStorageKey) ?? '',
+    );
+    return value != null && value >= 0 ? value : defaultMaxGalleryNum4Animation;
+  }
+
+  static void setMaxGalleryNum4Animation(int value) {
+    web.window.localStorage.setItem(
+      maxGalleryNum4AnimationStorageKey,
+      '${value < 0 ? 0 : value}',
+    );
+  }
 
   static String _taskGroupName(Map<String, dynamic> t) =>
       (t['group_name'] ?? t['groupName'] ?? 'default') as String;
@@ -534,12 +552,14 @@ class _DownloadGroupHeader extends StatelessWidget {
   final String groupName;
   final int count;
   final bool expanded;
+  final bool animate;
   final VoidCallback onTap;
 
   const _DownloadGroupHeader({
     required this.groupName,
     required this.count,
     required this.expanded,
+    this.animate = true,
     required this.onTap,
   });
 
@@ -581,7 +601,8 @@ class _DownloadGroupHeader extends StatelessWidget {
               const SizedBox(width: 8),
               AnimatedRotation(
                 turns: expanded ? 0.25 : 0,
-                duration: const Duration(milliseconds: 200),
+                duration:
+                    animate ? const Duration(milliseconds: 200) : Duration.zero,
                 child: const Icon(Icons.chevron_right, size: 22),
               ),
             ],
@@ -730,6 +751,8 @@ class _GalleryTaskList extends StatelessWidget {
               groupName: g,
               count: byGroup[g]!.length,
               expanded: controller.galleryGroupExpanded[g] ?? true,
+              animate: byGroup[g]!.length <=
+                  WebDownloadsController.maxGalleryNum4Animation,
               onTap: () => controller.toggleGalleryGroup(g),
             ),
             const SizedBox(height: 6),
@@ -995,6 +1018,8 @@ class _ArchiveTaskList extends StatelessWidget {
               groupName: g,
               count: byGroup[g]!.length,
               expanded: controller.archiveGroupExpanded[g] ?? true,
+              animate: byGroup[g]!.length <=
+                  WebDownloadsController.maxGalleryNum4Animation,
               onTap: () => controller.toggleArchiveGroup(g),
             ),
             const SizedBox(height: 6),

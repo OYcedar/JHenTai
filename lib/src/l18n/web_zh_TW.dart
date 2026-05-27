@@ -302,6 +302,13 @@ class WebZhTW {
       'settings.archiveConcurrency': '封存並行數',
       'settings.downloadRuntimeHint': '並行數與路徑由 Docker 環境變數控制，修改後需重啟伺服器生效。',
       'settings.performanceWebStub': 'CPU、記憶體等效能調校針對原生用戶端；網頁端在瀏覽器中執行。',
+      'settings.webPerformance': 'Web 效能',
+      'settings.performanceWebIntro': 'Web 端在瀏覽器中執行，這裡提供會影響大型列表互動流暢度的本機瀏覽器設定。',
+      'settings.webMaxGalleryNum4Animation': '下載分組動畫閾值',
+      'settings.webMaxGalleryNum4AnimationHint':
+          '單個下載分組內任務數超過此值時，關閉展開／收合圖示動畫；0 表示一律關閉。',
+      'settings.resetPerformanceDefaults': '恢復預設效能設定',
+      'settings.performanceSaved': '效能設定已儲存',
       'settings.advancedWebStub': '可在這裡檢視並清理伺服器日誌；原生端實驗性功能暫未在網頁端開放。',
       'settings.advancedWebIntro': '檢視目前 Web 實例的伺服器日誌與 Docker 路徑資訊。',
       'settings.serverLogs': '伺服器日誌',

@@ -313,6 +313,14 @@ class WebKoKR {
           '동시 다운로드 수와 경로는 Docker 환경 변수로 제어되며 서버 재시작 후 적용됩니다.',
       'settings.performanceWebStub':
           'CPU·메모리 조정은 네이티브 앱용입니다. 웹 클라이언트는 브라우저에서 실행됩니다.',
+      'settings.webPerformance': '웹 성능',
+      'settings.performanceWebIntro':
+          '웹 클라이언트는 브라우저에서 실행됩니다. 이 로컬 브라우저 설정은 큰 목록의 상호작용 부드러움에 영향을 줍니다.',
+      'settings.webMaxGalleryNum4Animation': '다운로드 그룹 애니메이션 제한',
+      'settings.webMaxGalleryNum4AnimationHint':
+          '다운로드 그룹의 작업 수가 이 값을 넘으면 펼침/접힘 아이콘 애니메이션을 끕니다. 0은 항상 끕니다.',
+      'settings.resetPerformanceDefaults': '성능 기본값 복원',
+      'settings.performanceSaved': '성능 설정이 저장되었습니다',
       'settings.advancedWebStub':
           '여기서 서버 로그를 보고 지울 수 있습니다. 네이티브 실험 기능은 웹에서 제공되지 않습니다.',
       'settings.advancedWebIntro': '이 웹 인스턴스의 서버 로그와 Docker 경로 정보를 확인합니다.',
