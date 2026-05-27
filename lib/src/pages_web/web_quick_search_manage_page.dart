@@ -9,12 +9,14 @@ class WebQuickSearchManagePage extends StatefulWidget {
   const WebQuickSearchManagePage({super.key});
 
   @override
-  State<WebQuickSearchManagePage> createState() => _WebQuickSearchManagePageState();
+  State<WebQuickSearchManagePage> createState() =>
+      _WebQuickSearchManagePageState();
 }
 
 class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
+  bool _savingOrder = false;
   String? _error;
 
   @override
@@ -47,11 +49,13 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
       await backendApiClient.deleteQuickSearch(name);
       await _load();
       if (mounted) {
-        Get.snackbar('common.success'.tr, 'quickSearch.deleted'.tr, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('common.success'.tr, 'quickSearch.deleted'.tr,
+            snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       if (mounted) {
-        Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
       }
     }
   }
@@ -71,17 +75,53 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
       'disableFilterForLanguage': false,
     });
     try {
-      await backendApiClient.saveQuickSearch(trimmed, config);
+      final nextOrder = _items.length;
+      await backendApiClient.saveQuickSearch(trimmed, config,
+          sortOrder: nextOrder);
       await _load();
       if (mounted) Get.back();
       if (mounted) {
-        Get.snackbar('common.success'.tr, 'quickSearch.saved'.tr, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('common.success'.tr, 'quickSearch.saved'.tr,
+            snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       if (mounted) {
-        Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
       }
     }
+  }
+
+  Future<void> _persistOrder() async {
+    setState(() => _savingOrder = true);
+    try {
+      await Future.wait(_items.asMap().entries.map((entry) {
+        final item = entry.value;
+        final name = item['name']?.toString() ?? '';
+        final config = item['config']?.toString() ?? '';
+        if (name.isEmpty || config.isEmpty) return Future<void>.value();
+        item['sort_order'] = entry.key;
+        return backendApiClient.saveQuickSearch(name, config,
+            sortOrder: entry.key);
+      }));
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } finally {
+      if (mounted) setState(() => _savingOrder = false);
+    }
+  }
+
+  void _reorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex--;
+      final item = _items.removeAt(oldIndex);
+      _items.insert(newIndex, item);
+    });
+    _persistOrder();
   }
 
   void _showAddDialog() {
@@ -115,7 +155,8 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
+          TextButton(
+              onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
           FilledButton(
             onPressed: () => _add(nameCtrl.text, kwCtrl.text),
             child: Text('common.confirm'.tr),
@@ -131,7 +172,20 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
       appBar: AppBar(
         title: Text('settings.openQuickSearch'.tr),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loading ? null : _load),
+          if (_savingOrder)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loading || _savingOrder ? null : _load),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -149,7 +203,8 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 16),
-                        FilledButton(onPressed: _load, child: Text('common.retry'.tr)),
+                        FilledButton(
+                            onPressed: _load, child: Text('common.retry'.tr)),
                       ],
                     ),
                   ),
@@ -158,13 +213,14 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.all(24),
-                        child: Text('quickSearch.empty'.tr, style: const TextStyle(color: Colors.grey)),
+                        child: Text('quickSearch.empty'.tr,
+                            style: const TextStyle(color: Colors.grey)),
                       ),
                     )
-                  : ListView.separated(
+                  : ReorderableListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: _items.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      onReorder: _savingOrder ? (_, __) {} : _reorder,
                       itemBuilder: (context, i) {
                         final item = _items[i];
                         final name = item['name']?.toString() ?? '';
@@ -178,24 +234,46 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                         if (subtitle.length > 120) {
                           subtitle = '${subtitle.substring(0, 120)}…';
                         }
-                        return ListTile(
-                          title: Text(name),
-                          subtitle: Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () async {
-                              final ok = await Get.dialog<bool>(
-                                AlertDialog(
-                                  title: Text('quickSearch.deleteTitle'.tr),
-                                  content: Text('quickSearch.deleteConfirm'.trParams({'name': name})),
-                                  actions: [
-                                    TextButton(onPressed: () => Get.back(result: false), child: Text('common.cancel'.tr)),
-                                    FilledButton(onPressed: () => Get.back(result: true), child: Text('common.delete'.tr)),
-                                  ],
-                                ),
-                              );
-                              if (ok == true) await _delete(name);
-                            },
+                        return Card(
+                          key: ValueKey(name),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            leading: ReorderableDragStartListener(
+                              index: i,
+                              child: const Icon(Icons.drag_handle),
+                            ),
+                            title: Text(name),
+                            subtitle: Text(subtitle,
+                                maxLines: 2, overflow: TextOverflow.ellipsis),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              onPressed: _savingOrder
+                                  ? null
+                                  : () async {
+                                      final ok = await Get.dialog<bool>(
+                                        AlertDialog(
+                                          title: Text(
+                                              'quickSearch.deleteTitle'.tr),
+                                          content: Text(
+                                              'quickSearch.deleteConfirm'
+                                                  .trParams({'name': name})),
+                                          actions: [
+                                            TextButton(
+                                                onPressed: () =>
+                                                    Get.back(result: false),
+                                                child:
+                                                    Text('common.cancel'.tr)),
+                                            FilledButton(
+                                                onPressed: () =>
+                                                    Get.back(result: true),
+                                                child:
+                                                    Text('common.delete'.tr)),
+                                          ],
+                                        ),
+                                      );
+                                      if (ok == true) await _delete(name);
+                                    },
+                            ),
                           ),
                         );
                       },
