@@ -250,7 +250,7 @@ class WebPtBR {
       'settings.openQuickSearch': 'Busca rápida',
       'settings.networkNote': 'Rede e proxy',
       'settings.networkWebBody':
-          'Proxy e rede avançada são configurados no servidor ou Docker, não nesta interface web. Veja a documentação de implantação.',
+          'Proxy e rede avançada são configurados no servidor ou Docker. Esta página mostra o estado atual do proxy para EH/EX e imagens H@H.',
       'settings.about': 'Sobre',
       'settings.appVersion': 'Versão @version (@build)',
       'settings.hubMenu': 'Menu de configurações',
@@ -282,7 +282,26 @@ class WebPtBR {
       'settings.galleryListStyleHint':
           'Aplica imediatamente à lista de galerias da página inicial web e fica salvo neste navegador.',
       'settings.networkWebStub':
-          'Proxy por requisição, domain fronting e timeouts ainda não são configuráveis aqui.',
+          'O estado do proxy aparece na página Rede. Reinicie o servidor após alterar variáveis de ambiente Docker.',
+      'settings.proxyRouting': 'Roteamento de requisições',
+      'settings.ehProxyRoute': 'Requisições de páginas EH/EX',
+      'settings.hathProxyRoute': 'Requisições de imagens H@H',
+      'settings.hathProxyDedicatedHint':
+          'JH_HATH_PROXY está configurado, então *.hath.network usa esse proxy primeiro.',
+      'settings.hathProxyFallbackHint':
+          'JH_HATH_PROXY não está configurado, então *.hath.network usa HTTPS_PROXY/HTTP_PROXY. Defina JH_HATH_PROXY se H@H ainda falhar.',
+      'settings.proxyEnvironment': 'Ambiente de proxy',
+      'settings.proxyEnvironmentEmpty': 'Nenhum valor de proxy foi informado.',
+      'settings.proxyEnvironmentHint':
+          'Apenas protocolo, host e porta aparecem aqui. Credenciais ficam ocultas.',
+      'settings.networkRuntimeFlags': 'Diagnóstico de rede',
+      'settings.networkRestartHint':
+          'Esses valores vêm do ambiente de inicialização do servidor. Reinicie o contêiner após alterá-los.',
+      'settings.directConnection': 'Direto',
+      'settings.configured': 'Configurado',
+      'settings.notConfigured': 'Não configurado',
+      'settings.enabled': 'Ativado',
+      'settings.disabled': 'Desativado',
       'settings.downloadWebStub':
           'Gerencie downloads ativos e concluídos na página de downloads. Configurações avançadas de download não estão na web.',
       'settings.downloadWebIntro':

@@ -51,10 +51,40 @@ class WebSettingsPage extends GetView<WebSettingsController> {
               onTap: () => Get.toNamed('/web/settings/preference'),
             ),
             ListTile(
+              leading: const Icon(Icons.wifi_tethering),
+              title: Text('settings.menuNetwork'.tr),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Get.toNamed('/web/settings/network'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.download_outlined),
+              title: Text('settings.menuDownload'.tr),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Get.toNamed('/web/settings/download'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.speed),
+              title: Text('settings.menuPerformance'.tr),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Get.toNamed('/web/settings/performance'),
+            ),
+            ListTile(
               leading: const Icon(Icons.mouse),
               title: Text('settings.menuMouseWheel'.tr),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Get.toNamed('/web/settings/mouse-wheel'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.tune),
+              title: Text('settings.menuAdvanced'.tr),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Get.toNamed('/web/settings/advanced'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.security),
+              title: Text('settings.menuSecurity'.tr),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Get.toNamed('/web/settings/security'),
             ),
             ListTile(
               leading: const Icon(Icons.storage_outlined),

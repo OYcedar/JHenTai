@@ -31,6 +31,74 @@ class SettingRoutes {
 
   Directory get _logDir => Directory(_config.logDir);
 
+  static String? _envValue(String name) {
+    final env = Platform.environment;
+    return env[name] ?? env[name.toLowerCase()];
+  }
+
+  static bool _envEnabled(String? value, {required bool defaultValue}) {
+    if (value == null || value.trim().isEmpty) return defaultValue;
+    final v = value.trim().toLowerCase();
+    if (v == '0' || v == 'false' || v == 'no') return false;
+    if (v == '1' || v == 'true' || v == 'yes') return true;
+    return defaultValue;
+  }
+
+  static String _maskProxyValue(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return '';
+    final value = raw.trim();
+    final uri = Uri.tryParse(value.contains('://') ? value : 'http://$value');
+    if (uri == null || uri.host.isEmpty) return 'configured';
+    final port = uri.hasPort ? ':${uri.port}' : '';
+    return '${uri.scheme}://${uri.host}$port';
+  }
+
+  static Map<String, dynamic> _proxyEnvItem(String name) {
+    final value = _envValue(name);
+    return {
+      'name': name,
+      'configured': value != null && value.trim().isNotEmpty,
+      'value': _maskProxyValue(value),
+    };
+  }
+
+  static Map<String, dynamic> _networkRuntime() {
+    final httpProxy = _envValue('HTTP_PROXY');
+    final httpsProxy = _envValue('HTTPS_PROXY');
+    final hathProxy = _envValue('JH_HATH_PROXY');
+    final noProxy = _envValue('NO_PROXY');
+    return {
+      'proxyEnv': [
+        _proxyEnvItem('HTTP_PROXY'),
+        _proxyEnvItem('HTTPS_PROXY'),
+        _proxyEnvItem('JH_HATH_PROXY'),
+        _proxyEnvItem('NO_PROXY'),
+      ],
+      'ehProxySource': (httpsProxy != null && httpsProxy.trim().isNotEmpty)
+          ? 'HTTPS_PROXY'
+          : (httpProxy != null && httpProxy.trim().isNotEmpty)
+              ? 'HTTP_PROXY'
+              : 'DIRECT',
+      'hathProxySource': (hathProxy != null && hathProxy.trim().isNotEmpty)
+          ? 'JH_HATH_PROXY'
+          : (httpsProxy != null && httpsProxy.trim().isNotEmpty)
+              ? 'HTTPS_PROXY'
+              : (httpProxy != null && httpProxy.trim().isNotEmpty)
+                  ? 'HTTP_PROXY'
+                  : 'DIRECT',
+      'hathProxyConfigured': hathProxy != null && hathProxy.trim().isNotEmpty,
+      'noProxy': noProxy ?? '',
+      'hathPreferIpv4': _envEnabled(
+        _envValue('JH_HATH_PREFER_IPV4'),
+        defaultValue: false,
+      ),
+      'imageProxyDebug': _envEnabled(
+        _envValue('JH_IMAGE_PROXY_DEBUG'),
+        defaultValue: false,
+      ),
+    };
+  }
+
   List<File> _logFiles() {
     final dir = _logDir;
     if (!dir.existsSync()) return [];
@@ -123,6 +191,7 @@ class SettingRoutes {
       'maxConcurrentGalleryDownloads': _config.maxConcurrentGalleryDownloads,
       'maxConcurrentArchiveDownloads': _config.maxConcurrentArchiveDownloads,
     };
+    settings['network'] = _networkRuntime();
 
     return Response.ok(
       jsonEncode(settings),

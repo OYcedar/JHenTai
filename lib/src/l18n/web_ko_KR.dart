@@ -242,7 +242,7 @@ class WebKoKR {
       'settings.openQuickSearch': '빠른 검색',
       'settings.networkNote': '네트워크 및 프록시',
       'settings.networkWebBody':
-          '프록시 등 네트워크 설정은 이 웹 UI가 아니라 서버(또는 Docker)에서 구성합니다. 배포 문서를 참고하세요.',
+          '프록시와 네트워크 설정은 서버 또는 Docker 환경에서 구성합니다. 이 페이지는 EH/EX 및 H@H 이미지 요청의 현재 프록시 상태를 보여줍니다.',
       'settings.about': '정보',
       'settings.appVersion': '버전 @version (@build)',
       'settings.hubMenu': '설정 메뉴',
@@ -271,7 +271,25 @@ class WebKoKR {
       'settings.gridColumnsAuto': '자동',
       'settings.galleryListStyleHint': '웹 홈 갤러리 목록에 즉시 적용되며 이 브라우저에 저장됩니다.',
       'settings.networkWebStub':
-          '요청별 프록시, 도메인 프론팅, 타임아웃 등은 아직 이 UI에서 설정할 수 없습니다.',
+          '프록시 상태는 네트워크 페이지에서 확인하세요. Docker 환경 변수를 변경한 뒤 서버를 재시작하세요.',
+      'settings.proxyRouting': '요청 라우팅',
+      'settings.ehProxyRoute': 'EH/EX 페이지 요청',
+      'settings.hathProxyRoute': 'H@H 이미지 요청',
+      'settings.hathProxyDedicatedHint':
+          'JH_HATH_PROXY가 설정되어 *.hath.network가 이 프록시를 우선 사용합니다.',
+      'settings.hathProxyFallbackHint':
+          'JH_HATH_PROXY가 설정되지 않아 *.hath.network는 HTTPS_PROXY/HTTP_PROXY를 사용합니다. H@H가 계속 실패하면 JH_HATH_PROXY를 별도로 설정하세요.',
+      'settings.proxyEnvironment': '프록시 환경',
+      'settings.proxyEnvironmentEmpty': '보고된 프록시 환경 값이 없습니다.',
+      'settings.proxyEnvironmentHint': '여기에는 프로토콜, 호스트, 포트만 표시되며 인증 정보는 숨깁니다.',
+      'settings.networkRuntimeFlags': '네트워크 진단',
+      'settings.networkRestartHint':
+          '이 값들은 서버 시작 환경에서 가져옵니다. 변경 후 컨테이너를 재시작하세요.',
+      'settings.directConnection': '직접 연결',
+      'settings.configured': '설정됨',
+      'settings.notConfigured': '설정 안 됨',
+      'settings.enabled': '활성화됨',
+      'settings.disabled': '비활성화됨',
       'settings.downloadWebStub':
           '진행 중·완료된 다운로드는 다운로드 페이지에서 관리하세요. 고급 다운로드 설정은 웹 UI에 없습니다.',
       'settings.downloadWebIntro':

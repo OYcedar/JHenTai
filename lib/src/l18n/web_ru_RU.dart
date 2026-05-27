@@ -247,7 +247,7 @@ class WebRuRU {
       'settings.openQuickSearch': 'Быстрый поиск',
       'settings.networkNote': 'Сеть и прокси',
       'settings.networkWebBody':
-          'Прокси и сеть настраиваются на сервере или в Docker, а не в этом веб-интерфейсе. См. документацию по развёртыванию.',
+          'Прокси и сеть настраиваются на сервере или в Docker. Эта страница показывает текущее состояние прокси для запросов EH/EX и изображений H@H.',
       'settings.about': 'О приложении',
       'settings.appVersion': 'Версия @version (@build)',
       'settings.hubMenu': 'Меню настроек',
@@ -279,7 +279,26 @@ class WebRuRU {
       'settings.galleryListStyleHint':
           'Применяется к списку галерей на веб-главной сразу и сохраняется в этом браузере.',
       'settings.networkWebStub':
-          'Прокси на запрос, domain fronting и таймауты пока нельзя настроить здесь.',
+          'Состояние прокси показано на странице сети. После изменения переменных окружения Docker перезапустите сервер.',
+      'settings.proxyRouting': 'Маршрутизация запросов',
+      'settings.ehProxyRoute': 'Запросы страниц EH/EX',
+      'settings.hathProxyRoute': 'Запросы изображений H@H',
+      'settings.hathProxyDedicatedHint':
+          'JH_HATH_PROXY настроен, поэтому *.hath.network сначала использует этот прокси.',
+      'settings.hathProxyFallbackHint':
+          'JH_HATH_PROXY не настроен, поэтому *.hath.network использует HTTPS_PROXY/HTTP_PROXY. Задайте JH_HATH_PROXY, если H@H всё ещё недоступен напрямую.',
+      'settings.proxyEnvironment': 'Окружение прокси',
+      'settings.proxyEnvironmentEmpty': 'Значения прокси не обнаружены.',
+      'settings.proxyEnvironmentHint':
+          'Здесь показаны только протокол, хост и порт. Учётные данные скрыты.',
+      'settings.networkRuntimeFlags': 'Диагностика сети',
+      'settings.networkRestartHint':
+          'Эти значения берутся из окружения запуска сервера. После изменения перезапустите контейнер.',
+      'settings.directConnection': 'Напрямую',
+      'settings.configured': 'Настроено',
+      'settings.notConfigured': 'Не настроено',
+      'settings.enabled': 'Включено',
+      'settings.disabled': 'Выключено',
       'settings.downloadWebStub':
           'Активные и завершённые загрузки — на странице загрузок. Расширенные настройки загрузки в веб-интерфейсе недоступны.',
       'settings.downloadWebIntro':

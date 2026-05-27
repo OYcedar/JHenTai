@@ -8,6 +8,7 @@ class WebSettingsController extends GetxController {
   final site = 'EH'.obs;
   final userName = ''.obs;
   final serverInfo = <String, dynamic>{}.obs;
+  final networkInfo = <String, dynamic>{}.obs;
   final isLoading = true.obs;
 
   final loginUserController = TextEditingController();
@@ -57,6 +58,7 @@ class WebSettingsController extends GetxController {
 
       final settings = await backendApiClient.getSettings();
       serverInfo.value = settings['server'] as Map<String, dynamic>? ?? {};
+      networkInfo.value = settings['network'] as Map<String, dynamic>? ?? {};
 
       if (settings.containsKey('userSetting')) {
         final user = settings['userSetting'];
@@ -85,17 +87,22 @@ class WebSettingsController extends GetxController {
     try {
       final result = await backendApiClient.login(user, pass);
       if (result['success'] == true) {
-        Get.snackbar('common.success'.tr, 'settings.loginSuccess'.tr, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('common.success'.tr, 'settings.loginSuccess'.tr,
+            snackPosition: SnackPosition.BOTTOM);
         loginUserController.clear();
         loginPassController.clear();
         await _loadStatus();
       } else {
-        Get.snackbar('common.failed'.tr, result['message'] ?? 'settings.loginFailed'.tr,
-            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+        Get.snackbar(
+            'common.failed'.tr, result['message'] ?? 'settings.loginFailed'.tr,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red.withValues(alpha: 0.7));
       }
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'settings.loginError'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'settings.loginError'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     } finally {
       isLoggingIn.value = false;
     }
@@ -104,18 +111,22 @@ class WebSettingsController extends GetxController {
   Future<void> loginWithCookies() async {
     final cookieStr = cookieController.text.trim();
     if (cookieStr.isEmpty) {
-      Get.snackbar('common.error'.tr, 'settings.cookieEmpty'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'settings.cookieEmpty'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
     try {
       await backendApiClient.setCookies(cookieStr);
-      Get.snackbar('common.success'.tr, 'settings.cookieSuccess'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.success'.tr, 'settings.cookieSuccess'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       cookieController.clear();
       await _loadStatus();
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'settings.cookieFailed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'settings.cookieFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
@@ -123,9 +134,12 @@ class WebSettingsController extends GetxController {
     try {
       await backendApiClient.logout();
       await _loadStatus();
-      Get.snackbar('common.success'.tr, 'settings.logoutSuccess'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.success'.tr, 'settings.logoutSuccess'.tr,
+          snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'settings.logoutFailed'.trParams({'error': '$e'}), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+          'common.error'.tr, 'settings.logoutFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -135,12 +149,17 @@ class WebSettingsController extends GetxController {
     try {
       final cookies = await backendApiClient.getCookies();
       final list = cookies['cookies'] as List? ?? [];
-      final names = list.map((c) => (c as Map)['name']?.toString() ?? '').where((n) => n.isNotEmpty).toList();
+      final names = list
+          .map((c) => (c as Map)['name']?.toString() ?? '')
+          .where((n) => n.isNotEmpty)
+          .toList();
       final hasIgneous = names.contains('igneous');
       final hasMemberId = names.contains('ipb_member_id');
       final hasPassHash = names.contains('ipb_pass_hash');
       if (hasMemberId && hasPassHash) {
-        cookieStatus.value = hasIgneous ? 'settings.cookieStatusFull'.tr : 'settings.cookieStatusNoIgneous'.tr;
+        cookieStatus.value = hasIgneous
+            ? 'settings.cookieStatusFull'.tr
+            : 'settings.cookieStatusNoIgneous'.tr;
       } else {
         cookieStatus.value = 'settings.cookieStatusNone'.tr;
       }
@@ -154,14 +173,20 @@ class WebSettingsController extends GetxController {
       final result = await backendApiClient.setSite(newSite);
       if (result['success'] == true) {
         site.value = newSite;
-        Get.snackbar('common.success'.tr, 'settings.siteSwitched'.trParams({'site': newSite}), snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('common.success'.tr,
+            'settings.siteSwitched'.trParams({'site': newSite}),
+            snackPosition: SnackPosition.BOTTOM);
       } else {
-        final error = result['error']?.toString() ?? 'settings.switchSiteFailed'.tr;
+        final error =
+            result['error']?.toString() ?? 'settings.switchSiteFailed'.tr;
         Get.snackbar('common.error'.tr, error,
-            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red.withValues(alpha: 0.7));
       }
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'settings.switchSiteFailed'.trParams({'error': '$e'}), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr,
+          'settings.switchSiteFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 }

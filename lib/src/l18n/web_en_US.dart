@@ -252,8 +252,8 @@ class WebEnUS {
       'settings.openQuickSearch': 'Quick search',
       'settings.networkNote': 'Network & proxy',
       'settings.networkWebBody':
-          'Proxy and advanced networking are configured on the server host or Docker environment, not in this web UI. '
-              'See deployment docs for reverse proxy, TLS, and cookie-based login.',
+          'Proxy and advanced networking are configured on the server host or Docker environment. '
+              'This page shows the current runtime proxy state for EH/EX and H@H image requests.',
       'settings.about': 'About',
       'settings.appVersion': 'Version @version (@build)',
       'settings.hubMenu': 'Settings menu',
@@ -285,7 +285,27 @@ class WebEnUS {
       'settings.galleryListStyleHint':
           'Applies to the web home gallery list immediately and is saved in this browser.',
       'settings.networkWebStub':
-          'Per-request proxy, domain fronting, and timeouts are not configurable in this UI yet.',
+          'Proxy state is shown on the Network page. Restart the server after changing Docker environment variables.',
+      'settings.proxyRouting': 'Request routing',
+      'settings.ehProxyRoute': 'EH/EX page requests',
+      'settings.hathProxyRoute': 'H@H image requests',
+      'settings.hathProxyDedicatedHint':
+          'JH_HATH_PROXY is configured, so *.hath.network uses that proxy first.',
+      'settings.hathProxyFallbackHint':
+          'JH_HATH_PROXY is not configured, so *.hath.network falls back to HTTPS_PROXY/HTTP_PROXY. Set JH_HATH_PROXY if H@H still fails direct access.',
+      'settings.proxyEnvironment': 'Proxy environment',
+      'settings.proxyEnvironmentEmpty':
+          'No proxy environment values were reported.',
+      'settings.proxyEnvironmentHint':
+          'Only protocol, host, and port are shown here. Credentials are hidden.',
+      'settings.networkRuntimeFlags': 'Network diagnostics',
+      'settings.networkRestartHint':
+          'These values come from the server startup environment. Restart the container after changing them.',
+      'settings.directConnection': 'Direct',
+      'settings.configured': 'Configured',
+      'settings.notConfigured': 'Not configured',
+      'settings.enabled': 'Enabled',
+      'settings.disabled': 'Disabled',
       'settings.downloadWebStub':
           'Manage active and finished downloads from the downloads page. Advanced download settings are not exposed in the web UI yet.',
       'settings.downloadWebIntro':
