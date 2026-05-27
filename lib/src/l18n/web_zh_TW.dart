@@ -473,6 +473,11 @@ class WebZhTW {
       'detail.torrentPeers': '連線 @count',
       'detail.torrentDownloads': '下載 @count',
       'detail.loadTorrentsFailed': '載入種子失敗：@error',
+      'detail.hhDownload': 'H@H 下載',
+      'detail.noHHArchives': '暫無可用 H@H 封存',
+      'detail.loadHHFailed': '載入 H@H 封存失敗：@error',
+      'detail.hhSubmitFailed': '提交 H@H 下載失敗：@error',
+      'detail.hhSubmitted': '已提交 H@H 下載請求',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可存取 EX）',

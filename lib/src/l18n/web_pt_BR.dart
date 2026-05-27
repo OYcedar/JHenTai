@@ -502,6 +502,11 @@ class WebPtBR {
       'detail.torrentPeers': 'Peers @count',
       'detail.torrentDownloads': 'Downloads @count',
       'detail.loadTorrentsFailed': 'Falha ao carregar torrents: @error',
+      'detail.hhDownload': 'Download H@H',
+      'detail.noHHArchives': 'Nenhum arquivo H@H disponível',
+      'detail.loadHHFailed': 'Falha ao carregar arquivos H@H: @error',
+      'detail.hhSubmitFailed': 'Falha ao solicitar download H@H: @error',
+      'detail.hhSubmitted': 'Solicitação de download H@H enviada',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (inclui igneous — EX pronto)',

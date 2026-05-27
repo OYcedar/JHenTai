@@ -524,6 +524,27 @@ class BackendApiClient {
     return [];
   }
 
+  Future<Map<String, dynamic>> fetchGalleryHHInfo(String archivePageUrl) async {
+    final response = await _dio.post(
+      '/api/gallery/hh-info',
+      data: {'archivePageUrl': archivePageUrl},
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<String> requestGalleryHHDownload(
+      String archivePageUrl, String resolution) async {
+    final response = await _dio.post(
+      '/api/gallery/hh-download',
+      data: {'archivePageUrl': archivePageUrl, 'resolution': resolution},
+    );
+    final data = response.data;
+    if (data is Map) {
+      return data['message']?.toString() ?? '';
+    }
+    return '';
+  }
+
   Future<Map<String, dynamic>> fetchGalleryListByUrl(String url) async {
     final response = await _dio.get(
       '/api/gallery/list-by-url',

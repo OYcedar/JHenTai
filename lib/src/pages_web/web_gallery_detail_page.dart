@@ -1371,6 +1371,15 @@ class WebGalleryDetailPage extends StatelessWidget {
                 ),
               _buildArchiveButton(context, aTask, aStatus),
               Obx(() => OutlinedButton.icon(
+                    icon: const Icon(Icons.cloud_download_outlined),
+                    label: Text('detail.hhDownload'.tr),
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(160, 44)),
+                    onPressed: controller.archiverUrl.isNotEmpty
+                        ? () => _showHHDownloadDialog(context)
+                        : null,
+                  )),
+              Obx(() => OutlinedButton.icon(
                     icon: const Icon(Icons.file_present),
                     label: Text('detail.torrentCount'.trParams(
                         {'count': '${controller.torrentCount.value}'})),
@@ -1669,6 +1678,15 @@ class WebGalleryDetailPage extends StatelessWidget {
         gid: controller.gid,
         token: controller.token,
         buildTorrentTile: _buildTorrentTile,
+      ),
+    );
+  }
+
+  void _showHHDownloadDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _WebHHDownloadDialog(
+        archivePageUrl: controller.archiverUrl.value,
       ),
     );
   }
@@ -2473,6 +2491,215 @@ class _WebTorrentDialogState extends State<_WebTorrentDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
+          child: Text('common.cancel'.tr),
+        ),
+      ],
+    );
+  }
+}
+
+class _WebHHDownloadDialog extends StatefulWidget {
+  final String archivePageUrl;
+
+  const _WebHHDownloadDialog({required this.archivePageUrl});
+
+  @override
+  State<_WebHHDownloadDialog> createState() => _WebHHDownloadDialogState();
+}
+
+class _WebHHDownloadDialogState extends State<_WebHHDownloadDialog> {
+  bool _isLoading = true;
+  bool _isSubmitting = false;
+  String _error = '';
+  Map<String, dynamic> _info = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+    try {
+      final info =
+          await backendApiClient.fetchGalleryHHInfo(widget.archivePageUrl);
+      if (mounted) {
+        setState(() => _info = info);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(
+            () => _error = 'detail.loadHHFailed'.trParams({'error': '$e'}));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _submit(Map<String, dynamic> archive) async {
+    final resolution = archive['resolution']?.toString() ?? '';
+    if (resolution.isEmpty) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final message = await backendApiClient.requestGalleryHHDownload(
+        widget.archivePageUrl,
+        resolution,
+      );
+      if (!mounted) return;
+      Navigator.pop(context);
+      Get.snackbar(
+        'detail.hhDownload'.tr,
+        message.isEmpty ? 'detail.hhSubmitted'.tr : message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(
+            () => _error = 'detail.hhSubmitFailed'.trParams({'error': '$e'}));
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final archives = (_info['archives'] as List?)
+            ?.map((item) => Map<String, dynamic>.from(item as Map))
+            .toList() ??
+        [];
+    final gp = _info['gpCount'];
+    final credits = _info['creditCount'];
+    return AlertDialog(
+      title: Text('detail.hhDownload'.tr),
+      content: SizedBox(
+        width: 520,
+        child: _isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : _error.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          icon: const Icon(Icons.refresh),
+                          label: Text('common.retry'.tr),
+                          onPressed: _isSubmitting ? null : _load,
+                        ),
+                      ],
+                    ),
+                  )
+                : archives.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('detail.noHHArchives'.tr),
+                      )
+                    : ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 460),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (gp != null || credits != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Wrap(
+                                    spacing: 12,
+                                    runSpacing: 8,
+                                    children: [
+                                      if (gp != null)
+                                        Chip(
+                                          avatar: const Icon(Icons.toll),
+                                          label: Text('GP: $gp'),
+                                        ),
+                                      if (credits != null)
+                                        Chip(
+                                          avatar:
+                                              const Icon(Icons.paid_outlined),
+                                          label: Text('Credits: $credits'),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ...archives.map((archive) {
+                                final desc =
+                                    archive['resolutionDesc']?.toString() ?? '';
+                                final size = archive['size']?.toString() ?? '';
+                                final cost = archive['cost']?.toString() ?? '';
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4),
+                                  child: OutlinedButton(
+                                    onPressed: _isSubmitting
+                                        ? null
+                                        : () => _submit(archive),
+                                    style: OutlinedButton.styleFrom(
+                                      alignment: Alignment.centerLeft,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 14),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                            Icons.cloud_download_outlined),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(desc,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleSmall),
+                                              const SizedBox(height: 4),
+                                              Wrap(
+                                                spacing: 12,
+                                                runSpacing: 4,
+                                                children: [
+                                                  if (size.isNotEmpty)
+                                                    Text(size),
+                                                  if (cost.isNotEmpty)
+                                                    Text(cost),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }),
+                              if (_isSubmitting)
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 12),
+                                  child: LinearProgressIndicator(),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
           child: Text('common.cancel'.tr),
         ),
       ],

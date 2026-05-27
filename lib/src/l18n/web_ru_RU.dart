@@ -500,6 +500,11 @@ class WebRuRU {
       'detail.torrentPeers': 'Пиры @count',
       'detail.torrentDownloads': 'Загрузки @count',
       'detail.loadTorrentsFailed': 'Не удалось загрузить торренты: @error',
+      'detail.hhDownload': 'H@H загрузка',
+      'detail.noHHArchives': 'Нет доступных H@H архивов',
+      'detail.loadHHFailed': 'Не удалось загрузить H@H архивы: @error',
+      'detail.hhSubmitFailed': 'Не удалось запросить H@H загрузку: @error',
+      'detail.hhSubmitted': 'Запрос на H@H загрузку отправлен',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (включая igneous — EX доступен)',

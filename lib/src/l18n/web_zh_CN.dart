@@ -477,6 +477,11 @@ class WebZhCN {
       'detail.torrentPeers': '连接 @count',
       'detail.torrentDownloads': '下载 @count',
       'detail.loadTorrentsFailed': '加载种子失败：@error',
+      'detail.hhDownload': 'H@H 下载',
+      'detail.noHHArchives': '暂无可用 H@H 归档',
+      'detail.loadHHFailed': '加载 H@H 归档失败：@error',
+      'detail.hhSubmitFailed': '提交 H@H 下载失败：@error',
+      'detail.hhSubmitted': '已提交 H@H 下载请求',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可访问 EX）',

@@ -508,6 +508,11 @@ class WebEnUS {
       'detail.torrentPeers': 'Peers @count',
       'detail.torrentDownloads': 'Downloads @count',
       'detail.loadTorrentsFailed': 'Failed to load torrents: @error',
+      'detail.hhDownload': 'H@H Download',
+      'detail.noHHArchives': 'No H@H archives available',
+      'detail.loadHHFailed': 'Failed to load H@H archives: @error',
+      'detail.hhSubmitFailed': 'Failed to request H@H download: @error',
+      'detail.hhSubmitted': 'H@H download request submitted',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (includes igneous — EX ready)',

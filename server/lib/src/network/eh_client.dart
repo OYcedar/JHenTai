@@ -914,6 +914,22 @@ class EHClient {
     return response.data ?? '';
   }
 
+  Future<String> fetchHHArchivePageHtml(String archivePageUrl) async {
+    final normalized = archivePageUrl.replaceFirst('--', '-');
+    final response = await _dio.get<String>(normalized);
+    return response.data ?? '';
+  }
+
+  Future<String> requestHHDownload(
+      String archivePageUrl, String resolution) async {
+    final normalized = archivePageUrl.replaceFirst('--', '-');
+    final response = await _dio.post<String>(
+      normalized,
+      data: FormData.fromMap({'hathdl_xres': resolution}),
+    );
+    return response.data ?? '';
+  }
+
   /// Returns absolute or relative Location from EH image lookup (302).
   Future<String?> postImageLookup(List<int> bytes, String filename) async {
     try {

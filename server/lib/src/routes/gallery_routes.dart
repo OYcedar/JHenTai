@@ -53,6 +53,8 @@ class GalleryRoutes {
     router.get('/list-by-url', _galleryListByUrl);
     router.get('/stats/<gid>/<token>', _galleryStats);
     router.get('/torrents/<gid>/<token>', _galleryTorrents);
+    router.post('/hh-info', _galleryHHInfo);
+    router.post('/hh-download', _galleryHHDownload);
     router.post('/image-lookup', _galleryImageLookup);
     router.get('/detail/<gid>/<token>', _galleryDetail);
     router.get('/images/<gid>/<token>', _galleryImagePages);
@@ -173,6 +175,88 @@ class GalleryRoutes {
     final match =
         RegExp('$label:\\s*(\\d+)', caseSensitive: false).firstMatch(text);
     return int.tryParse(match?.group(1) ?? '') ?? 0;
+  }
+
+  Future<Response> _galleryHHInfo(Request request) async {
+    try {
+      final body =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final archivePageUrl = body['archivePageUrl']?.toString() ?? '';
+      if (archivePageUrl.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Missing archivePageUrl'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      final html = await _client.fetchHHArchivePageHtml(archivePageUrl);
+      return Response.ok(
+        jsonEncode(_parseHHArchivePageHtml(html)),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to fetch H@H info: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Future<Response> _galleryHHDownload(Request request) async {
+    try {
+      final body =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final archivePageUrl = body['archivePageUrl']?.toString() ?? '';
+      final resolution = body['resolution']?.toString() ?? '';
+      if (archivePageUrl.isEmpty || resolution.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Missing archivePageUrl or resolution'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      final html = await _client.requestHHDownload(archivePageUrl, resolution);
+      final message = html_parser.parse(html).querySelector('#db > p')?.text ??
+          'H@H download request submitted';
+      return Response.ok(
+        jsonEncode({'message': message.trim()}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to request H@H download: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Map<String, dynamic> _parseHHArchivePageHtml(String html) {
+    final doc = html_parser.parse(html);
+    final balanceText = doc.querySelector('#db > p:nth-child(4)')?.text ?? '';
+    final archives = <Map<String, dynamic>>[];
+    for (final td in doc.querySelectorAll('table > tbody > tr > td')) {
+      final desc = td.querySelector('p:nth-child(1)')?.text.trim() ?? '';
+      final onclick =
+          td.querySelector('p:nth-child(1) > a')?.attributes['onclick'] ?? '';
+      final resolution = RegExp(r"'(\w+)'").firstMatch(onclick)?.group(1) ?? '';
+      final size = td.querySelector('p:nth-child(3)')?.text.trim() ?? '';
+      final cost = td.querySelector('p:nth-child(5)')?.text.trim() ?? '';
+      if (desc.isEmpty || resolution.isEmpty) continue;
+      archives.add({
+        'resolutionDesc': desc,
+        'resolution': resolution,
+        'size': size,
+        'cost': cost,
+      });
+    }
+    return {
+      'gpCount': _parseBalanceCount(balanceText, 'GP'),
+      'creditCount': _parseBalanceCount(balanceText, 'Credits'),
+      'archives': archives,
+    };
+  }
+
+  int? _parseBalanceCount(String text, String unit) {
+    final match = RegExp(r'([\d,]+)\s+' + RegExp.escape(unit)).firstMatch(text);
+    return int.tryParse(match?.group(1)?.replaceAll(',', '') ?? '');
   }
 
   Future<Response> _galleryListByUrl(Request request) async {

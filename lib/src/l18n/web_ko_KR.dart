@@ -490,6 +490,11 @@ class WebKoKR {
       'detail.torrentPeers': '피어 @count',
       'detail.torrentDownloads': '다운로드 @count',
       'detail.loadTorrentsFailed': '토렌트 로드 실패: @error',
+      'detail.hhDownload': 'H@H 다운로드',
+      'detail.noHHArchives': '사용 가능한 H@H 아카이브 없음',
+      'detail.loadHHFailed': 'H@H 아카이브 로드 실패: @error',
+      'detail.hhSubmitFailed': 'H@H 다운로드 요청 실패: @error',
+      'detail.hhSubmitted': 'H@H 다운로드 요청이 전송되었습니다',
 
       // settings extras
       'settings.cookieStatusFull': '쿠키 정상 (igneous 포함 — EX 사용 가능)',
