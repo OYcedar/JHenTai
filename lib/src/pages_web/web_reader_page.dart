@@ -97,7 +97,8 @@ Future<void> showWebReaderImageContextMenu(
   int index, {
   Offset? position,
 }) async {
-  final url = index < controller.imageUrls.length ? controller.imageUrls[index] : '';
+  final url =
+      index < controller.imageUrls.length ? controller.imageUrls[index] : '';
   if (url.isEmpty) return;
 
   final box = context.findRenderObject() as RenderBox?;
@@ -217,6 +218,7 @@ void _popOrExitWebReader(BuildContext context, WebReaderController c) {
 }
 
 enum ReaderMode { online, downloaded, archive, local }
+
 enum ReadDirection { ltr, rtl, vertical, fitWidth, doubleColumn }
 
 class WebReaderController extends GetxController {
@@ -230,42 +232,55 @@ class WebReaderController extends GetxController {
   final totalPages = 0.obs;
   final isLoading = true.obs;
   final errorMessage = ''.obs;
+
   /// i18n key for the full-screen loading line under the spinner ([WebReaderPage]).
   final readerLoadingLabelKey = 'reader.loading'.obs;
   final showOverlay = true.obs;
   final readDirection = ReadDirection.ltr.obs;
+
   /// Mouse wheel over image: page turn vs zoom (PageView modes only; see [kWebReaderWheelActionKey]).
   final wheelAction = WebReaderWheelAction.page.obs;
+
   /// When wheel turns pages, invert next/prev mapping (see [kWebReaderWheelInvertPageKey]).
   final wheelInvertPageTurn = false.obs;
 
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
+  final preloadPages = 3.obs;
   Timer? _autoTimer;
 
   final _imagePageUrls = <String>[];
   final _loadedImageUrls = <int, String>{};
+
   /// Online: indices currently fetching HTML to resolve CDN URL (for visible loading shell).
   final resolvingImageIndexes = <int>[].obs;
+
   /// Online: EH `nl` reload key from last successful image-page parse (per page index).
   final _imagePageReloadKeys = <int, String>{};
+
   /// Online: “original” download href from image-page HTML when present.
   final _originalImageUrls = <int, String>{};
+
   /// Backend `/api/health` `loggedIn` — used to show “save original” like native.
   final ehLoggedInForOriginal = false.obs;
+
   /// Double-column: first screen shows only page 0 (persisted).
   final displayFirstPageAlone = false.obs;
+
   /// Gallery title from route args, query `title=`, or API when available.
   final galleryTitle = ''.obs;
+
   /// Online: user-visible message when HTML parse / image-page fetch fails for a page.
   final imageLoadErrors = <int, String>{}.obs;
   int _resolveGeneration = 0;
   final _activeResolveGeneration = <int, int>{};
+
   /// Join concurrent [Future.wait] / [bootstrap] calls waiting on the same index.
   final Map<int, Completer<void>> _pendingImageResolve = {};
 
   late PageController pageController;
   final scrollController = ScrollController();
+
   /// Horizontal thumbnail strip at bottom (mouse drag + wheel).
   final stripScrollController = ScrollController();
   final focusNode = FocusNode();
@@ -314,8 +329,7 @@ class WebReaderController extends GetxController {
     final c = stripScrollController;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!c.hasClients || totalPages.value <= 1) return;
-      final page =
-          currentPage.value.clamp(0, totalPages.value - 1);
+      final page = currentPage.value.clamp(0, totalPages.value - 1);
       final viewport = c.position.viewportDimension;
       var offset = page * _kWebReaderStripItemExtent -
           viewport / 2 +
@@ -332,7 +346,8 @@ class WebReaderController extends GetxController {
     final uri = Uri.parse(web.window.location.href);
     final q = uri.queryParameters;
 
-    _startPage = int.tryParse(q['startPage'] ?? Get.parameters['startPage'] ?? '');
+    _startPage =
+        int.tryParse(q['startPage'] ?? Get.parameters['startPage'] ?? '');
 
     final modeParam = q['mode'] ?? Get.parameters['mode'] ?? 'online';
     mode = switch (modeParam) {
@@ -378,11 +393,32 @@ class WebReaderController extends GetxController {
 
   Future<void> _loadDisplayFirstPageAlone() async {
     try {
-      final saved = await backendApiClient.getSetting('web_display_first_page_alone');
+      final saved =
+          await backendApiClient.getSetting('web_display_first_page_alone');
       if (saved == 'true') {
         displayFirstPageAlone.value = true;
       } else if (saved == 'false') {
         displayFirstPageAlone.value = false;
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadAutoInterval() async {
+    try {
+      final saved = await backendApiClient.getSetting('web_auto_interval');
+      final value = double.tryParse(saved ?? '');
+      if (value != null) {
+        autoInterval.value = value.clamp(2.0, 15.0).toDouble();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadPreloadPages() async {
+    try {
+      final saved = await backendApiClient.getSetting('web_preload_pages');
+      final value = int.tryParse(saved ?? '');
+      if (value != null) {
+        preloadPages.value = value.clamp(0, 10).toInt();
       }
     } catch (_) {}
   }
@@ -459,7 +495,8 @@ class WebReaderController extends GetxController {
     try {
       final raw = await backendApiClient.getSetting(kWebReaderWheelActionKey);
       wheelAction.value = webReaderWheelActionFromStorage(raw);
-      final inv = await backendApiClient.getSetting(kWebReaderWheelInvertPageKey);
+      final inv =
+          await backendApiClient.getSetting(kWebReaderWheelInvertPageKey);
       wheelInvertPageTurn.value = webReaderWheelInvertPageFromStorage(inv);
     } catch (_) {}
   }
@@ -489,7 +526,8 @@ class WebReaderController extends GetxController {
       return;
     }
     if (dir == ReadDirection.doubleColumn) {
-      pageController = PageController(initialPage: doubleColumnScreenIndexForImagePage(page));
+      pageController = PageController(
+          initialPage: doubleColumnScreenIndexForImagePage(page));
     } else {
       pageController = PageController(initialPage: page);
     }
@@ -502,7 +540,9 @@ class WebReaderController extends GetxController {
 
   void _saveProgressNow() {
     if (gid == 0) return;
-    backendApiClient.putSetting('read_progress_$gid', currentPage.value).catchError((_) {});
+    backendApiClient
+        .putSetting('read_progress_$gid', currentPage.value)
+        .catchError((_) {});
   }
 
   Future<void> _loadGallery() async {
@@ -516,6 +556,8 @@ class WebReaderController extends GetxController {
     try {
       await _loadSavedDirection();
       await _loadDisplayFirstPageAlone();
+      await _loadAutoInterval();
+      await _loadPreloadPages();
       switch (mode) {
         case ReaderMode.online:
           await _loadOnline();
@@ -577,7 +619,8 @@ class WebReaderController extends GetxController {
     imageUrls.value = List.filled(_imagePageUrls.length, '');
     final gt = result['galleryThumbnails'] as List?;
     if (gt != null) {
-      galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      galleryThumbnails.value =
+          gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     } else {
       galleryThumbnails.value = [];
     }
@@ -587,17 +630,15 @@ class WebReaderController extends GetxController {
   Future<void> _loadDownloaded() async {
     final filenames = await backendApiClient.getGalleryDownloadImages(gid);
     totalPages.value = filenames.length;
-    imageUrls.value = filenames
-        .map((f) => backendApiClient.galleryImageUrl(gid, f))
-        .toList();
+    imageUrls.value =
+        filenames.map((f) => backendApiClient.galleryImageUrl(gid, f)).toList();
   }
 
   Future<void> _loadArchive() async {
     final filenames = await backendApiClient.getArchiveDownloadImages(gid);
     totalPages.value = filenames.length;
-    imageUrls.value = filenames
-        .map((f) => backendApiClient.archiveImageUrl(gid, f))
-        .toList();
+    imageUrls.value =
+        filenames.map((f) => backendApiClient.archiveImageUrl(gid, f)).toList();
   }
 
   void _loadLocal() {
@@ -611,16 +652,12 @@ class WebReaderController extends GetxController {
         .toList();
   }
 
-  /// Online preload window: similar spirit to read_setting.preloadPageCount / preloadDistance
-  /// (native reader), but fixed for web so EH pages resolve ahead of the visible page.
-  static const int _preloadBehindPages = 2;
-  static const int _preloadAheadPages = 12;
-
   void _preloadAround(int center) {
     if (mode != ReaderMode.online) return;
     if (_imagePageUrls.isEmpty) return;
-    final start = math.max(0, center - _preloadBehindPages);
-    final end = math.min(_imagePageUrls.length - 1, center + _preloadAheadPages);
+    final window = preloadPages.value;
+    final start = math.max(0, center - window);
+    final end = math.min(_imagePageUrls.length - 1, center + window);
     for (int i = start; i <= end; i++) {
       if (!_loadedImageUrls.containsKey(i)) {
         _loadImageAtIndex(i);
@@ -680,7 +717,8 @@ class WebReaderController extends GetxController {
   }
 
   /// Fetches one image page (optional EH `nl`) and updates [imageUrls] / errors. No resolving wrapper.
-  Future<void> _resolveImagePageOnce(int index, {String? nl, int depth = 0}) async {
+  Future<void> _resolveImagePageOnce(int index,
+      {String? nl, int depth = 0}) async {
     imageLoadErrors.remove(index);
 
     final result = await backendApiClient.proxyGet(
@@ -721,7 +759,8 @@ class WebReaderController extends GetxController {
       reloadKey = _fallbackParseReloadKey(html);
     }
 
-    if (imageUrl == EHConsts.EH509ImageUrl || imageUrl == EHConsts.EX509ImageUrl) {
+    if (imageUrl == EHConsts.EH509ImageUrl ||
+        imageUrl == EHConsts.EX509ImageUrl) {
       final rk = reloadKey ?? _fallbackParseReloadKey(html);
       if (rk != null && rk.isNotEmpty && depth < 1 && nl != rk) {
         await _resolveImagePageOnce(index, nl: rk, depth: depth + 1);
@@ -788,7 +827,8 @@ class WebReaderController extends GetxController {
     if (readDirection.value == ReadDirection.doubleColumn) {
       final idxs = doubleColumnIndicesForScreen(page);
       if (idxs.isEmpty) return;
-      currentPage.value = idxs.first.clamp(0, math.max(0, totalPages.value - 1));
+      currentPage.value =
+          idxs.first.clamp(0, math.max(0, totalPages.value - 1));
     } else {
       currentPage.value = page;
     }
@@ -850,14 +890,17 @@ class WebReaderController extends GetxController {
     final prev = readDirection.value;
     if (prev == newDir) return;
     readDirection.value = newDir;
-    backendApiClient.putSetting('web_read_direction', newDir.index).catchError((_) {});
+    backendApiClient
+        .putSetting('web_read_direction', newDir.index)
+        .catchError((_) {});
     if (newDir != ReadDirection.vertical && newDir != ReadDirection.fitWidth) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (currentPage.value < totalPages.value) {
           pageController.dispose();
           if (newDir == ReadDirection.doubleColumn) {
             pageController = PageController(
-                initialPage: doubleColumnScreenIndexForImagePage(currentPage.value));
+                initialPage:
+                    doubleColumnScreenIndexForImagePage(currentPage.value));
           } else {
             pageController = PageController(initialPage: currentPage.value);
           }
@@ -912,7 +955,7 @@ class WebReaderController extends GetxController {
             FilledButton(
               onPressed: () {
                 Get.back();
-                autoInterval.value = selectedInterval;
+                setAutoInterval(selectedInterval);
                 isAutoMode.value = true;
                 _startAutoTimer();
               },
@@ -925,7 +968,10 @@ class WebReaderController extends GetxController {
   }
 
   void setAutoInterval(double seconds) {
-    autoInterval.value = seconds;
+    autoInterval.value = seconds.clamp(2.0, 15.0).toDouble();
+    backendApiClient
+        .putSetting('web_auto_interval', autoInterval.value)
+        .catchError((_) {});
     if (isAutoMode.value) {
       _autoTimer?.cancel();
       _startAutoTimer();
@@ -934,7 +980,8 @@ class WebReaderController extends GetxController {
 
   void _startAutoTimer() {
     _autoTimer?.cancel();
-    _autoTimer = Timer.periodic(Duration(milliseconds: (autoInterval.value * 1000).round()), (_) {
+    _autoTimer = Timer.periodic(
+        Duration(milliseconds: (autoInterval.value * 1000).round()), (_) {
       final dir = readDirection.value;
       if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
         if (scrollController.hasClients) {
@@ -945,7 +992,8 @@ class WebReaderController extends GetxController {
             return;
           }
           scrollController.animateTo(target,
-              duration: Duration(milliseconds: (autoInterval.value * 800).round()),
+              duration:
+                  Duration(milliseconds: (autoInterval.value * 800).round()),
               curve: Curves.linear);
         }
       } else {
@@ -999,9 +1047,12 @@ class WebReaderPage extends StatelessWidget {
                 const Icon(Icons.error_outline, color: Colors.red, size: 48),
                 const SizedBox(height: 16),
                 Text(controller.errorMessage.value,
-                    style: const TextStyle(color: Colors.white), textAlign: TextAlign.center),
+                    style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: controller.retry, child: Text('common.retry'.tr)),
+                FilledButton(
+                    onPressed: controller.retry,
+                    child: Text('common.retry'.tr)),
               ],
             ),
           );
@@ -1056,16 +1107,17 @@ class _ReaderBody extends StatelessWidget {
             right: 16,
             bottom: 16,
             child: Obx(() => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '${controller.currentPage.value + 1} / ${controller.totalPages.value}',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            )),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${controller.currentPage.value + 1} / ${controller.totalPages.value}',
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                )),
           ),
         ],
       ),
@@ -1082,67 +1134,87 @@ class _ReaderBody extends StatelessWidget {
             onPageChanged: controller.onPageChanged,
             allowImplicitScrolling: true,
             padEnds: false,
-            itemBuilder: (context, index) => _DoubleTapZoomImage(controller: controller, index: index),
+            itemBuilder: (context, index) =>
+                _DoubleTapZoomImage(controller: controller, index: index),
           ),
         ));
   }
 
   Widget _buildVerticalReader(BuildContext context) {
     return Obx(() => NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollUpdateNotification) {
-          final metrics = notification.metrics;
-          if (metrics.maxScrollExtent > 0) {
-            final page = (metrics.pixels / metrics.maxScrollExtent * (controller.totalPages.value - 1)).round();
-            if (page != controller.currentPage.value) {
-              controller.currentPage.value = page;
-              if (controller.mode == ReaderMode.online) {
-                controller._preloadAround(page);
+          onNotification: (notification) {
+            if (notification is ScrollUpdateNotification) {
+              final metrics = notification.metrics;
+              if (metrics.maxScrollExtent > 0) {
+                final page = (metrics.pixels /
+                        metrics.maxScrollExtent *
+                        (controller.totalPages.value - 1))
+                    .round();
+                if (page != controller.currentPage.value) {
+                  controller.currentPage.value = page;
+                  if (controller.mode == ReaderMode.online) {
+                    controller._preloadAround(page);
+                  }
+                }
               }
             }
-          }
-        }
-        return false;
-      },
-      child: ScrollConfiguration(
-        behavior: _webReaderScrollBehavior,
-        child: ListView.builder(
-          controller: controller.scrollController,
-          itemCount: controller.totalPages.value,
-          cacheExtent: math.max(1200, MediaQuery.sizeOf(context).height * 2),
-          itemBuilder: (context, index) => _ImagePage(controller: controller, index: index, isVertical: true),
-        ),
-      ),
-    ));
+            return false;
+          },
+          child: ScrollConfiguration(
+            behavior: _webReaderScrollBehavior,
+            child: ListView.builder(
+              controller: controller.scrollController,
+              itemCount: controller.totalPages.value,
+              cacheExtent: math.max(
+                MediaQuery.sizeOf(context).height,
+                MediaQuery.sizeOf(context).height *
+                    (controller.preloadPages.value + 1),
+              ),
+              itemBuilder: (context, index) => _ImagePage(
+                  controller: controller, index: index, isVertical: true),
+            ),
+          ),
+        ));
   }
 
   Widget _buildFitWidthReader(BuildContext context) {
     return Obx(() => NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollUpdateNotification) {
-          final metrics = notification.metrics;
-          if (metrics.maxScrollExtent > 0) {
-            final page = (metrics.pixels / metrics.maxScrollExtent * (controller.totalPages.value - 1)).round();
-            if (page != controller.currentPage.value) {
-              controller.currentPage.value = page;
-              if (controller.mode == ReaderMode.online) {
-                controller._preloadAround(page);
+          onNotification: (notification) {
+            if (notification is ScrollUpdateNotification) {
+              final metrics = notification.metrics;
+              if (metrics.maxScrollExtent > 0) {
+                final page = (metrics.pixels /
+                        metrics.maxScrollExtent *
+                        (controller.totalPages.value - 1))
+                    .round();
+                if (page != controller.currentPage.value) {
+                  controller.currentPage.value = page;
+                  if (controller.mode == ReaderMode.online) {
+                    controller._preloadAround(page);
+                  }
+                }
               }
             }
-          }
-        }
-        return false;
-      },
-      child: ScrollConfiguration(
-        behavior: _webReaderScrollBehavior,
-        child: ListView.builder(
-          controller: controller.scrollController,
-          itemCount: controller.totalPages.value,
-          cacheExtent: math.max(1200, MediaQuery.sizeOf(context).height * 2),
-          itemBuilder: (context, index) => _ImagePage(controller: controller, index: index, isVertical: true, fitWidth: true),
-        ),
-      ),
-    ));
+            return false;
+          },
+          child: ScrollConfiguration(
+            behavior: _webReaderScrollBehavior,
+            child: ListView.builder(
+              controller: controller.scrollController,
+              itemCount: controller.totalPages.value,
+              cacheExtent: math.max(
+                MediaQuery.sizeOf(context).height,
+                MediaQuery.sizeOf(context).height *
+                    (controller.preloadPages.value + 1),
+              ),
+              itemBuilder: (context, index) => _ImagePage(
+                  controller: controller,
+                  index: index,
+                  isVertical: true,
+                  fitWidth: true),
+            ),
+          ),
+        ));
   }
 
   Widget _buildDoubleColumnReader(BuildContext context) {
@@ -1207,11 +1279,13 @@ class _DoubleTapZoomImage extends StatefulWidget {
   State<_DoubleTapZoomImage> createState() => _DoubleTapZoomImageState();
 }
 
-class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTickerProviderStateMixin {
+class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage>
+    with SingleTickerProviderStateMixin {
   final _transformationController = TransformationController();
   late AnimationController _animController;
   Animation<Matrix4>? _animation;
   TapDownDetails? _doubleTapDetails;
+
   /// When false, [InteractiveViewer] does not pan so mouse drags reach the parent [PageView].
   bool _pannable = false;
   DateTime? _lastWheelPageTurnAt;
@@ -1221,9 +1295,11 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
   void initState() {
     super.initState();
     _transformationController.addListener(_onTransformChanged);
-    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 200))
+    _animController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 200))
       ..addListener(() {
-        if (_animation != null) _transformationController.value = _animation!.value;
+        if (_animation != null)
+          _transformationController.value = _animation!.value;
       });
   }
 
@@ -1249,10 +1325,14 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
         ..translate(-pos.dx, -pos.dy)
         ..scale(2.0)
         ..translate(pos.dx, pos.dy);
-      _animation = Matrix4Tween(begin: _transformationController.value, end: end).animate(_animController);
+      _animation =
+          Matrix4Tween(begin: _transformationController.value, end: end)
+              .animate(_animController);
       _animController.forward(from: 0);
     } else {
-      _animation = Matrix4Tween(begin: _transformationController.value, end: Matrix4.identity()).animate(_animController);
+      _animation = Matrix4Tween(
+              begin: _transformationController.value, end: Matrix4.identity())
+          .animate(_animController);
       _animController.forward(from: 0);
     }
   }
@@ -1304,9 +1384,10 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
   Widget build(BuildContext context) {
     return Obx(() {
       final dir = widget.controller.readDirection.value;
-      final zoomWheel = widget.controller.wheelAction.value == WebReaderWheelAction.zoom &&
-          dir != ReadDirection.vertical &&
-          dir != ReadDirection.fitWidth;
+      final zoomWheel =
+          widget.controller.wheelAction.value == WebReaderWheelAction.zoom &&
+              dir != ReadDirection.vertical &&
+              dir != ReadDirection.fitWidth;
 
       final viewer = GestureDetector(
         onDoubleTapDown: (d) => _doubleTapDetails = d,
@@ -1318,7 +1399,9 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
           trackpadScrollCausesScale: zoomWheel,
           minScale: _minScale,
           maxScale: _maxScale,
-          child: Center(child: _ImageContent(controller: widget.controller, index: widget.index)),
+          child: Center(
+              child: _ImageContent(
+                  controller: widget.controller, index: widget.index)),
         ),
       );
 
@@ -1328,7 +1411,8 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
         return Listener(
           onPointerSignal: (signal) {
             if (signal is! PointerScrollEvent) return;
-            GestureBinding.instance.pointerSignalResolver.register(signal, (PointerSignalEvent e) {
+            GestureBinding.instance.pointerSignalResolver.register(signal,
+                (PointerSignalEvent e) {
               if (e is PointerScrollEvent) _applyWheelZoom(e);
             });
           },
@@ -1339,8 +1423,10 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage> with SingleTic
       return Listener(
         onPointerSignal: (signal) {
           if (signal is! PointerScrollEvent) return;
-          if (_transformationController.value.getMaxScaleOnAxis() > 1.02) return;
-          GestureBinding.instance.pointerSignalResolver.register(signal, (PointerSignalEvent e) {
+          if (_transformationController.value.getMaxScaleOnAxis() > 1.02)
+            return;
+          GestureBinding.instance.pointerSignalResolver.register(signal,
+              (PointerSignalEvent e) {
             if (e is PointerScrollEvent) _applyWheelPageTurn(e);
           });
         },
@@ -1372,10 +1458,13 @@ Widget _webReaderImageErrorShell(
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(message, style: const TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+            child: Text(message,
+                style: const TextStyle(color: Colors.white54),
+                textAlign: TextAlign.center),
           ),
           const SizedBox(height: 8),
-          Text('${pageIndex + 1}', style: const TextStyle(color: Colors.white38, fontSize: 14)),
+          Text('${pageIndex + 1}',
+              style: const TextStyle(color: Colors.white38, fontSize: 14)),
           const SizedBox(height: 12),
           TextButton(onPressed: onRetry, child: Text('common.retry'.tr)),
         ],
@@ -1395,7 +1484,8 @@ Widget _webReaderImageLoadingShell(
 }) {
   final sh = MediaQuery.sizeOf(context);
   final h = isVertical || fitWidth ? sh.height * 0.85 : sh.height * 0.72;
-  final thumbUrl = thumbData != null ? (thumbData['thumbUrl'] as String? ?? '') : '';
+  final thumbUrl =
+      thumbData != null ? (thumbData['thumbUrl'] as String? ?? '') : '';
   final subtitle =
       isResolving ? 'reader.resolvingImagePage'.tr : 'reader.loadingImage'.tr;
   return SizedBox(
@@ -1421,7 +1511,8 @@ Widget _webReaderImageLoadingShell(
           const SizedBox(height: 12),
           Text(subtitle, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 8),
-          Text('${pageIndex + 1}', style: const TextStyle(color: Colors.white38, fontSize: 14)),
+          Text('${pageIndex + 1}',
+              style: const TextStyle(color: Colors.white38, fontSize: 14)),
         ],
       ),
     ),
@@ -1434,11 +1525,19 @@ class _ImagePage extends StatelessWidget {
   final bool isVertical;
   final bool fitWidth;
 
-  const _ImagePage({required this.controller, required this.index, this.isVertical = false, this.fitWidth = false});
+  const _ImagePage(
+      {required this.controller,
+      required this.index,
+      this.isVertical = false,
+      this.fitWidth = false});
 
   @override
   Widget build(BuildContext context) {
-    return _ImageContent(controller: controller, index: index, isVertical: isVertical, fitWidth: fitWidth);
+    return _ImageContent(
+        controller: controller,
+        index: index,
+        isVertical: isVertical,
+        fitWidth: fitWidth);
   }
 }
 
@@ -1448,12 +1547,18 @@ class _ImageContent extends StatelessWidget {
   final bool isVertical;
   final bool fitWidth;
 
-  const _ImageContent({required this.controller, required this.index, this.isVertical = false, this.fitWidth = false});
+  const _ImageContent(
+      {required this.controller,
+      required this.index,
+      this.isVertical = false,
+      this.fitWidth = false});
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final url = index < controller.imageUrls.length ? controller.imageUrls[index] : '';
+      final url = index < controller.imageUrls.length
+          ? controller.imageUrls[index]
+          : '';
       final _ = controller.resolvingImageIndexes.length;
       final isResolving = controller.resolvingImageIndexes.contains(index);
       final parseErr = controller.imageLoadErrors[index];
@@ -1486,7 +1591,8 @@ class _ImageContent extends StatelessWidget {
       }
 
       return GestureDetector(
-        onLongPress: () => showWebReaderImageContextMenu(context, controller, index),
+        onLongPress: () =>
+            showWebReaderImageContextMenu(context, controller, index),
         onSecondaryTapUp: (details) => showWebReaderImageContextMenu(
           context,
           controller,
@@ -1506,9 +1612,11 @@ class _ImageContent extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                  const Icon(Icons.broken_image,
+                      color: Colors.white54, size: 48),
                   const SizedBox(height: 8),
-                  Text('reader.imageFailed'.tr, style: const TextStyle(color: Colors.white54)),
+                  Text('reader.imageFailed'.tr,
+                      style: const TextStyle(color: Colors.white54)),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: () => controller.retryImage(index),
@@ -1590,8 +1698,10 @@ class _TopOverlay extends StatelessWidget {
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => _popOrExitWebReader(context, controller),
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () =>
+                              _popOrExitWebReader(context, controller),
                         ),
                         Expanded(
                           child: Obx(() {
@@ -1599,11 +1709,14 @@ class _TopOverlay extends StatelessWidget {
                             final pageStr =
                                 '${controller.currentPage.value + 1} / ${controller.totalPages.value}';
                             final text = title.isEmpty
-                                ? (controller.gid != 0 ? '$pageStr · gid:${controller.gid}' : pageStr)
+                                ? (controller.gid != 0
+                                    ? '$pageStr · gid:${controller.gid}'
+                                    : pageStr)
                                 : '$title · $pageStr';
                             return Text(
                               text,
-                              style: const TextStyle(color: Colors.white, fontSize: 15),
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 15),
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -1612,10 +1725,16 @@ class _TopOverlay extends StatelessWidget {
                         ),
                         Obx(() => IconButton(
                               icon: Icon(
-                                controller.isAutoMode.value ? Icons.pause_circle : Icons.play_circle,
-                                color: controller.isAutoMode.value ? Colors.amber : Colors.white,
+                                controller.isAutoMode.value
+                                    ? Icons.pause_circle
+                                    : Icons.play_circle,
+                                color: controller.isAutoMode.value
+                                    ? Colors.amber
+                                    : Colors.white,
                               ),
-                              tooltip: controller.isAutoMode.value ? 'reader.autoStop'.tr : 'reader.autoStart'.tr,
+                              tooltip: controller.isAutoMode.value
+                                  ? 'reader.autoStop'.tr
+                                  : 'reader.autoStart'.tr,
                               onPressed: controller.toggleAutoMode,
                             )),
                         IconButton(
@@ -1624,34 +1743,41 @@ class _TopOverlay extends StatelessWidget {
                           onPressed: controller.reloadCurrentImages,
                         ),
                         IconButton(
-                          icon: const Icon(Icons.grid_view, color: Colors.white),
+                          icon:
+                              const Icon(Icons.grid_view, color: Colors.white),
                           tooltip: 'thumbnails.grid'.tr,
                           onPressed: () => Get.toNamed(
                               '/web/thumbnails/${controller.gid}/${controller.token}'),
                         ),
                         Obx(() {
-                          if (controller.readDirection.value != ReadDirection.doubleColumn) {
+                          if (controller.readDirection.value !=
+                              ReadDirection.doubleColumn) {
                             return const SizedBox.shrink();
                           }
                           return IconButton(
                             icon: Icon(
                               Icons.filter_1,
-                              color: controller.displayFirstPageAlone.value ? Colors.amber : Colors.white,
+                              color: controller.displayFirstPageAlone.value
+                                  ? Colors.amber
+                                  : Colors.white,
                             ),
                             tooltip: 'displayFirstPageAlone'.tr,
                             onPressed: controller.toggleDisplayFirstPageAlone,
                           );
                         }),
                         IconButton(
-                          icon: const Icon(Icons.screen_rotation_outlined, color: Colors.white),
+                          icon: const Icon(Icons.screen_rotation_outlined,
+                              color: Colors.white),
                           tooltip: 'reader.deviceOrientation'.tr,
                           onPressed: controller.showDeviceOrientationHint,
                         ),
                         Obx(() {
                           final d = controller.readDirection.value;
                           return PopupMenuButton<ReadDirection>(
-                            icon: Icon(_webReadDirectionIcon(d), color: Colors.white),
-                            tooltip: 'reader.directionLabel'.trParams({'dir': _webReadDirectionLabel(d)}),
+                            icon: Icon(_webReadDirectionIcon(d),
+                                color: Colors.white),
+                            tooltip: 'reader.directionLabel'
+                                .trParams({'dir': _webReadDirectionLabel(d)}),
                             color: Colors.grey.shade900,
                             onSelected: controller.setReadDirection,
                             itemBuilder: (context) => [
@@ -1687,7 +1813,8 @@ class _TopOverlay extends StatelessWidget {
   }
 }
 
-Widget _readerStripThumb(WebReaderController controller, int pageIndex, String proxiedFullImageUrl) {
+Widget _readerStripThumb(
+    WebReaderController controller, int pageIndex, String proxiedFullImageUrl) {
   if (pageIndex < controller.galleryThumbnails.length) {
     final m = controller.galleryThumbnails[pageIndex];
     final u = m['thumbUrl'] as String? ?? '';
@@ -1707,10 +1834,12 @@ Widget _readerStripThumb(WebReaderController controller, int pageIndex, String p
       width: 40,
       height: 40,
       errorIconSize: 16,
-      readerErrorChild: const Icon(Icons.image, color: Colors.white24, size: 16),
+      readerErrorChild:
+          const Icon(Icons.image, color: Colors.white24, size: 16),
     );
   }
-  return const Center(child: Icon(Icons.image, color: Colors.white24, size: 16));
+  return const Center(
+      child: Icon(Icons.image, color: Colors.white24, size: 16));
 }
 
 class _BottomOverlay extends StatelessWidget {
@@ -1721,62 +1850,74 @@ class _BottomOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     // AnimatedPositioned must be a direct Stack child; wrapping it outside IgnorePointer broke layout.
     return Obx(() => AnimatedPositioned(
-      duration: const Duration(milliseconds: 200),
-      bottom: controller.showOverlay.value ? 0 : -140,
-      left: 0,
-      right: 0,
-      child: IgnorePointer(
-        ignoring: !controller.showOverlay.value,
-        child: Container(
-          padding: EdgeInsets.only(
-            left: 16, right: 16,
-            bottom: MediaQuery.of(context).padding.bottom + 8, top: 8,
-          ),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomCenter, end: Alignment.topCenter,
-              colors: [Colors.black87, Colors.transparent],
+          duration: const Duration(milliseconds: 200),
+          bottom: controller.showOverlay.value ? 0 : -140,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            ignoring: !controller.showOverlay.value,
+            child: Container(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: MediaQuery.of(context).padding.bottom + 8,
+                top: 8,
+              ),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [Colors.black87, Colors.transparent],
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Obx(() => controller.totalPages.value > 1
+                      ? Slider(
+                          value: controller.currentPage.value.toDouble().clamp(
+                              0, (controller.totalPages.value - 1).toDouble()),
+                          min: 0,
+                          max: (controller.totalPages.value - 1).toDouble(),
+                          divisions: controller.totalPages.value > 1
+                              ? controller.totalPages.value - 1
+                              : 1,
+                          label: '${controller.currentPage.value + 1}',
+                          onChanged: (v) => controller.goToPage(v.round()),
+                        )
+                      : const SizedBox.shrink()),
+                  Obx(() {
+                    if (!controller.isAutoMode.value)
+                      return const SizedBox.shrink();
+                    return Row(
+                      children: [
+                        const Icon(Icons.timer,
+                            color: Colors.white54, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                            '${controller.autoInterval.value.toStringAsFixed(1)}s',
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 12)),
+                        Expanded(
+                          child: Slider(
+                            value: controller.autoInterval.value,
+                            min: 2,
+                            max: 15,
+                            divisions: 26,
+                            onChanged: controller.setAutoInterval,
+                            activeColor: Colors.amber,
+                            inactiveColor: Colors.white24,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                  _buildThumbnailStrip(),
+                ],
+              ),
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            Obx(() => controller.totalPages.value > 1
-                ? Slider(
-                    value: controller.currentPage.value.toDouble().clamp(0, (controller.totalPages.value - 1).toDouble()),
-                    min: 0,
-                    max: (controller.totalPages.value - 1).toDouble(),
-                    divisions: controller.totalPages.value > 1 ? controller.totalPages.value - 1 : 1,
-                    label: '${controller.currentPage.value + 1}',
-                    onChanged: (v) => controller.goToPage(v.round()),
-                  )
-                : const SizedBox.shrink()),
-            Obx(() {
-              if (!controller.isAutoMode.value) return const SizedBox.shrink();
-              return Row(
-                children: [
-                  const Icon(Icons.timer, color: Colors.white54, size: 16),
-                  const SizedBox(width: 4),
-                  Text('${controller.autoInterval.value.toStringAsFixed(1)}s',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                  Expanded(
-                    child: Slider(
-                      value: controller.autoInterval.value,
-                      min: 2, max: 15, divisions: 26,
-                      onChanged: controller.setAutoInterval,
-                      activeColor: Colors.amber,
-                      inactiveColor: Colors.white24,
-                    ),
-                  ),
-                ],
-              );
-            }),
-            _buildThumbnailStrip(),
-          ],
-        ),
-      ),
-    ),
-    ));
+        ));
   }
 
   Widget _buildThumbnailStrip() {

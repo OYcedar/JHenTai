@@ -34,11 +34,15 @@ class WebSettingsReadPage extends GetView<WebSettingsController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('home.favorites'.tr, style: Theme.of(context).textTheme.titleLarge),
+                        Text('home.favorites'.tr,
+                            style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 4),
                         Text(
                           'detail.favQuickAddTooltip'.tr,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey),
                         ),
                         const SizedBox(height: 12),
                         Obx(() => DropdownButtonFormField<int?>(
@@ -50,17 +54,20 @@ class WebSettingsReadPage extends GetView<WebSettingsController> {
                               items: [
                                 DropdownMenuItem<int?>(
                                   value: null,
-                                  child: Text('settings.defaultFavoriteNone'.tr),
+                                  child:
+                                      Text('settings.defaultFavoriteNone'.tr),
                                 ),
                                 ...List.generate(
                                   10,
                                   (i) => DropdownMenuItem<int?>(
                                     value: i,
-                                    child: Text('detail.favSlot'.trParams({'n': '$i'})),
+                                    child: Text(
+                                        'detail.favSlot'.trParams({'n': '$i'})),
                                   ),
                                 ),
                               ],
-                              onChanged: (v) => controller.setDefaultFavoriteSlot(v),
+                              onChanged: (v) =>
+                                  controller.setDefaultFavoriteSlot(v),
                             )),
                       ],
                     ),
@@ -86,7 +93,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final direction = 0.obs;
   final preloadPages = 3.obs;
   final autoInterval = 5.0.obs;
-  final fitWidth = false.obs;
+  final displayFirstPageAlone = false.obs;
   final loaded = false.obs;
 
   @override
@@ -103,8 +110,9 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (p != null) preloadPages.value = int.tryParse(p) ?? 3;
       final a = await backendApiClient.getSetting('web_auto_interval');
       if (a != null) autoInterval.value = double.tryParse(a) ?? 5.0;
-      final f = await backendApiClient.getSetting('web_fit_width');
-      if (f != null) fitWidth.value = f == 'true';
+      final first =
+          await backendApiClient.getSetting('web_display_first_page_alone');
+      if (first != null) displayFirstPageAlone.value = first == 'true';
     } catch (_) {}
     loaded.value = true;
   }
@@ -128,18 +136,22 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('settings.defaultDirection'.tr, style: Theme.of(context).textTheme.titleSmall),
+              Text('settings.defaultDirection'.tr,
+                  style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
               Obx(() => Wrap(
                     spacing: 6,
                     children: List.generate(
                       dirLabels.length,
                       (i) => ChoiceChip(
-                        label: Text(dirLabels[i], style: const TextStyle(fontSize: 12)),
+                        label: Text(dirLabels[i],
+                            style: const TextStyle(fontSize: 12)),
                         selected: direction.value == i,
                         onSelected: (_) {
                           direction.value = i;
-                          backendApiClient.putSetting('web_read_direction', i).catchError((_) {});
+                          backendApiClient
+                              .putSetting('web_read_direction', i)
+                              .catchError((_) {});
                         },
                       ),
                     ),
@@ -153,13 +165,15 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                   )),
               Obx(() => Slider(
                     value: preloadPages.value.toDouble(),
-                    min: 1,
-                    max: 5,
-                    divisions: 4,
+                    min: 0,
+                    max: 10,
+                    divisions: 10,
                     label: '${preloadPages.value}',
                     onChanged: (v) {
                       preloadPages.value = v.round();
-                      backendApiClient.putSetting('web_preload_pages', v.round()).catchError((_) {});
+                      backendApiClient
+                          .putSetting('web_preload_pages', v.round())
+                          .catchError((_) {});
                     },
                   )),
               const SizedBox(height: 8),
@@ -177,16 +191,20 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     label: '${autoInterval.value.toStringAsFixed(1)}s',
                     onChanged: (v) {
                       autoInterval.value = v;
-                      backendApiClient.putSetting('web_auto_interval', v).catchError((_) {});
+                      backendApiClient
+                          .putSetting('web_auto_interval', v)
+                          .catchError((_) {});
                     },
                   )),
               const SizedBox(height: 8),
               Obx(() => SwitchListTile(
-                    title: Text('settings.fitWidth'.tr),
-                    value: fitWidth.value,
+                    title: Text('displayFirstPageAlone'.tr),
+                    value: displayFirstPageAlone.value,
                     onChanged: (v) {
-                      fitWidth.value = v;
-                      backendApiClient.putSetting('web_fit_width', v).catchError((_) {});
+                      displayFirstPageAlone.value = v;
+                      backendApiClient
+                          .putSetting('web_display_first_page_alone', v)
+                          .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,
                   )),
