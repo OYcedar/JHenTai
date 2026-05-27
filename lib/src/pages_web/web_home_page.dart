@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/main_web.dart';
+import 'package:jhentai/src/model/gallery_image_page_url.dart';
 import 'package:jhentai/src/model/gallery_url.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
@@ -374,7 +375,8 @@ class WebHomeController extends GetxController {
 
   Future<void> searchOrOpenGalleryUrl(String input,
       {bool isLeftPane = false}) async {
-    final galleryUrl = GalleryUrl.tryParse(input.trim());
+    final trimmed = input.trim();
+    final galleryUrl = GalleryUrl.tryParse(trimmed);
     if (galleryUrl != null) {
       _exitListByUrlMode();
       _currentSearch = '';
@@ -387,6 +389,42 @@ class WebHomeController extends GetxController {
             .selectGallery(galleryUrl.gid, galleryUrl.token);
       } else {
         Get.toNamed('/web/gallery/${galleryUrl.gid}/${galleryUrl.token}');
+      }
+      return;
+    }
+
+    final imagePageUrl = GalleryImagePageUrl.tryParse(trimmed);
+    if (imagePageUrl != null) {
+      isLoading.value = true;
+      errorMessage.value = '';
+      try {
+        final resolved = await backendApiClient.resolveImagePageUrl(
+          imagePageUrl.url,
+        );
+        final gid = (resolved['gid'] as num?)?.toInt();
+        final token = resolved['token']?.toString() ?? '';
+        final pageNo =
+            (resolved['pageNo'] as num?)?.toInt() ?? imagePageUrl.pageNo;
+        if (gid == null || token.isEmpty) {
+          throw resolved['error']?.toString() ?? 'Parent gallery not found';
+        }
+        _exitListByUrlMode();
+        _currentSearch = '';
+        currentSearchText.value = '';
+        searchController.clear();
+        currentPage.value = 0;
+        _clearPaginationCursors();
+        final startPage = math.max(0, pageNo - 1);
+        Get.toNamed('/web/reader/$gid/$token?startPage=$startPage');
+      } catch (e) {
+        Get.snackbar(
+          'common.error'.tr,
+          'home.loadFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7),
+        );
+      } finally {
+        isLoading.value = false;
       }
       return;
     }

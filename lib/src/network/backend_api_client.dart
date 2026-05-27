@@ -573,6 +573,14 @@ class BackendApiClient {
     return m['redirectUrl'] as String?;
   }
 
+  Future<Map<String, dynamic>> resolveImagePageUrl(String url) async {
+    final response = await _dio.get(
+      '/api/gallery/resolve-image-page',
+      queryParameters: {'url': url},
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<Map<String, dynamic>> listUsertags({int tagset = 1}) async {
     final response = await _dio.get(
       '/api/usertags/list',

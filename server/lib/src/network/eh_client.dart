@@ -492,7 +492,7 @@ class EHClient {
   Future<ImagePageResult> fetchImagePage(String imagePageUrl) async {
     final response = await _dio.get(imagePageUrl);
     final body = response.data.toString();
-    return _parseImagePage(body);
+    return _parseImagePage(body, imagePageUrl);
   }
 
   Future<Response> downloadFile(
@@ -1262,9 +1262,19 @@ class EHClient {
     return result;
   }
 
-  ImagePageResult _parseImagePage(String html) {
+  ImagePageResult _parseImagePage(String html, String imagePageUrl) {
     final doc = html_parser.parse(html);
     final result = ImagePageResult();
+    final origin = Uri.tryParse(imagePageUrl)?.origin ?? baseUrl;
+
+    final parentHref = doc.querySelector('#i5 > .sb > a')?.attributes['href'] ??
+        doc
+            .querySelectorAll('a')
+            .map((a) => a.attributes['href'] ?? '')
+            .firstWhere((href) => href.contains('/g/'), orElse: () => '');
+    if (parentHref.isNotEmpty) {
+      result.parentGalleryUrl = _makeAbsoluteThumbUrl(parentHref, origin);
+    }
 
     final imgElement = doc.querySelector('#img');
     result.imageUrl = imgElement?.attributes['src'] ?? '';
@@ -1386,6 +1396,7 @@ class GalleryDetailResult {
 class ImagePageResult {
   String imageUrl = '';
   String? reloadKey;
+  String parentGalleryUrl = '';
 
   /// EH file hash from `f_shash=` on the image page (for upgrade reuse / JHenTai public API).
   String imageHash = '';

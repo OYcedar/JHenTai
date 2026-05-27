@@ -56,6 +56,7 @@ class GalleryRoutes {
     router.post('/hh-info', _galleryHHInfo);
     router.post('/hh-download', _galleryHHDownload);
     router.post('/image-lookup', _galleryImageLookup);
+    router.get('/resolve-image-page', _resolveImagePage);
     router.get('/detail/<gid>/<token>', _galleryDetail);
     router.get('/images/<gid>/<token>', _galleryImagePages);
 
@@ -342,6 +343,58 @@ class GalleryRoutes {
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'Image lookup failed: $e'}),
+      );
+    }
+  }
+
+  Future<Response> _resolveImagePage(Request request) async {
+    final raw = request.url.queryParameters['url'];
+    if (raw == null || raw.isEmpty) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Missing url query parameter'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    final imagePageUrl = Uri.decodeComponent(raw);
+    final imagePageMatch = RegExp(
+      r'https://e[-x]hentai\.org/s/[a-z0-9]{10}/(\d+)-(\d+)',
+      caseSensitive: false,
+    ).firstMatch(imagePageUrl);
+    if (imagePageMatch == null) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid image page url'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    try {
+      final result = await _client.fetchImagePage(imagePageUrl);
+      final parentUrl = result.parentGalleryUrl;
+      final parentMatch = RegExp(
+        r'https://e[-x]hentai\.org/g/(\d+)/([a-z0-9]{10})',
+        caseSensitive: false,
+      ).firstMatch(parentUrl);
+      if (parentMatch == null) {
+        return Response(
+          404,
+          body: jsonEncode({'error': 'Parent gallery link not found'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      return Response.ok(
+        jsonEncode({
+          'gid': int.parse(parentMatch.group(1)!),
+          'token': parentMatch.group(2)!,
+          'pageNo': int.parse(imagePageMatch.group(2)!),
+          'parentGalleryUrl': parentUrl,
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to resolve image page: $e'}),
+        headers: {'Content-Type': 'application/json'},
       );
     }
   }
