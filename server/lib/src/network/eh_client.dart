@@ -71,12 +71,60 @@ Future<ConnectionTask<Socket>> _hathIpv4ConnectionFactory(
   return Socket.startConnect(target, port);
 }
 
+String? _envValue(String name) {
+  final env = Platform.environment;
+  return env[name] ?? env[name.toLowerCase()];
+}
+
+bool _noProxyMatches(Uri uri, String? rawNoProxy) {
+  if (rawNoProxy == null || rawNoProxy.trim().isEmpty) return false;
+  final host = uri.host.toLowerCase();
+  final hostWithPort = uri.hasPort ? '$host:${uri.port}' : host;
+  for (final rawToken in rawNoProxy.split(',')) {
+    final token = rawToken.trim().toLowerCase();
+    if (token.isEmpty) continue;
+    if (token == '*') return true;
+    if (token == host || token == hostWithPort) return true;
+    if (token.startsWith('*.') && host.endsWith(token.substring(1))) {
+      return true;
+    }
+    if (token.startsWith('.') && host.endsWith(token)) return true;
+  }
+  return false;
+}
+
+String? _proxyDirectiveFromUrl(String? rawProxy) {
+  if (rawProxy == null || rawProxy.trim().isEmpty) return null;
+  final value = rawProxy.trim();
+  final uri = Uri.tryParse(value.contains('://') ? value : 'http://$value');
+  if (uri == null || uri.host.isEmpty) return null;
+  final port = uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 80);
+  return 'PROXY ${uri.host}:$port';
+}
+
+String _findProxyForRequest(Uri uri) {
+  final host = uri.host.toLowerCase();
+  final isHath = host.endsWith('.hath.network');
+  final hathProxy = _envValue('JH_HATH_PROXY');
+
+  // JH_HATH_PROXY is an explicit override for H@H image hosts and wins over NO_PROXY.
+  if (isHath && hathProxy != null && hathProxy.trim().isNotEmpty) {
+    return _proxyDirectiveFromUrl(hathProxy) ?? 'DIRECT';
+  }
+
+  if (_noProxyMatches(uri, _envValue('NO_PROXY'))) {
+    return 'DIRECT';
+  }
+
+  final proxy = uri.scheme == 'https'
+      ? (_envValue('HTTPS_PROXY') ?? _envValue('HTTP_PROXY'))
+      : (_envValue('HTTP_PROXY') ?? _envValue('HTTPS_PROXY'));
+  return _proxyDirectiveFromUrl(proxy) ?? 'DIRECT';
+}
+
 HttpClient _createProxyAwareHttpClient({bool preferHathIpv4 = false}) {
   final client = HttpClient();
-  client.findProxy = (uri) => HttpClient.findProxyFromEnvironment(
-    uri,
-    environment: Platform.environment,
-  );
+  client.findProxy = _findProxyForRequest;
   if (preferHathIpv4) {
     client.connectionFactory = _hathIpv4ConnectionFactory;
   }
@@ -492,9 +540,8 @@ class EHClient {
     href ??= doc.querySelector('#continue a')?.attributes['href'];
     if (href != null && href.isNotEmpty) return href;
 
-    final onClickAttr = doc
-        .querySelector('#continue input')
-        ?.attributes['onclick'];
+    final onClickAttr =
+        doc.querySelector('#continue input')?.attributes['onclick'];
     if (onClickAttr != null) {
       final urlMatch = RegExp(
         r"document\.location\s*=\s*'([^']+)'",
@@ -699,7 +746,7 @@ class EHClient {
 
   /// Parses folder names and per-folder counts (same structure as EHSpiderParser.favoritePage2FavoriteTagsAndCounts).
   Future<({List<String> names, List<int> counts})>
-  fetchFavoriteFolders() async {
+      fetchFavoriteFolders() async {
     try {
       final response = await _dio.get('$baseUrl/favorites.php');
       final body = response.data.toString();
@@ -768,8 +815,7 @@ class EHClient {
       );
       final body = response.data.toString();
       final doc = html_parser.parse(body);
-      final ta =
-          doc.querySelector('#galpop textarea') ??
+      final ta = doc.querySelector('#galpop textarea') ??
           doc.querySelector('#galpop > div > div:nth-child(3) > textarea');
       return ta?.text ?? '';
     } catch (_) {
@@ -937,8 +983,7 @@ class EHClient {
 
     result.title = doc.querySelector('#gn')?.text ?? '';
     result.titleJpn = doc.querySelector('#gj')?.text ?? '';
-    result.category =
-        doc.querySelector('#gdc .cs')?.text ??
+    result.category = doc.querySelector('#gdc .cs')?.text ??
         doc.querySelector('#gdc .ct')?.text ??
         '';
     result.uploader = doc.querySelector('#gdn a')?.text ?? '';
@@ -983,9 +1028,8 @@ class EHClient {
       result.newerVersionUrl = newerEl.attributes['href'];
     }
 
-    final archiveLink = doc
-        .querySelector('a[onclick*="archiver"]')
-        ?.attributes['onclick'];
+    final archiveLink =
+        doc.querySelector('a[onclick*="archiver"]')?.attributes['onclick'];
     if (archiveLink != null) {
       final urlMatch = RegExp(r"'(https?://[^']+)'").firstMatch(archiveLink);
       result.archiverUrl = urlMatch?.group(1);

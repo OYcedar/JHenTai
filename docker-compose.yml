@@ -35,6 +35,8 @@ services:
       # otherwise gallery detail/image requests will bypass the proxy.
       # - HTTP_PROXY=http://host.docker.internal:7890
       # - HTTPS_PROXY=http://host.docker.internal:7890
+      # Optional: force only *.hath.network through a specific proxy, even if NO_PROXY matches it.
+      # - JH_HATH_PROXY=http://host.docker.internal:7890
       # - NO_PROXY=127.0.0.1,localhost,::1
       # Unraid / reverse proxy: very long /api/proxy/image?url=... GETs can return 414; increase nginx
       # large_client_header_buffers or rely on the Web UI POST image proxy for long CDN URLs.

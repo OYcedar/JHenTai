@@ -103,6 +103,7 @@ Enter this token in the browser setup page. It is saved to `localStorage` so you
 | `PUID` | `1000` | User ID for file ownership on mapped volumes |
 | `PGID` | `1000` | Group ID for file ownership on mapped volumes |
 | `HTTP_PROXY` / `HTTPS_PROXY` | *(empty)* | Outbound proxy used by the backend when it requests EH/EX/H@H. For `https://` targets, set `HTTPS_PROXY=http://proxy-host:port`. |
+| `JH_HATH_PROXY` | *(empty)* | Outbound proxy for `*.hath.network` only. When set, it overrides `NO_PROXY`; use it when EH/EX works through the proxy but H@H image hosts do not. |
 | `NO_PROXY` / `no_proxy` | `127.0.0.1,localhost,::1` appended by entrypoint | Hosts that bypass the proxy. Do not include `e-hentai.org`, `exhentai.org`, `*.ehgt.org`, or `*.hath.network`, otherwise detail and image requests bypass the proxy. |
 
 ### PUID / PGID (Unraid)
@@ -298,10 +299,11 @@ Adjust the tag list to match what still exists on [Docker Hub](https://hub.docke
 **`http_proxy` is set in Docker, gallery lists work, but gallery details do not**
 → Detail pages, thumbnails, and reader images are fetched by the backend server. Check:
 
-1. Set **`HTTPS_PROXY`** for `https://` targets. The proxy URL itself is often still `http://host:port`.
-2. Do **not** put `e-hentai.org`, `exhentai.org`, `*.ehgt.org`, or `*.hath.network` in `NO_PROXY`; that makes detail requests bypass the proxy.
-3. Keep `NO_PROXY` to local addresses such as `127.0.0.1,localhost,::1`. The entrypoint appends these automatically so health checks and local API calls stay direct.
-4. Rebuild/restart after compose changes: `docker compose up -d --build`, or pull the new image and run `docker compose up -d`.
+1. Set **`HTTPS_PROXY`** for `https://` targets. If only `HTTP_PROXY/http_proxy` is set, new builds also use it as a fallback for HTTPS requests.
+2. If only `*.hath.network` misses the proxy, set **`JH_HATH_PROXY=http://proxy-host:port`**. It forces H@H image hosts through that proxy even if `NO_PROXY` accidentally matches them.
+3. Do **not** put `e-hentai.org`, `exhentai.org`, `*.ehgt.org`, or `*.hath.network` in `NO_PROXY`; that makes normal detail requests bypass the proxy.
+4. Keep `NO_PROXY` to local addresses such as `127.0.0.1,localhost,::1`. The entrypoint appends these automatically so health checks and local API calls stay direct.
+5. Rebuild/restart after compose changes: `docker compose up -d --build`, or pull the new image and run `docker compose up -d`.
 
 **Unraid / direct LAN: cover loads but in-gallery / reader images 500 (`HandshakeException` on `*.hath.network`)**  
 The web UI loads many images via **`/api/proxy/image`**. Covers often use **`ehgt.org`** (which may work) while page images use **H@H hosts** (`*.hath.network`). If the **server** logs or the 500 body mention **`HandshakeException: Connection terminated during handshake`**, TLS to the H@H node is failing inside the container (IPv6 routing, MTU, firewall, or CA issues—not the Flutter web app).
