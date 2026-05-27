@@ -13,6 +13,7 @@ COPY assets/ assets/
 
 RUN flutter build web \
     --release \
+    --no-wasm-dry-run \
     --target lib/src/main_web.dart
 
 # Stage 2: Build Dart backend server (AOT compiled)
