@@ -197,6 +197,10 @@ class WebPtBR {
       'local.noImages': 'Nenhuma imagem encontrada nesta galeria',
       'local.loadFailed': 'Falha ao carregar imagens: @error',
       'local.loadListFailed': 'Falha ao carregar galerias locais: @error',
+      'local.deleteTitle': 'Excluir Galeria Local',
+      'local.deleteConfirm': 'Excluir arquivos locais de "@title"?',
+      'local.deleteSuccess': 'Galeria local excluída',
+      'local.deleteFailed': 'Falha ao excluir galeria local: @error',
 
       // settings
       'settings.title': 'Configurações',

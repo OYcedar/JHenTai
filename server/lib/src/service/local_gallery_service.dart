@@ -20,11 +20,11 @@ class LocalGallery {
   });
 
   Map<String, dynamic> toJson() => {
-    'path': path,
-    'title': title,
-    'imageCount': imageCount,
-    'coverPath': coverPath,
-  };
+        'path': path,
+        'title': title,
+        'imageCount': imageCount,
+        'coverPath': coverPath,
+      };
 }
 
 class LocalGalleryService {
@@ -50,7 +50,10 @@ class LocalGalleryService {
       final start = DateTime.now();
       _galleries = [];
 
-      final scanPaths = <String>[_config.localGalleryDir, ..._config.extraScanPaths];
+      final scanPaths = <String>[
+        _config.localGalleryDir,
+        ..._config.extraScanPaths
+      ];
 
       for (final scanPath in scanPaths) {
         final dir = Directory(scanPath);
@@ -59,7 +62,8 @@ class LocalGalleryService {
       }
 
       final elapsed = DateTime.now().difference(start).inMilliseconds;
-      log.info('Local gallery scan complete: ${_galleries.length} galleries found in ${elapsed}ms');
+      log.info(
+          'Local gallery scan complete: ${_galleries.length} galleries found in ${elapsed}ms');
     } catch (e, s) {
       log.error('Failed to scan local galleries', e, s);
     } finally {
@@ -67,13 +71,15 @@ class LocalGalleryService {
     }
   }
 
-  List<String> get allowedScanPaths => [_config.localGalleryDir, ..._config.extraScanPaths];
+  List<String> get allowedScanPaths =>
+      [_config.localGalleryDir, ..._config.extraScanPaths];
 
   bool isPathAllowed(String path) {
     final resolved = p.canonicalize(path);
     return allowedScanPaths.any((allowed) {
       final resolvedAllowed = p.canonicalize(allowed);
-      return resolved == resolvedAllowed || resolved.startsWith('$resolvedAllowed/');
+      return resolved == resolvedAllowed ||
+          resolved.startsWith('$resolvedAllowed/');
     });
   }
 
@@ -83,7 +89,8 @@ class LocalGalleryService {
     final dir = Directory(galleryPath);
     if (!dir.existsSync()) return [];
 
-    final files = dir.listSync()
+    final files = dir
+        .listSync()
         .whereType<File>()
         .where((f) => isImageFile(f.path))
         .toList()
@@ -92,15 +99,47 @@ class LocalGalleryService {
     return files.map((f) => f.path).toList();
   }
 
+  Future<void> deleteGallery(String galleryPath) async {
+    if (!isPathAllowed(galleryPath)) {
+      throw ArgumentError('Path is outside allowed scan directories');
+    }
+
+    final dir = Directory(galleryPath);
+    if (!await dir.exists()) {
+      _galleries.removeWhere(
+          (g) => p.canonicalize(g.path) == p.canonicalize(galleryPath));
+      return;
+    }
+
+    final entities = await dir.list().toList();
+    final files = entities.whereType<File>().toList();
+    final imageFiles = files.where((file) => isImageFile(file.path)).toList();
+    if (files.length == imageFiles.length && entities.every((e) => e is File)) {
+      await dir.delete(recursive: true);
+    } else {
+      for (final file in imageFiles) {
+        await file.delete();
+      }
+    }
+
+    _galleries.removeWhere(
+        (g) => p.canonicalize(g.path) == p.canonicalize(galleryPath));
+  }
+
   Future<void> _scanDirectory(Directory dir) async {
     try {
       final entities = await dir.list().toList();
       final subDirs = entities.whereType<Directory>().toList();
-      final imageFiles = entities.whereType<File>().where((f) => isImageFile(f.path)).toList();
+      final imageFiles =
+          entities.whereType<File>().where((f) => isImageFile(f.path)).toList();
 
       if (imageFiles.isNotEmpty && !_isJHenTaiDownload(dir)) {
         final cover = imageFiles.isNotEmpty
-            ? (imageFiles..sort((a, b) => naturalCompare(p.basename(a.path), p.basename(b.path)))).first.path
+            ? (imageFiles
+                  ..sort((a, b) =>
+                      naturalCompare(p.basename(a.path), p.basename(b.path))))
+                .first
+                .path
             : null;
 
         _galleries.add(LocalGallery(
@@ -121,7 +160,7 @@ class LocalGalleryService {
 
   bool _isJHenTaiDownload(Directory dir) {
     return File(p.join(dir.path, 'metadata')).existsSync() ||
-           File(p.join(dir.path, 'ametadata')).existsSync() ||
-           File(p.join(dir.path, 'metadata.json')).existsSync();
+        File(p.join(dir.path, 'ametadata')).existsSync() ||
+        File(p.join(dir.path, 'metadata.json')).existsSync();
   }
 }

@@ -54,7 +54,24 @@ class WebLocalController extends GetxController {
         'title': title,
       });
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'local.loadFailed'.trParams({'error': '$e'}),
+      Get.snackbar(
+          'common.error'.tr, 'local.loadFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> deleteGallery(Map<String, dynamic> gallery) async {
+    final path = gallery['path'] as String? ?? '';
+    if (path.isEmpty) return;
+    try {
+      await backendApiClient.deleteLocalGallery(path);
+      galleries.removeWhere((item) => item['path'] == path);
+      galleries.refresh();
+      Get.snackbar('common.success'.tr, 'local.deleteSuccess'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar(
+          'common.error'.tr, 'local.deleteFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -72,9 +89,14 @@ class WebLocalPage extends GetView<WebLocalController> {
           Obx(() => controller.isScanning.value
               ? const Padding(
                   padding: EdgeInsets.all(16),
-                  child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
                 )
-              : IconButton(icon: const Icon(Icons.refresh), onPressed: controller.refresh)),
+              : IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: controller.refresh)),
         ],
       ),
       body: Obx(() {
@@ -88,7 +110,8 @@ class WebLocalPage extends GetView<WebLocalController> {
               children: [
                 const Icon(Icons.error_outline, size: 48, color: Colors.red),
                 const SizedBox(height: 12),
-                Text(controller.errorMessage.value, textAlign: TextAlign.center),
+                Text(controller.errorMessage.value,
+                    textAlign: TextAlign.center),
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   icon: const Icon(Icons.refresh),
@@ -130,24 +153,62 @@ class WebLocalPage extends GetView<WebLocalController> {
 
   Widget _buildGalleryList(BuildContext context) {
     return Obx(() => ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: controller.galleries.length,
-      itemBuilder: (context, index) {
-        final gallery = controller.galleries[index];
-        return Card(
-          child: ListTile(
-            leading: const Icon(Icons.photo_library, size: 40),
-            title: Text(
-              gallery['title'] as String? ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text('common.images'.trParams({'count': '${gallery['imageCount'] ?? 0}'})),
-            trailing: const Icon(Icons.menu_book),
-            onTap: () => controller.openGallery(gallery),
+          padding: const EdgeInsets.all(8),
+          itemCount: controller.galleries.length,
+          itemBuilder: (context, index) {
+            final gallery = controller.galleries[index];
+            return Card(
+              child: ListTile(
+                leading: const Icon(Icons.photo_library, size: 40),
+                title: Text(
+                  gallery['title'] as String? ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text('common.images'
+                    .trParams({'count': '${gallery['imageCount'] ?? 0}'})),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'common.delete'.tr,
+                      onPressed: () =>
+                          _confirmDeleteLocalGallery(context, gallery),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.menu_book),
+                  ],
+                ),
+                onTap: () => controller.openGallery(gallery),
+              ),
+            );
+          },
+        ));
+  }
+
+  Future<void> _confirmDeleteLocalGallery(
+      BuildContext context, Map<String, dynamic> gallery) async {
+    final title = gallery['title'] as String? ?? '';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('local.deleteTitle'.tr),
+        content: Text('local.deleteConfirm'.trParams({'title': title})),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('common.cancel'.tr),
           ),
-        );
-      },
-    ));
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await controller.deleteGallery(gallery);
+    }
   }
 }

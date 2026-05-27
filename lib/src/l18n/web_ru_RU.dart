@@ -195,6 +195,10 @@ class WebRuRU {
       'local.noImages': 'Нет изображений в этой галерее',
       'local.loadFailed': 'Ошибка загрузки изображений: @error',
       'local.loadListFailed': 'Ошибка загрузки локальных галерей: @error',
+      'local.deleteTitle': 'Удалить локальную галерею',
+      'local.deleteConfirm': 'Удалить локальные файлы для "@title"?',
+      'local.deleteSuccess': 'Локальная галерея удалена',
+      'local.deleteFailed': 'Не удалось удалить локальную галерею: @error',
 
       // settings
       'settings.title': 'Настройки',

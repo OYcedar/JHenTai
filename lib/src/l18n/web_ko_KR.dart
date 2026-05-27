@@ -191,6 +191,10 @@ class WebKoKR {
       'local.noImages': '이 갤러리에 이미지가 없습니다',
       'local.loadFailed': '갤러리 이미지 로드 실패: @error',
       'local.loadListFailed': '로컬 갤러리 로드 실패: @error',
+      'local.deleteTitle': '로컬 갤러리 삭제',
+      'local.deleteConfirm': '"@title"의 로컬 파일을 삭제할까요?',
+      'local.deleteSuccess': '로컬 갤러리가 삭제되었습니다',
+      'local.deleteFailed': '로컬 갤러리 삭제 실패: @error',
 
       // settings
       'settings.title': '설정',

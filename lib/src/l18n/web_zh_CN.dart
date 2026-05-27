@@ -188,6 +188,10 @@ class WebZhCN {
       'local.noImages': '此画廊中没有图片',
       'local.loadFailed': '加载画廊图片失败: @error',
       'local.loadListFailed': '加载本地画廊失败: @error',
+      'local.deleteTitle': '删除本地画廊',
+      'local.deleteConfirm': '删除「@title」的本地文件？',
+      'local.deleteSuccess': '本地画廊已删除',
+      'local.deleteFailed': '删除本地画廊失败: @error',
 
       // settings
       'settings.title': '设置',

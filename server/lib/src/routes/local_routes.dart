@@ -16,6 +16,7 @@ class LocalRoutes {
     router.get('/list', _listGalleries);
     router.post('/refresh', _refresh);
     router.get('/images', _getImages);
+    router.delete('/gallery', _deleteGallery);
 
     return router;
   }
@@ -42,7 +43,8 @@ class LocalRoutes {
   Future<Response> _getImages(Request request) async {
     final path = request.url.queryParameters['path'];
     if (path == null || path.isEmpty) {
-      return Response.badRequest(body: jsonEncode({'error': 'Missing path parameter'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Missing path parameter'}));
     }
 
     if (!_service.isPathAllowed(path)) {
@@ -56,5 +58,35 @@ class LocalRoutes {
       jsonEncode({'images': images}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _deleteGallery(Request request) async {
+    final path = request.url.queryParameters['path'];
+    if (path == null || path.isEmpty) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Missing path parameter'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    if (!_service.isPathAllowed(path)) {
+      return Response.forbidden(
+        jsonEncode({'error': 'Path is outside allowed scan directories'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    try {
+      await _service.deleteGallery(path);
+      return Response.ok(
+        jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to delete local gallery: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
   }
 }

@@ -422,6 +422,13 @@ class BackendApiClient {
     return ((response.data['images'] as List?) ?? []).cast<String>();
   }
 
+  Future<void> deleteLocalGallery(String path) async {
+    await _dio.delete(
+      '/api/local/gallery',
+      queryParameters: {'path': path},
+    );
+  }
+
   // --- Downloaded image listing ---
 
   Future<List<String>> getGalleryDownloadImages(int gid) async {

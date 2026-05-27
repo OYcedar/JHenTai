@@ -188,6 +188,10 @@ class WebZhTW {
       'local.noImages': '此畫廊中沒有圖片',
       'local.loadFailed': '載入畫廊圖片失敗: @error',
       'local.loadListFailed': '載入本機畫廊失敗: @error',
+      'local.deleteTitle': '刪除本機畫廊',
+      'local.deleteConfirm': '刪除「@title」的本機檔案？',
+      'local.deleteSuccess': '本機畫廊已刪除',
+      'local.deleteFailed': '刪除本機畫廊失敗: @error',
 
       // settings
       'settings.title': '設定',

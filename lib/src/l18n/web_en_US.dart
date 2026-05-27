@@ -199,6 +199,10 @@ class WebEnUS {
       'local.noImages': 'No images found in this gallery',
       'local.loadFailed': 'Failed to load gallery images: @error',
       'local.loadListFailed': 'Failed to load local galleries: @error',
+      'local.deleteTitle': 'Delete Local Gallery',
+      'local.deleteConfirm': 'Delete local files for "@title"?',
+      'local.deleteSuccess': 'Local gallery deleted',
+      'local.deleteFailed': 'Failed to delete local gallery: @error',
 
       // settings
       'settings.title': 'Settings',
