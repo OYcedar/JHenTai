@@ -260,8 +260,6 @@ class WebKoKR {
       'settings.menuAdvanced': '고급',
       'settings.menuSecurity': '보안',
       'settings.ehRequiresLogin': '계정에서 로그인한 뒤 사이트와 쿠키 상태를 변경하세요.',
-      'settings.ehWebMoreSoon':
-          '갤러리 프로필, 할당량, 내 태그 등은 서버 API가 준비되면 추가될 수 있습니다.',
       'settings.ehMyTags': '내 태그',
       'settings.ehMyTagsHint': '온라인 관심 및 숨김 태그 관리',
       'settings.ehSiteSetting': '사이트 설정',
@@ -269,7 +267,6 @@ class WebKoKR {
       'settings.ehProfileAndQuota': '프로필, 할당량 및 자산',
       'settings.ehProfileAndQuotaHint':
           '이 값들은 아직 사이트 페이지 파싱에 의존합니다. 지금은 사이트 설정 페이지에서 확인하세요.',
-      'settings.styleWebMoreSoon': '목록 레이아웃 등은 이후 업데이트에서 제공될 수 있습니다.',
       'settings.galleryListStyle': '갤러리 목록 스타일',
       'settings.listModeGrid': '그리드',
       'settings.listModeList': '목록',
@@ -277,7 +274,7 @@ class WebKoKR {
       'settings.gridColumns': '그리드 열 수',
       'settings.gridColumnsAuto': '자동',
       'settings.galleryListStyleHint': '웹 홈 갤러리 목록에 즉시 적용되며 이 브라우저에 저장됩니다.',
-      'settings.networkWebStub':
+      'settings.networkWebSummary':
           '프록시 상태는 네트워크 페이지에서 확인하세요. Docker 환경 변수를 변경한 뒤 서버를 재시작하세요.',
       'settings.proxyRouting': '요청 라우팅',
       'settings.ehProxyRoute': 'EH/EX 페이지 요청',
@@ -297,8 +294,8 @@ class WebKoKR {
       'settings.notConfigured': '설정 안 됨',
       'settings.enabled': '활성화됨',
       'settings.disabled': '비활성화됨',
-      'settings.downloadWebStub':
-          '진행 중·완료된 다운로드는 다운로드 페이지에서 관리하세요. 고급 다운로드 설정은 웹 UI에 없습니다.',
+      'settings.downloadWebSummary':
+          '다운로드 기본 그룹과 우선순위를 설정하고 Docker 다운로드 경로와 동시 다운로드 수를 확인하며 작업을 관리합니다.',
       'settings.downloadWebIntro':
           '웹 다운로드 대화상자에서 사용할 기본 그룹과 우선순위를 설정하고 서버 Docker 다운로드 값을 확인합니다.',
       'settings.downloadDefaults': '다운로드 기본값',
@@ -311,8 +308,8 @@ class WebKoKR {
       'settings.archiveConcurrency': '아카이브 동시 다운로드',
       'settings.downloadRuntimeHint':
           '동시 다운로드 수와 경로는 Docker 환경 변수로 제어되며 서버 재시작 후 적용됩니다.',
-      'settings.performanceWebStub':
-          'CPU·메모리 조정은 네이티브 앱용입니다. 웹 클라이언트는 브라우저에서 실행됩니다.',
+      'settings.performanceWebSummary':
+          '큰 그룹에서 브라우저 부담을 줄이도록 웹 다운로드 목록 애니메이션 제한을 설정합니다.',
       'settings.webPerformance': '웹 성능',
       'settings.performanceWebIntro':
           '웹 클라이언트는 브라우저에서 실행됩니다. 이 로컬 브라우저 설정은 큰 목록의 상호작용 부드러움에 영향을 줍니다.',
@@ -321,8 +318,8 @@ class WebKoKR {
           '다운로드 그룹의 작업 수가 이 값을 넘으면 펼침/접힘 아이콘 애니메이션을 끕니다. 0은 항상 끕니다.',
       'settings.resetPerformanceDefaults': '성능 기본값 복원',
       'settings.performanceSaved': '성능 설정이 저장되었습니다',
-      'settings.advancedWebStub':
-          '여기서 서버 로그를 보고 지울 수 있습니다. 네이티브 실험 기능은 웹에서 제공되지 않습니다.',
+      'settings.advancedWebSummary':
+          'Docker 경로 정보를 확인하고 서버 로그를 보고 복사하거나 지울 수 있습니다.',
       'settings.advancedWebIntro': '이 웹 인스턴스의 서버 로그와 Docker 경로 정보를 확인합니다.',
       'settings.serverLogs': '서버 로그',
       'settings.clearLogsTitle': '서버 로그를 지울까요?',
@@ -333,8 +330,8 @@ class WebKoKR {
       'settings.noLogs': '로그 없음',
       'settings.copyLog': '로그 복사',
       'settings.emptyLog': '이 로그는 비어 있습니다',
-      'settings.securityWebStub':
-          '설정 시 API 토큰으로 연결했습니다. 토큰을 바꾸려면 서버를 갱신한 뒤 설정에서 새 토큰을 붙여넣거나 사이트 데이터를 지우고 다시 연결하세요.',
+      'settings.securityWebSummary':
+          '이 브라우저에 저장된 API 토큰 상태를 확인하고 연결을 검증하거나 연결 해제 후 다시 연결합니다.',
       'settings.webTokenSecurity': '웹 연결 보안',
       'settings.webTokenSaved': '로컬 토큰',
       'settings.webTokenSavedYes': '이 브라우저에 저장됨',

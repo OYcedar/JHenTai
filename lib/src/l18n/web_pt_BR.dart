@@ -269,8 +269,6 @@ class WebPtBR {
       'settings.menuSecurity': 'Segurança',
       'settings.ehRequiresLogin':
           'Entre em Conta para alterar o site e o estado dos cookies.',
-      'settings.ehWebMoreSoon':
-          'Perfil da galeria, cotas e Minhas tags podem ser adicionados quando houver APIs no servidor.',
       'settings.ehMyTags': 'Minhas tags',
       'settings.ehMyTagsHint': 'Gerencie tags observadas e ocultas online',
       'settings.ehSiteSetting': 'Configurações do site',
@@ -279,8 +277,6 @@ class WebPtBR {
       'settings.ehProfileAndQuota': 'Perfil, cota e recursos',
       'settings.ehProfileAndQuotaHint':
           'Esses valores ainda dependem da leitura das páginas do site. Por enquanto, veja-os nas configurações do site.',
-      'settings.styleWebMoreSoon':
-          'Opções de layout de lista podem ser adicionadas depois.',
       'settings.galleryListStyle': 'Estilo da lista de galerias',
       'settings.listModeGrid': 'Grade',
       'settings.listModeList': 'Lista',
@@ -289,7 +285,7 @@ class WebPtBR {
       'settings.gridColumnsAuto': 'Automático',
       'settings.galleryListStyleHint':
           'Aplica imediatamente à lista de galerias da página inicial web e fica salvo neste navegador.',
-      'settings.networkWebStub':
+      'settings.networkWebSummary':
           'O estado do proxy aparece na página Rede. Reinicie o servidor após alterar variáveis de ambiente Docker.',
       'settings.proxyRouting': 'Roteamento de requisições',
       'settings.ehProxyRoute': 'Requisições de páginas EH/EX',
@@ -310,8 +306,8 @@ class WebPtBR {
       'settings.notConfigured': 'Não configurado',
       'settings.enabled': 'Ativado',
       'settings.disabled': 'Desativado',
-      'settings.downloadWebStub':
-          'Gerencie downloads ativos e concluídos na página de downloads. Configurações avançadas de download não estão na web.',
+      'settings.downloadWebSummary':
+          'Defina grupos e prioridades padrão, revise caminhos e concorrência Docker, e gerencie tarefas de download.',
       'settings.downloadWebIntro':
           'Defina grupos e prioridades padrão usados pelos diálogos de download da web e revise as opções Docker do servidor.',
       'settings.downloadDefaults': 'Padrões de download',
@@ -324,8 +320,8 @@ class WebPtBR {
       'settings.archiveConcurrency': 'Concorrência de arquivos',
       'settings.downloadRuntimeHint':
           'Concorrência e caminhos são controlados por variáveis de ambiente Docker e valem após reiniciar o servidor.',
-      'settings.performanceWebStub':
-          'Ajustes de CPU e memória são do app nativo. O cliente web roda no navegador.',
+      'settings.performanceWebSummary':
+          'Ajuste o limite de animação da lista de downloads web para reduzir trabalho do navegador em grupos grandes.',
       'settings.webPerformance': 'Desempenho web',
       'settings.performanceWebIntro':
           'O cliente web roda no navegador. Estas opções locais afetam a fluidez de listas grandes.',
@@ -335,8 +331,8 @@ class WebPtBR {
           'Desativa a animação do ícone de expandir/recolher quando um grupo tem mais tarefas que este valor. Use 0 para desativar sempre.',
       'settings.resetPerformanceDefaults': 'Restaurar padrões de desempenho',
       'settings.performanceSaved': 'Configurações de desempenho salvas',
-      'settings.advancedWebStub':
-          'Você pode ver e limpar logs do servidor aqui. Opções experimentais nativas não aparecem na web.',
+      'settings.advancedWebSummary':
+          'Revise caminhos Docker e veja, copie ou limpe logs do servidor.',
       'settings.advancedWebIntro':
           'Veja logs do servidor e informações de caminhos Docker desta instância web.',
       'settings.serverLogs': 'Logs do servidor',
@@ -349,8 +345,8 @@ class WebPtBR {
       'settings.noLogs': 'Sem logs ainda',
       'settings.copyLog': 'Copiar log',
       'settings.emptyLog': 'Este log está vazio',
-      'settings.securityWebStub':
-          'Você conectou com um token de API na configuração. Para trocar, atualize o servidor e cole um novo token, ou limpe os dados do site.',
+      'settings.securityWebSummary':
+          'Verifique o token de API salvo neste navegador, valide a conexão ou desconecte e conecte novamente.',
       'settings.webTokenSecurity': 'Segurança da conexão web',
       'settings.webTokenSaved': 'Token local',
       'settings.webTokenSavedYes': 'Salvo neste navegador',

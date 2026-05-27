@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 
-/// Single page for Web-only / Docker notes: replaces separate stub screens linked from the hub.
+/// Web-only / Docker operations hub.
 class WebSettingsWebDockerPage extends GetView<WebSettingsController> {
   const WebSettingsWebDockerPage({super.key});
 
@@ -18,78 +18,123 @@ class WebSettingsWebDockerPage extends GetView<WebSettingsController> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('settings.menuWebDockerSubtitle'.tr,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
-            const SizedBox(height: 20),
-            Text('settings.menuDownload'.tr, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text('settings.downloadWebStub'.tr, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: () => Get.toNamed('/web/downloads'),
-              icon: const Icon(Icons.download_outlined),
-              label: Text('settings.openDownloads'.tr),
-            ),
-            const SizedBox(height: 24),
-            Text('settings.serverInfo'.tr, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text('settings.advancedWebStub'.tr, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _infoRow('settings.dataDir'.tr, info['dataDir']?.toString() ?? '-'),
-                    _infoRow('settings.downloadDir'.tr, info['downloadDir']?.toString() ?? '-'),
-                    _infoRow('settings.localGalleryDir'.tr, info['localGalleryDir']?.toString() ?? '-'),
-                    if (info['extraScanPaths'] is List && (info['extraScanPaths'] as List).isNotEmpty)
-                      _infoRow('settings.extraScanPaths'.tr, (info['extraScanPaths'] as List).join(', ')),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text('settings.menuNetwork'.tr, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.wifi_tethering, color: Theme.of(context).colorScheme.primary, size: 22),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text('settings.networkNote'.tr, style: Theme.of(context).textTheme.titleMedium),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text('settings.networkWebBody'.tr, style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
             Text(
-              'settings.networkWebStub'.tr,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              'settings.menuWebDockerSubtitle'.tr,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey),
             ),
-            const SizedBox(height: 24),
-            Text('settings.menuPerformance'.tr, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text('settings.performanceWebStub'.tr, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 24),
-            Text('settings.menuSecurity'.tr, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
-            Text('settings.securityWebStub'.tr, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            _routeCard(
+              context,
+              icon: Icons.download_outlined,
+              title: 'settings.menuDownload'.tr,
+              body: 'settings.downloadWebSummary'.tr,
+              route: '/web/settings/download',
+            ),
+            const SizedBox(height: 12),
+            _serverInfoCard(context, info),
+            const SizedBox(height: 12),
+            _routeCard(
+              context,
+              icon: Icons.wifi_tethering,
+              title: 'settings.menuNetwork'.tr,
+              body: 'settings.networkWebSummary'.tr,
+              route: '/web/settings/network',
+            ),
+            const SizedBox(height: 12),
+            _routeCard(
+              context,
+              icon: Icons.speed,
+              title: 'settings.menuPerformance'.tr,
+              body: 'settings.performanceWebSummary'.tr,
+              route: '/web/settings/performance',
+            ),
+            const SizedBox(height: 12),
+            _routeCard(
+              context,
+              icon: Icons.security,
+              title: 'settings.menuSecurity'.tr,
+              body: 'settings.securityWebSummary'.tr,
+              route: '/web/settings/security',
+            ),
+            const SizedBox(height: 12),
+            _routeCard(
+              context,
+              icon: Icons.tune,
+              title: 'settings.menuAdvanced'.tr,
+              body: 'settings.advancedWebSummary'.tr,
+              route: '/web/settings/advanced',
+            ),
           ],
         );
       }),
+    );
+  }
+
+  Widget _serverInfoCard(BuildContext context, Map<String, dynamic> info) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.storage_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'settings.serverInfo'.tr,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _infoRow(
+              'settings.dataDir'.tr,
+              info['dataDir']?.toString() ?? '-',
+            ),
+            _infoRow(
+              'settings.downloadDir'.tr,
+              info['downloadDir']?.toString() ?? '-',
+            ),
+            _infoRow(
+              'settings.localGalleryDir'.tr,
+              info['localGalleryDir']?.toString() ?? '-',
+            ),
+            if (info['extraScanPaths'] is List &&
+                (info['extraScanPaths'] as List).isNotEmpty)
+              _infoRow(
+                'settings.extraScanPaths'.tr,
+                (info['extraScanPaths'] as List).join(', '),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _routeCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String body,
+    required String route,
+  }) {
+    return Card(
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(title),
+        subtitle: Text(body),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Get.toNamed(route),
+      ),
     );
   }
 
@@ -101,9 +146,17 @@ class WebSettingsWebDockerPage extends GetView<WebSettingsController> {
         children: [
           SizedBox(
             width: 150,
-            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
-          Expanded(child: Text(value, style: const TextStyle(color: Colors.grey))),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
         ],
       ),
     );

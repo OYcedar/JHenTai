@@ -266,8 +266,6 @@ class WebRuRU {
       'settings.menuSecurity': 'Безопасность',
       'settings.ehRequiresLogin':
           'Войдите в разделе «Аккаунт», чтобы менять сайт и состояние cookie.',
-      'settings.ehWebMoreSoon':
-          'Профиль галереи, квоты и «Мои теги» могут появиться при готовности API сервера.',
       'settings.ehMyTags': 'Мои теги',
       'settings.ehMyTagsHint':
           'Управление отслеживаемыми и скрытыми тегами онлайн',
@@ -277,8 +275,6 @@ class WebRuRU {
       'settings.ehProfileAndQuota': 'Профиль, квота и активы',
       'settings.ehProfileAndQuotaHint':
           'Эти значения всё ещё зависят от разбора страниц сайта. Пока их можно посмотреть в настройках сайта.',
-      'settings.styleWebMoreSoon':
-          'Варианты макета списка могут быть добавлены позже.',
       'settings.galleryListStyle': 'Вид списка галерей',
       'settings.listModeGrid': 'Сетка',
       'settings.listModeList': 'Список',
@@ -287,7 +283,7 @@ class WebRuRU {
       'settings.gridColumnsAuto': 'Авто',
       'settings.galleryListStyleHint':
           'Применяется к списку галерей на веб-главной сразу и сохраняется в этом браузере.',
-      'settings.networkWebStub':
+      'settings.networkWebSummary':
           'Состояние прокси показано на странице сети. После изменения переменных окружения Docker перезапустите сервер.',
       'settings.proxyRouting': 'Маршрутизация запросов',
       'settings.ehProxyRoute': 'Запросы страниц EH/EX',
@@ -308,8 +304,8 @@ class WebRuRU {
       'settings.notConfigured': 'Не настроено',
       'settings.enabled': 'Включено',
       'settings.disabled': 'Выключено',
-      'settings.downloadWebStub':
-          'Активные и завершённые загрузки — на странице загрузок. Расширенные настройки загрузки в веб-интерфейсе недоступны.',
+      'settings.downloadWebSummary':
+          'Настройте группы и приоритеты по умолчанию, проверьте пути и параллельность Docker и управляйте задачами загрузки.',
       'settings.downloadWebIntro':
           'Настройте группы и приоритеты по умолчанию для веб-диалогов загрузки и проверьте параметры Docker на сервере.',
       'settings.downloadDefaults': 'Параметры загрузки по умолчанию',
@@ -322,8 +318,8 @@ class WebRuRU {
       'settings.archiveConcurrency': 'Параллельные архивы',
       'settings.downloadRuntimeHint':
           'Параллельность и пути задаются переменными окружения Docker и применяются после перезапуска сервера.',
-      'settings.performanceWebStub':
-          'Настройки CPU и памяти относятся к нативному приложению. Веб-клиент работает в браузере.',
+      'settings.performanceWebSummary':
+          'Настройте порог анимации списка загрузок Web, чтобы снизить нагрузку браузера на больших группах.',
       'settings.webPerformance': 'Производительность Web',
       'settings.performanceWebIntro':
           'Веб-клиент работает в браузере. Эти локальные настройки влияют на плавность больших списков.',
@@ -333,8 +329,8 @@ class WebRuRU {
       'settings.resetPerformanceDefaults':
           'Сбросить настройки производительности',
       'settings.performanceSaved': 'Настройки производительности сохранены',
-      'settings.advancedWebStub':
-          'Здесь можно просматривать и очищать журналы сервера. Экспериментальные функции нативного клиента в веб-версии не показаны.',
+      'settings.advancedWebSummary':
+          'Проверьте пути Docker, просматривайте, копируйте или очищайте журналы сервера.',
       'settings.advancedWebIntro':
           'Просмотр журналов сервера и путей Docker для этого веб-экземпляра.',
       'settings.serverLogs': 'Журналы сервера',
@@ -347,8 +343,8 @@ class WebRuRU {
       'settings.noLogs': 'Журналов пока нет',
       'settings.copyLog': 'Копировать журнал',
       'settings.emptyLog': 'Этот журнал пуст',
-      'settings.securityWebStub':
-          'Подключение выполнялось с API-токеном. Чтобы сменить его, обновите сервер и введите новый токен в мастере или очистите данные сайта.',
+      'settings.securityWebSummary':
+          'Проверьте API-токен, сохранённый в этом браузере, подтвердите подключение или отключитесь и подключитесь заново.',
       'settings.webTokenSecurity': 'Безопасность веб-подключения',
       'settings.webTokenSaved': 'Локальный токен',
       'settings.webTokenSavedYes': 'Сохранён в этом браузере',

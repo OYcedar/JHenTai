@@ -272,8 +272,6 @@ class WebEnUS {
       'settings.menuSecurity': 'Security',
       'settings.ehRequiresLogin':
           'Log in from Account to change site and cookie status.',
-      'settings.ehWebMoreSoon':
-          'Gallery profile, quotas, and My Tags may be added when server APIs are available.',
       'settings.ehMyTags': 'My Tags',
       'settings.ehMyTagsHint': 'Manage watched and hidden tags online',
       'settings.ehSiteSetting': 'Site settings',
@@ -282,8 +280,6 @@ class WebEnUS {
       'settings.ehProfileAndQuota': 'Profile, quota, and assets',
       'settings.ehProfileAndQuotaHint':
           'These values still depend on site-page parsing. You can view them from the site settings page for now.',
-      'settings.styleWebMoreSoon':
-          'List layout options may be added in a future update.',
       'settings.galleryListStyle': 'Gallery list style',
       'settings.listModeGrid': 'Grid',
       'settings.listModeList': 'List',
@@ -292,7 +288,7 @@ class WebEnUS {
       'settings.gridColumnsAuto': 'Auto',
       'settings.galleryListStyleHint':
           'Applies to the web home gallery list immediately and is saved in this browser.',
-      'settings.networkWebStub':
+      'settings.networkWebSummary':
           'Proxy state is shown on the Network page. Restart the server after changing Docker environment variables.',
       'settings.proxyRouting': 'Request routing',
       'settings.ehProxyRoute': 'EH/EX page requests',
@@ -314,8 +310,8 @@ class WebEnUS {
       'settings.notConfigured': 'Not configured',
       'settings.enabled': 'Enabled',
       'settings.disabled': 'Disabled',
-      'settings.downloadWebStub':
-          'Manage active and finished downloads from the downloads page. Advanced download settings are not exposed in the web UI yet.',
+      'settings.downloadWebSummary':
+          'Set download defaults, review Docker download paths and concurrency, and manage download tasks.',
       'settings.downloadWebIntro':
           'Set default groups and priorities used by the web download dialogs, and review server-side Docker download settings.',
       'settings.downloadDefaults': 'Download defaults',
@@ -328,8 +324,8 @@ class WebEnUS {
       'settings.archiveConcurrency': 'Archive concurrency',
       'settings.downloadRuntimeHint':
           'Concurrency and paths are controlled by Docker environment variables and take effect after restarting the server.',
-      'settings.performanceWebStub':
-          'CPU and memory tuning apply to the native app. The web client runs in your browser.',
+      'settings.performanceWebSummary':
+          'Tune the web download-list animation threshold to reduce browser work on large groups.',
       'settings.webPerformance': 'Web performance',
       'settings.performanceWebIntro':
           'The web client runs in your browser. These local browser settings affect large-list interaction smoothness.',
@@ -338,8 +334,8 @@ class WebEnUS {
           'Disable expand/collapse icon animation when a download group has more tasks than this value. Use 0 to always disable it.',
       'settings.resetPerformanceDefaults': 'Reset performance defaults',
       'settings.performanceSaved': 'Performance settings saved',
-      'settings.advancedWebStub':
-          'Server logs can be viewed and cleared here. Experimental native options are not exposed on web.',
+      'settings.advancedWebSummary':
+          'Review Docker path information, then view, copy, or clear server logs.',
       'settings.advancedWebIntro':
           'View server logs and basic Docker path information for this web instance.',
       'settings.serverLogs': 'Server logs',
@@ -352,8 +348,8 @@ class WebEnUS {
       'settings.noLogs': 'No logs yet',
       'settings.copyLog': 'Copy log',
       'settings.emptyLog': 'This log is empty',
-      'settings.securityWebStub':
-          'You connected with an API token at setup. To rotate it, update the server and paste a new token in setup, or clear site data and reconnect.',
+      'settings.securityWebSummary':
+          'Check the API token saved in this browser, verify the connection, or disconnect and reconnect.',
       'settings.webTokenSecurity': 'Web connection security',
       'settings.webTokenSaved': 'Local token',
       'settings.webTokenSavedYes': 'Saved in this browser',
