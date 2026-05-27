@@ -23,6 +23,9 @@ class WebRuRU {
       'cancel': 'Отмена',
       'resampleImage': 'Сжатое',
       'originalImage': 'Оригинал',
+      'downloadOriginalImage': 'Скачать оригинальное изображение',
+      'downloadOriginalImageByDefault':
+          'Выбирать оригинальное изображение по умолчанию',
       'reDownload': 'Скачать снова',
       'hasCopiedToClipboard': 'Скопировано в буфер обмена',
       'displayFirstPageAlone': 'Отдельно показывать первую страницу',

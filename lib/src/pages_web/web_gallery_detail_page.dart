@@ -405,7 +405,9 @@ class WebGalleryDetailController extends GetxController {
   }
 
   Future<void> startGalleryDownload(
-      {String group = 'default', int priority = 0}) async {
+      {String group = 'default',
+      int priority = 0,
+      bool downloadOriginalImage = false}) async {
     try {
       await backendApiClient.startGalleryDownload(
         gid: gid,
@@ -418,6 +420,7 @@ class WebGalleryDetailController extends GetxController {
         uploader: uploader.value,
         group: group,
         priority: priority,
+        downloadOriginalImage: downloadOriginalImage,
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.galleryQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
@@ -742,6 +745,9 @@ class WebGalleryDetailPage extends StatelessWidget {
     final rawG =
         web.window.localStorage.getItem('jh_web_default_gallery_group');
     var group = (rawG != null && rawG.isNotEmpty) ? rawG : 'default';
+    var downloadOriginalImage =
+        web.window.localStorage.getItem('jh_web_default_gallery_original') ==
+            'true';
     final priorityCtrl = TextEditingController(
       text:
           web.window.localStorage.getItem('jh_web_default_gallery_priority') ??
@@ -770,6 +776,18 @@ class WebGalleryDetailPage extends StatelessWidget {
                   border: const OutlineInputBorder(),
                 ),
               ),
+              const SizedBox(height: 8),
+              StatefulBuilder(
+                builder: (context, setState) => CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: downloadOriginalImage,
+                  onChanged: (value) => setState(
+                    () => downloadOriginalImage = value ?? false,
+                  ),
+                  title: Text('downloadOriginalImage'.tr),
+                  controlAffinity: ListTileControlAffinity.leading,
+                ),
+              ),
             ],
           ),
         ),
@@ -785,8 +803,14 @@ class WebGalleryDetailPage extends StatelessWidget {
                   .setItem('jh_web_default_gallery_group', g);
               web.window.localStorage
                   .setItem('jh_web_default_gallery_priority', '$p');
+              web.window.localStorage.setItem('jh_web_default_gallery_original',
+                  downloadOriginalImage ? 'true' : 'false');
               Navigator.pop(ctx);
-              await controller.startGalleryDownload(group: g, priority: p);
+              await controller.startGalleryDownload(
+                group: g,
+                priority: p,
+                downloadOriginalImage: downloadOriginalImage,
+              );
             },
             child: Text('common.ok'.tr),
           ),

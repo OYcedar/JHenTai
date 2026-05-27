@@ -16,12 +16,14 @@ class _WebSettingsDownloadMenuPageState
     extends State<WebSettingsDownloadMenuPage> {
   static const _galleryGroupKey = 'jh_web_default_gallery_group';
   static const _galleryPriorityKey = 'jh_web_default_gallery_priority';
+  static const _galleryOriginalKey = 'jh_web_default_gallery_original';
   static const _archiveGroupKey = 'jh_web_default_archive_group';
   static const _archivePriorityKey = 'jh_web_default_archive_priority';
 
   final WebSettingsController controller = Get.find<WebSettingsController>();
   final galleryGroupController = TextEditingController();
   final galleryPriorityController = TextEditingController();
+  bool galleryDownloadOriginalImage = false;
   final archiveGroupController = TextEditingController();
   final archivePriorityController = TextEditingController();
 
@@ -30,6 +32,8 @@ class _WebSettingsDownloadMenuPageState
     super.initState();
     galleryGroupController.text = _readStorage(_galleryGroupKey, 'default');
     galleryPriorityController.text = _readStorage(_galleryPriorityKey, '0');
+    galleryDownloadOriginalImage =
+        _readStorage(_galleryOriginalKey, 'false') == 'true';
     archiveGroupController.text = _readStorage(_archiveGroupKey, 'default');
     archivePriorityController.text = _readStorage(_archivePriorityKey, '0');
   }
@@ -82,6 +86,8 @@ class _WebSettingsDownloadMenuPageState
 
     web.window.localStorage.setItem(_galleryGroupKey, galleryGroup);
     web.window.localStorage.setItem(_galleryPriorityKey, '$galleryPriority');
+    web.window.localStorage.setItem(
+        _galleryOriginalKey, galleryDownloadOriginalImage ? 'true' : 'false');
     web.window.localStorage.setItem(_archiveGroupKey, archiveGroup);
     web.window.localStorage.setItem(_archivePriorityKey, '$archivePriority');
 
@@ -94,10 +100,13 @@ class _WebSettingsDownloadMenuPageState
   }
 
   void _resetDefaults() {
-    galleryGroupController.text = 'default';
-    galleryPriorityController.text = '0';
-    archiveGroupController.text = 'default';
-    archivePriorityController.text = '0';
+    setState(() {
+      galleryGroupController.text = 'default';
+      galleryPriorityController.text = '0';
+      galleryDownloadOriginalImage = false;
+      archiveGroupController.text = 'default';
+      archivePriorityController.text = '0';
+    });
     _saveDefaults();
   }
 
@@ -188,6 +197,10 @@ class _WebSettingsDownloadMenuPageState
               groupController: galleryGroupController,
               priorityController: galleryPriorityController,
               groups: groups,
+              downloadOriginalImage: galleryDownloadOriginalImage,
+              onDownloadOriginalImageChanged: (value) {
+                setState(() => galleryDownloadOriginalImage = value);
+              },
             ),
             const Divider(height: 32),
             _downloadDefaultEditor(
@@ -209,6 +222,8 @@ class _WebSettingsDownloadMenuPageState
     required TextEditingController groupController,
     required TextEditingController priorityController,
     required List<String> groups,
+    bool? downloadOriginalImage,
+    ValueChanged<bool>? onDownloadOriginalImageChanged,
   }) {
     final selectedGroup =
         groups.contains(groupController.text) ? groupController.text : null;
@@ -261,6 +276,18 @@ class _WebSettingsDownloadMenuPageState
             border: const OutlineInputBorder(),
           ),
         ),
+        if (downloadOriginalImage != null &&
+            onDownloadOriginalImageChanged != null) ...[
+          const SizedBox(height: 8),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            value: downloadOriginalImage,
+            onChanged: (value) =>
+                onDownloadOriginalImageChanged(value ?? false),
+            title: Text('downloadOriginalImageByDefault'.tr),
+            controlAffinity: ListTileControlAffinity.leading,
+          ),
+        ],
       ],
     );
   }

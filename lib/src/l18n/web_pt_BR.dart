@@ -23,6 +23,8 @@ class WebPtBR {
       'cancel': 'Cancelar',
       'resampleImage': 'Reamostrada',
       'originalImage': 'Original',
+      'downloadOriginalImage': 'Baixar imagem original',
+      'downloadOriginalImageByDefault': 'Escolher imagem original por padrão',
       'reDownload': 'Baixar novamente',
       'hasCopiedToClipboard': 'Copiado para a área de transferência',
       'displayFirstPageAlone': 'Mostrar primeira página sozinha',

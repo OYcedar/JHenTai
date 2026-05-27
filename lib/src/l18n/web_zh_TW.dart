@@ -23,6 +23,8 @@ class WebZhTW {
       'cancel': '取消',
       'resampleImage': '壓縮圖',
       'originalImage': '原圖',
+      'downloadOriginalImage': '下載原圖',
+      'downloadOriginalImageByDefault': '預設選中下載原圖',
       'reDownload': '重新下載',
       'hasCopiedToClipboard': '已複製到剪貼簿',
       'displayFirstPageAlone': '單獨顯示首頁',

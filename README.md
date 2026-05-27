@@ -72,7 +72,7 @@ JHenTai can also be deployed as a **Docker container** and accessed via a web br
 Docker images use tags **`x.y.z-hhh`** only (`hhh` = three lowercase hex digits, fork revision 0–4095; see `docker/fork_revision`). There is no `latest` tag.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-136
+docker pull hemumoe/jhentai:8.0.12-142
 ```
 
 **Quick start with docker-compose:**
@@ -80,7 +80,7 @@ docker pull hemumoe/jhentai:8.0.12-136
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-136
+    image: hemumoe/jhentai:8.0.12-142
     container_name: jhentai
     ports:
       - "8080:8080"

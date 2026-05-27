@@ -23,6 +23,8 @@ class WebZhCN {
       'cancel': '取消',
       'resampleImage': '压缩图',
       'originalImage': '原图',
+      'downloadOriginalImage': '下载原图',
+      'downloadOriginalImageByDefault': '默认选中下载原图',
       'reDownload': '重新下载',
       'hasCopiedToClipboard': '已复制到剪贴板',
       'displayFirstPageAlone': '单独展示首页',

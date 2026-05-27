@@ -56,7 +56,8 @@ class DownloadRoutes {
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
 
     final gid = body['gid'] as int?;
@@ -65,7 +66,10 @@ class DownloadRoutes {
     final galleryUrl = body['galleryUrl'] as String?;
 
     if (gid == null || token == null || title == null || galleryUrl == null) {
-      return Response.badRequest(body: jsonEncode({'error': 'Missing required fields: gid, token, title, galleryUrl'}));
+      return Response.badRequest(
+          body: jsonEncode({
+        'error': 'Missing required fields: gid, token, title, galleryUrl'
+      }));
     }
 
     await _galleryService.startDownload(
@@ -79,6 +83,7 @@ class DownloadRoutes {
       uploader: body['uploader'] as String? ?? '',
       group: body['group'] as String? ?? 'default',
       priority: (body['priority'] as num?)?.toInt() ?? 0,
+      downloadOriginalImage: body['downloadOriginalImage'] as bool? ?? false,
     );
 
     return Response.ok(
@@ -92,7 +97,8 @@ class DownloadRoutes {
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
     final fromGid = (body['fromGid'] as num?)?.toInt();
     final newerVersionUrl = body['newerVersionUrl'] as String?;
@@ -101,7 +107,8 @@ class DownloadRoutes {
         body: jsonEncode({'error': 'Missing fromGid or newerVersionUrl'}),
       );
     }
-    final r = await _galleryService.upgradeFromCompleted(fromGid: fromGid, newerVersionUrl: newerVersionUrl);
+    final r = await _galleryService.upgradeFromCompleted(
+        fromGid: fromGid, newerVersionUrl: newerVersionUrl);
     if (!r.ok) {
       return Response(
         400,
@@ -117,12 +124,14 @@ class DownloadRoutes {
 
   Future<Response> _patchGalleryDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     Map<String, dynamic> body;
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
     final priority = body['priority'];
     final group = body['group'] as String?;
@@ -131,29 +140,36 @@ class DownloadRoutes {
       priority: priority is num ? priority.toInt() : null,
       group: group,
     );
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _pauseGalleryDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     _galleryService.pauseDownload(id);
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _resumeGalleryDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     _galleryService.resumeDownload(id);
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _deleteGalleryDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     final deleteFiles = request.url.queryParameters['deleteFiles'] != 'false';
     await _galleryService.deleteDownload(id, deleteFiles: deleteFiles);
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   // --- Archive ---
@@ -171,7 +187,8 @@ class DownloadRoutes {
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
 
     final gid = body['gid'] as int?;
@@ -180,9 +197,16 @@ class DownloadRoutes {
     final galleryUrl = body['galleryUrl'] as String?;
     final archivePageUrl = body['archivePageUrl'] as String?;
 
-    if (gid == null || token == null || title == null || galleryUrl == null || archivePageUrl == null) {
+    if (gid == null ||
+        token == null ||
+        title == null ||
+        galleryUrl == null ||
+        archivePageUrl == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Missing required fields: gid, token, title, galleryUrl, archivePageUrl'}),
+        body: jsonEncode({
+          'error':
+              'Missing required fields: gid, token, title, galleryUrl, archivePageUrl'
+        }),
       );
     }
 
@@ -210,12 +234,14 @@ class DownloadRoutes {
 
   Future<Response> _patchArchiveDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     Map<String, dynamic> body;
     try {
       body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
     final priority = body['priority'];
     final group = body['group'] as String?;
@@ -224,29 +250,36 @@ class DownloadRoutes {
       priority: priority is num ? priority.toInt() : null,
       group: group,
     );
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _pauseArchiveDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     _archiveService.pauseDownload(id);
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _resumeArchiveDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     _archiveService.resumeDownload(id);
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _deleteArchiveDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
-    if (id == null) return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    if (id == null)
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     final deleteFiles = request.url.queryParameters['deleteFiles'] != 'false';
     await _archiveService.deleteDownload(id, deleteFiles: deleteFiles);
-    return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _listGalleryImages(Request request, String gid) async {
@@ -268,9 +301,11 @@ class DownloadRoutes {
     }
 
     final imageExtensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'};
-    final files = dir.listSync()
+    final files = dir
+        .listSync()
         .whereType<File>()
-        .where((f) => imageExtensions.contains(p.extension(f.path).toLowerCase()))
+        .where(
+            (f) => imageExtensions.contains(p.extension(f.path).toLowerCase()))
         .toList();
     files.sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
 

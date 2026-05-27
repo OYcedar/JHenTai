@@ -38,6 +38,7 @@ class GalleryDownloadTask {
   int completedCount;
   String group;
   int priority;
+  final bool downloadOriginalImage;
   final String insertTime;
   int? supersedesGid;
   int? supersededByGid;
@@ -56,29 +57,32 @@ class GalleryDownloadTask {
     this.completedCount = 0,
     this.group = 'default',
     this.priority = 0,
+    this.downloadOriginalImage = false,
     required this.insertTime,
     this.supersedesGid,
     this.supersededByGid,
   });
 
   Map<String, dynamic> toJson() => {
-    'gid': gid,
-    'token': token,
-    'title': title,
-    'category': category,
-    'pageCount': pageCount,
-    'galleryUrl': galleryUrl,
-    'coverUrl': coverUrl,
-    'uploader': uploader,
-    'status': status.index,
-    'completedCount': completedCount,
-    'group': group,
-    'group_name': group,
-    'priority': priority,
-    'insertTime': insertTime,
-    if (supersedesGid != null) 'supersedesGid': supersedesGid,
-    if (supersededByGid != null) 'supersededByGid': supersededByGid,
-  };
+        'gid': gid,
+        'token': token,
+        'title': title,
+        'category': category,
+        'pageCount': pageCount,
+        'galleryUrl': galleryUrl,
+        'coverUrl': coverUrl,
+        'uploader': uploader,
+        'status': status.index,
+        'completedCount': completedCount,
+        'group': group,
+        'group_name': group,
+        'priority': priority,
+        'downloadOriginalImage': downloadOriginalImage,
+        'is_original': downloadOriginalImage ? 1 : 0,
+        'insertTime': insertTime,
+        if (supersedesGid != null) 'supersedesGid': supersedesGid,
+        if (supersededByGid != null) 'supersededByGid': supersededByGid,
+      };
 }
 
 /// Parses `/g/{gid}/{token}/` from absolute or site-relative URL.
@@ -118,11 +122,15 @@ class GalleryDownloadService {
         galleryUrl: row['gallery_url'] as String,
         coverUrl: row['cover_url'] as String? ?? '',
         uploader: row['uploader'] as String? ?? '',
-        status: _safeEnum(GalleryDownloadStatus.values, row['download_status'] as int, GalleryDownloadStatus.failed),
+        status: _safeEnum(GalleryDownloadStatus.values,
+            row['download_status'] as int, GalleryDownloadStatus.failed),
         completedCount: row['completed_count'] as int? ?? 0,
         group: row['group_name'] as String? ?? 'default',
         priority: row['priority'] as int? ?? 0,
-        insertTime: row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
+        downloadOriginalImage:
+            (row['download_original_image'] as int? ?? 0) == 1,
+        insertTime:
+            row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
         supersedesGid: row['supersedes_gid'] as int?,
         supersededByGid: row['superseded_by_gid'] as int?,
       );
@@ -152,13 +160,16 @@ class GalleryDownloadService {
     String uploader = '',
     String group = 'default',
     int priority = 0,
+    bool downloadOriginalImage = false,
     int? supersedesGid,
   }) async {
     if (_tasks.containsKey(gid)) {
       final existing = _tasks[gid]!;
-      if (existing.status == GalleryDownloadStatus.paused || existing.status == GalleryDownloadStatus.failed) {
+      if (existing.status == GalleryDownloadStatus.paused ||
+          existing.status == GalleryDownloadStatus.failed) {
         existing.status = GalleryDownloadStatus.downloading;
-        db.updateGalleryDownloadStatus(gid, GalleryDownloadStatus.downloading.index);
+        db.updateGalleryDownloadStatus(
+            gid, GalleryDownloadStatus.downloading.index);
         _processQueue();
       }
       return;
@@ -177,6 +188,7 @@ class GalleryDownloadService {
       status: GalleryDownloadStatus.downloading,
       group: group,
       priority: priority,
+      downloadOriginalImage: downloadOriginalImage,
       insertTime: now,
       supersedesGid: supersedesGid,
     );
@@ -196,6 +208,7 @@ class GalleryDownloadService {
       'insert_time': now,
       'group_name': group,
       'priority': priority,
+      'download_original_image': downloadOriginalImage ? 1 : 0,
       'supersedes_gid': supersedesGid,
     });
 
@@ -213,7 +226,11 @@ class GalleryDownloadService {
       return (ok: false, error: 'Unknown gallery task', newGid: null);
     }
     if (old.status != GalleryDownloadStatus.completed) {
-      return (ok: false, error: 'Only completed downloads can be upgraded', newGid: null);
+      return (
+        ok: false,
+        error: 'Only completed downloads can be upgraded',
+        newGid: null
+      );
     }
 
     final resolved = newerVersionUrl.startsWith('http')
@@ -221,7 +238,11 @@ class GalleryDownloadService {
         : '${_client.baseUrl}${newerVersionUrl.startsWith('/') ? '' : '/'}$newerVersionUrl';
     final parsed = parseGalleryGidToken(resolved, _client.baseUrl);
     if (parsed == null) {
-      return (ok: false, error: 'Could not parse newer gallery URL', newGid: null);
+      return (
+        ok: false,
+        error: 'Could not parse newer gallery URL',
+        newGid: null
+      );
     }
     final newGid = parsed.gid;
     final newToken = parsed.token;
@@ -229,7 +250,11 @@ class GalleryDownloadService {
       return (ok: false, error: 'New URL points to same gallery', newGid: null);
     }
     if (_tasks.containsKey(newGid)) {
-      return (ok: false, error: 'New gallery already in download list', newGid: null);
+      return (
+        ok: false,
+        error: 'New gallery already in download list',
+        newGid: null
+      );
     }
 
     final galleryUrl = '${_client.baseUrl}/g/$newGid/$newToken/';
@@ -237,7 +262,11 @@ class GalleryDownloadService {
     try {
       detail = await _client.fetchGalleryDetail(galleryUrl);
     } catch (e) {
-      return (ok: false, error: 'Failed to fetch new gallery: $e', newGid: null);
+      return (
+        ok: false,
+        error: 'Failed to fetch new gallery: $e',
+        newGid: null
+      );
     }
 
     db.updateGalleryDownloadMeta(fromGid, supersededByGid: newGid);
@@ -255,6 +284,7 @@ class GalleryDownloadService {
       uploader: detail.uploader,
       group: old.group,
       priority: old.priority,
+      downloadOriginalImage: old.downloadOriginalImage,
       supersedesGid: fromGid,
     );
 
@@ -289,9 +319,11 @@ class GalleryDownloadService {
   void resumeDownload(int gid) {
     final task = _tasks[gid];
     if (task == null) return;
-    if (task.status != GalleryDownloadStatus.paused && task.status != GalleryDownloadStatus.failed) return;
+    if (task.status != GalleryDownloadStatus.paused &&
+        task.status != GalleryDownloadStatus.failed) return;
     task.status = GalleryDownloadStatus.downloading;
-    db.updateGalleryDownloadStatus(gid, GalleryDownloadStatus.downloading.index);
+    db.updateGalleryDownloadStatus(
+        gid, GalleryDownloadStatus.downloading.index);
     _notifyProgress(task);
     _processQueue();
   }
@@ -314,7 +346,9 @@ class GalleryDownloadService {
 
   GalleryDownloadTask? _nextQueuedTask() {
     final candidates = _tasks.values
-        .where((t) => t.status == GalleryDownloadStatus.downloading && !_activeDownloads.contains(t.gid))
+        .where((t) =>
+            t.status == GalleryDownloadStatus.downloading &&
+            !_activeDownloads.contains(t.gid))
         .toList();
     if (candidates.isEmpty) return null;
     candidates.sort((a, b) {
@@ -345,7 +379,8 @@ class GalleryDownloadService {
       if (imagePageUrls.isEmpty) {
         log.warning('No image pages found for gallery ${task.gid}');
         task.status = GalleryDownloadStatus.failed;
-        db.updateGalleryDownloadStatus(task.gid, GalleryDownloadStatus.failed.index);
+        db.updateGalleryDownloadStatus(
+            task.gid, GalleryDownloadStatus.failed.index);
         _activeDownloads.remove(task.gid);
         _notifyProgress(task);
         return;
@@ -354,12 +389,14 @@ class GalleryDownloadService {
       if (detail.pageCount > imagePageUrls.length) {
         final totalPages = (detail.pageCount / imagePageUrls.length).ceil();
         for (int page = 1; page < totalPages; page++) {
-          final nextDetail = await _client.fetchGalleryDetail('${task.galleryUrl}?p=$page');
+          final nextDetail =
+              await _client.fetchGalleryDetail('${task.galleryUrl}?p=$page');
           imagePageUrls.addAll(nextDetail.imagePageUrls);
         }
       }
 
-      task.coverUrl = detail.coverUrl.isNotEmpty ? detail.coverUrl : task.coverUrl;
+      task.coverUrl =
+          detail.coverUrl.isNotEmpty ? detail.coverUrl : task.coverUrl;
 
       _saveMetadata(task, imagePageUrls);
 
@@ -371,7 +408,8 @@ class GalleryDownloadService {
         final imageFile = _findExistingImage(task.gid, i);
         if (imageFile != null) {
           task.completedCount = i + 1;
-          db.updateGalleryDownloadStatus(task.gid, task.status.index, completedCount: task.completedCount);
+          db.updateGalleryDownloadStatus(task.gid, task.status.index,
+              completedCount: task.completedCount);
           _notifyProgress(task);
           continue;
         }
@@ -381,7 +419,9 @@ class GalleryDownloadService {
         bool downloaded = false;
 
         String? reloadKey;
-        while (!downloaded && retries < maxRetries && task.status == GalleryDownloadStatus.downloading) {
+        while (!downloaded &&
+            retries < maxRetries &&
+            task.status == GalleryDownloadStatus.downloading) {
           try {
             task._cancelToken = CancelToken();
             var pageUrl = imagePageUrls[i];
@@ -389,7 +429,10 @@ class GalleryDownloadService {
               final sep = pageUrl.contains('?') ? '&' : '?';
               pageUrl = '$pageUrl${sep}nl=$reloadKey';
             }
-            final imagePage = await _client.fetchImagePage(pageUrl);
+            final imagePage = await _client.fetchImagePage(
+              pageUrl,
+              preferOriginalImage: task.downloadOriginalImage,
+            );
 
             if (imagePage.imageUrl.isEmpty) {
               reloadKey = imagePage.reloadKey;
@@ -398,7 +441,8 @@ class GalleryDownloadService {
             }
 
             final ext = _getExtension(imagePage.imageUrl);
-            final savePath = p.join(dir.path, '${i.toString().padLeft(5, '0')}.$ext');
+            final savePath =
+                p.join(dir.path, '${i.toString().padLeft(5, '0')}.$ext');
 
             await _client.downloadFile(
               imagePage.imageUrl,
@@ -418,7 +462,8 @@ class GalleryDownloadService {
             });
 
             task.completedCount = i + 1;
-            db.updateGalleryDownloadStatus(task.gid, task.status.index, completedCount: task.completedCount);
+            db.updateGalleryDownloadStatus(task.gid, task.status.index,
+                completedCount: task.completedCount);
             _notifyProgress(task);
             downloaded = true;
           } on DioException catch (e) {
@@ -426,11 +471,13 @@ class GalleryDownloadService {
             retries++;
             if (e.response?.statusCode == 509) {
               reloadKey = null;
-              log.warning('Image limit (509) on image $i for gallery ${task.gid}, retrying...');
+              log.warning(
+                  'Image limit (509) on image $i for gallery ${task.gid}, retrying...');
               await Future.delayed(Duration(seconds: retries * 5));
             } else {
               if (retries >= maxRetries) {
-                log.warning('Failed to download image $i for gallery ${task.gid}');
+                log.warning(
+                    'Failed to download image $i for gallery ${task.gid}');
               }
               await Future.delayed(Duration(seconds: retries));
             }
@@ -442,24 +489,31 @@ class GalleryDownloadService {
         }
 
         if (!downloaded && task.status == GalleryDownloadStatus.downloading) {
-          log.warning('Failed to download image $i after $maxRetries retries, marking gallery ${task.gid} as failed');
+          log.warning(
+              'Failed to download image $i after $maxRetries retries, marking gallery ${task.gid} as failed');
           task.status = GalleryDownloadStatus.failed;
-          db.updateGalleryDownloadStatus(task.gid, GalleryDownloadStatus.failed.index);
-          _notifyProgress(task, error: 'Failed to download image ${i + 1} after $maxRetries retries');
+          db.updateGalleryDownloadStatus(
+              task.gid, GalleryDownloadStatus.failed.index);
+          _notifyProgress(task,
+              error:
+                  'Failed to download image ${i + 1} after $maxRetries retries');
           return;
         }
       }
 
       if (task.status == GalleryDownloadStatus.downloading) {
         task.status = GalleryDownloadStatus.completed;
-        db.updateGalleryDownloadStatus(task.gid, GalleryDownloadStatus.completed.index, completedCount: task.completedCount);
+        db.updateGalleryDownloadStatus(
+            task.gid, GalleryDownloadStatus.completed.index,
+            completedCount: task.completedCount);
         _notifyProgress(task);
         log.info('Gallery ${task.gid} download completed');
       }
     } catch (e, s) {
       log.error('Gallery download failed for ${task.gid}', e, s);
       task.status = GalleryDownloadStatus.failed;
-      db.updateGalleryDownloadStatus(task.gid, GalleryDownloadStatus.failed.index);
+      db.updateGalleryDownloadStatus(
+          task.gid, GalleryDownloadStatus.failed.index);
       _notifyProgress(task, error: '$e');
     } finally {
       _activeDownloads.remove(task.gid);
@@ -467,7 +521,8 @@ class GalleryDownloadService {
     }
   }
 
-  String _galleryDir(int gid) => p.join(_config.downloadDir, 'gallery', gid.toString());
+  String _galleryDir(int gid) =>
+      p.join(_config.downloadDir, 'gallery', gid.toString());
 
   /// Align with native [GalleryDownloadService._tryCopyImageInfosFromImageHashes]: JHenTai public hashes + old dir files.
   Future<void> _tryCopyPagesFromSupersededGallery(
@@ -478,12 +533,14 @@ class GalleryDownloadService {
     if (oldGid == null) return;
     if (!_config.galleryUpgradeReuseImages) return;
     if (_config.jhApiSecret.isEmpty) {
-      log.debug('JH_JHENTAI_API_SECRET unset: skip upgrade hash reuse for gid ${task.gid}');
+      log.debug(
+          'JH_JHENTAI_API_SECRET unset: skip upgrade hash reuse for gid ${task.gid}');
       return;
     }
 
     final jh = JhPublicClient(_config);
-    final hashes = await jh.fetchGalleryImageHashes(gid: task.gid, token: task.token);
+    final hashes =
+        await jh.fetchGalleryImageHashes(gid: task.gid, token: task.token);
     if (hashes == null) return;
     if (hashes.length != imagePageUrls.length) {
       log.warning(
@@ -522,12 +579,14 @@ class GalleryDownloadService {
 
       var ext = p.extension(oldFile.path).replaceFirst('.', '');
       if (ext.isEmpty) ext = 'jpg';
-      final savePath = p.join(newDir.path, '${i.toString().padLeft(5, '0')}.$ext');
+      final savePath =
+          p.join(newDir.path, '${i.toString().padLeft(5, '0')}.$ext');
 
       try {
         await oldFile.copy(savePath);
       } catch (e) {
-        log.warning('Upgrade reuse copy failed $oldGid#$oldSerial -> ${task.gid}#$i: $e');
+        log.warning(
+            'Upgrade reuse copy failed $oldGid#$oldSerial -> ${task.gid}#$i: $e');
         continue;
       }
 
@@ -544,7 +603,8 @@ class GalleryDownloadService {
       copied++;
     }
     if (copied > 0) {
-      log.info('Upgrade reuse: copied $copied / ${imagePageUrls.length} pages from gid $oldGid -> ${task.gid}');
+      log.info(
+          'Upgrade reuse: copied $copied / ${imagePageUrls.length} pages from gid $oldGid -> ${task.gid}');
     }
   }
 
@@ -553,7 +613,8 @@ class GalleryDownloadService {
     if (!dir.existsSync()) return null;
     final prefix = index.toString().padLeft(5, '0');
     try {
-      return dir.listSync()
+      return dir
+          .listSync()
           .whereType<File>()
           .where((f) => p.basenameWithoutExtension(f.path) == prefix)
           .firstOrNull;
@@ -582,7 +643,8 @@ class GalleryDownloadService {
       final uri = Uri.parse(url);
       final path = uri.path;
       final ext = p.extension(path).replaceFirst('.', '');
-      if ({'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'}.contains(ext.toLowerCase())) {
+      if ({'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'}
+          .contains(ext.toLowerCase())) {
         return ext;
       }
     } catch (_) {}

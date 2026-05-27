@@ -507,10 +507,17 @@ class EHClient {
     return _parseGalleryDetail(body, galleryUrl);
   }
 
-  Future<ImagePageResult> fetchImagePage(String imagePageUrl) async {
+  Future<ImagePageResult> fetchImagePage(
+    String imagePageUrl, {
+    bool preferOriginalImage = false,
+  }) async {
     final response = await _dio.get(imagePageUrl);
     final body = response.data.toString();
-    return _parseImagePage(body, imagePageUrl);
+    return _parseImagePage(
+      body,
+      imagePageUrl,
+      preferOriginalImage: preferOriginalImage,
+    );
   }
 
   Future<Response> downloadFile(
@@ -1280,7 +1287,11 @@ class EHClient {
     return result;
   }
 
-  ImagePageResult _parseImagePage(String html, String imagePageUrl) {
+  ImagePageResult _parseImagePage(
+    String html,
+    String imagePageUrl, {
+    bool preferOriginalImage = false,
+  }) {
     final doc = html_parser.parse(html);
     final result = ImagePageResult();
     final origin = Uri.tryParse(imagePageUrl)?.origin ?? baseUrl;
@@ -1296,6 +1307,16 @@ class EHClient {
 
     final imgElement = doc.querySelector('#img');
     result.imageUrl = imgElement?.attributes['src'] ?? '';
+
+    final originalElement = doc
+        .querySelector('#i6 a[id]')
+        ?.parent
+        ?.nextElementSibling
+        ?.querySelector('a');
+    final originalHref = originalElement?.attributes['href'];
+    if (originalHref != null && originalHref.isNotEmpty) {
+      result.originalImageUrl = _makeAbsoluteThumbUrl(originalHref, origin);
+    }
 
     // Fallback: try regex patterns if DOM query missed it
     if (result.imageUrl.isEmpty) {
@@ -1321,6 +1342,11 @@ class EHClient {
         caseSensitive: false,
       ).firstMatch(html);
       if (cdnMatch != null) result.imageUrl = cdnMatch.group(1)!;
+    }
+
+    if (preferOriginalImage && result.originalImageUrl.isNotEmpty) {
+      result.imageUrl = result.originalImageUrl;
+      result.reloadKey = null;
     }
 
     final nl = doc.querySelector('#loadfail')?.attributes['onclick'];
@@ -1413,6 +1439,7 @@ class GalleryDetailResult {
 
 class ImagePageResult {
   String imageUrl = '';
+  String originalImageUrl = '';
   String? reloadKey;
   String parentGalleryUrl = '';
 

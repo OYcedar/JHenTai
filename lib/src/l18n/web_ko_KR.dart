@@ -23,6 +23,8 @@ class WebKoKR {
       'cancel': '취소',
       'resampleImage': '리샘플',
       'originalImage': '원본',
+      'downloadOriginalImage': '원본 이미지 다운로드',
+      'downloadOriginalImageByDefault': '기본값으로 원본 이미지 선택',
       'reDownload': '다시 다운로드',
       'hasCopiedToClipboard': '클립보드에 복사했습니다',
       'displayFirstPageAlone': '첫 페이지만 표시',

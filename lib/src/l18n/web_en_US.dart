@@ -25,6 +25,8 @@ class WebEnUS {
       'cancel': 'Cancel',
       'resampleImage': 'Resample',
       'originalImage': 'Original',
+      'downloadOriginalImage': 'Download original image',
+      'downloadOriginalImageByDefault': 'Choose original image by default',
       'reDownload': 'Re-Download',
       'hasCopiedToClipboard': 'Copied to clipboard',
       'displayFirstPageAlone': 'Display First Page Alone',

@@ -15,10 +15,14 @@ class ServerDatabase {
   }
 
   void _migrateSchema() {
-    _addColumnIfMissing('gallery_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
+    _addColumnIfMissing(
+        'gallery_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
     _addColumnIfMissing('gallery_download', 'supersedes_gid', 'INTEGER');
     _addColumnIfMissing('gallery_download', 'superseded_by_gid', 'INTEGER');
-    _addColumnIfMissing('archive_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
+    _addColumnIfMissing('gallery_download', 'download_original_image',
+        'INTEGER NOT NULL DEFAULT 0');
+    _addColumnIfMissing(
+        'archive_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
   }
 
   void _addColumnIfMissing(String table, String column, String columnDef) {
@@ -59,6 +63,7 @@ class ServerDatabase {
         completed_count INTEGER NOT NULL DEFAULT 0,
         group_name TEXT NOT NULL DEFAULT 'default',
         priority INTEGER NOT NULL DEFAULT 0,
+        download_original_image INTEGER NOT NULL DEFAULT 0,
         supersedes_gid INTEGER,
         superseded_by_gid INTEGER
       )
@@ -113,7 +118,8 @@ class ServerDatabase {
       )
     ''');
 
-    _db.execute('CREATE INDEX IF NOT EXISTS idx_cache_expire ON dio_cache(expire_date)');
+    _db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_cache_expire ON dio_cache(expire_date)');
     _db.execute('CREATE INDEX IF NOT EXISTS idx_cache_url ON dio_cache(url)');
 
     _db.execute('''
@@ -126,7 +132,8 @@ class ServerDatabase {
         visit_time TEXT NOT NULL
       )
     ''');
-    _db.execute('CREATE INDEX IF NOT EXISTS idx_history_visit ON history(visit_time DESC)');
+    _db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_history_visit ON history(visit_time DESC)');
 
     _db.execute('''
       CREATE TABLE IF NOT EXISTS search_history (
@@ -135,7 +142,8 @@ class ServerDatabase {
         last_used TEXT NOT NULL
       )
     ''');
-    _db.execute('CREATE INDEX IF NOT EXISTS idx_search_last ON search_history(last_used DESC)');
+    _db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_search_last ON search_history(last_used DESC)');
 
     _db.execute('''
       CREATE TABLE IF NOT EXISTS tag_translation (
@@ -147,7 +155,8 @@ class ServerDatabase {
         PRIMARY KEY (namespace, key)
       )
     ''');
-    _db.execute('CREATE INDEX IF NOT EXISTS idx_tag_name ON tag_translation(tag_name)');
+    _db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_tag_name ON tag_translation(tag_name)');
 
     _db.execute('''
       CREATE TABLE IF NOT EXISTS quick_search (
@@ -197,7 +206,8 @@ class ServerDatabase {
   // --- Gallery download operations ---
 
   List<Map<String, dynamic>> selectAllGalleryDownloads() {
-    return _db.select('SELECT * FROM gallery_download ORDER BY insert_time DESC')
+    return _db
+        .select('SELECT * FROM gallery_download ORDER BY insert_time DESC')
         .map(_rowToMap)
         .toList();
   }
@@ -205,29 +215,43 @@ class ServerDatabase {
   void insertGalleryDownload(Map<String, dynamic> data) {
     _db.execute('''
       INSERT OR REPLACE INTO gallery_download 
-      (gid, token, title, category, page_count, gallery_url, cover_url, uploader, publish_time, download_status, insert_time, completed_count, group_name, priority, supersedes_gid, superseded_by_gid)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (gid, token, title, category, page_count, gallery_url, cover_url, uploader, publish_time, download_status, insert_time, completed_count, group_name, priority, download_original_image, supersedes_gid, superseded_by_gid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
-      data['gid'], data['token'], data['title'], data['category'],
-      data['page_count'], data['gallery_url'], data['cover_url'] ?? '',
-      data['uploader'] ?? '', data['publish_time'], data['download_status'] ?? 0,
+      data['gid'],
+      data['token'],
+      data['title'],
+      data['category'],
+      data['page_count'],
+      data['gallery_url'],
+      data['cover_url'] ?? '',
+      data['uploader'] ?? '',
+      data['publish_time'],
+      data['download_status'] ?? 0,
       data['insert_time'] ?? DateTime.now().toIso8601String(),
-      data['completed_count'] ?? 0, data['group_name'] ?? 'default',
+      data['completed_count'] ?? 0,
+      data['group_name'] ?? 'default',
       data['priority'] ?? 0,
+      data['download_original_image'] ?? 0,
       data['supersedes_gid'],
       data['superseded_by_gid'],
     ]);
   }
 
-  void updateGalleryDownloadMeta(int gid, {int? priority, String? groupName, int? supersededByGid}) {
+  void updateGalleryDownloadMeta(int gid,
+      {int? priority, String? groupName, int? supersededByGid}) {
     if (priority != null) {
-      _db.execute('UPDATE gallery_download SET priority = ? WHERE gid = ?', [priority, gid]);
+      _db.execute('UPDATE gallery_download SET priority = ? WHERE gid = ?',
+          [priority, gid]);
     }
     if (groupName != null) {
-      _db.execute('UPDATE gallery_download SET group_name = ? WHERE gid = ?', [groupName, gid]);
+      _db.execute('UPDATE gallery_download SET group_name = ? WHERE gid = ?',
+          [groupName, gid]);
     }
     if (supersededByGid != null) {
-      _db.execute('UPDATE gallery_download SET superseded_by_gid = ? WHERE gid = ?', [supersededByGid, gid]);
+      _db.execute(
+          'UPDATE gallery_download SET superseded_by_gid = ? WHERE gid = ?',
+          [supersededByGid, gid]);
     }
   }
 
@@ -253,7 +277,9 @@ class ServerDatabase {
   // --- Gallery image operations ---
 
   List<Map<String, dynamic>> selectGalleryImages(int gid) {
-    return _db.select('SELECT * FROM gallery_image WHERE gid = ? ORDER BY serial_no', [gid])
+    return _db
+        .select('SELECT * FROM gallery_image WHERE gid = ? ORDER BY serial_no',
+            [gid])
         .map(_rowToMap)
         .toList();
   }
@@ -264,9 +290,13 @@ class ServerDatabase {
       (gid, serial_no, url, image_url, image_hash, path, download_status, image_page_url)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
-      data['gid'], data['serial_no'], data['url'] ?? '',
-      data['image_url'] ?? '', data['image_hash'] ?? '',
-      data['path'] ?? '', data['download_status'] ?? 0,
+      data['gid'],
+      data['serial_no'],
+      data['url'] ?? '',
+      data['image_url'] ?? '',
+      data['image_hash'] ?? '',
+      data['path'] ?? '',
+      data['download_status'] ?? 0,
       data['image_page_url'] ?? '',
     ]);
   }
@@ -274,7 +304,8 @@ class ServerDatabase {
   // --- Archive download operations ---
 
   List<Map<String, dynamic>> selectAllArchiveDownloads() {
-    return _db.select('SELECT * FROM archive_download ORDER BY insert_time DESC')
+    return _db
+        .select('SELECT * FROM archive_download ORDER BY insert_time DESC')
         .map(_rowToMap)
         .toList();
   }
@@ -287,13 +318,24 @@ class ServerDatabase {
        is_original, insert_time, group_name, downloaded_bytes, total_bytes, priority)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
-      data['gid'], data['token'], data['title'], data['category'],
-      data['page_count'], data['gallery_url'], data['cover_url'] ?? '',
-      data['uploader'] ?? '', data['size'] ?? '', data['publish_time'],
-      data['archive_status'] ?? 0, data['archive_page_url'] ?? '',
-      data['download_page_url'] ?? '', data['download_url'] ?? '',
-      data['is_original'] ?? 0, data['insert_time'] ?? DateTime.now().toIso8601String(),
-      data['group_name'] ?? 'default', data['downloaded_bytes'] ?? 0,
+      data['gid'],
+      data['token'],
+      data['title'],
+      data['category'],
+      data['page_count'],
+      data['gallery_url'],
+      data['cover_url'] ?? '',
+      data['uploader'] ?? '',
+      data['size'] ?? '',
+      data['publish_time'],
+      data['archive_status'] ?? 0,
+      data['archive_page_url'] ?? '',
+      data['download_page_url'] ?? '',
+      data['download_url'] ?? '',
+      data['is_original'] ?? 0,
+      data['insert_time'] ?? DateTime.now().toIso8601String(),
+      data['group_name'] ?? 'default',
+      data['downloaded_bytes'] ?? 0,
       data['total_bytes'] ?? 0,
       data['priority'] ?? 0,
     ]);
@@ -301,14 +343,17 @@ class ServerDatabase {
 
   void updateArchiveDownloadMeta(int gid, {int? priority, String? groupName}) {
     if (priority != null) {
-      _db.execute('UPDATE archive_download SET priority = ? WHERE gid = ?', [priority, gid]);
+      _db.execute('UPDATE archive_download SET priority = ? WHERE gid = ?',
+          [priority, gid]);
     }
     if (groupName != null) {
-      _db.execute('UPDATE archive_download SET group_name = ? WHERE gid = ?', [groupName, gid]);
+      _db.execute('UPDATE archive_download SET group_name = ? WHERE gid = ?',
+          [groupName, gid]);
     }
   }
 
-  void updateArchiveDownloadStatus(int gid, int status, {int? downloadedBytes, int? totalBytes}) {
+  void updateArchiveDownloadStatus(int gid, int status,
+      {int? downloadedBytes, int? totalBytes}) {
     final updates = <String>['archive_status = ?'];
     final params = <dynamic>[status];
     if (downloadedBytes != null) {
@@ -320,15 +365,21 @@ class ServerDatabase {
       params.add(totalBytes);
     }
     params.add(gid);
-    _db.execute('UPDATE archive_download SET ${updates.join(', ')} WHERE gid = ?', params);
+    _db.execute(
+        'UPDATE archive_download SET ${updates.join(', ')} WHERE gid = ?',
+        params);
   }
 
-  void updateArchiveDownloadUrls(int gid, {String? downloadPageUrl, String? downloadUrl}) {
+  void updateArchiveDownloadUrls(int gid,
+      {String? downloadPageUrl, String? downloadUrl}) {
     if (downloadPageUrl != null) {
-      _db.execute('UPDATE archive_download SET download_page_url = ? WHERE gid = ?', [downloadPageUrl, gid]);
+      _db.execute(
+          'UPDATE archive_download SET download_page_url = ? WHERE gid = ?',
+          [downloadPageUrl, gid]);
     }
     if (downloadUrl != null) {
-      _db.execute('UPDATE archive_download SET download_url = ? WHERE gid = ?', [downloadUrl, gid]);
+      _db.execute('UPDATE archive_download SET download_url = ? WHERE gid = ?',
+          [downloadUrl, gid]);
     }
   }
 
@@ -338,18 +389,29 @@ class ServerDatabase {
 
   // --- History operations ---
 
-  void upsertHistory(int gid, String token, String title, String coverUrl, String category) {
+  void upsertHistory(
+      int gid, String token, String title, String coverUrl, String category) {
     _db.execute('''
       INSERT OR REPLACE INTO history (gid, token, title, cover_url, category, visit_time)
       VALUES (?, ?, ?, ?, ?, ?)
-    ''', [gid, token, title, coverUrl, category, DateTime.now().toIso8601String()]);
+    ''', [
+      gid,
+      token,
+      title,
+      coverUrl,
+      category,
+      DateTime.now().toIso8601String()
+    ]);
   }
 
   List<Map<String, dynamic>> selectHistory({int limit = 50, int offset = 0}) {
-    return _db.select(
-      'SELECT * FROM history ORDER BY visit_time DESC LIMIT ? OFFSET ?',
-      [limit, offset],
-    ).map(_rowToMap).toList();
+    return _db
+        .select(
+          'SELECT * FROM history ORDER BY visit_time DESC LIMIT ? OFFSET ?',
+          [limit, offset],
+        )
+        .map(_rowToMap)
+        .toList();
   }
 
   void deleteHistory(int gid) {
@@ -366,14 +428,21 @@ class ServerDatabase {
     _db.execute('''
       INSERT INTO search_history (keyword, use_count, last_used) VALUES (?, 1, ?)
       ON CONFLICT(keyword) DO UPDATE SET use_count = use_count + 1, last_used = ?
-    ''', [keyword, DateTime.now().toIso8601String(), DateTime.now().toIso8601String()]);
+    ''', [
+      keyword,
+      DateTime.now().toIso8601String(),
+      DateTime.now().toIso8601String()
+    ]);
   }
 
   List<Map<String, dynamic>> selectSearchHistory({int limit = 20}) {
-    return _db.select(
-      'SELECT * FROM search_history ORDER BY last_used DESC LIMIT ?',
-      [limit],
-    ).map(_rowToMap).toList();
+    return _db
+        .select(
+          'SELECT * FROM search_history ORDER BY last_used DESC LIMIT ?',
+          [limit],
+        )
+        .map(_rowToMap)
+        .toList();
   }
 
   void deleteSearchHistory(String keyword) {
@@ -390,7 +459,8 @@ class ServerDatabase {
     _db.execute('DELETE FROM tag_translation');
   }
 
-  void insertTagTranslation(String namespace, String key, String tagName, String fullTagName, String intro) {
+  void insertTagTranslation(String namespace, String key, String tagName,
+      String fullTagName, String intro) {
     _db.execute(
       'INSERT OR REPLACE INTO tag_translation (namespace, key, tag_name, full_tag_name, intro) VALUES (?, ?, ?, ?, ?)',
       [namespace, key, tagName, fullTagName, intro],
@@ -422,7 +492,8 @@ class ServerDatabase {
     return result.isEmpty ? null : _rowToMap(result.first);
   }
 
-  List<Map<String, dynamic>> batchGetTagTranslations(List<Map<String, String>> tags) {
+  List<Map<String, dynamic>> batchGetTagTranslations(
+      List<Map<String, String>> tags) {
     final results = <Map<String, dynamic>>[];
     for (final tag in tags) {
       final r = getTagTranslation(tag['namespace'] ?? '', tag['key'] ?? '');
@@ -431,12 +502,16 @@ class ServerDatabase {
     return results;
   }
 
-  List<Map<String, dynamic>> searchTagTranslations(String query, {int limit = 20}) {
+  List<Map<String, dynamic>> searchTagTranslations(String query,
+      {int limit = 20}) {
     final like = '%$query%';
-    return _db.select(
-      'SELECT * FROM tag_translation WHERE tag_name LIKE ? OR key LIKE ? LIMIT ?',
-      [like, like, limit],
-    ).map(_rowToMap).toList();
+    return _db
+        .select(
+          'SELECT * FROM tag_translation WHERE tag_name LIKE ? OR key LIKE ? LIMIT ?',
+          [like, like, limit],
+        )
+        .map(_rowToMap)
+        .toList();
   }
 
   int tagTranslationCount() {
@@ -447,8 +522,10 @@ class ServerDatabase {
   // --- Quick search operations ---
 
   List<Map<String, dynamic>> selectAllQuickSearches() {
-    return _db.select('SELECT * FROM quick_search ORDER BY sort_order ASC, name ASC')
-        .map(_rowToMap).toList();
+    return _db
+        .select('SELECT * FROM quick_search ORDER BY sort_order ASC, name ASC')
+        .map(_rowToMap)
+        .toList();
   }
 
   void upsertQuickSearch(String name, String config, {int sortOrder = 0}) {
@@ -465,7 +542,10 @@ class ServerDatabase {
   // --- Block rule operations ---
 
   List<Map<String, dynamic>> selectAllBlockRules() {
-    return _db.select('SELECT * FROM block_rule ORDER BY id ASC').map(_rowToMap).toList();
+    return _db
+        .select('SELECT * FROM block_rule ORDER BY id ASC')
+        .map(_rowToMap)
+        .toList();
   }
 
   int insertBlockRule(Map<String, dynamic> data) {
@@ -507,7 +587,8 @@ class ServerDatabase {
   // --- Cache operations ---
 
   void cleanExpiredCache() {
-    _db.execute('DELETE FROM dio_cache WHERE expire_date < ?', [DateTime.now().toIso8601String()]);
+    _db.execute('DELETE FROM dio_cache WHERE expire_date < ?',
+        [DateTime.now().toIso8601String()]);
   }
 
   Map<String, dynamic> _rowToMap(Row row) {

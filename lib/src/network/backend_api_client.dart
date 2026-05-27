@@ -278,6 +278,7 @@ class BackendApiClient {
     String uploader = '',
     String group = 'default',
     int priority = 0,
+    bool downloadOriginalImage = false,
   }) async {
     await _dio.post(
       '/api/download/gallery/start',
@@ -292,6 +293,7 @@ class BackendApiClient {
         'uploader': uploader,
         'group': group,
         'priority': priority,
+        'downloadOriginalImage': downloadOriginalImage,
       },
     );
   }
