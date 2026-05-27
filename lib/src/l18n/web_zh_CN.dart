@@ -615,11 +615,14 @@ class WebZhCN {
       'downloads.editTask': '编辑任务',
       'downloads.pauseVisible': '暂停当前列表任务',
       'downloads.resumeVisible': '恢复当前列表任务',
+      'downloads.changeVisibleGroup': '修改当前列表分组',
+      'downloads.changeVisibleGroupConfirm': '将当前可见的 @count 个任务移动到此分组。',
       'downloads.deleteVisible': '删除当前列表任务',
       'downloads.deleteVisibleConfirm': '删除当前可见的 @count 个任务及其文件？',
       'downloads.noBatchTargets': '当前列表没有可操作任务',
       'downloads.batchPaused': '已暂停 @count 个任务',
       'downloads.batchResumed': '已恢复 @count 个任务',
+      'downloads.batchGroupChanged': '已修改 @count 个任务的分组',
       'downloads.batchDeleted': '已删除 @count 个任务',
 
       // detail download dialog

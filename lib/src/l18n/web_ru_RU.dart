@@ -637,12 +637,16 @@ class WebRuRU {
       'downloads.editTask': 'Edit task',
       'downloads.pauseVisible': 'Поставить видимые задачи на паузу',
       'downloads.resumeVisible': 'Возобновить видимые задачи',
+      'downloads.changeVisibleGroup': 'Изменить группу видимых задач',
+      'downloads.changeVisibleGroupConfirm':
+          'Переместить @count видимых задач в эту группу.',
       'downloads.deleteVisible': 'Удалить видимые задачи',
       'downloads.deleteVisibleConfirm':
           'Удалить @count видимых задач и их файлы?',
       'downloads.noBatchTargets': 'В текущем списке нет подходящих задач',
       'downloads.batchPaused': 'Поставлено на паузу: @count',
       'downloads.batchResumed': 'Возобновлено: @count',
+      'downloads.batchGroupChanged': 'Группа изменена для задач: @count',
       'downloads.batchDeleted': 'Удалено задач: @count',
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',

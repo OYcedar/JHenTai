@@ -640,12 +640,16 @@ class WebPtBR {
       'downloads.editTask': 'Edit task',
       'downloads.pauseVisible': 'Pausar tarefas visíveis',
       'downloads.resumeVisible': 'Retomar tarefas visíveis',
+      'downloads.changeVisibleGroup': 'Alterar grupo das tarefas visíveis',
+      'downloads.changeVisibleGroupConfirm':
+          'Mover @count tarefas visíveis para este grupo.',
       'downloads.deleteVisible': 'Excluir tarefas visíveis',
       'downloads.deleteVisibleConfirm':
           'Excluir @count tarefas visíveis e seus arquivos?',
       'downloads.noBatchTargets': 'Nenhuma tarefa compatível na lista atual',
       'downloads.batchPaused': '@count tarefas pausadas',
       'downloads.batchResumed': '@count tarefas retomadas',
+      'downloads.batchGroupChanged': 'Grupo alterado para @count tarefas',
       'downloads.batchDeleted': '@count tarefas excluídas',
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',

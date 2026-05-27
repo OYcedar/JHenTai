@@ -387,6 +387,30 @@ class WebDownloadsController extends GetxController
         snackPosition: SnackPosition.BOTTOM);
   }
 
+  Future<void> changeVisibleTasksGroup(BuildContext context) async {
+    final galleryTab = tabController.index == 0;
+    final tasks =
+        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final ids =
+        tasks.map((t) => (t['gid'] as num?)?.toInt()).whereType<int>().toList();
+    if (ids.isEmpty) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final group = await _showBatchGroupDialog(context, tasks);
+    if (group == null) return;
+
+    await Future.wait(ids.map((gid) => galleryTab
+        ? patchGalleryTask(gid, group: group)
+        : patchArchiveTask(gid, group: group)));
+    await refresh();
+    Get.snackbar('common.success'.tr,
+        'downloads.batchGroupChanged'.trParams({'count': '${ids.length}'}),
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
   Future<void> patchGalleryTask(int gid, {int? priority, String? group}) async {
     await backendApiClient.patchGalleryDownload(gid,
         priority: priority, group: group);
@@ -418,6 +442,11 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
             icon: const Icon(Icons.play_circle_outline),
             tooltip: 'downloads.resumeVisible'.tr,
             onPressed: controller.resumeVisibleTasks,
+          ),
+          IconButton(
+            icon: const Icon(Icons.drive_file_move_outline),
+            tooltip: 'downloads.changeVisibleGroup'.tr,
+            onPressed: () => controller.changeVisibleTasksGroup(context),
           ),
           IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
@@ -458,6 +487,77 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         );
       }),
     );
+  }
+}
+
+Future<String?> _showBatchGroupDialog(
+    BuildContext context, List<Map<String, dynamic>> tasks) async {
+  final groups = WebDownloadsController.sortedGroupNames(
+    tasks.map(WebDownloadsController._taskGroupName),
+  );
+  final controller =
+      TextEditingController(text: groups.isEmpty ? 'default' : groups.first);
+  try {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('downloads.changeVisibleGroup'.tr),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('downloads.changeVisibleGroupConfirm'
+                    .trParams({'count': '${tasks.length}'})),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'downloads.setGroup'.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) {
+                    final group = controller.text.trim();
+                    Navigator.pop(ctx, group.isEmpty ? 'default' : group);
+                  },
+                ),
+                if (groups.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: groups
+                        .map((group) => ActionChip(
+                              label: Text(group),
+                              onPressed: () => controller.text = group,
+                            ))
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () {
+                final group = controller.text.trim();
+                Navigator.pop(ctx, group.isEmpty ? 'default' : group);
+              },
+              child: Text('common.ok'.tr),
+            ),
+          ],
+        );
+      },
+    );
+  } finally {
+    controller.dispose();
   }
 }
 
