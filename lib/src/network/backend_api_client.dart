@@ -74,24 +74,29 @@ class BackendApiClient {
     _applyToken(token);
   }
 
+  void clearToken() {
+    _token = null;
+    _dio.options.headers.remove('Authorization');
+    web.window.localStorage.removeItem('jh_api_token');
+  }
+
   void _applyToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
 
   Future<bool> verifyToken(String token) async {
     try {
-      final response =
-          await Dio(
-            BaseOptions(
-              baseUrl: _baseUrl,
-              connectTimeout: const Duration(seconds: 30),
-              receiveTimeout: const Duration(seconds: 60),
-            ),
-          ).post(
-            '/api/auth/token/verify',
-            data: jsonEncode({'token': token}),
-            options: Options(headers: {'Content-Type': 'application/json'}),
-          );
+      final response = await Dio(
+        BaseOptions(
+          baseUrl: _baseUrl,
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      ).post(
+        '/api/auth/token/verify',
+        data: jsonEncode({'token': token}),
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
       return response.data['valid'] == true;
     } catch (_) {
       return false;
@@ -176,9 +181,8 @@ class BackendApiClient {
     try {
       final response = await _dio.post<List<int>>(
         '/api/proxy/image',
-        queryParameters: _token != null && _token!.isNotEmpty
-            ? {'token': _token}
-            : null,
+        queryParameters:
+            _token != null && _token!.isNotEmpty ? {'token': _token} : null,
         data: jsonEncode({'url': imageUrl}),
         options: Options(
           responseType: ResponseType.bytes,
@@ -524,9 +528,8 @@ class BackendApiClient {
       '/api/gallery/image-lookup',
       data: {'imageBase64': imageBase64, 'filename': filename},
     );
-    final m = response.data is Map
-        ? Map<String, dynamic>.from(response.data)
-        : {};
+    final m =
+        response.data is Map ? Map<String, dynamic>.from(response.data) : {};
     return m['redirectUrl'] as String?;
   }
 
@@ -724,12 +727,11 @@ class BackendApiClient {
   // --- Favorite folders (names + counts per slot) ---
 
   Future<({List<String> names, List<int> counts})>
-  fetchFavoriteFolders() async {
+      fetchFavoriteFolders() async {
     final response = await _dio.get('/api/favorite/names');
     final data = response.data as Map<String, dynamic>? ?? {};
-    final names = ((data['names'] as List?) ?? [])
-        .map((e) => e.toString())
-        .toList();
+    final names =
+        ((data['names'] as List?) ?? []).map((e) => e.toString()).toList();
     final countsRaw = data['counts'] as List?;
     final counts = <int>[];
     if (countsRaw != null) {
@@ -922,9 +924,8 @@ class BackendApiClient {
     final response = await _dio.get(
       '/api/setting/logs/${Uri.encodeComponent(name)}',
     );
-    final data = response.data is Map
-        ? Map<String, dynamic>.from(response.data)
-        : {};
+    final data =
+        response.data is Map ? Map<String, dynamic>.from(response.data) : {};
     return data['content']?.toString() ?? '';
   }
 

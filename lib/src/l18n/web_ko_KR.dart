@@ -320,6 +320,23 @@ class WebKoKR {
       'settings.emptyLog': '이 로그는 비어 있습니다',
       'settings.securityWebStub':
           '설정 시 API 토큰으로 연결했습니다. 토큰을 바꾸려면 서버를 갱신한 뒤 설정에서 새 토큰을 붙여넣거나 사이트 데이터를 지우고 다시 연결하세요.',
+      'settings.webTokenSecurity': '웹 연결 보안',
+      'settings.webTokenSaved': '로컬 토큰',
+      'settings.webTokenSavedYes': '이 브라우저에 저장됨',
+      'settings.webTokenSavedNo': '이 브라우저에 저장된 토큰 없음',
+      'settings.webTokenFingerprint': '토큰 지문',
+      'settings.webTokenVerifyStatus': '검증 상태',
+      'settings.webTokenValid': '현재 토큰은 유효합니다',
+      'settings.webTokenInvalid': '현재 토큰이 유효하지 않거나 교체되었습니다',
+      'settings.securityWebBody':
+          '웹 UI는 이 브라우저에 저장된 API 토큰으로 서버에 연결합니다. 전체 토큰은 표시하지 않으며 현재 브라우저 연결만 확인합니다.',
+      'settings.verifyCurrentToken': '현재 토큰 검증',
+      'settings.disconnectWebToken': '연결 해제 후 다시 연결',
+      'settings.disconnectWebTokenTitle': '현재 웹 연결을 해제할까요?',
+      'settings.disconnectWebTokenConfirm':
+          '이 브라우저에 저장된 API 토큰을 지우고 설정으로 돌아갑니다. 서버 토큰은 삭제되지 않습니다.',
+      'settings.webTokenRotateHint':
+          '서버에서 토큰을 교체했다면 먼저 여기서 연결을 해제한 뒤 설정에서 새 토큰을 붙여넣으세요.',
       'settings.mouseWheelIntro': '뷰어에서 이미지 위 마우스 휠 동작을 선택합니다(가로 페이지 모드).',
       'settings.mouseWheelReadHint': '방향, 프리로드 등 모든 읽기 옵션',
       'settings.aboutVersionLabel': '버전',

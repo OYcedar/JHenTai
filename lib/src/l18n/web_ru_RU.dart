@@ -331,6 +331,23 @@ class WebRuRU {
       'settings.emptyLog': 'Этот журнал пуст',
       'settings.securityWebStub':
           'Подключение выполнялось с API-токеном. Чтобы сменить его, обновите сервер и введите новый токен в мастере или очистите данные сайта.',
+      'settings.webTokenSecurity': 'Безопасность веб-подключения',
+      'settings.webTokenSaved': 'Локальный токен',
+      'settings.webTokenSavedYes': 'Сохранён в этом браузере',
+      'settings.webTokenSavedNo': 'В этом браузере нет сохранённого токена',
+      'settings.webTokenFingerprint': 'Отпечаток токена',
+      'settings.webTokenVerifyStatus': 'Статус проверки',
+      'settings.webTokenValid': 'Текущий токен действителен',
+      'settings.webTokenInvalid': 'Текущий токен недействителен или заменён',
+      'settings.securityWebBody':
+          'Веб-интерфейс подключается с API-токеном, сохранённым в этом браузере. Полный токен здесь не показывается; это только проверка текущего подключения.',
+      'settings.verifyCurrentToken': 'Проверить текущий токен',
+      'settings.disconnectWebToken': 'Отключиться и подключиться заново',
+      'settings.disconnectWebTokenTitle': 'Отключить текущее веб-подключение?',
+      'settings.disconnectWebTokenConfirm':
+          'API-токен, сохранённый в этом браузере, будет удалён, а вы вернётесь к настройке. Токен сервера не будет удалён.',
+      'settings.webTokenRotateHint':
+          'Если токен на сервере был заменён, сначала отключитесь здесь, затем введите новый токен в мастере настройки.',
       'settings.mouseWheelIntro':
           'Поведение колёсика над изображением в читалке (горизонтальные режимы страниц).',
       'settings.mouseWheelReadHint': 'Направление, предзагрузка и другое',

@@ -338,6 +338,24 @@ class WebEnUS {
       'settings.emptyLog': 'This log is empty',
       'settings.securityWebStub':
           'You connected with an API token at setup. To rotate it, update the server and paste a new token in setup, or clear site data and reconnect.',
+      'settings.webTokenSecurity': 'Web connection security',
+      'settings.webTokenSaved': 'Local token',
+      'settings.webTokenSavedYes': 'Saved in this browser',
+      'settings.webTokenSavedNo': 'No token saved in this browser',
+      'settings.webTokenFingerprint': 'Token fingerprint',
+      'settings.webTokenVerifyStatus': 'Verify status',
+      'settings.webTokenValid': 'Current token is valid',
+      'settings.webTokenInvalid': 'Current token is invalid or rotated',
+      'settings.securityWebBody':
+          'The web UI connects with an API token stored in this browser. The full token is never shown here; this only checks the current browser connection.',
+      'settings.verifyCurrentToken': 'Verify current token',
+      'settings.disconnectWebToken': 'Disconnect and reconnect',
+      'settings.disconnectWebTokenTitle':
+          'Disconnect the current web connection?',
+      'settings.disconnectWebTokenConfirm':
+          'This clears the API token saved in this browser and returns to setup. The server token will not be deleted.',
+      'settings.webTokenRotateHint':
+          'If you rotated the token on the server, disconnect here first, then paste the new token in setup.',
       'settings.mouseWheelIntro':
           'Choose how the mouse wheel behaves over images in the reader (horizontal page modes).',
       'settings.mouseWheelReadHint': 'Direction, preload, and more',

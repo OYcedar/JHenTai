@@ -309,6 +309,23 @@ class WebZhTW {
       'settings.emptyLog': '此日誌為空',
       'settings.securityWebStub':
           '首次連線時使用了 API Token。更換 Token 請更新伺服器後在設定精靈貼上新 Token，或清除網站資料後重新連線。',
+      'settings.webTokenSecurity': 'Web 連線安全',
+      'settings.webTokenSaved': '本機 Token',
+      'settings.webTokenSavedYes': '已儲存在目前瀏覽器',
+      'settings.webTokenSavedNo': '目前瀏覽器未儲存 Token',
+      'settings.webTokenFingerprint': 'Token 指紋',
+      'settings.webTokenVerifyStatus': '校驗狀態',
+      'settings.webTokenValid': '目前 Token 可用',
+      'settings.webTokenInvalid': '目前 Token 無效或已輪換',
+      'settings.securityWebBody':
+          'Web 端使用瀏覽器本機儲存的 API Token 連線伺服器。這裡不會顯示完整 Token，只用於確認目前瀏覽器連線狀態。',
+      'settings.verifyCurrentToken': '校驗目前 Token',
+      'settings.disconnectWebToken': '斷開並重新連線',
+      'settings.disconnectWebTokenTitle': '斷開目前 Web 連線？',
+      'settings.disconnectWebTokenConfirm':
+          '這會清除目前瀏覽器儲存的 API Token，並返回設定精靈。伺服器 Token 不會被刪除。',
+      'settings.webTokenRotateHint':
+          '如果你已經在伺服器輪換 Token，請先斷開目前連線，然後在設定精靈中貼上新的 Token。',
       'settings.mouseWheelIntro': '選擇閱讀器中滑鼠滾輪在圖片上的行為（橫向翻頁模式）。',
       'settings.mouseWheelReadHint': '閱讀方向、預載入等全部選項',
       'settings.aboutVersionLabel': '版本',

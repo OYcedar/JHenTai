@@ -309,6 +309,23 @@ class WebZhCN {
       'settings.emptyLog': '此日志为空',
       'settings.securityWebStub':
           '首次连接时使用了 API Token。更换 Token 请更新服务端后在设置向导中粘贴新 Token，或清除站点数据后重新连接。',
+      'settings.webTokenSecurity': 'Web 连接安全',
+      'settings.webTokenSaved': '本机 Token',
+      'settings.webTokenSavedYes': '已保存在当前浏览器',
+      'settings.webTokenSavedNo': '当前浏览器未保存 Token',
+      'settings.webTokenFingerprint': 'Token 指纹',
+      'settings.webTokenVerifyStatus': '校验状态',
+      'settings.webTokenValid': '当前 Token 可用',
+      'settings.webTokenInvalid': '当前 Token 无效或已轮换',
+      'settings.securityWebBody':
+          'Web 端使用浏览器本地保存的 API Token 连接服务端。这里不会显示完整 Token，只用于确认当前浏览器连接状态。',
+      'settings.verifyCurrentToken': '校验当前 Token',
+      'settings.disconnectWebToken': '断开并重新连接',
+      'settings.disconnectWebTokenTitle': '断开当前 Web 连接？',
+      'settings.disconnectWebTokenConfirm':
+          '这会清除当前浏览器保存的 API Token，并返回设置向导。服务端 Token 不会被删除。',
+      'settings.webTokenRotateHint':
+          '如果你已经在服务端轮换 Token，请先断开当前连接，然后在设置向导中粘贴新的 Token。',
       'settings.mouseWheelIntro': '选择阅读器中鼠标滚轮在图片上的行为（横向翻页模式）。',
       'settings.mouseWheelReadHint': '阅读方向、预加载等全部选项',
       'settings.aboutVersionLabel': '版本',

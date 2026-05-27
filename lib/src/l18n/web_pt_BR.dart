@@ -334,6 +334,23 @@ class WebPtBR {
       'settings.emptyLog': 'Este log está vazio',
       'settings.securityWebStub':
           'Você conectou com um token de API na configuração. Para trocar, atualize o servidor e cole um novo token, ou limpe os dados do site.',
+      'settings.webTokenSecurity': 'Segurança da conexão web',
+      'settings.webTokenSaved': 'Token local',
+      'settings.webTokenSavedYes': 'Salvo neste navegador',
+      'settings.webTokenSavedNo': 'Nenhum token salvo neste navegador',
+      'settings.webTokenFingerprint': 'Identificador do token',
+      'settings.webTokenVerifyStatus': 'Estado da verificação',
+      'settings.webTokenValid': 'O token atual é válido',
+      'settings.webTokenInvalid': 'O token atual é inválido ou foi trocado',
+      'settings.securityWebBody':
+          'A interface web conecta usando um token de API salvo neste navegador. O token completo nunca é exibido aqui; isto apenas verifica a conexão atual.',
+      'settings.verifyCurrentToken': 'Verificar token atual',
+      'settings.disconnectWebToken': 'Desconectar e reconectar',
+      'settings.disconnectWebTokenTitle': 'Desconectar a conexão web atual?',
+      'settings.disconnectWebTokenConfirm':
+          'Isto remove o token de API salvo neste navegador e volta à configuração. O token do servidor não será excluído.',
+      'settings.webTokenRotateHint':
+          'Se você trocou o token no servidor, desconecte aqui primeiro e cole o novo token na configuração.',
       'settings.mouseWheelIntro':
           'Escolha o comportamento da roda do mouse sobre as imagens no leitor (modos de página horizontais).',
       'settings.mouseWheelReadHint': 'Direção, pré-carregamento e mais',
