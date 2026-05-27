@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:web/web.dart' as web;
 
@@ -111,11 +112,115 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
             ),
           ),
           const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.account_circle_outlined),
-            title: Text('settings.ehProfileAndQuota'.tr),
-            subtitle: Text('settings.ehProfileAndQuotaHint'.tr),
+          _EhStatusTile(controller: controller),
+        ],
+      ),
+    );
+  }
+}
+
+class _EhStatusTile extends StatefulWidget {
+  final WebSettingsController controller;
+
+  const _EhStatusTile({required this.controller});
+
+  @override
+  State<_EhStatusTile> createState() => _EhStatusTileState();
+}
+
+class _EhStatusTileState extends State<_EhStatusTile> {
+  bool _loading = false;
+  bool _resetting = false;
+  String _error = '';
+  Map<String, dynamic> _status = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      _status = await backendApiClient.fetchEhStatus();
+    } catch (e) {
+      _error = '$e';
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _resetLimit() async {
+    if (_resetting) return;
+    setState(() => _resetting = true);
+    try {
+      await backendApiClient.resetImageLimit();
+      await _load();
+      Get.snackbar('common.success'.tr, 'settings.ehQuotaReset'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.ehQuotaResetFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
+    } finally {
+      if (mounted) setState(() => _resetting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDonator = _status['isDonator'] == true;
+    final current = _status['currentConsumption'];
+    final total = _status['totalLimit'];
+    final resetCost = _status['resetCost'];
+    final gp = _status['gp']?.toString() ?? '-';
+    final credit = _status['credit']?.toString() ?? '-';
+    final subtitle = _error.isNotEmpty
+        ? 'settings.ehStatusFailed'.trParams({'error': _error})
+        : _loading
+            ? 'common.loading'.tr
+            : [
+                '${'settings.ehAssets'.tr}: GP $gp / Credits $credit',
+                if (isDonator && current != null && total != null)
+                  '${'settings.ehImageQuota'.tr}: $current / $total',
+                if (isDonator && resetCost != null)
+                  '${'settings.ehResetCost'.tr}: $resetCost GP',
+                if (!isDonator) 'settings.ehQuotaUnavailable'.tr,
+              ].join('\n');
+
+    return ListTile(
+      leading: _loading || _resetting
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.account_circle_outlined),
+      title: Text('settings.ehProfileAndQuota'.tr),
+      subtitle: Text(subtitle),
+      isThreeLine: true,
+      trailing: Wrap(
+        spacing: 4,
+        children: [
+          IconButton(
+            tooltip: 'common.refresh'.tr,
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : _load,
           ),
+          if (isDonator)
+            IconButton(
+              tooltip: 'common.reset'.tr,
+              icon: const Icon(Icons.restart_alt),
+              onPressed: _resetting ? null : _resetLimit,
+            ),
         ],
       ),
     );

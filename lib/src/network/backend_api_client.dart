@@ -531,6 +531,15 @@ class BackendApiClient {
     return [];
   }
 
+  Future<Map<String, dynamic>> fetchEhStatus() async {
+    final response = await _dio.get('/api/gallery/eh-status');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<void> resetImageLimit() async {
+    await _dio.post('/api/gallery/reset-image-limit');
+  }
+
   Future<Map<String, dynamic>> fetchGalleryHHInfo(String archivePageUrl) async {
     final response = await _dio.post(
       '/api/gallery/hh-info',

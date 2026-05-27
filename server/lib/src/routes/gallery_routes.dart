@@ -53,6 +53,8 @@ class GalleryRoutes {
     router.get('/list-by-url', _galleryListByUrl);
     router.get('/stats/<gid>/<token>', _galleryStats);
     router.get('/torrents/<gid>/<token>', _galleryTorrents);
+    router.get('/eh-status', _ehStatus);
+    router.post('/reset-image-limit', _resetImageLimit);
     router.post('/hh-info', _galleryHHInfo);
     router.post('/hh-download', _galleryHHDownload);
     router.post('/image-lookup', _galleryImageLookup);
@@ -94,6 +96,78 @@ class GalleryRoutes {
         body: jsonEncode({'error': 'Failed to fetch stats: $e'}),
       );
     }
+  }
+
+  Future<Response> _ehStatus(Request request) async {
+    try {
+      final homeHtml = await _client.fetchHomePageHtml();
+      final exchangeHtml = await _client.fetchExchangePageHtml();
+      return Response.ok(
+        jsonEncode({
+          ..._parseImageLimit(homeHtml),
+          ..._parseAssets(exchangeHtml),
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to fetch EH status: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Future<Response> _resetImageLimit(Request request) async {
+    try {
+      await _client.resetImageLimit();
+      return Response.ok(
+        jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to reset image limit: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Map<String, dynamic> _parseImageLimit(String html) {
+    final doc = html_parser.parse(html);
+    final isDonator = doc.querySelector(
+          '.stuffbox > .homebox > form > p > input[value="Reset Quota"]',
+        ) !=
+        null;
+    if (!isDonator) {
+      return {'isDonator': false};
+    }
+    int? intText(String selector) {
+      final raw = doc.querySelector(selector)?.text.replaceAll(',', '').trim();
+      return int.tryParse(raw ?? '');
+    }
+
+    return {
+      'isDonator': true,
+      'currentConsumption':
+          intText('.stuffbox > .homebox > p > strong:nth-child(1)'),
+      'totalLimit': intText('.stuffbox > .homebox > p > strong:nth-child(3)'),
+      'resetCost': intText('.stuffbox > .homebox > p:nth-child(3) > strong'),
+    };
+  }
+
+  Map<String, dynamic> _parseAssets(String html) {
+    final doc = html_parser.parse(html);
+    final creditDesc =
+        doc.querySelector('#buyform')?.parent?.nextElementSibling?.text;
+    final gpCreditDesc =
+        doc.querySelector('#sellform')?.parent?.nextElementSibling?.text;
+    final credit =
+        RegExp(r'([\d,k ]+)Credits').firstMatch(creditDesc ?? '')?.group(1);
+    final gp = RegExp(r'([\d,k ]+)GP').firstMatch(gpCreditDesc ?? '')?.group(1);
+    return {
+      'credit': credit?.trim() ?? '-',
+      'gp': gp?.trim() ?? '-',
+    };
   }
 
   Future<Response> _galleryTorrents(

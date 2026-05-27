@@ -11,6 +11,8 @@ class WebRuRU {
       'common.retry': 'Повторить',
       'common.delete': 'Удалить',
       'common.reset': 'Сбросить',
+      'common.refresh': 'Обновить',
+      'common.loading': 'Загрузка...',
       'common.unknown': 'Неизвестно',
       'common.images': '@count изобр.',
       'common.pages': '@count стр.',
@@ -279,6 +281,15 @@ class WebRuRU {
       'settings.ehProfileAndQuota': 'Профиль, квота и активы',
       'settings.ehProfileAndQuotaHint':
           'Эти значения всё ещё зависят от разбора страниц сайта. Пока их можно посмотреть в настройках сайта.',
+      'settings.ehAssets': 'Активы',
+      'settings.ehImageQuota': 'Квота изображений',
+      'settings.ehResetCost': 'Стоимость сброса',
+      'settings.ehQuotaUnavailable':
+          'Квота изображений доступна только донаторам',
+      'settings.ehQuotaReset': 'Квота изображений сброшена',
+      'settings.ehQuotaResetFailed':
+          'Не удалось сбросить квоту изображений: @error',
+      'settings.ehStatusFailed': 'Не удалось загрузить статус EH: @error',
       'settings.galleryListStyle': 'Вид списка галерей',
       'settings.listModeGrid': 'Сетка',
       'settings.listModeList': 'Список',

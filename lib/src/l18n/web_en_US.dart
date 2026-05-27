@@ -11,6 +11,8 @@ class WebEnUS {
       'common.retry': 'Retry',
       'common.delete': 'Delete',
       'common.reset': 'Reset',
+      'common.refresh': 'Refresh',
+      'common.loading': 'Loading...',
       'common.unknown': 'Unknown',
       'common.images': '@count images',
       'common.pages': '@count pages',
@@ -284,6 +286,14 @@ class WebEnUS {
       'settings.ehProfileAndQuota': 'Profile, quota, and assets',
       'settings.ehProfileAndQuotaHint':
           'These values still depend on site-page parsing. You can view them from the site settings page for now.',
+      'settings.ehAssets': 'Assets',
+      'settings.ehImageQuota': 'Image quota',
+      'settings.ehResetCost': 'Reset cost',
+      'settings.ehQuotaUnavailable':
+          'Image quota is available to donators only',
+      'settings.ehQuotaReset': 'Image quota has been reset',
+      'settings.ehQuotaResetFailed': 'Failed to reset image quota: @error',
+      'settings.ehStatusFailed': 'Failed to load EH status: @error',
       'settings.galleryListStyle': 'Gallery list style',
       'settings.listModeGrid': 'Grid',
       'settings.listModeList': 'List',

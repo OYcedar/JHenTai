@@ -11,6 +11,8 @@ class WebPtBR {
       'common.retry': 'Tentar novamente',
       'common.delete': 'Excluir',
       'common.reset': 'Redefinir',
+      'common.refresh': 'Atualizar',
+      'common.loading': 'Carregando...',
       'common.unknown': 'Desconhecido',
       'common.images': '@count imagens',
       'common.pages': '@count páginas',
@@ -281,6 +283,15 @@ class WebPtBR {
       'settings.ehProfileAndQuota': 'Perfil, cota e recursos',
       'settings.ehProfileAndQuotaHint':
           'Esses valores ainda dependem da leitura das páginas do site. Por enquanto, veja-os nas configurações do site.',
+      'settings.ehAssets': 'Recursos',
+      'settings.ehImageQuota': 'Cota de imagens',
+      'settings.ehResetCost': 'Custo para redefinir',
+      'settings.ehQuotaUnavailable':
+          'A cota de imagens está disponível apenas para doadores',
+      'settings.ehQuotaReset': 'A cota de imagens foi redefinida',
+      'settings.ehQuotaResetFailed':
+          'Falha ao redefinir a cota de imagens: @error',
+      'settings.ehStatusFailed': 'Falha ao carregar o status EH: @error',
       'settings.galleryListStyle': 'Estilo da lista de galerias',
       'settings.listModeGrid': 'Grade',
       'settings.listModeList': 'Lista',

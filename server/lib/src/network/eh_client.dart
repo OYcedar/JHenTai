@@ -476,6 +476,24 @@ class EHClient {
     await cookieManager.removeAllCookies();
   }
 
+  Future<String> fetchHomePageHtml() async {
+    final response = await _dio.get(baseUrl);
+    return response.data.toString();
+  }
+
+  Future<String> fetchExchangePageHtml() async {
+    final response = await _dio.get('https://e-hentai.org/exchange.php?t=gp');
+    return response.data.toString();
+  }
+
+  Future<void> resetImageLimit() async {
+    await _dio.post(
+      baseUrl,
+      data: {'reset_imagelimit': 'Reset Limit'},
+      options: Options(contentType: Headers.formUrlEncodedContentType),
+    );
+  }
+
   // --- Gallery detail parsing (for downloads) ---
 
   Future<GalleryDetailResult> fetchGalleryDetail(String galleryUrl) async {
