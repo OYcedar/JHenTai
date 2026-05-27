@@ -26,6 +26,9 @@ class WebZhTW {
       'reDownload': '重新下載',
       'hasCopiedToClipboard': '已複製到剪貼簿',
       'displayFirstPageAlone': '單獨顯示首頁',
+      'showThumbnails': '顯示縮圖',
+      'showStatusInfo': '底部顯示狀態資訊',
+      'spaceBetweenImages': '圖片間隔',
 
       // setup
       'setup.title': 'JHenTai 伺服器設定',

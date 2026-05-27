@@ -26,6 +26,9 @@ class WebZhCN {
       'reDownload': '重新下载',
       'hasCopiedToClipboard': '已复制到剪贴板',
       'displayFirstPageAlone': '单独展示首页',
+      'showThumbnails': '显示缩略图',
+      'showStatusInfo': '底部显示状态信息',
+      'spaceBetweenImages': '图片间隔',
 
       // setup
       'setup.title': 'JHenTai 服务器设置',

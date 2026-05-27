@@ -26,6 +26,9 @@ class WebKoKR {
       'reDownload': '다시 다운로드',
       'hasCopiedToClipboard': '클립보드에 복사했습니다',
       'displayFirstPageAlone': '첫 페이지만 표시',
+      'showThumbnails': '썸네일 표시',
+      'showStatusInfo': '하단 상태 표시',
+      'spaceBetweenImages': '이미지 간격',
 
       // setup
       'setup.title': 'JHenTai 서버 설정',

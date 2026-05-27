@@ -247,6 +247,9 @@ class WebReaderController extends GetxController {
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
   final preloadPages = 3.obs;
+  final showThumbnails = true.obs;
+  final showStatusInfo = true.obs;
+  final imageSpacing = 0.obs;
   Timer? _autoTimer;
 
   final _imagePageUrls = <String>[];
@@ -423,6 +426,20 @@ class WebReaderController extends GetxController {
     } catch (_) {}
   }
 
+  Future<void> _loadDisplaySettings() async {
+    try {
+      final showThumbs =
+          await backendApiClient.getSetting('web_show_thumbnails');
+      if (showThumbs != null) showThumbnails.value = showThumbs != 'false';
+      final showStatus =
+          await backendApiClient.getSetting('web_show_status_info');
+      if (showStatus != null) showStatusInfo.value = showStatus != 'false';
+      final spacing = await backendApiClient.getSetting('web_image_spacing');
+      final value = int.tryParse(spacing ?? '');
+      if (value != null) imageSpacing.value = value.clamp(0, 32).toInt();
+    } catch (_) {}
+  }
+
   int doubleColumnScreenIndexForImagePage(int page) {
     final t = totalPages.value;
     if (t <= 0) return 0;
@@ -558,6 +575,7 @@ class WebReaderController extends GetxController {
       await _loadDisplayFirstPageAlone();
       await _loadAutoInterval();
       await _loadPreloadPages();
+      await _loadDisplaySettings();
       switch (mode) {
         case ReaderMode.online:
           await _loadOnline();
@@ -1103,22 +1121,26 @@ class _ReaderBody extends StatelessWidget {
           ),
           _TopOverlay(controller: controller),
           _BottomOverlay(controller: controller),
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: Obx(() => Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '${controller.currentPage.value + 1} / ${controller.totalPages.value}',
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
-                  ),
-                )),
-          ),
+          Obx(() {
+            if (!controller.showStatusInfo.value) {
+              return const SizedBox.shrink();
+            }
+            return Positioned(
+              right: 16,
+              bottom: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${controller.currentPage.value + 1} / ${controller.totalPages.value}',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -1170,8 +1192,15 @@ class _ReaderBody extends StatelessWidget {
                 MediaQuery.sizeOf(context).height *
                     (controller.preloadPages.value + 1),
               ),
-              itemBuilder: (context, index) => _ImagePage(
-                  controller: controller, index: index, isVertical: true),
+              itemBuilder: (context, index) => Obx(() => Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == controller.totalPages.value - 1
+                          ? 0
+                          : controller.imageSpacing.value.toDouble(),
+                    ),
+                    child: _ImagePage(
+                        controller: controller, index: index, isVertical: true),
+                  )),
             ),
           ),
         ));
@@ -1207,11 +1236,18 @@ class _ReaderBody extends StatelessWidget {
                 MediaQuery.sizeOf(context).height *
                     (controller.preloadPages.value + 1),
               ),
-              itemBuilder: (context, index) => _ImagePage(
-                  controller: controller,
-                  index: index,
-                  isVertical: true,
-                  fitWidth: true),
+              itemBuilder: (context, index) => Obx(() => Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == controller.totalPages.value - 1
+                          ? 0
+                          : controller.imageSpacing.value.toDouble(),
+                    ),
+                    child: _ImagePage(
+                        controller: controller,
+                        index: index,
+                        isVertical: true,
+                        fitWidth: true),
+                  )),
             ),
           ),
         ));
@@ -1255,6 +1291,8 @@ class _ReaderBody extends StatelessWidget {
                     index: idxs[0],
                   ),
                 ),
+                Obx(() =>
+                    SizedBox(width: controller.imageSpacing.value.toDouble())),
                 Expanded(
                   child: _DoubleTapZoomImage(
                     controller: controller,
@@ -1922,6 +1960,7 @@ class _BottomOverlay extends StatelessWidget {
 
   Widget _buildThumbnailStrip() {
     return Obx(() {
+      if (!controller.showThumbnails.value) return const SizedBox.shrink();
       if (controller.totalPages.value <= 1) return const SizedBox.shrink();
       final total = controller.totalPages.value;
 

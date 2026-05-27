@@ -26,6 +26,9 @@ class WebPtBR {
       'reDownload': 'Baixar novamente',
       'hasCopiedToClipboard': 'Copiado para a área de transferência',
       'displayFirstPageAlone': 'Mostrar primeira página sozinha',
+      'showThumbnails': 'Mostrar miniaturas',
+      'showStatusInfo': 'Mostrar status na parte inferior',
+      'spaceBetweenImages': 'Espaçamento entre imagens',
 
       // setup
       'setup.title': 'Configuração do Servidor JHenTai',

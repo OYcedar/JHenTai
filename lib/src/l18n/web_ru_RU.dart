@@ -26,6 +26,9 @@ class WebRuRU {
       'reDownload': 'Скачать снова',
       'hasCopiedToClipboard': 'Скопировано в буфер обмена',
       'displayFirstPageAlone': 'Отдельно показывать первую страницу',
+      'showThumbnails': 'Показывать миниатюры',
+      'showStatusInfo': 'Показывать статус снизу',
+      'spaceBetweenImages': 'Отступы между изображениями',
 
       // setup
       'setup.title': 'Настройка сервера JHenTai',

@@ -94,6 +94,9 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final preloadPages = 3.obs;
   final autoInterval = 5.0.obs;
   final displayFirstPageAlone = false.obs;
+  final showThumbnails = true.obs;
+  final showStatusInfo = true.obs;
+  final imageSpacing = 0.obs;
   final loaded = false.obs;
 
   @override
@@ -113,6 +116,12 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       final first =
           await backendApiClient.getSetting('web_display_first_page_alone');
       if (first != null) displayFirstPageAlone.value = first == 'true';
+      final thumbs = await backendApiClient.getSetting('web_show_thumbnails');
+      if (thumbs != null) showThumbnails.value = thumbs != 'false';
+      final status = await backendApiClient.getSetting('web_show_status_info');
+      if (status != null) showStatusInfo.value = status != 'false';
+      final spacing = await backendApiClient.getSetting('web_image_spacing');
+      if (spacing != null) imageSpacing.value = int.tryParse(spacing) ?? 0;
     } catch (_) {}
     loaded.value = true;
   }
@@ -207,6 +216,49 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('showThumbnails'.tr),
+                    value: showThumbnails.value,
+                    onChanged: (v) {
+                      showThumbnails.value = v;
+                      backendApiClient
+                          .putSetting('web_show_thumbnails', v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('showStatusInfo'.tr),
+                    value: showStatusInfo.value,
+                    onChanged: (v) {
+                      showStatusInfo.value = v;
+                      backendApiClient
+                          .putSetting('web_show_status_info', v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              const SizedBox(height: 8),
+              Obx(() => Row(
+                    children: [
+                      Expanded(child: Text('spaceBetweenImages'.tr)),
+                      Text('${imageSpacing.value}px'),
+                    ],
+                  )),
+              Obx(() => Slider(
+                    value: imageSpacing.value.toDouble(),
+                    min: 0,
+                    max: 32,
+                    divisions: 16,
+                    label: '${imageSpacing.value}px',
+                    onChanged: (v) {
+                      final rounded = v.round();
+                      imageSpacing.value = rounded;
+                      backendApiClient
+                          .putSetting('web_image_spacing', rounded)
+                          .catchError((_) {});
+                    },
                   )),
             ],
           ),

@@ -28,6 +28,9 @@ class WebEnUS {
       'reDownload': 'Re-Download',
       'hasCopiedToClipboard': 'Copied to clipboard',
       'displayFirstPageAlone': 'Display First Page Alone',
+      'showThumbnails': 'Show Thumbnails',
+      'showStatusInfo': 'Show Status at Bottom',
+      'spaceBetweenImages': 'Space Between Images',
 
       // setup
       'setup.title': 'JHenTai Server Setup',
