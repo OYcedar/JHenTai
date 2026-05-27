@@ -30,8 +30,12 @@ services:
       # - JH_JHENTAI_API_SECRET=your_secret
       # - JH_GALLERY_UPGRADE_REUSE_IMAGES=true
       # - JH_JHENTAI_PUBLIC_API=https://jhentai.top
-      # If you set HTTP_PROXY/HTTPS_PROXY (e.g. corporate proxy), exclude EH hosts or image fetches may fail:
-      # NO_PROXY=e-hentai.org,exhentai.org,ehgt.org,forums.e-hentai.org,api.e-hentai.org,upld.e-hentai.org,*.ehgt.org,*.hath.network
+      # Optional outbound proxy for EH/EX requests made by the backend server.
+      # Use HTTPS_PROXY for https:// targets. Do not put EH/EX/H@H domains in NO_PROXY,
+      # otherwise gallery detail/image requests will bypass the proxy.
+      # - HTTP_PROXY=http://host.docker.internal:7890
+      # - HTTPS_PROXY=http://host.docker.internal:7890
+      # - NO_PROXY=127.0.0.1,localhost,::1
       # Unraid / reverse proxy: very long /api/proxy/image?url=... GETs can return 414; increase nginx
       # large_client_header_buffers or rely on the Web UI POST image proxy for long CDN URLs.
       # Optional: prefer IPv4 for *.hath.network only (TLS to H@H fails on broken IPv6). Usually omit on local Docker.

@@ -103,6 +103,8 @@ Generated new API token: a3f9c2...
 | `JH_EXTRA_SCAN_PATHS` | *（空）*      | 逗号分隔的额外本地画廊扫描路径   |
 | `PUID`                | `1000`     | 映射卷文件所有者的用户 ID    |
 | `PGID`                | `1000`     | 映射卷文件所有者的组 ID     |
+| `HTTP_PROXY` / `HTTPS_PROXY` | *（空）* | 后端服务访问 EH/EX/H@H 时使用的出站代理。HTTPS 目标通常需要设置 `HTTPS_PROXY=http://代理地址:端口`。 |
+| `NO_PROXY` / `no_proxy` | `127.0.0.1,localhost,::1`（entrypoint 自动追加） | 不走代理的地址。不要把 `e-hentai.org`、`exhentai.org`、`*.ehgt.org`、`*.hath.network` 放进去，否则详情页和图片请求会绕过代理。 |
 
 
 ### PUID / PGID（Unraid）
@@ -292,6 +294,14 @@ chmod +x scripts/dockerhub-delete-tags.sh
 
 **ExHentai 内容无法加载**  
 → 进入 **设置 → 站点**，切换至 **ExHentai**，并使用有效的 ExHentai Cookie 登录
+
+**容器里设置了 `http_proxy`，画廊列表能打开，但详情页打不开**
+→ 详情页、缩略图和阅读图片由后端服务端请求 EH/EX/H@H。请确认：
+
+1. 对 `https://` 目标设置了 **`HTTPS_PROXY`**（很多代理工具虽然地址是 `http://host:port`，变量仍应写在 `HTTPS_PROXY` 中）。
+2. **不要** 在 `NO_PROXY` 里排除 `e-hentai.org`、`exhentai.org`、`*.ehgt.org`、`*.hath.network`，否则详情请求会直接出容器而不是走代理。
+3. `NO_PROXY` 只保留本地地址即可，例如：`127.0.0.1,localhost,::1`。entrypoint 会自动追加这些值，避免健康检查和本地 API 请求误走代理。
+4. 修改 compose 后重建/重启容器：`docker compose up -d --build` 或拉取新镜像后 `docker compose up -d`。
 
 **Unraid / 局域网直连：封面能出，画廊内页或阅读器大图 500（`*.hath.network` 报 `HandshakeException`）**  
 Web 端大量图片走 **`/api/proxy/image`** 由**服务端代拉**。封面常在 **`ehgt.org`**（可能正常），而分页大图多在 **H@H 节点**（`*.hath.network`）。若服务端日志或 500 正文中出现 **`HandshakeException: Connection terminated during handshake`**，说明**容器内**与该主机的 **TLS 握手失败**（IPv6 路径、MTU、防火墙、证书链等），一般不是 Flutter Web 本身问题。

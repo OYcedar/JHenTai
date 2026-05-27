@@ -71,8 +71,21 @@ Future<ConnectionTask<Socket>> _hathIpv4ConnectionFactory(
   return Socket.startConnect(target, port);
 }
 
+HttpClient _createProxyAwareHttpClient({bool preferHathIpv4 = false}) {
+  final client = HttpClient();
+  client.findProxy = (uri) => HttpClient.findProxyFromEnvironment(
+    uri,
+    environment: Platform.environment,
+  );
+  if (preferHathIpv4) {
+    client.connectionFactory = _hathIpv4ConnectionFactory;
+  }
+  return client;
+}
+
 class EHClient {
   late Dio _dio;
+
   /// Separate client for `*.hath.network` so IPv4 preference does not break EH/EX front domains.
   late Dio _dioHath;
   late ServerCookieManager cookieManager;
@@ -87,13 +100,19 @@ class EHClient {
   String get site => _site;
   set site(String s) => _site = s;
 
-  String get baseUrl => _site == 'EX' ? 'https://exhentai.org' : 'https://e-hentai.org';
-  String get apiUrl => _site == 'EX' ? 'https://exhentai.org/api.php' : 'https://api.e-hentai.org/api.php';
+  String get baseUrl =>
+      _site == 'EX' ? 'https://exhentai.org' : 'https://e-hentai.org';
+  String get apiUrl => _site == 'EX'
+      ? 'https://exhentai.org/api.php'
+      : 'https://api.e-hentai.org/api.php';
 
   static const String ehForums = 'https://forums.e-hentai.org/index.php';
 
   /// CDN thumbnail URL for one `#gdt` link to a `/s/` viewer page (EH/EX layouts).
-  static String extractThumbnailImageUrlFromGdtAnchor(Element a, String siteOrigin) {
+  static String extractThumbnailImageUrlFromGdtAnchor(
+    Element a,
+    String siteOrigin,
+  ) {
     final parsed = parseGdtAnchorThumbnail(a, siteOrigin);
     if (parsed != null) {
       final u = parsed['thumbUrl'] as String? ?? '';
@@ -105,7 +124,9 @@ class EHClient {
   /// Sprite offset from `#gdt` / `.gdtm` inline style. Horizontal: `url(...) -Npx 0`;
   /// vertical stack: `url(...) 0px -Npx` or `background-position:0px -Npx`.
   /// [spriteCropY] true => Web uses srcRect (0, off, tw, off+th); false => (off, 0, off+tw, th).
-  static ({double offset, bool spriteCropY})? _spriteOffsetFromGdtStyle(String style) {
+  static ({double offset, bool spriteCropY})? _spriteOffsetFromGdtStyle(
+    String style,
+  ) {
     final horizontal = RegExp(r'\)\s*-(\d+)px').firstMatch(style);
     if (horizontal != null) {
       final v = double.tryParse(horizontal.group(1)!);
@@ -128,7 +149,10 @@ class EHClient {
   }
 
   /// Aligns with [GalleryThumbnail] / eh_spider_parser: large = one image URL; small = sprite sheet + crop.
-  static Map<String, dynamic>? parseGdtAnchorThumbnail(Element a, String siteOrigin) {
+  static Map<String, dynamic>? parseGdtAnchorThumbnail(
+    Element a,
+    String siteOrigin,
+  ) {
     final div = a.querySelector('div[style]');
     if (div != null) {
       final style = div.attributes['style'] ?? '';
@@ -136,7 +160,8 @@ class EHClient {
       if (urlMatch != null) {
         var thumbUrl = urlMatch.group(1)!.trim();
         if (thumbUrl.length >= 2 &&
-            ((thumbUrl.startsWith('"') && thumbUrl.endsWith('"')) || (thumbUrl.startsWith("'") && thumbUrl.endsWith("'")))) {
+            ((thumbUrl.startsWith('"') && thumbUrl.endsWith('"')) ||
+                (thumbUrl.startsWith("'") && thumbUrl.endsWith("'")))) {
           thumbUrl = thumbUrl.substring(1, thumbUrl.length - 1);
         }
         thumbUrl = _makeAbsoluteThumbUrl(thumbUrl, siteOrigin);
@@ -151,10 +176,7 @@ class EHClient {
         if (th > 0) th -= 1;
 
         final isLarge = offsetVal == null;
-        final out = <String, dynamic>{
-          'thumbUrl': thumbUrl,
-          'isLarge': isLarge,
-        };
+        final out = <String, dynamic>{'thumbUrl': thumbUrl, 'isLarge': isLarge};
         if (!isLarge) {
           out['offSet'] = offsetVal;
           out['thumbWidth'] = tw;
@@ -181,10 +203,7 @@ class EHClient {
           tw = double.tryParse(parts[parts.length - 3]);
           th = double.tryParse(parts[parts.length - 2]);
         }
-        final out = <String, dynamic>{
-          'thumbUrl': thumbUrl,
-          'isLarge': true,
-        };
+        final out = <String, dynamic>{'thumbUrl': thumbUrl, 'isLarge': true};
         if (tw != null) out['thumbWidth'] = tw;
         if (th != null) out['thumbHeight'] = th;
         return out;
@@ -198,7 +217,8 @@ class EHClient {
       if (urlMatch == null) continue;
       var thumbUrl = urlMatch.group(1)!.trim();
       if (thumbUrl.length >= 2 &&
-          ((thumbUrl.startsWith('"') && thumbUrl.endsWith('"')) || (thumbUrl.startsWith("'") && thumbUrl.endsWith("'")))) {
+          ((thumbUrl.startsWith('"') && thumbUrl.endsWith('"')) ||
+              (thumbUrl.startsWith("'") && thumbUrl.endsWith("'")))) {
         thumbUrl = thumbUrl.substring(1, thumbUrl.length - 1);
       }
       thumbUrl = _makeAbsoluteThumbUrl(thumbUrl, siteOrigin);
@@ -257,10 +277,7 @@ class EHClient {
       } else {
         final fallback = extractThumbnailImageUrlFromGdtAnchor(a, siteOrigin);
         thumbnailImageUrls.add(fallback);
-        galleryThumbnails.add({
-          'thumbUrl': fallback,
-          'isLarge': true,
-        });
+        galleryThumbnails.add({'thumbUrl': fallback, 'isLarge': true});
       }
     }
 
@@ -276,27 +293,31 @@ class EHClient {
     }
   }
 
-  Future<void> init(ServerCookieManager cm, {int connectTimeout = 6000, int receiveTimeout = 6000}) async {
+  Future<void> init(
+    ServerCookieManager cm, {
+    int connectTimeout = 6000,
+    int receiveTimeout = 6000,
+  }) async {
     cookieManager = cm;
     final opts = BaseOptions(
       connectTimeout: Duration(milliseconds: connectTimeout),
       receiveTimeout: Duration(milliseconds: receiveTimeout),
     );
     _dio = Dio(opts);
+    _dio.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: _createProxyAwareHttpClient,
+    );
     _dio.interceptors.add(cookieManager);
     _dio.interceptors.add(_ErrorInterceptor());
 
     _dioHath = Dio(opts);
-    final preferHathIpv4 = _parseEnvBool(Platform.environment['JH_HATH_PREFER_IPV4']);
-    if (preferHathIpv4) {
-      _dioHath.httpClientAdapter = IOHttpClientAdapter(
-        createHttpClient: () {
-          final client = HttpClient();
-          client.connectionFactory = _hathIpv4ConnectionFactory;
-          return client;
-        },
-      );
-    }
+    final preferHathIpv4 = _parseEnvBool(
+      Platform.environment['JH_HATH_PREFER_IPV4'],
+    );
+    _dioHath.httpClientAdapter = IOHttpClientAdapter(
+      createHttpClient: () =>
+          _createProxyAwareHttpClient(preferHathIpv4: preferHathIpv4),
+    );
     _dioHath.interceptors.add(cookieManager);
     _dioHath.interceptors.add(_ErrorInterceptor());
   }
@@ -309,7 +330,10 @@ class EHClient {
 
   // --- Raw proxy for frontend ---
 
-  Future<Map<String, dynamic>> proxyGet(String url, {Map<String, dynamic>? queryParams}) async {
+  Future<Map<String, dynamic>> proxyGet(
+    String url, {
+    Map<String, dynamic>? queryParams,
+  }) async {
     try {
       final response = await _dio.get(url, queryParameters: queryParams);
       return _wrapResponse(response);
@@ -318,7 +342,12 @@ class EHClient {
     }
   }
 
-  Future<Map<String, dynamic>> proxyPost(String url, {dynamic data, Map<String, dynamic>? queryParams, String? contentType}) async {
+  Future<Map<String, dynamic>> proxyPost(
+    String url, {
+    dynamic data,
+    Map<String, dynamic>? queryParams,
+    String? contentType,
+  }) async {
     try {
       final response = await _dio.post(
         url,
@@ -347,7 +376,8 @@ class EHClient {
         queryParameters: {'act': 'Login', 'CODE': '01'},
         data: {
           'referer': 'https://forums.e-hentai.org/index.php?',
-          'b': '', 'bt': '',
+          'b': '',
+          'bt': '',
           'UserName': userName,
           'PassWord': passWord,
           'CookieDate': 365,
@@ -356,10 +386,18 @@ class EHClient {
 
       final setCookies = response.headers['set-cookie'];
       if (setCookies != null && setCookies.length > 2) {
-        final idMatch = RegExp(r'ipb_member_id=(\d+);')
-            .firstMatch(setCookies.firstWhere((h) => h.contains('ipb_member_id'), orElse: () => ''));
-        final hashMatch = RegExp(r'ipb_pass_hash=(\w+);')
-            .firstMatch(setCookies.firstWhere((h) => h.contains('ipb_pass_hash'), orElse: () => ''));
+        final idMatch = RegExp(r'ipb_member_id=(\d+);').firstMatch(
+          setCookies.firstWhere(
+            (h) => h.contains('ipb_member_id'),
+            orElse: () => '',
+          ),
+        );
+        final hashMatch = RegExp(r'ipb_pass_hash=(\w+);').firstMatch(
+          setCookies.firstWhere(
+            (h) => h.contains('ipb_pass_hash'),
+            orElse: () => '',
+          ),
+        );
         if (idMatch != null && hashMatch != null) {
           // Manually store the login cookies since the interceptor only
           // fires after the response is fully processed.
@@ -409,11 +447,15 @@ class EHClient {
     return _parseImagePage(body);
   }
 
-  Future<Response> downloadFile(String url, String savePath, {
+  Future<Response> downloadFile(
+    String url,
+    String savePath, {
     ProgressCallback? onProgress,
     CancelToken? cancelToken,
   }) {
-    return _dioForUrl(url).download(url, savePath,
+    return _dioForUrl(url).download(
+      url,
+      savePath,
       onReceiveProgress: onProgress,
       cancelToken: cancelToken,
     );
@@ -421,10 +463,9 @@ class EHClient {
 
   Future<List<int>> downloadBytes(String url) async {
     try {
-      final response = await _dioForUrl(url).get<List<int>>(
+      final response = await _dioForUrl(
         url,
-        options: Options(responseType: ResponseType.bytes),
-      );
+      ).get<List<int>>(url, options: Options(responseType: ResponseType.bytes));
       return response.data ?? [];
     } on DioException catch (e) {
       final host = Uri.tryParse(url)?.host;
@@ -451,9 +492,13 @@ class EHClient {
     href ??= doc.querySelector('#continue a')?.attributes['href'];
     if (href != null && href.isNotEmpty) return href;
 
-    final onClickAttr = doc.querySelector('#continue input')?.attributes['onclick'];
+    final onClickAttr = doc
+        .querySelector('#continue input')
+        ?.attributes['onclick'];
     if (onClickAttr != null) {
-      final urlMatch = RegExp(r"document\.location\s*=\s*'([^']+)'").firstMatch(onClickAttr);
+      final urlMatch = RegExp(
+        r"document\.location\s*=\s*'([^']+)'",
+      ).firstMatch(onClickAttr);
       if (urlMatch != null) return urlMatch.group(1);
     }
     return null;
@@ -475,7 +520,9 @@ class EHClient {
         normalized,
         data: FormData.fromMap({
           'dltype': isOriginal ? 'org' : 'res',
-          'dlcheck': isOriginal ? 'Download Original Archive' : 'Download Resample Archive',
+          'dlcheck': isOriginal
+              ? 'Download Original Archive'
+              : 'Download Resample Archive',
         }),
         cancelToken: cancelToken,
       );
@@ -484,7 +531,9 @@ class EHClient {
 
       if (_isInsufficientFundsUnlockBody(body)) {
         final line = body.split('\n').first.trim();
-        throw ArchiveUnlockException(line.isNotEmpty ? line : _ehInsufficientFundsUnlockPrefix);
+        throw ArchiveUnlockException(
+          line.isNotEmpty ? line : _ehInsufficientFundsUnlockPrefix,
+        );
       }
 
       final href = _continueHrefFromUnlockHtml(body);
@@ -502,7 +551,10 @@ class EHClient {
   }
 
   /// Final file URL: [EHSpiderParser.downloadArchivePage2DownloadUrl] + [_getDownloadUrl] query/host rules.
-  static String? buildOfficialArchiveFileDownloadUrl(String downloadPageUrl, String hrefFromParser) {
+  static String? buildOfficialArchiveFileDownloadUrl(
+    String downloadPageUrl,
+    String hrefFromParser,
+  ) {
     if (hrefFromParser.isEmpty) return null;
 
     final pageUri = Uri.parse(downloadPageUrl);
@@ -513,7 +565,9 @@ class EHClient {
     qp.putIfAbsent('start', () => '1');
 
     if (resolved.hasScheme && resolved.host.isNotEmpty) {
-      return resolved.replace(queryParameters: qp.isEmpty ? null : qp).toString();
+      return resolved
+          .replace(queryParameters: qp.isEmpty ? null : qp)
+          .toString();
     }
 
     final pathAndQuery = Uri(
@@ -523,7 +577,10 @@ class EHClient {
     return 'https://${pageUri.host}$pathAndQuery';
   }
 
-  Future<String?> parseArchiveDownloadUrl(String downloadPageUrl, {CancelToken? cancelToken}) async {
+  Future<String?> parseArchiveDownloadUrl(
+    String downloadPageUrl, {
+    CancelToken? cancelToken,
+  }) async {
     final response = await _dio.get(downloadPageUrl, cancelToken: cancelToken);
     final body = response.data.toString();
     final doc = html_parser.parse(body);
@@ -537,17 +594,30 @@ class EHClient {
 
   // --- Favorites ---
 
-  Future<Map<String, dynamic>> addFavorite(int gid, String token, {int favcat = 0, String favnote = ''}) async {
+  Future<Map<String, dynamic>> addFavorite(
+    int gid,
+    String token, {
+    int favcat = 0,
+    String favnote = '',
+  }) async {
     try {
       await _dio.post(
         '$baseUrl/gallerypopups.php',
         queryParameters: {'gid': gid, 't': token, 'act': 'addfav'},
         options: Options(contentType: Headers.formUrlEncodedContentType),
-        data: {'favcat': favcat.toString(), 'favnote': favnote, 'apply': 'Add to Favorites', 'update': '1'},
+        data: {
+          'favcat': favcat.toString(),
+          'favnote': favnote,
+          'apply': 'Add to Favorites',
+          'update': '1',
+        },
       );
       return {'success': true};
     } on DioException catch (e) {
-      return {'success': false, 'message': e.message ?? 'Failed to add favorite'};
+      return {
+        'success': false,
+        'message': e.message ?? 'Failed to add favorite',
+      };
     }
   }
 
@@ -557,17 +627,29 @@ class EHClient {
         '$baseUrl/gallerypopups.php',
         queryParameters: {'gid': gid, 't': token, 'act': 'addfav'},
         options: Options(contentType: Headers.formUrlEncodedContentType),
-        data: {'favcat': 'favdel', 'favnote': '', 'apply': 'Apply Changes', 'update': '1'},
+        data: {
+          'favcat': 'favdel',
+          'favnote': '',
+          'apply': 'Apply Changes',
+          'update': '1',
+        },
       );
       return {'success': true};
     } on DioException catch (e) {
-      return {'success': false, 'message': e.message ?? 'Failed to remove favorite'};
+      return {
+        'success': false,
+        'message': e.message ?? 'Failed to remove favorite',
+      };
     }
   }
 
   // --- Comments ---
 
-  Future<Map<String, dynamic>> postComment(int gid, String token, String comment) async {
+  Future<Map<String, dynamic>> postComment(
+    int gid,
+    String token,
+    String comment,
+  ) async {
     try {
       await _dio.post(
         '$baseUrl/g/$gid/$token/',
@@ -576,11 +658,21 @@ class EHClient {
       );
       return {'success': true};
     } on DioException catch (e) {
-      return {'success': false, 'message': e.message ?? 'Failed to post comment'};
+      return {
+        'success': false,
+        'message': e.message ?? 'Failed to post comment',
+      };
     }
   }
 
-  Future<Map<String, dynamic>> voteComment(int apiuid, String apikey, int gid, String token, int commentId, int vote) async {
+  Future<Map<String, dynamic>> voteComment(
+    int apiuid,
+    String apikey,
+    int gid,
+    String token,
+    int commentId,
+    int vote,
+  ) async {
     try {
       final response = await _dio.post(
         apiUrl,
@@ -595,7 +687,9 @@ class EHClient {
           'comment_vote': vote,
         },
       );
-      return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
+      return response.data is Map
+          ? Map<String, dynamic>.from(response.data)
+          : {'success': true};
     } on DioException catch (e) {
       return {'success': false, 'message': e.message ?? 'Failed to vote'};
     }
@@ -604,17 +698,23 @@ class EHClient {
   // --- Favorite names / counts (favorites.php) ---
 
   /// Parses folder names and per-folder counts (same structure as EHSpiderParser.favoritePage2FavoriteTagsAndCounts).
-  Future<({List<String> names, List<int> counts})> fetchFavoriteFolders() async {
+  Future<({List<String> names, List<int> counts})>
+  fetchFavoriteFolders() async {
     try {
       final response = await _dio.get('$baseUrl/favorites.php');
       final body = response.data.toString();
       return _parseFavoriteFoldersHtml(body);
     } catch (_) {
-      return (names: List.generate(10, (i) => 'Favorites $i'), counts: List.filled(10, 0));
+      return (
+        names: List.generate(10, (i) => 'Favorites $i'),
+        counts: List.filled(10, 0),
+      );
     }
   }
 
-  ({List<String> names, List<int> counts}) _parseFavoriteFoldersHtml(String body) {
+  ({List<String> names, List<int> counts}) _parseFavoriteFoldersHtml(
+    String body,
+  ) {
     final doc = html_parser.parse(body);
     final divs = doc.querySelectorAll('.nosel > .fp');
     if (divs.length > 1) {
@@ -625,7 +725,12 @@ class EHClient {
         final counts = <int>[];
         for (final div in list.take(10)) {
           names.add(div.querySelector('div:last-child')?.text.trim() ?? '');
-          counts.add(int.tryParse(div.querySelector('div:first-child')?.text.trim() ?? '0') ?? 0);
+          counts.add(
+            int.tryParse(
+                  div.querySelector('div:first-child')?.text.trim() ?? '0',
+                ) ??
+                0,
+          );
         }
         return (names: names, counts: counts);
       }
@@ -643,7 +748,10 @@ class EHClient {
           .toList();
       return (names: names, counts: List.filled(10, 0));
     }
-    return (names: List.generate(10, (i) => 'Favorites $i'), counts: List.filled(10, 0));
+    return (
+      names: List.generate(10, (i) => 'Favorites $i'),
+      counts: List.filled(10, 0),
+    );
   }
 
   Future<List<String>> fetchFavoriteNames() async {
@@ -660,7 +768,8 @@ class EHClient {
       );
       final body = response.data.toString();
       final doc = html_parser.parse(body);
-      final ta = doc.querySelector('#galpop textarea') ??
+      final ta =
+          doc.querySelector('#galpop textarea') ??
           doc.querySelector('#galpop > div > div:nth-child(3) > textarea');
       return ta?.text ?? '';
     } catch (_) {
@@ -670,7 +779,13 @@ class EHClient {
 
   // --- Rating ---
 
-  Future<Map<String, dynamic>> rateGallery(int gid, String token, int apiuid, String apikey, double rating) async {
+  Future<Map<String, dynamic>> rateGallery(
+    int gid,
+    String token,
+    int apiuid,
+    String apikey,
+    double rating,
+  ) async {
     try {
       final response = await _dio.post(
         apiUrl,
@@ -684,7 +799,9 @@ class EHClient {
           'rating': (rating * 2).round(),
         },
       );
-      return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
+      return response.data is Map
+          ? Map<String, dynamic>.from(response.data)
+          : {'success': true};
     } on DioException catch (e) {
       return {'success': false, 'message': e.message ?? 'Failed to rate'};
     }
@@ -715,7 +832,9 @@ class EHClient {
           'vote': vote,
         },
       );
-      return response.data is Map ? Map<String, dynamic>.from(response.data) : {'success': true};
+      return response.data is Map
+          ? Map<String, dynamic>.from(response.data)
+          : {'success': true};
     } on DioException catch (e) {
       return {'success': false, 'message': e.message ?? 'Failed to vote tag'};
     }
@@ -723,8 +842,9 @@ class EHClient {
 
   // --- Stats / image lookup / my tags (Web parity with native) ---
 
-  String get statsPageUrl =>
-      _site == 'EX' ? 'https://exhentai.org/stats.php' : 'https://e-hentai.org/stats.php';
+  String get statsPageUrl => _site == 'EX'
+      ? 'https://exhentai.org/stats.php'
+      : 'https://e-hentai.org/stats.php';
 
   String get imageLookupUrl => _site == 'EX'
       ? 'https://exhentai.org/upld/image_lookup.php'
@@ -733,7 +853,10 @@ class EHClient {
   String get myTagsUrl => '$baseUrl/mytags';
 
   Future<String> fetchStatsPageHtml(int gid, String token) async {
-    final response = await _dio.get<String>(statsPageUrl, queryParameters: {'gid': gid, 't': token});
+    final response = await _dio.get<String>(
+      statsPageUrl,
+      queryParameters: {'gid': gid, 't': token},
+    );
     return response.data ?? '';
   }
 
@@ -750,7 +873,9 @@ class EHClient {
         }),
         options: Options(
           followRedirects: false,
-          validateStatus: (status) => status != null && (status == 302 || status == 303 || status == 200),
+          validateStatus: (status) =>
+              status != null &&
+              (status == 302 || status == 303 || status == 200),
         ),
       );
       final code = response.statusCode ?? 0;
@@ -768,7 +893,10 @@ class EHClient {
   }
 
   Future<String> fetchMyTagsHtml(int tagSetNo) async {
-    final response = await _dio.get<String>(myTagsUrl, queryParameters: {'tagset': tagSetNo});
+    final response = await _dio.get<String>(
+      myTagsUrl,
+      queryParameters: {'tagset': tagSetNo},
+    );
     return response.data ?? '';
   }
 
@@ -783,13 +911,18 @@ class EHClient {
 
   // --- Gallery API ---
 
-  Future<Map<String, dynamic>> fetchGalleryMetadata(int gid, String token) async {
+  Future<Map<String, dynamic>> fetchGalleryMetadata(
+    int gid,
+    String token,
+  ) async {
     final response = await _dio.post(
       apiUrl,
       options: Options(contentType: Headers.jsonContentType),
       data: {
         'method': 'gdata',
-        'gidlist': [[gid, token]],
+        'gidlist': [
+          [gid, token],
+        ],
         'namespace': 1,
       },
     );
@@ -804,7 +937,10 @@ class EHClient {
 
     result.title = doc.querySelector('#gn')?.text ?? '';
     result.titleJpn = doc.querySelector('#gj')?.text ?? '';
-    result.category = doc.querySelector('#gdc .cs')?.text ?? doc.querySelector('#gdc .ct')?.text ?? '';
+    result.category =
+        doc.querySelector('#gdc .cs')?.text ??
+        doc.querySelector('#gdc .ct')?.text ??
+        '';
     result.uploader = doc.querySelector('#gdn a')?.text ?? '';
 
     final coverStyle = doc.querySelector('#gd1 div')?.attributes['style'] ?? '';
@@ -847,7 +983,9 @@ class EHClient {
       result.newerVersionUrl = newerEl.attributes['href'];
     }
 
-    final archiveLink = doc.querySelector('a[onclick*="archiver"]')?.attributes['onclick'];
+    final archiveLink = doc
+        .querySelector('a[onclick*="archiver"]')
+        ?.attributes['onclick'];
     if (archiveLink != null) {
       final urlMatch = RegExp(r"'(https?://[^']+)'").firstMatch(archiveLink);
       result.archiverUrl = urlMatch?.group(1);
@@ -857,7 +995,9 @@ class EHClient {
     for (final tr in doc.querySelectorAll('#taglist tr')) {
       final tdNamespace = tr.querySelector('td.tc');
       final namespace = tdNamespace?.text.replaceAll(':', '').trim() ?? 'misc';
-      final tagElements = tr.querySelectorAll('td:not(.tc) a, td:not(.tc) div a');
+      final tagElements = tr.querySelectorAll(
+        'td:not(.tc) a, td:not(.tc) div a',
+      );
       final tagValues = <String>[];
       final tagRich = <Map<String, dynamic>>[];
       for (final a in tagElements) {
@@ -891,7 +1031,9 @@ class EHClient {
     final favDiv = doc.querySelector('#fav .i');
     if (favDiv != null) {
       final style = favDiv.attributes['style'] ?? '';
-      final posMatch = RegExp(r'background-position:0px -(\d+)px').firstMatch(style);
+      final posMatch = RegExp(
+        r'background-position:0px -(\d+)px',
+      ).firstMatch(style);
       if (posMatch != null) {
         final yOffset = int.tryParse(posMatch.group(1)!) ?? 0;
         result.favoriteSlot = yOffset ~/ 19;
@@ -914,7 +1056,8 @@ class EHClient {
       final bodyEl = c.querySelector('.c6');
       final body = bodyEl?.innerHtml ?? '';
       final idAttr = c.parent?.attributes['id'] ?? '';
-      final commentId = RegExp(r'comment_(\d+)').firstMatch(idAttr)?.group(1) ?? '';
+      final commentId =
+          RegExp(r'comment_(\d+)').firstMatch(idAttr)?.group(1) ?? '';
 
       result.comments.add({
         'id': commentId,
@@ -962,7 +1105,10 @@ class EHClient {
 
     // Last resort: find any CDN image URL
     if (result.imageUrl.isEmpty) {
-      final cdnMatch = RegExp(r'"(https?://[^"]+\.(jpg|png|gif|webp))"', caseSensitive: false).firstMatch(html);
+      final cdnMatch = RegExp(
+        r'"(https?://[^"]+\.(jpg|png|gif|webp))"',
+        caseSensitive: false,
+      ).firstMatch(html);
       if (cdnMatch != null) result.imageUrl = cdnMatch.group(1)!;
     }
 
@@ -1011,7 +1157,8 @@ class _ErrorInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (response.data is String) {
       final data = response.data as String;
-      if (data.startsWith('Your IP address') || data.startsWith('This IP address')) {
+      if (data.startsWith('Your IP address') ||
+          data.startsWith('This IP address')) {
         log.warning('EH IP ban detected');
       }
       if (data.contains('You have exceeded your image')) {
@@ -1035,6 +1182,7 @@ class GalleryDetailResult {
   List<String> thumbnailImageUrls = [];
   List<Map<String, dynamic>> galleryThumbnails = [];
   Map<String, List<String>> tags = {};
+
   /// Per-namespace rows aligned with [tags] order: `{name, color?, backgroundColor?}` (ARGB ints).
   Map<String, List<Map<String, dynamic>>> tagsRich = {};
   int? apiuid;
@@ -1053,6 +1201,7 @@ class GalleryDetailResult {
 class ImagePageResult {
   String imageUrl = '';
   String? reloadKey;
+
   /// EH file hash from `f_shash=` on the image page (for upgrade reuse / JHenTai public API).
   String imageHash = '';
 }
