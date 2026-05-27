@@ -29,6 +29,7 @@ class WebRuRU {
       'showThumbnails': 'Показывать миниатюры',
       'showStatusInfo': 'Показывать статус снизу',
       'spaceBetweenImages': 'Отступы между изображениями',
+      'defaultTab': 'Вкладка по умолчанию',
 
       // setup
       'setup.title': 'Настройка сервера JHenTai',

@@ -29,6 +29,7 @@ class WebPtBR {
       'showThumbnails': 'Mostrar miniaturas',
       'showStatusInfo': 'Mostrar status na parte inferior',
       'spaceBetweenImages': 'Espaçamento entre imagens',
+      'defaultTab': 'Aba padrão',
 
       // setup
       'setup.title': 'Configuração do Servidor JHenTai',

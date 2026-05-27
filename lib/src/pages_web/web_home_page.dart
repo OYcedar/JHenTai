@@ -19,7 +19,15 @@ import 'package:web/web.dart' as web;
 class WebHomeController extends GetxController {
   static const listModeStorageKey = 'jh_web_list_mode';
   static const gridColumnsStorageKey = 'jh_web_grid_columns';
+  static const defaultSectionStorageKey = 'jh_web_default_section';
   static const listModes = ['grid', 'list', 'listCompact'];
+  static const defaultSections = [
+    'home',
+    'popular',
+    'ranklist',
+    'favorites',
+    'watched',
+  ];
 
   final searchController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
@@ -130,7 +138,11 @@ class WebHomeController extends GetxController {
       _currentSearch = searchQuery;
       currentSearchText.value = searchQuery;
     }
-    _loadHomePage();
+    if (_currentSearch.trim().isNotEmpty) {
+      _loadHomePage();
+    } else {
+      _loadInitialSection();
+    }
     _loadDashboardPreviews();
     loadSearchHistory();
     loadQuickSearches();
@@ -357,6 +369,17 @@ class WebHomeController extends GetxController {
     currentPage.value = 0;
     _clearPaginationCursors();
     await _fetchGalleryList();
+  }
+
+  Future<void> _loadInitialSection() async {
+    final saved = web.window.localStorage.getItem(defaultSectionStorageKey);
+    final section =
+        saved != null && defaultSections.contains(saved) ? saved : 'home';
+    if (section == 'home') {
+      await _loadHomePage();
+      return;
+    }
+    await loadUrl(section, tl: section == 'ranklist' ? '15' : null);
   }
 
   Future<void> search(String keyword) async {

@@ -29,6 +29,7 @@ class WebZhTW {
       'showThumbnails': '顯示縮圖',
       'showStatusInfo': '底部顯示狀態資訊',
       'spaceBetweenImages': '圖片間隔',
+      'defaultTab': '啟動時預設選單',
 
       // setup
       'setup.title': 'JHenTai 伺服器設定',

@@ -31,6 +31,7 @@ class WebEnUS {
       'showThumbnails': 'Show Thumbnails',
       'showStatusInfo': 'Show Status at Bottom',
       'spaceBetweenImages': 'Space Between Images',
+      'defaultTab': 'Default Tab',
 
       // setup
       'setup.title': 'JHenTai Server Setup',

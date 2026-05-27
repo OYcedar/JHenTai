@@ -29,6 +29,7 @@ class WebKoKR {
       'showThumbnails': '썸네일 표시',
       'showStatusInfo': '하단 상태 표시',
       'spaceBetweenImages': '이미지 간격',
+      'defaultTab': '기본 탭',
 
       // setup
       'setup.title': 'JHenTai 서버 설정',
