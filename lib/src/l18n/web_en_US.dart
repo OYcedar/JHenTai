@@ -434,6 +434,8 @@ class WebEnUS {
       // thumbnails
       'thumbnails.title': 'Thumbnails (@count)',
       'thumbnails.grid': 'Thumbnail Grid',
+      'thumbnails.jumpToPage': 'Jump to Page',
+      'thumbnails.pageRange': 'Range: 1 - @total',
       'thumbnails.loadFailed': 'Failed to load thumbnails: @error',
 
       // home additions

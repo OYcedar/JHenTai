@@ -430,6 +430,8 @@ class WebPtBR {
       // thumbnails
       'thumbnails.title': 'Miniaturas (@count)',
       'thumbnails.grid': 'Grade de Miniaturas',
+      'thumbnails.jumpToPage': 'Ir para Página',
+      'thumbnails.pageRange': 'Intervalo: 1 - @total',
       'thumbnails.loadFailed': 'Falha ao carregar miniaturas: @error',
 
       // tag translation

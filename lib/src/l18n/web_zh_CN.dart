@@ -399,6 +399,8 @@ class WebZhCN {
       // thumbnails
       'thumbnails.title': '缩略图 (@count)',
       'thumbnails.grid': '缩略图网格',
+      'thumbnails.jumpToPage': '跳转页面',
+      'thumbnails.pageRange': '范围: 1 - @total',
       'thumbnails.loadFailed': '加载缩略图失败: @error',
 
       // home additions

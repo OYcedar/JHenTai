@@ -399,6 +399,8 @@ class WebZhTW {
       // thumbnails
       'thumbnails.title': '縮圖 (@count)',
       'thumbnails.grid': '縮圖網格',
+      'thumbnails.jumpToPage': '跳轉頁面',
+      'thumbnails.pageRange': '範圍: 1 - @total',
       'thumbnails.loadFailed': '載入縮圖失敗: @error',
 
       // tag translation

@@ -428,6 +428,8 @@ class WebRuRU {
       // thumbnails
       'thumbnails.title': 'Миниатюры (@count)',
       'thumbnails.grid': 'Сетка миниатюр',
+      'thumbnails.jumpToPage': 'Перейти к странице',
+      'thumbnails.pageRange': 'Диапазон: 1 - @total',
       'thumbnails.loadFailed': 'Ошибка загрузки миниатюр: @error',
 
       // tag translation

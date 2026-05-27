@@ -1,9 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 
-Map<String, dynamic> _thumbMapForThumbsPage(WebThumbnailsController c, int index) {
+Map<String, dynamic> _thumbMapForThumbsPage(
+    WebThumbnailsController c, int index) {
   if (index < c.galleryThumbnails.length) {
     return Map<String, dynamic>.from(c.galleryThumbnails[index]);
   }
@@ -31,6 +35,10 @@ class WebThumbnailsController extends GetxController {
   final galleryTitle = ''.obs;
   final isLoading = true.obs;
   final errorMessage = ''.obs;
+  final scrollController = ScrollController();
+
+  int _crossAxisCount = 3;
+  double _rowExtent = 0;
 
   @override
   void onInit() {
@@ -51,15 +59,18 @@ class WebThumbnailsController extends GetxController {
       final result = await backendApiClient.fetchGalleryImagePages(gid, token);
       final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
       imagePageUrls.value = pages;
-      final thumbs = (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
+      final thumbs =
+          (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
       thumbnailImageUrls.value = thumbs.length == pages.length
           ? thumbs
           : List<String>.filled(pages.length, '');
       final gt = result['galleryThumbnails'] as List?;
       if (gt != null && gt.length == pages.length) {
-        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        galleryThumbnails.value =
+            gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       } else if (gt != null) {
-        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        galleryThumbnails.value =
+            gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       } else {
         galleryThumbnails.value = [];
       }
@@ -71,6 +82,38 @@ class WebThumbnailsController extends GetxController {
   }
 
   Future<void> retry() => _load();
+
+  void updateGridMetrics({
+    required int crossAxisCount,
+    required double rowExtent,
+  }) {
+    _crossAxisCount = math.max(1, crossAxisCount);
+    _rowExtent = math.max(0, rowExtent);
+  }
+
+  Future<void> scrollToPageNo(int pageNo) async {
+    if (!scrollController.hasClients || imagePageUrls.isEmpty) {
+      return;
+    }
+    final pageIndex = (pageNo - 1).clamp(0, imagePageUrls.length - 1);
+    final rowIndex = pageIndex ~/ _crossAxisCount;
+    final rawOffset = rowIndex * _rowExtent;
+    final offset = rawOffset.clamp(
+      scrollController.position.minScrollExtent,
+      scrollController.position.maxScrollExtent,
+    );
+    await scrollController.animateTo(
+      offset.toDouble(),
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void onClose() {
+    scrollController.dispose();
+    super.onClose();
+  }
 }
 
 class WebThumbnailsPage extends GetView<WebThumbnailsController> {
@@ -80,8 +123,19 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Obx(() => Text('thumbnails.title'.trParams(
-            {'count': '${controller.imagePageUrls.length}'}))),
+        title: Obx(() => Text('thumbnails.title'
+            .trParams({'count': '${controller.imagePageUrls.length}'}))),
+        actions: [
+          Obx(
+            () => IconButton(
+              tooltip: 'thumbnails.jumpToPage'.tr,
+              icon: const Icon(Icons.near_me_outlined),
+              onPressed: controller.imagePageUrls.isEmpty
+                  ? null
+                  : () => _showJumpDialog(context),
+            ),
+          ),
+        ],
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -96,7 +150,9 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
                 const SizedBox(height: 12),
                 Text(controller.errorMessage.value),
                 const SizedBox(height: 16),
-                FilledButton(onPressed: controller.retry, child: Text('common.retry'.tr)),
+                FilledButton(
+                    onPressed: controller.retry,
+                    child: Text('common.retry'.tr)),
               ],
             ),
           );
@@ -108,6 +164,9 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
 
   Widget _buildGrid(BuildContext context) {
     return LayoutBuilder(builder: (context, constraints) {
+      const padding = 8.0;
+      const spacing = 6.0;
+      const childAspectRatio = 0.7;
       final crossAxisCount = constraints.maxWidth > 1200
           ? 8
           : constraints.maxWidth > 800
@@ -115,14 +174,22 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
               : constraints.maxWidth > 500
                   ? 4
                   : 3;
+      final usableWidth = math.max(0.0,
+          constraints.maxWidth - padding * 2 - spacing * (crossAxisCount - 1));
+      final tileWidth = usableWidth / crossAxisCount;
+      controller.updateGridMetrics(
+        crossAxisCount: crossAxisCount,
+        rowExtent: tileWidth / childAspectRatio + spacing,
+      );
 
       return GridView.builder(
-        padding: const EdgeInsets.all(8),
+        controller: controller.scrollController,
+        padding: const EdgeInsets.all(padding),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          childAspectRatio: 0.7,
-          crossAxisSpacing: 6,
-          mainAxisSpacing: 6,
+          childAspectRatio: childAspectRatio,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
         ),
         itemCount: controller.imagePageUrls.length,
         itemBuilder: (context, index) {
@@ -136,6 +203,59 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
         },
       );
     });
+  }
+
+  Future<void> _showJumpDialog(BuildContext context) async {
+    final textController = TextEditingController();
+    final total = controller.imagePageUrls.length;
+
+    try {
+      final pageNo = await showDialog<int>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('thumbnails.jumpToPage'.tr),
+            content: TextField(
+              controller: textController,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              textInputAction: TextInputAction.go,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                labelText: 'thumbnails.pageRange'.trParams({'total': '$total'}),
+              ),
+              onSubmitted: (value) {
+                final pageNo = int.tryParse(value);
+                if (pageNo != null) {
+                  Navigator.of(context).pop(pageNo);
+                }
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text('common.cancel'.tr),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final pageNo = int.tryParse(textController.text);
+                  if (pageNo != null) {
+                    Navigator.of(context).pop(pageNo);
+                  }
+                },
+                child: Text('common.ok'.tr),
+              ),
+            ],
+          );
+        },
+      );
+      if (pageNo != null) {
+        await controller.scrollToPageNo(pageNo);
+      }
+    } finally {
+      textController.dispose();
+    }
   }
 }
 
@@ -199,7 +319,8 @@ class _ThumbnailCell extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 decoration: const BoxDecoration(
                   color: Colors.black54,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(6)),
+                  borderRadius:
+                      BorderRadius.vertical(bottom: Radius.circular(6)),
                 ),
                 child: Text(
                   'P${index + 1}',

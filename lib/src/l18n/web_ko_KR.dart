@@ -412,6 +412,8 @@ class WebKoKR {
       // thumbnails
       'thumbnails.title': '썸네일 (@count)',
       'thumbnails.grid': '썸네일 그리드',
+      'thumbnails.jumpToPage': '페이지로 이동',
+      'thumbnails.pageRange': '범위: 1 - @total',
       'thumbnails.loadFailed': '썸네일 로드 실패: @error',
 
       // home additions
