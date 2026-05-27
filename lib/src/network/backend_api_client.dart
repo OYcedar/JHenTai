@@ -735,6 +735,24 @@ class BackendApiClient {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> updateComment({
+    required int gid,
+    required String token,
+    required int commentId,
+    required String comment,
+  }) async {
+    final response = await _dio.post(
+      '/api/comment/update',
+      data: {
+        'gid': gid,
+        'token': token,
+        'commentId': commentId,
+        'comment': comment,
+      },
+    );
+    return response.data;
+  }
+
   Future<Map<String, dynamic>> voteComment({
     required int gid,
     required String token,

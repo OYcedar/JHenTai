@@ -399,6 +399,12 @@ class WebEnUS {
       'comment.postFailed': 'Failed to post comment: @error',
       'comment.voteFailed': 'Failed to vote: @error',
       'comment.scoreDetails': 'Score Details',
+      'comment.update': 'Update Comment',
+      'comment.updated': 'Comment Updated',
+      'comment.updatedMsg': 'Your comment has been updated',
+      'comment.updateFailed': 'Failed to update comment: @error',
+      'comment.tooShort': 'Comment is too short',
+      'comment.atLeast3Characters': 'At least 3 characters',
 
       // ranklist
       'ranklist.title': 'Ranklist',

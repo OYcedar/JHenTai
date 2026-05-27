@@ -392,6 +392,12 @@ class WebRuRU {
       'comment.postFailed': 'Ошибка публикации: @error',
       'comment.voteFailed': 'Ошибка голосования: @error',
       'comment.scoreDetails': 'Детали оценки',
+      'comment.update': 'Обновить комментарий',
+      'comment.updated': 'Комментарий обновлён',
+      'comment.updatedMsg': 'Ваш комментарий обновлён',
+      'comment.updateFailed': 'Не удалось обновить комментарий: @error',
+      'comment.tooShort': 'Комментарий слишком короткий',
+      'comment.atLeast3Characters': 'Минимум 3 символа',
 
       // ranklist
       'ranklist.title': 'Рейтинг',

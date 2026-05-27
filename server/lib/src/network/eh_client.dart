@@ -712,6 +712,35 @@ class EHClient {
     }
   }
 
+  Future<Map<String, dynamic>> updateComment(
+    int gid,
+    String token,
+    int commentId,
+    String comment,
+  ) async {
+    try {
+      final response = await _dio.post<String>(
+        '$baseUrl/g/$gid/$token/',
+        options: Options(contentType: Headers.formUrlEncodedContentType),
+        data: {
+          'edit_comment': commentId,
+          'commenttext_edit': comment,
+        },
+      );
+      final error =
+          html_parser.parse(response.data ?? '').querySelector('p.br')?.text;
+      if (error != null && error.isNotEmpty) {
+        return {'success': false, 'message': error};
+      }
+      return {'success': true};
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': e.message ?? 'Failed to update comment',
+      };
+    }
+  }
+
   Future<Map<String, dynamic>> voteComment(
     int apiuid,
     String apikey,

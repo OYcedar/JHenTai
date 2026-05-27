@@ -394,6 +394,12 @@ class WebPtBR {
       'comment.postFailed': 'Falha ao publicar comentário: @error',
       'comment.voteFailed': 'Falha ao votar: @error',
       'comment.scoreDetails': 'Detalhes da Pontuação',
+      'comment.update': 'Atualizar Comentário',
+      'comment.updated': 'Comentário Atualizado',
+      'comment.updatedMsg': 'Seu comentário foi atualizado',
+      'comment.updateFailed': 'Falha ao atualizar comentário: @error',
+      'comment.tooShort': 'Comentário muito curto',
+      'comment.atLeast3Characters': 'Pelo menos 3 caracteres',
 
       // ranklist
       'ranklist.title': 'Ranking',

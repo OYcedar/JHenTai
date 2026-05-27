@@ -489,7 +489,11 @@ class WebGalleryDetailController extends GetxController {
   Future<void> postComment(String text) async {
     if (text.trim().isEmpty) return;
     try {
-      await backendApiClient.postComment(gid: gid, token: token, comment: text);
+      final result = await backendApiClient.postComment(
+          gid: gid, token: token, comment: text);
+      if (result['success'] == false) {
+        throw result['message'] ?? result['error'] ?? 'Post comment failed';
+      }
       Get.snackbar('comment.posted'.tr, 'comment.postedMsg'.tr,
           snackPosition: SnackPosition.BOTTOM);
       _loadDetail();
@@ -498,6 +502,34 @@ class WebGalleryDetailController extends GetxController {
           'common.error'.tr, 'comment.postFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withValues(alpha: 0.7));
+    }
+  }
+
+  Future<bool> updateComment({
+    required int commentId,
+    required String text,
+  }) async {
+    if (text.trim().isEmpty) return false;
+    try {
+      final result = await backendApiClient.updateComment(
+        gid: gid,
+        token: token,
+        commentId: commentId,
+        comment: text,
+      );
+      if (result['success'] == false) {
+        throw result['message'] ?? result['error'] ?? 'Update comment failed';
+      }
+      Get.snackbar('comment.updated'.tr, 'comment.updatedMsg'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await _loadDetail();
+      return true;
+    } catch (e) {
+      Get.snackbar(
+          'common.error'.tr, 'comment.updateFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
+      return false;
     }
   }
 
@@ -2197,6 +2229,8 @@ class WebGalleryDetailPage extends StatelessWidget {
                       onVote: (id, vote) => controller.voteComment(id, vote),
                       onBlockUser: (comment) =>
                           _confirmBlockCommentUser(context, comment),
+                      onEdit: (comment) =>
+                          _showEditCommentDialog(context, comment),
                       compact: true,
                     ),
                   ),
@@ -2245,6 +2279,7 @@ class WebGalleryDetailPage extends StatelessWidget {
                       onVote: (id, vote) => controller.voteComment(id, vote),
                       onBlockUser: (comment) =>
                           _confirmBlockCommentUser(ctx, comment),
+                      onEdit: (comment) => _showEditCommentDialog(ctx, comment),
                     ),
                   )),
             ),
@@ -2277,6 +2312,27 @@ class WebGalleryDetailPage extends StatelessWidget {
     if (ok == true) {
       await controller.blockCommentUser(comment);
     }
+  }
+
+  void _showEditCommentDialog(
+      BuildContext context, Map<String, dynamic> comment) {
+    final commentId = int.tryParse(comment['id']?.toString() ?? '');
+    if (commentId == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _WebEditCommentDialog(
+        initialText: _plainCommentText(comment['body']?.toString() ?? ''),
+        onSubmit: (text) =>
+            controller.updateComment(commentId: commentId, text: text),
+      ),
+    );
+  }
+
+  String _plainCommentText(String body) {
+    return body
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .trim();
   }
 }
 
@@ -2342,15 +2398,100 @@ class _CommentInputState extends State<_CommentInput> {
   }
 }
 
+class _WebEditCommentDialog extends StatefulWidget {
+  final String initialText;
+  final Future<bool> Function(String text) onSubmit;
+
+  const _WebEditCommentDialog({
+    required this.initialText,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_WebEditCommentDialog> createState() => _WebEditCommentDialogState();
+}
+
+class _WebEditCommentDialogState extends State<_WebEditCommentDialog> {
+  late final TextEditingController _controller;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final text = _controller.text.trim();
+    if (text.length <= 2) {
+      Get.snackbar('common.error'.tr, 'comment.tooShort'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      final ok = await widget.onSubmit(text);
+      if (ok && mounted) Navigator.pop(context);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('comment.update'.tr),
+      content: SizedBox(
+        width: 520,
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          minLines: 3,
+          maxLines: 10,
+          decoration: InputDecoration(
+            labelText: 'comment.atLeast3Characters'.tr,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton.icon(
+          icon: _saving
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save_outlined),
+          label: Text('common.save'.tr),
+          onPressed: _saving ? null : _save,
+        ),
+      ],
+    );
+  }
+}
+
 class _CommentCard extends StatelessWidget {
   final Map<String, dynamic> comment;
   final void Function(int commentId, int vote)? onVote;
   final void Function(Map<String, dynamic> comment)? onBlockUser;
+  final void Function(Map<String, dynamic> comment)? onEdit;
   final bool compact;
   const _CommentCard(
       {required this.comment,
       this.onVote,
       this.onBlockUser,
+      this.onEdit,
       this.compact = false});
 
   @override
@@ -2456,6 +2597,17 @@ class _CommentCard extends StatelessWidget {
                             ? Theme.of(context).colorScheme.primary
                             : null,
                       ),
+                    ),
+                  ),
+                ],
+                if (fromMe && onEdit != null) ...[
+                  const SizedBox(width: 4),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => onEdit!(comment),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.edit_note, size: 18),
                     ),
                   ),
                 ],

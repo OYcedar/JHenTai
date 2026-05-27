@@ -14,6 +14,7 @@ class CommentRoutes {
     final router = Router();
 
     router.post('/post', _postComment);
+    router.post('/update', _updateComment);
     router.post('/vote', _voteComment);
 
     return router;
@@ -31,8 +32,12 @@ class CommentRoutes {
     final token = body['token'] as String?;
     final comment = body['comment'] as String?;
 
-    if (gid == null || token == null || comment == null || comment.trim().isEmpty) {
-      return Response.badRequest(body: jsonEncode({'error': 'gid, token, and comment are required'}));
+    if (gid == null ||
+        token == null ||
+        comment == null ||
+        comment.trim().isEmpty) {
+      return Response.badRequest(
+          body: jsonEncode({'error': 'gid, token, and comment are required'}));
     }
 
     final result = await _client.postComment(gid, token, comment);
@@ -57,11 +62,60 @@ class CommentRoutes {
     final commentId = body['commentId'] as int?;
     final vote = body['vote'] as int?;
 
-    if (gid == null || token == null || apiuid == null || apikey == null || commentId == null || vote == null) {
-      return Response.badRequest(body: jsonEncode({'error': 'gid, token, apiuid, apikey, commentId, and vote are required'}));
+    if (gid == null ||
+        token == null ||
+        apiuid == null ||
+        apikey == null ||
+        commentId == null ||
+        vote == null) {
+      return Response.badRequest(
+          body: jsonEncode({
+        'error': 'gid, token, apiuid, apikey, commentId, and vote are required'
+      }));
     }
 
-    final result = await _client.voteComment(apiuid, apikey, gid, token, commentId, vote);
+    final result =
+        await _client.voteComment(apiuid, apikey, gid, token, commentId, vote);
+    return Response.ok(
+      jsonEncode(result),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _updateComment(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid JSON'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final gid = body['gid'] as int?;
+    final token = body['token'] as String?;
+    final commentId = body['commentId'] as int?;
+    final comment = body['comment'] as String?;
+
+    if (gid == null ||
+        token == null ||
+        commentId == null ||
+        comment == null ||
+        comment.trim().isEmpty) {
+      return Response.badRequest(
+        body: jsonEncode(
+            {'error': 'gid, token, commentId, and comment are required'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final result = await _client.updateComment(
+      gid,
+      token,
+      commentId,
+      comment,
+    );
     return Response.ok(
       jsonEncode(result),
       headers: {'Content-Type': 'application/json'},

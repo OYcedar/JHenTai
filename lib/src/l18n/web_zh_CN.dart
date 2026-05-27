@@ -365,6 +365,12 @@ class WebZhCN {
       'comment.postFailed': '发送评论失败: @error',
       'comment.voteFailed': '投票失败: @error',
       'comment.scoreDetails': '评分明细',
+      'comment.update': '更新评论',
+      'comment.updated': '评论已更新',
+      'comment.updatedMsg': '你的评论已更新',
+      'comment.updateFailed': '更新评论失败: @error',
+      'comment.tooShort': '评论过短',
+      'comment.atLeast3Characters': '至少 3 个字符',
 
       // ranklist
       'ranklist.title': '排行榜',

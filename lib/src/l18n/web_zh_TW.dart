@@ -365,6 +365,12 @@ class WebZhTW {
       'comment.postFailed': '傳送評論失敗: @error',
       'comment.voteFailed': '投票失敗: @error',
       'comment.scoreDetails': '評分明細',
+      'comment.update': '更新評論',
+      'comment.updated': '評論已更新',
+      'comment.updatedMsg': '你的評論已更新',
+      'comment.updateFailed': '更新評論失敗: @error',
+      'comment.tooShort': '評論過短',
+      'comment.atLeast3Characters': '至少 3 個字元',
 
       // ranklist
       'ranklist.title': '排行榜',
