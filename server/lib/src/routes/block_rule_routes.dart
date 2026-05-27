@@ -116,11 +116,64 @@ bool matchesBlockRule(Map<String, dynamic> rule, Map<String, dynamic> gallery) {
     case 'gt':
       return (double.tryParse(value) ?? 0) > (double.tryParse(expression) ?? 0);
     case 'gte':
-      return (double.tryParse(value) ?? 0) >= (double.tryParse(expression) ?? 0);
+      return (double.tryParse(value) ?? 0) >=
+          (double.tryParse(expression) ?? 0);
     case 'st':
       return (double.tryParse(value) ?? 0) < (double.tryParse(expression) ?? 0);
     case 'ste':
-      return (double.tryParse(value) ?? 0) <= (double.tryParse(expression) ?? 0);
+      return (double.tryParse(value) ?? 0) <=
+          (double.tryParse(expression) ?? 0);
+    default:
+      return false;
+  }
+}
+
+bool matchesCommentBlockRule(
+    Map<String, dynamic> rule, Map<String, dynamic> comment) {
+  final target = rule['target'] as String? ?? 'gallery';
+  if (target != 'comment') return false;
+
+  final attribute = rule['attribute'] as String? ?? 'userName';
+  final pattern = rule['pattern'] as String? ?? 'equal';
+  final expression = rule['expression'] as String? ?? '';
+
+  final value = switch (attribute) {
+    'userName' => (comment['author'] as String?) ?? '',
+    'userId' => (comment['userId'] ?? '').toString(),
+    'commentText' ||
+    'comment' ||
+    'body' =>
+      (comment['body'] as String? ?? '').replaceAll(RegExp(r'<[^>]+>'), ' '),
+    _ => '',
+  };
+
+  return _matchesPattern(value, pattern, expression);
+}
+
+bool _matchesPattern(String value, String pattern, String expression) {
+  switch (pattern) {
+    case 'equal':
+      return value == expression;
+    case 'like':
+      return value.toLowerCase().contains(expression.toLowerCase());
+    case 'notContain':
+      return !value.toLowerCase().contains(expression.toLowerCase());
+    case 'regex':
+      try {
+        return RegExp(expression).hasMatch(value);
+      } catch (_) {
+        return false;
+      }
+    case 'gt':
+      return (double.tryParse(value) ?? 0) > (double.tryParse(expression) ?? 0);
+    case 'gte':
+      return (double.tryParse(value) ?? 0) >=
+          (double.tryParse(expression) ?? 0);
+    case 'st':
+      return (double.tryParse(value) ?? 0) < (double.tryParse(expression) ?? 0);
+    case 'ste':
+      return (double.tryParse(value) ?? 0) <=
+          (double.tryParse(expression) ?? 0);
     default:
       return false;
   }

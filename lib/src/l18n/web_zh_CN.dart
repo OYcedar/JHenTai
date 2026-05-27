@@ -443,6 +443,9 @@ class WebZhCN {
       'blockRule.uploaderBlocked': '上传者 "@uploader" 已被屏蔽',
       'blockRule.blockTag': '屏蔽此标签',
       'blockRule.blockUploader': '屏蔽此上传者',
+      'blockRule.blockCommentUser': '屏蔽评论用户',
+      'blockRule.blockCommentUserConfirm': '屏蔽评论用户 "@user"？',
+      'blockRule.commentUserBlocked': '评论用户 "@user" 已被屏蔽',
 
       // download enhancements
       'downloads.search': '搜索下载...',

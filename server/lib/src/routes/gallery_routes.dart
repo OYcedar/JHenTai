@@ -494,6 +494,14 @@ class GalleryRoutes {
 
     try {
       final detail = await _client.fetchGalleryDetail(galleryUrl);
+      final comments = detail.comments
+          .map((comment) => Map<String, dynamic>.from(comment))
+          .toList();
+      final blockRules = db.selectAllBlockRules();
+      if (blockRules.isNotEmpty) {
+        comments.removeWhere((comment) =>
+            blockRules.any((rule) => matchesCommentBlockRule(rule, comment)));
+      }
       return Response.ok(
         jsonEncode({
           'title': detail.title,
@@ -514,7 +522,7 @@ class GalleryRoutes {
           'apikey': detail.apikey,
           'favoriteSlot': detail.favoriteSlot,
           'favoriteName': detail.favoriteName,
-          'comments': detail.comments,
+          'comments': comments,
           'publishDate': detail.publishDate,
           'fileSize': detail.fileSize,
           'language': detail.language,

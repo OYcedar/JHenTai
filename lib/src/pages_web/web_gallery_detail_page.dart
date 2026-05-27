@@ -530,6 +530,41 @@ class WebGalleryDetailController extends GetxController {
     }
   }
 
+  Future<void> blockCommentUser(Map<String, dynamic> comment) async {
+    final author = comment['author']?.toString() ?? '';
+    final userId = comment['userId']?.toString() ?? '';
+    if (author.isEmpty) return;
+    try {
+      final groupId = 'comment-user-${DateTime.now().microsecondsSinceEpoch}';
+      await backendApiClient.saveBlockRule(
+        groupId: groupId,
+        target: 'comment',
+        attribute: 'userName',
+        pattern: 'equal',
+        expression: author,
+      );
+      if (userId.isNotEmpty) {
+        await backendApiClient.saveBlockRule(
+          groupId: groupId,
+          target: 'comment',
+          attribute: 'userId',
+          pattern: 'equal',
+          expression: userId,
+        );
+      }
+      comments.removeWhere((item) =>
+          item['author']?.toString() == author ||
+          (userId.isNotEmpty && item['userId']?.toString() == userId));
+      comments.refresh();
+      Get.snackbar('blockRule.blocked'.tr,
+          'blockRule.commentUserBlocked'.trParams({'user': author}),
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   String getFavSlotName(int i) {
     if (i < favoriteNames.length && favoriteNames[i].isNotEmpty) {
       return favoriteNames[i];
@@ -2151,6 +2186,8 @@ class WebGalleryDetailPage extends StatelessWidget {
                     child: _CommentCard(
                       comment: controller.comments[i],
                       onVote: (id, vote) => controller.voteComment(id, vote),
+                      onBlockUser: (comment) =>
+                          _confirmBlockCommentUser(context, comment),
                       compact: true,
                     ),
                   ),
@@ -2197,6 +2234,8 @@ class WebGalleryDetailPage extends StatelessWidget {
                     itemBuilder: (ctx, i) => _CommentCard(
                       comment: controller.comments[i],
                       onVote: (id, vote) => controller.voteComment(id, vote),
+                      onBlockUser: (comment) =>
+                          _confirmBlockCommentUser(ctx, comment),
                     ),
                   )),
             ),
@@ -2204,6 +2243,31 @@ class WebGalleryDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmBlockCommentUser(
+      BuildContext context, Map<String, dynamic> comment) async {
+    final author = comment['author']?.toString() ?? 'detail.anonymous'.tr;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('blockRule.blockCommentUser'.tr),
+        content: Text(
+            'blockRule.blockCommentUserConfirm'.trParams({'user': author})),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('blockRule.blocked'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await controller.blockCommentUser(comment);
+    }
   }
 }
 
@@ -2272,9 +2336,13 @@ class _CommentInputState extends State<_CommentInput> {
 class _CommentCard extends StatelessWidget {
   final Map<String, dynamic> comment;
   final void Function(int commentId, int vote)? onVote;
+  final void Function(Map<String, dynamic> comment)? onBlockUser;
   final bool compact;
   const _CommentCard(
-      {required this.comment, this.onVote, this.compact = false});
+      {required this.comment,
+      this.onVote,
+      this.onBlockUser,
+      this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -2340,6 +2408,17 @@ class _CommentCard extends StatelessWidget {
                     child: const Padding(
                       padding: EdgeInsets.all(4),
                       child: Icon(Icons.thumb_down_outlined, size: 16),
+                    ),
+                  ),
+                ],
+                if (onBlockUser != null) ...[
+                  const SizedBox(width: 4),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(4),
+                    onTap: () => onBlockUser!(comment),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(Icons.block, size: 16),
                     ),
                   ),
                 ],

@@ -456,6 +456,9 @@ class WebKoKR {
       'blockRule.uploaderBlocked': '업로더 "@uploader"가 차단되었습니다',
       'blockRule.blockTag': '이 태그 차단',
       'blockRule.blockUploader': '이 업로더 차단',
+      'blockRule.blockCommentUser': '댓글 사용자 차단',
+      'blockRule.blockCommentUserConfirm': '댓글 사용자 "@user"를 차단할까요?',
+      'blockRule.commentUserBlocked': '댓글 사용자 "@user"가 차단되었습니다',
 
       // download enhancements
       'downloads.search': '다운로드 검색...',

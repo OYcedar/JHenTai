@@ -466,6 +466,10 @@ class WebRuRU {
       'blockRule.uploaderBlocked': 'Загрузчик "@uploader" заблокирован',
       'blockRule.blockTag': 'Заблокировать тег',
       'blockRule.blockUploader': 'Заблокировать загрузчика',
+      'blockRule.blockCommentUser': 'Заблокировать автора комментария',
+      'blockRule.blockCommentUserConfirm':
+          'Заблокировать автора комментария "@user"?',
+      'blockRule.commentUserBlocked': 'Автор комментария "@user" заблокирован',
 
       // download enhancements
       'downloads.search': 'Поиск загрузок...',

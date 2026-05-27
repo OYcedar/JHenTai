@@ -439,6 +439,9 @@ class WebZhTW {
       'blockRule.uploaderBlocked': '上傳者 "@uploader" 已被封鎖',
       'blockRule.blockTag': '封鎖此標籤',
       'blockRule.blockUploader': '封鎖此上傳者',
+      'blockRule.blockCommentUser': '封鎖評論使用者',
+      'blockRule.blockCommentUserConfirm': '封鎖評論使用者 "@user"？',
+      'blockRule.commentUserBlocked': '評論使用者 "@user" 已被封鎖',
 
       // download enhancements
       'downloads.search': '搜尋下載...',

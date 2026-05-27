@@ -474,6 +474,9 @@ class WebEnUS {
       'blockRule.uploaderBlocked': 'Uploader "@uploader" has been blocked',
       'blockRule.blockTag': 'Block this tag',
       'blockRule.blockUploader': 'Block this uploader',
+      'blockRule.blockCommentUser': 'Block comment user',
+      'blockRule.blockCommentUserConfirm': 'Block comment user "@user"?',
+      'blockRule.commentUserBlocked': 'Comment user "@user" has been blocked',
 
       // download enhancements
       'downloads.search': 'Search downloads...',

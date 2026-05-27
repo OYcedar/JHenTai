@@ -468,6 +468,11 @@ class WebPtBR {
       'blockRule.uploaderBlocked': 'Uploader "@uploader" foi bloqueado',
       'blockRule.blockTag': 'Bloquear esta tag',
       'blockRule.blockUploader': 'Bloquear este uploader',
+      'blockRule.blockCommentUser': 'Bloquear usuário do comentário',
+      'blockRule.blockCommentUserConfirm':
+          'Bloquear usuário do comentário "@user"?',
+      'blockRule.commentUserBlocked':
+          'Usuário do comentário "@user" foi bloqueado',
 
       // download enhancements
       'downloads.search': 'Pesquisar downloads...',

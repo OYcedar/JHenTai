@@ -1152,6 +1152,11 @@ class EHClient {
       final header = c.querySelector('.c3')?.text ?? '';
       final authorEl = c.querySelector('.c3 a');
       final author = authorEl?.text ?? 'Anonymous';
+      final authorUrl = authorEl?.attributes['href'] ?? '';
+      final userId =
+          RegExp(r'(?:[?&]uid=|/u(?:ser)?/)(\d+)', caseSensitive: false)
+              .firstMatch(authorUrl)
+              ?.group(1);
       final dateMatch = RegExp(r'Posted on (.+?) by').firstMatch(header);
       final date = dateMatch?.group(1) ?? '';
       final scoreEl = c.querySelector('.c5 span');
@@ -1165,6 +1170,8 @@ class EHClient {
       result.comments.add({
         'id': commentId,
         'author': author,
+        'authorUrl': authorUrl,
+        'userId': userId,
         'date': date,
         'score': score,
         'body': body,
