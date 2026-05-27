@@ -478,6 +478,8 @@ class WebKoKR {
       // gallery detail extras
       'detail.parentGallery': '상위 갤러리',
       'detail.newerVersion': '새 버전 사용 가능',
+      'detail.versionHistory': '버전 기록',
+      'detail.currentVersion': '현재 버전',
 
       // settings extras
       'settings.cookieStatusFull': '쿠키 정상 (igneous 포함 — EX 사용 가능)',

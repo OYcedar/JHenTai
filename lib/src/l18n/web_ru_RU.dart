@@ -488,6 +488,8 @@ class WebRuRU {
       // gallery detail extras
       'detail.parentGallery': 'Родительская галерея',
       'detail.newerVersion': 'Доступна новая версия',
+      'detail.versionHistory': 'История версий',
+      'detail.currentVersion': 'Текущая версия',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (включая igneous — EX доступен)',

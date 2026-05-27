@@ -29,7 +29,8 @@ List<String> _sortedDownloadGroupCandidates(WebDownloadService svc) {
   return list;
 }
 
-Map<String, dynamic> _thumbMapForDetail(WebGalleryDetailController c, int index) {
+Map<String, dynamic> _thumbMapForDetail(
+    WebGalleryDetailController c, int index) {
   if (index < c.galleryThumbnails.length) {
     return Map<String, dynamic>.from(c.galleryThumbnails[index]);
   }
@@ -68,6 +69,7 @@ class WebGalleryDetailController extends GetxController {
   final thumbnailImageUrls = <String>[].obs;
   final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final tags = <String, List<String>>{}.obs;
+
   /// Server [tagsRich]: EH `#taglist` inline colors, aligned by `name` with [tags].
   final tagsRich = <String, List<Map<String, dynamic>>>{}.obs;
   final translatedTags = <String, String>{}.obs;
@@ -85,6 +87,7 @@ class WebGalleryDetailController extends GetxController {
   final parentUrl = Rxn<String>();
   final ratingCount = 0.obs;
   final newerVersionUrl = Rxn<String>();
+  final childVersions = <Map<String, dynamic>>[].obs;
   final readProgress = 0.obs;
 
   /// True while fetching full thumbnail strip via [fetchGalleryImagePages] (EH shows ~20 per HTML page).
@@ -167,14 +170,16 @@ class WebGalleryDetailController extends GetxController {
       thumbnailImageUrls.value = thumbs?.cast<String>() ?? [];
       final gt = result['galleryThumbnails'] as List?;
       if (gt != null) {
-        galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        galleryThumbnails.value =
+            gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
       } else {
         galleryThumbnails.value = [];
       }
 
       final rawTags = result['tags'] as Map<String, dynamic>?;
       if (rawTags != null) {
-        tags.value = rawTags.map((k, v) => MapEntry(k, (v as List).cast<String>()));
+        tags.value =
+            rawTags.map((k, v) => MapEntry(k, (v as List).cast<String>()));
       } else {
         tags.clear();
       }
@@ -185,7 +190,9 @@ class WebGalleryDetailController extends GetxController {
         for (final e in rawRich.entries) {
           final v = e.value;
           if (v is List) {
-            tagsRich[e.key] = v.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+            tagsRich[e.key] = v
+                .map((item) => Map<String, dynamic>.from(item as Map))
+                .toList();
           }
         }
       }
@@ -208,19 +215,27 @@ class WebGalleryDetailController extends GetxController {
       parentUrl.value = result['parentUrl'] as String?;
       ratingCount.value = result['ratingCount'] as int? ?? 0;
       newerVersionUrl.value = result['newerVersionUrl'] as String?;
+      final rawChildVersions = result['childVersions'] as List?;
+      childVersions.value = rawChildVersions
+              ?.map((item) => Map<String, dynamic>.from(item as Map))
+              .toList() ??
+          [];
 
-      backendApiClient.recordHistory(
-        gid: gid,
-        token: token,
-        title: title.value,
-        coverUrl: coverUrl.value,
-        category: category.value,
-      ).catchError((_) {});
+      backendApiClient
+          .recordHistory(
+            gid: gid,
+            token: token,
+            title: title.value,
+            coverUrl: coverUrl.value,
+            category: category.value,
+          )
+          .catchError((_) {});
 
       _loadTagTranslations();
 
       if (pageCount.value > 0 &&
-          (thumbnailImageUrls.length < pageCount.value || galleryThumbnails.length < pageCount.value)) {
+          (thumbnailImageUrls.length < pageCount.value ||
+              galleryThumbnails.length < pageCount.value)) {
         _loadFullThumbnails();
       }
     } catch (e) {
@@ -236,7 +251,8 @@ class WebGalleryDetailController extends GetxController {
     try {
       final result = await backendApiClient.fetchGalleryImagePages(gid, token);
       final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
-      final thumbs = (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
+      final thumbs =
+          (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
       final gt = result['galleryThumbnails'] as List?;
       final total = (result['totalPages'] as num?)?.toInt();
 
@@ -245,12 +261,15 @@ class WebGalleryDetailController extends GetxController {
         imagePageUrls.value = pages;
       }
       if (thumbs.isNotEmpty &&
-          (thumbnailImageUrls.isEmpty || thumbs.length >= thumbnailImageUrls.length)) {
+          (thumbnailImageUrls.isEmpty ||
+              thumbs.length >= thumbnailImageUrls.length)) {
         thumbnailImageUrls.value = thumbs;
       }
       if (gt != null && gt.isNotEmpty) {
-        if (galleryThumbnails.isEmpty || gt.length >= galleryThumbnails.length) {
-          galleryThumbnails.value = gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        if (galleryThumbnails.isEmpty ||
+            gt.length >= galleryThumbnails.length) {
+          galleryThumbnails.value =
+              gt.map((e) => Map<String, dynamic>.from(e as Map)).toList();
         }
       }
       if (total != null && total > 0) {
@@ -298,7 +317,8 @@ class WebGalleryDetailController extends GetxController {
   }
 
   /// Inline ARGB from gallery HTML (`tagsRich`), same order as [tags] rows.
-  ({int? colorArgb, int? backgroundArgb})? tagHtmlStyleArgb(String namespace, String tagName) {
+  ({int? colorArgb, int? backgroundArgb})? tagHtmlStyleArgb(
+      String namespace, String tagName) {
     final list = tagsRich[namespace];
     if (list == null) return null;
     int? asArgb(dynamic v) {
@@ -327,18 +347,24 @@ class WebGalleryDetailController extends GetxController {
         await backendApiClient.removeFavorite(gid, token);
         favoriteSlot.value = null;
         favoriteName.value = null;
-        Get.snackbar('detail.favRemoved'.tr, 'detail.favRemovedMsg'.tr, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('detail.favRemoved'.tr, 'detail.favRemovedMsg'.tr,
+            snackPosition: SnackPosition.BOTTOM);
         return;
       }
-      await backendApiClient.addFavorite(gid, token, favcat: slotIndex, favnote: favnote);
+      await backendApiClient.addFavorite(gid, token,
+          favcat: slotIndex, favnote: favnote);
       favoriteSlot.value = slotIndex;
       final name = getFavSlotName(slotIndex);
       favoriteName.value = name;
-      Get.snackbar('detail.favAdded'.tr, 'detail.favAddedMsg'.trParams({'name': name}), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+          'detail.favAdded'.tr, 'detail.favAddedMsg'.trParams({'name': name}),
+          snackPosition: SnackPosition.BOTTOM);
       _loadSiteAndFavNames().catchError((_) {});
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'detail.favError'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'detail.favError'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     } finally {
       isFavLoading.value = false;
     }
@@ -346,7 +372,8 @@ class WebGalleryDetailController extends GetxController {
 
   Future<void> submitRating(double newRating) async {
     if (apiuid == null || apikey == null) {
-      Get.snackbar('common.error'.tr, 'detail.rateLoginRequired'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'detail.rateLoginRequired'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       return;
     }
     try {
@@ -359,14 +386,19 @@ class WebGalleryDetailController extends GetxController {
       );
       final avg = result['rating_avg'] as num?;
       if (avg != null) rating.value = avg.toDouble();
-      Get.snackbar('detail.rated'.tr, 'detail.ratedMsg'.trParams({'rating': newRating.toStringAsFixed(1)}), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('detail.rated'.tr,
+          'detail.ratedMsg'.trParams({'rating': newRating.toStringAsFixed(1)}),
+          snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'detail.rateFailed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'detail.rateFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
-  Future<void> startGalleryDownload({String group = 'default', int priority = 0}) async {
+  Future<void> startGalleryDownload(
+      {String group = 'default', int priority = 0}) async {
     try {
       await backendApiClient.startGalleryDownload(
         gid: gid,
@@ -384,8 +416,10 @@ class WebGalleryDetailController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       await Get.find<WebDownloadService>().refresh();
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'detail.downloadFailed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'detail.downloadFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
@@ -393,18 +427,24 @@ class WebGalleryDetailController extends GetxController {
     final url = newerVersionUrl.value;
     if (url == null || url.isEmpty) return;
     try {
-      final r = await backendApiClient.upgradeGalleryDownload(fromGid: gid, newerVersionUrl: url);
+      final r = await backendApiClient.upgradeGalleryDownload(
+          fromGid: gid, newerVersionUrl: url);
       if (r['success'] != true) {
         final err = r['error']?.toString() ?? 'unknown';
-        Get.snackbar('common.error'.tr, 'detail.upgradeFailed'.trParams({'error': err}),
-            snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+        Get.snackbar(
+            'common.error'.tr, 'detail.upgradeFailed'.trParams({'error': err}),
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red.withValues(alpha: 0.7));
         return;
       }
       await Get.find<WebDownloadService>().refresh();
-      Get.snackbar('common.success'.tr, 'detail.upgradeOk'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.success'.tr, 'detail.upgradeOk'.tr,
+          snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'detail.upgradeFailed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'detail.upgradeFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
@@ -414,7 +454,8 @@ class WebGalleryDetailController extends GetxController {
     int priority = 0,
   }) async {
     if (archiverUrl.isEmpty) {
-      Get.snackbar('common.error'.tr, 'detail.noArchive'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'detail.noArchive'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       return;
     }
     try {
@@ -436,8 +477,10 @@ class WebGalleryDetailController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       await Get.find<WebDownloadService>().refresh();
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'detail.archiveFailed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'detail.archiveFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
@@ -445,22 +488,31 @@ class WebGalleryDetailController extends GetxController {
     if (text.trim().isEmpty) return;
     try {
       await backendApiClient.postComment(gid: gid, token: token, comment: text);
-      Get.snackbar('comment.posted'.tr, 'comment.postedMsg'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('comment.posted'.tr, 'comment.postedMsg'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       _loadDetail();
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'comment.postFailed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'comment.postFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
   Future<void> voteComment(int commentId, int vote) async {
     if (apiuid == null || apikey == null) {
-      Get.snackbar('common.error'.tr, 'detail.rateLoginRequired'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, 'detail.rateLoginRequired'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       return;
     }
     try {
       final result = await backendApiClient.voteComment(
-        gid: gid, token: token, apiuid: apiuid!, apikey: apikey!, commentId: commentId, vote: vote,
+        gid: gid,
+        token: token,
+        apiuid: apiuid!,
+        apikey: apikey!,
+        commentId: commentId,
+        vote: vote,
       );
       final newScore = result['comment_score'];
       if (newScore != null) {
@@ -470,7 +522,8 @@ class WebGalleryDetailController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'comment.voteFailed'.trParams({'error': '$e'}),
+      Get.snackbar(
+          'common.error'.tr, 'comment.voteFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -496,17 +549,21 @@ class WebGalleryDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Obx(() => Text(controller.title.value, overflow: TextOverflow.ellipsis)),
+        title: Obx(() =>
+            Text(controller.title.value, overflow: TextOverflow.ellipsis)),
         actions: [
           Obx(() {
-            final domain = controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
+            final domain =
+                controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
             return IconButton(
               icon: const Icon(Icons.copy),
               tooltip: 'detail.copyUrl'.tr,
               onPressed: () {
-                final url = 'https://$domain/g/${controller.gid}/${controller.token}/';
+                final url =
+                    'https://$domain/g/${controller.gid}/${controller.token}/';
                 Clipboard.setData(ClipboardData(text: url));
-                Get.snackbar('detail.copied'.tr, url, snackPosition: SnackPosition.BOTTOM);
+                Get.snackbar('detail.copied'.tr, url,
+                    snackPosition: SnackPosition.BOTTOM);
               },
             );
           }),
@@ -514,26 +571,72 @@ class WebGalleryDetailPage extends StatelessWidget {
             if (controller.isFavLoading.value) {
               return const Padding(
                 padding: EdgeInsets.all(12),
-                child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2)),
               );
             }
             final isFav = controller.favoriteSlot.value != null;
             return IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
-                  color: isFav ? _favSlotColor(controller.favoriteSlot.value ?? 0) : null),
+                  color: isFav
+                      ? _favSlotColor(controller.favoriteSlot.value ?? 0)
+                      : null),
               tooltip: 'detail.addToFavTitle'.tr,
               onPressed: () => _showFavoriteFolderDialog(context, controller),
-              onLongPress: () => _quickAddToDefaultFavorite(context, controller),
+              onLongPress: () =>
+                  _quickAddToDefaultFavorite(context, controller),
             );
           }),
           PopupMenuButton<String>(
             onSelected: (value) => _handleOverflowMenu(context, value),
             itemBuilder: (ctx) => [
-              PopupMenuItem(value: 'share', child: ListTile(leading: const Icon(Icons.share, size: 20), title: Text('detail.shareUrl'.tr), dense: true, contentPadding: EdgeInsets.zero)),
-              PopupMenuItem(value: 'jumpToPage', child: ListTile(leading: const Icon(Icons.format_list_numbered, size: 20), title: Text('detail.jumpToPage'.tr), dense: true, contentPadding: EdgeInsets.zero)),
-              PopupMenuItem(value: 'stats', child: ListTile(leading: const Icon(Icons.bar_chart, size: 20), title: Text('detail.stats'.tr), dense: true, contentPadding: EdgeInsets.zero)),
-              PopupMenuItem(value: 'similarSearch', child: ListTile(leading: const Icon(Icons.title, size: 20), title: Text('detail.similarByTitle'.tr), dense: true, contentPadding: EdgeInsets.zero)),
-              PopupMenuItem(value: 'blockGallery', child: ListTile(leading: const Icon(Icons.block, size: 20, color: Colors.orange), title: Text('detail.blockGallery'.tr), dense: true, contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(
+                  value: 'share',
+                  child: ListTile(
+                      leading: const Icon(Icons.share, size: 20),
+                      title: Text('detail.shareUrl'.tr),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(
+                  value: 'jumpToPage',
+                  child: ListTile(
+                      leading: const Icon(Icons.format_list_numbered, size: 20),
+                      title: Text('detail.jumpToPage'.tr),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero)),
+              if (controller.parentUrl.value != null ||
+                  controller.childVersions.isNotEmpty)
+                PopupMenuItem(
+                    value: 'versionHistory',
+                    child: ListTile(
+                        leading: const Icon(Icons.history, size: 20),
+                        title: Text('detail.versionHistory'.tr),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(
+                  value: 'stats',
+                  child: ListTile(
+                      leading: const Icon(Icons.bar_chart, size: 20),
+                      title: Text('detail.stats'.tr),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(
+                  value: 'similarSearch',
+                  child: ListTile(
+                      leading: const Icon(Icons.title, size: 20),
+                      title: Text('detail.similarByTitle'.tr),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero)),
+              PopupMenuItem(
+                  value: 'blockGallery',
+                  child: ListTile(
+                      leading: const Icon(Icons.block,
+                          size: 20, color: Colors.orange),
+                      title: Text('detail.blockGallery'.tr),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero)),
             ],
           ),
         ],
@@ -553,10 +656,13 @@ class WebGalleryDetailPage extends StatelessWidget {
   void _showStartGalleryDownloadDialog(BuildContext context) {
     final svc = Get.find<WebDownloadService>();
     final candidates = _sortedDownloadGroupCandidates(svc);
-    final rawG = web.window.localStorage.getItem('jh_web_default_gallery_group');
+    final rawG =
+        web.window.localStorage.getItem('jh_web_default_gallery_group');
     var group = (rawG != null && rawG.isNotEmpty) ? rawG : 'default';
     final priorityCtrl = TextEditingController(
-      text: web.window.localStorage.getItem('jh_web_default_gallery_priority') ?? '0',
+      text:
+          web.window.localStorage.getItem('jh_web_default_gallery_priority') ??
+              '0',
     );
     showDialog<void>(
       context: context,
@@ -585,13 +691,17 @@ class WebGalleryDetailPage extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
           FilledButton(
             onPressed: () async {
               final g = group.trim().isEmpty ? 'default' : group.trim();
               final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
-              web.window.localStorage.setItem('jh_web_default_gallery_group', g);
-              web.window.localStorage.setItem('jh_web_default_gallery_priority', '$p');
+              web.window.localStorage
+                  .setItem('jh_web_default_gallery_group', g);
+              web.window.localStorage
+                  .setItem('jh_web_default_gallery_priority', '$p');
               Navigator.pop(ctx);
               await controller.startGalleryDownload(group: g, priority: p);
             },
@@ -605,10 +715,13 @@ class WebGalleryDetailPage extends StatelessWidget {
   void _showStartArchiveDownloadDialog(BuildContext context) {
     final svc = Get.find<WebDownloadService>();
     final candidates = _sortedDownloadGroupCandidates(svc);
-    final rawG = web.window.localStorage.getItem('jh_web_default_archive_group');
+    final rawG =
+        web.window.localStorage.getItem('jh_web_default_archive_group');
     var group = (rawG != null && rawG.isNotEmpty) ? rawG : 'default';
     final priorityCtrl = TextEditingController(
-      text: web.window.localStorage.getItem('jh_web_default_archive_priority') ?? '0',
+      text:
+          web.window.localStorage.getItem('jh_web_default_archive_priority') ??
+              '0',
     );
     showDialog<void>(
       context: context,
@@ -645,10 +758,13 @@ class WebGalleryDetailPage extends StatelessWidget {
                     onPressed: () async {
                       final g = group.trim().isEmpty ? 'default' : group.trim();
                       final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
-                      web.window.localStorage.setItem('jh_web_default_archive_group', g);
-                      web.window.localStorage.setItem('jh_web_default_archive_priority', '$p');
+                      web.window.localStorage
+                          .setItem('jh_web_default_archive_group', g);
+                      web.window.localStorage
+                          .setItem('jh_web_default_archive_priority', '$p');
                       Navigator.pop(ctx);
-                      await controller.startArchiveDownload(isOriginal: false, group: g, priority: p);
+                      await controller.startArchiveDownload(
+                          isOriginal: false, group: g, priority: p);
                     },
                   ),
                   FilledButton.icon(
@@ -657,10 +773,13 @@ class WebGalleryDetailPage extends StatelessWidget {
                     onPressed: () async {
                       final g = group.trim().isEmpty ? 'default' : group.trim();
                       final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
-                      web.window.localStorage.setItem('jh_web_default_archive_group', g);
-                      web.window.localStorage.setItem('jh_web_default_archive_priority', '$p');
+                      web.window.localStorage
+                          .setItem('jh_web_default_archive_group', g);
+                      web.window.localStorage
+                          .setItem('jh_web_default_archive_priority', '$p');
                       Navigator.pop(ctx);
-                      await controller.startArchiveDownload(isOriginal: true, group: g, priority: p);
+                      await controller.startArchiveDownload(
+                          isOriginal: true, group: g, priority: p);
                     },
                   ),
                 ],
@@ -669,20 +788,24 @@ class WebGalleryDetailPage extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
         ],
       ),
     );
   }
 
-  void _showFavoriteFolderDialog(BuildContext context, WebGalleryDetailController c) {
+  void _showFavoriteFolderDialog(
+      BuildContext context, WebGalleryDetailController c) {
     showDialog<void>(
       context: context,
       builder: (ctx) => _WebFavoriteFolderDialog(controller: c),
     );
   }
 
-  void _quickAddToDefaultFavorite(BuildContext context, WebGalleryDetailController c) {
+  void _quickAddToDefaultFavorite(
+      BuildContext context, WebGalleryDetailController c) {
     if (c.favoriteSlot.value != null) return;
     final raw = web.window.localStorage.getItem('jh_web_default_favcat');
     if (raw == null || raw.isEmpty) return;
@@ -694,24 +817,31 @@ class WebGalleryDetailPage extends StatelessWidget {
   void _handleOverflowMenu(BuildContext context, String value) {
     switch (value) {
       case 'share':
-        final domain = controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
+        final domain =
+            controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
         final url = 'https://$domain/g/${controller.gid}/${controller.token}/';
         try {
-          final shareData = web.ShareData(title: controller.title.value, url: url);
+          final shareData =
+              web.ShareData(title: controller.title.value, url: url);
           web.window.navigator.share(shareData);
         } catch (_) {
           Clipboard.setData(ClipboardData(text: url));
-          Get.snackbar('detail.copied'.tr, url, snackPosition: SnackPosition.BOTTOM);
+          Get.snackbar('detail.copied'.tr, url,
+              snackPosition: SnackPosition.BOTTOM);
         }
         break;
       case 'jumpToPage':
         _showJumpToPageDialog(context);
         break;
+      case 'versionHistory':
+        _showVersionHistoryDialog(context);
+        break;
       case 'stats':
         Get.toNamed('/web/stats/${controller.gid}/${controller.token}');
         break;
       case 'similarSearch':
-        Get.offAllNamed('/web/home', arguments: {'search': controller.title.value});
+        Get.offAllNamed('/web/home',
+            arguments: {'search': controller.title.value});
         break;
       case 'blockGallery':
         _blockGallery();
@@ -735,7 +865,9 @@ class WebGalleryDetailPage extends StatelessWidget {
           autofocus: true,
           onSubmitted: (_) {
             final page = int.tryParse(textCtrl.text);
-            if (page != null && page >= 1 && page <= controller.pageCount.value) {
+            if (page != null &&
+                page >= 1 &&
+                page <= controller.pageCount.value) {
               Navigator.pop(ctx);
               Get.toNamed(
                   '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: page - 1)}');
@@ -743,14 +875,18 @@ class WebGalleryDetailPage extends StatelessWidget {
           },
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
           FilledButton(
             onPressed: () {
               final page = int.tryParse(textCtrl.text);
-              if (page != null && page >= 1 && page <= controller.pageCount.value) {
+              if (page != null &&
+                  page >= 1 &&
+                  page <= controller.pageCount.value) {
                 Navigator.pop(ctx);
                 Get.toNamed(
-                  '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: page - 1)}');
+                    '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: page - 1)}');
               }
             },
             child: Text('common.ok'.tr),
@@ -760,16 +896,79 @@ class WebGalleryDetailPage extends StatelessWidget {
     );
   }
 
+  void _showVersionHistoryDialog(BuildContext context) {
+    final children = controller.childVersions.toList().reversed.toList();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text('detail.versionHistory'.tr),
+        contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        children: [
+          ...children.map((item) {
+            final url = item['url']?.toString() ?? '';
+            final title = item['title']?.toString() ?? '';
+            final updateTime = item['updateTime']?.toString() ?? '';
+            return ListTile(
+              dense: true,
+              leading: const Icon(Icons.update, size: 20),
+              title: Text(
+                title.isEmpty ? 'detail.newerVersion'.tr : title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: updateTime.isEmpty ? null : Text(updateTime),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openGalleryUrl(url);
+              },
+            );
+          }),
+          ListTile(
+            dense: true,
+            leading: const Icon(Icons.radio_button_checked, size: 20),
+            title: Text(
+              controller.title.value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text('detail.currentVersion'.tr),
+            selected: true,
+          ),
+          if (controller.parentUrl.value != null)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.exit_to_app, size: 20),
+              title: Text('detail.parentGallery'.tr),
+              onTap: () {
+                Navigator.pop(ctx);
+                _openGalleryUrl(controller.parentUrl.value!);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _openGalleryUrl(String url) {
+    final m = RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(url);
+    if (m != null) {
+      Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
+    }
+  }
+
   Future<void> _blockGallery() async {
     try {
       await backendApiClient.saveBlockRule(
-        target: 'gallery', attribute: 'gid', pattern: 'equal',
+        target: 'gallery',
+        attribute: 'gid',
+        pattern: 'equal',
         expression: '${controller.gid}',
       );
       Get.snackbar('blockRule.blocked'.tr, 'detail.galleryBlocked'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -829,7 +1028,8 @@ class WebGalleryDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCover(BuildContext context, {required double width, required double height}) {
+  Widget _buildCover(BuildContext context,
+      {required double width, required double height}) {
     return Obx(() {
       final url = controller.coverUrl.value;
       return GestureDetector(
@@ -846,13 +1046,17 @@ class WebGalleryDetailPage extends StatelessWidget {
                     width: width,
                     height: height,
                     readerErrorChild: Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.photo_library, size: 48, color: Colors.grey),
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.photo_library,
+                          size: 48, color: Colors.grey),
                     ),
                   )
                 : Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: const Icon(Icons.photo_library, size: 48, color: Colors.grey),
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.photo_library,
+                        size: 48, color: Colors.grey),
                   ),
           ),
         ),
@@ -876,7 +1080,8 @@ class WebGalleryDetailPage extends StatelessWidget {
                 fit: BoxFit.contain,
                 errorIconSize: 64,
                 readerErrorChild: const Center(
-                  child: Icon(Icons.broken_image, size: 64, color: Colors.white54),
+                  child:
+                      Icon(Icons.broken_image, size: 64, color: Colors.white54),
                 ),
               ),
             ),
@@ -895,13 +1100,19 @@ class WebGalleryDetailPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Obx(() => Text(controller.title.value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold))),
         if (controller.titleJpn.isNotEmpty)
           Obx(() => Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(controller.titleJpn.value,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey)),
-          )),
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(controller.titleJpn.value,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge
+                        ?.copyWith(color: Colors.grey)),
+              )),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -909,70 +1120,78 @@ class WebGalleryDetailPage extends StatelessWidget {
           children: [
             Obx(() => _CategoryChip(category: controller.category.value)),
             Obx(() => GestureDetector(
-              onSecondaryTapUp: (details) {
-                _showUploaderContextMenu(context, details.globalPosition, controller.uploader.value);
-              },
-              onLongPressStart: (details) {
-                _showUploaderContextMenu(context, details.globalPosition, controller.uploader.value);
-              },
-              child: Chip(
-                avatar: const Icon(Icons.person, size: 16),
-                label: Text(controller.uploader.value),
-                visualDensity: VisualDensity.compact,
-              ),
-            )),
+                  onSecondaryTapUp: (details) {
+                    _showUploaderContextMenu(context, details.globalPosition,
+                        controller.uploader.value);
+                  },
+                  onLongPressStart: (details) {
+                    _showUploaderContextMenu(context, details.globalPosition,
+                        controller.uploader.value);
+                  },
+                  child: Chip(
+                    avatar: const Icon(Icons.person, size: 16),
+                    label: Text(controller.uploader.value),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )),
             Obx(() => Chip(
-              avatar: const Icon(Icons.photo_library, size: 16),
-              label: Text('common.pages'.trParams({'count': '${controller.pageCount.value}'})),
-              visualDensity: VisualDensity.compact,
-            )),
+                  avatar: const Icon(Icons.photo_library, size: 16),
+                  label: Text('common.pages'
+                      .trParams({'count': '${controller.pageCount.value}'})),
+                  visualDensity: VisualDensity.compact,
+                )),
             Obx(() => InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => _showRatingDialog(context),
-              child: Chip(
-                avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
-                label: Text(controller.rating.value.toStringAsFixed(1)),
-                visualDensity: VisualDensity.compact,
-              ),
-            )),
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => _showRatingDialog(context),
+                  child: Chip(
+                    avatar:
+                        const Icon(Icons.star, size: 16, color: Colors.amber),
+                    label: Text(controller.rating.value.toStringAsFixed(1)),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )),
             Obx(() {
               final fav = controller.favoriteName.value;
               if (fav == null) return const SizedBox.shrink();
               return Chip(
-                avatar: Icon(Icons.favorite, size: 16, color: _favSlotColor(controller.favoriteSlot.value ?? 0)),
+                avatar: Icon(Icons.favorite,
+                    size: 16,
+                    color: _favSlotColor(controller.favoriteSlot.value ?? 0)),
                 label: Text(fav),
                 visualDensity: VisualDensity.compact,
               );
             }),
             Obx(() => controller.language.value.isNotEmpty
-              ? Chip(
-                  avatar: const Icon(Icons.language, size: 16),
-                  label: Text(controller.language.value),
-                  visualDensity: VisualDensity.compact,
-                )
-              : const SizedBox.shrink()),
+                ? Chip(
+                    avatar: const Icon(Icons.language, size: 16),
+                    label: Text(controller.language.value),
+                    visualDensity: VisualDensity.compact,
+                  )
+                : const SizedBox.shrink()),
             Obx(() => controller.fileSize.value.isNotEmpty
-              ? Chip(
-                  avatar: const Icon(Icons.storage, size: 16),
-                  label: Text(controller.fileSize.value),
-                  visualDensity: VisualDensity.compact,
-                )
-              : const SizedBox.shrink()),
+                ? Chip(
+                    avatar: const Icon(Icons.storage, size: 16),
+                    label: Text(controller.fileSize.value),
+                    visualDensity: VisualDensity.compact,
+                  )
+                : const SizedBox.shrink()),
           ],
         ),
         Obx(() => controller.publishDate.value.isNotEmpty
-          ? Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Text(controller.publishDate.value,
-                      style: const TextStyle(fontSize: 13, color: Colors.grey)),
-                ],
-              ),
-            )
-          : const SizedBox.shrink()),
+            ? Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today,
+                        size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(controller.publishDate.value,
+                        style:
+                            const TextStyle(fontSize: 13, color: Colors.grey)),
+                  ],
+                ),
+              )
+            : const SizedBox.shrink()),
         Obx(() {
           final parent = controller.parentUrl.value;
           final newer = controller.newerVersionUrl.value;
@@ -986,19 +1205,27 @@ class WebGalleryDetailPage extends StatelessWidget {
                   InkWell(
                     onTap: () {
                       final m = RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(parent);
-                      if (m != null) Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
+                      if (m != null)
+                        Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
                     },
                     child: Text('detail.parentGallery'.tr,
-                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline)),
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.primary,
+                            decoration: TextDecoration.underline)),
                   ),
                 if (newer != null)
                   InkWell(
                     onTap: () {
                       final m = RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(newer);
-                      if (m != null) Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
+                      if (m != null)
+                        Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}');
                     },
                     child: Text('detail.newerVersion'.tr,
-                        style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, decoration: TextDecoration.underline)),
+                        style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.primary,
+                            decoration: TextDecoration.underline)),
                   ),
               ],
             ),
@@ -1028,7 +1255,8 @@ class WebGalleryDetailPage extends StatelessWidget {
                       final box = context.findRenderObject() as RenderBox?;
                       if (box != null) {
                         final localX = details.localPosition.dx;
-                        setState(() => selected = localX < 16 ? halfVal : starVal);
+                        setState(
+                            () => selected = localX < 16 ? halfVal : starVal);
                       }
                     },
                     onTap: () => setState(() => selected = starVal),
@@ -1049,7 +1277,9 @@ class WebGalleryDetailPage extends StatelessWidget {
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('common.cancel'.tr)),
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -1084,10 +1314,14 @@ class WebGalleryDetailPage extends StatelessWidget {
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Material(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.35),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(8),
                 child: ListTile(
-                  leading: Icon(Icons.system_update_alt, color: Theme.of(context).colorScheme.primary),
+                  leading: Icon(Icons.system_update_alt,
+                      color: Theme.of(context).colorScheme.primary),
                   title: Text('detail.upgradeDownload'.tr),
                   trailing: FilledButton(
                     onPressed: controller.upgradeToNewVersion,
@@ -1104,16 +1338,19 @@ class WebGalleryDetailPage extends StatelessWidget {
               Obx(() {
                 final progress = controller.readProgress.value;
                 final label = progress > 0
-                    ? 'detail.readOnlineResume'.trParams({'page': '${progress + 1}'})
+                    ? 'detail.readOnlineResume'
+                        .trParams({'page': '${progress + 1}'})
                     : 'detail.readOnline'.tr;
                 return FilledButton.icon(
                   icon: const Icon(Icons.menu_book),
                   label: Text(label),
-                  style: FilledButton.styleFrom(minimumSize: const Size(160, 44)),
+                  style:
+                      FilledButton.styleFrom(minimumSize: const Size(160, 44)),
                   onPressed: () {
                     final q = controller.buildReaderQuery(
                         startPage: progress > 0 ? progress : null);
-                    Get.toNamed('/web/reader/${controller.gid}/${controller.token}$q');
+                    Get.toNamed(
+                        '/web/reader/${controller.gid}/${controller.token}$q');
                   },
                 );
               }),
@@ -1134,8 +1371,10 @@ class WebGalleryDetailPage extends StatelessWidget {
               if (gTask != null || aTask != null)
                 OutlinedButton.icon(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  label: Text('detail.deleteDownload'.tr, style: const TextStyle(color: Colors.red)),
-                  onPressed: () => _confirmDeleteDownload(context, gTask != null, aTask != null),
+                  label: Text('detail.deleteDownload'.tr,
+                      style: const TextStyle(color: Colors.red)),
+                  onPressed: () => _confirmDeleteDownload(
+                      context, gTask != null, aTask != null),
                 ),
             ],
           ),
@@ -1147,9 +1386,13 @@ class WebGalleryDetailPage extends StatelessWidget {
               child: Row(
                 children: [
                   Text('downloads.aStatus$aStatus'.tr,
-                      style: TextStyle(fontSize: 13, color: Colors.blue.shade700)),
+                      style:
+                          TextStyle(fontSize: 13, color: Colors.blue.shade700)),
                   const SizedBox(width: 8),
-                  const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
                 ],
               ),
             ),
@@ -1158,7 +1401,8 @@ class WebGalleryDetailPage extends StatelessWidget {
     });
   }
 
-  Widget _buildGalleryDownloadButton(BuildContext context, Map<String, dynamic>? task, int? status) {
+  Widget _buildGalleryDownloadButton(
+      BuildContext context, Map<String, dynamic>? task, int? status) {
     if (task == null || status == null || status == 0) {
       return FilledButton.tonalIcon(
         icon: const Icon(Icons.download),
@@ -1223,16 +1467,20 @@ class WebGalleryDetailPage extends StatelessWidget {
     }
   }
 
-  Widget _buildArchiveButton(BuildContext context, Map<String, dynamic>? task, int? status) {
+  Widget _buildArchiveButton(
+      BuildContext context, Map<String, dynamic>? task, int? status) {
     if (task == null || status == null) {
       return Obx(() {
         final newer = controller.newerVersionUrl.value;
-        final m = newer != null ? RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(newer) : null;
+        final m = newer != null
+            ? RegExp(r'/g/(\d+)/([^/]+)/').firstMatch(newer)
+            : null;
         final buttons = controller.archiverUrl.isNotEmpty
             ? OutlinedButton.icon(
                 icon: const Icon(Icons.archive_outlined),
                 label: Text('detail.downloadArchive'.tr),
-                style: OutlinedButton.styleFrom(minimumSize: const Size(160, 44)),
+                style:
+                    OutlinedButton.styleFrom(minimumSize: const Size(160, 44)),
                 onPressed: () => _showStartArchiveDownloadDialog(context),
               )
             : const SizedBox.shrink();
@@ -1241,9 +1489,12 @@ class WebGalleryDetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('detail.archiveNewVersionHint'.tr,
-                style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
             TextButton(
-              onPressed: () => Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}'),
+              onPressed: () =>
+                  Get.toNamed('/web/gallery/${m.group(1)}/${m.group(2)}'),
               child: Text('detail.openNewVersion'.tr),
             ),
             buttons,
@@ -1280,7 +1531,10 @@ class WebGalleryDetailPage extends StatelessWidget {
       );
     }
     return OutlinedButton.icon(
-      icon: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+      icon: const SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2)),
       label: Text('downloads.aStatus$status'.tr),
       onPressed: null,
     );
@@ -1302,27 +1556,34 @@ class WebGalleryDetailPage extends StatelessWidget {
               Expanded(child: LinearProgressIndicator(value: progress)),
               const SizedBox(width: 12),
               Text('$completed / $total',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(fontWeight: FontWeight.w500)),
             ],
           ),
           if (error != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(error, style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+              child: Text(error,
+                  style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
             ),
         ],
       ),
     );
   }
 
-  void _confirmDeleteDownload(BuildContext context, bool hasGallery, bool hasArchive) {
+  void _confirmDeleteDownload(
+      BuildContext context, bool hasGallery, bool hasArchive) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('detail.deleteDownload'.tr),
         content: Text('detail.deleteDownloadConfirm'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -1330,7 +1591,8 @@ class WebGalleryDetailPage extends StatelessWidget {
               if (hasGallery) svc.deleteGallery(controller.gid);
               if (hasArchive) svc.deleteArchive(controller.gid);
             },
-            child: Text('common.delete'.tr, style: const TextStyle(color: Colors.red)),
+            child: Text('common.delete'.tr,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1341,12 +1603,18 @@ class WebGalleryDetailPage extends StatelessWidget {
     return Obx(() {
       if (controller.tags.isEmpty) return const SizedBox.shrink();
 
-      final accountWatchedBg = Get.find<WebWatchedTagStylesController>().backgroundArgbByTagKey.value;
+      final accountWatchedBg = Get.find<WebWatchedTagStylesController>()
+          .backgroundArgbByTagKey
+          .value;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('detail.tags'.tr, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          Text('detail.tags'.tr,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           ...controller.tags.entries.map((entry) {
             return Padding(
@@ -1359,9 +1627,9 @@ class WebGalleryDetailPage extends StatelessWidget {
                     child: Text(
                       entry.key,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: _namespaceColor(entry.key),
-                      ),
+                            fontWeight: FontWeight.bold,
+                            color: _namespaceColor(entry.key),
+                          ),
                     ),
                   ),
                   Expanded(
@@ -1369,25 +1637,32 @@ class WebGalleryDetailPage extends StatelessWidget {
                       spacing: 4,
                       runSpacing: 4,
                       children: entry.value.map((tag) {
-                        final translated = controller.getTranslatedTag(entry.key, tag);
+                        final translated =
+                            controller.getTranslatedTag(entry.key, tag);
                         final showTranslated = translated != tag;
-                        final html = controller.tagHtmlStyleArgb(entry.key, tag);
+                        final html =
+                            controller.tagHtmlStyleArgb(entry.key, tag);
                         final htmlBg = html?.backgroundArgb;
                         final htmlFg = html?.colorArgb;
-                        final watchedBgArgb = WebWatchedTagStylesController.lookupBackgroundArgb(
+                        final watchedBgArgb =
+                            WebWatchedTagStylesController.lookupBackgroundArgb(
                           accountWatchedBg,
                           entry.key,
                           tag,
                         );
                         final mergedBgArgb = htmlBg ?? watchedBgArgb;
-                        final Color? bg = mergedBgArgb != null ? Color(mergedBgArgb) : null;
+                        final Color? bg =
+                            mergedBgArgb != null ? Color(mergedBgArgb) : null;
                         final ns = _namespaceColor(entry.key);
                         final Color defaultFg =
-                            Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87;
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white70
+                                : Colors.black87;
                         final Color labelFg = htmlFg != null
                             ? Color(htmlFg)
                             : (bg != null
-                                ? (ThemeData.estimateBrightnessForColor(bg) == Brightness.light
+                                ? (ThemeData.estimateBrightnessForColor(bg) ==
+                                        Brightness.light
                                     ? const Color(0xFF090909)
                                     : const Color(0xFFF1F1F1))
                                 : defaultFg);
@@ -1399,10 +1674,12 @@ class WebGalleryDetailPage extends StatelessWidget {
                                 : ns.withValues(alpha: 0.55));
                         return GestureDetector(
                           onSecondaryTapUp: (details) {
-                            _showTagContextMenu(context, details.globalPosition, entry.key, tag);
+                            _showTagContextMenu(context, details.globalPosition,
+                                entry.key, tag);
                           },
                           onLongPressStart: (details) {
-                            _showTagContextMenu(context, details.globalPosition, entry.key, tag);
+                            _showTagContextMenu(context, details.globalPosition,
+                                entry.key, tag);
                           },
                           child: Tooltip(
                             message: showTranslated ? tag : '',
@@ -1414,10 +1691,12 @@ class WebGalleryDetailPage extends StatelessWidget {
                               backgroundColor: chipBg,
                               side: BorderSide(color: borderColor, width: 1),
                               visualDensity: VisualDensity.compact,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
                               onPressed: () {
                                 final query = '${entry.key}:"$tag\$"';
-                                Get.offAllNamed('/web/home', arguments: {'search': query});
+                                Get.offAllNamed('/web/home',
+                                    arguments: {'search': query});
                               },
                             ),
                           ),
@@ -1434,16 +1713,20 @@ class WebGalleryDetailPage extends StatelessWidget {
     });
   }
 
-  void _showTagContextMenu(BuildContext context, Offset position, String namespace, String tag) {
+  void _showTagContextMenu(
+      BuildContext context, Offset position, String namespace, String tag) {
     showMenu(
       context: context,
-      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx + 1, position.dy + 1),
       items: [
         PopupMenuItem(
           child: ListTile(
             leading: const Icon(Icons.search, size: 20),
-            title: Text('tagVote.search'.tr, style: const TextStyle(fontSize: 14)),
-            dense: true, contentPadding: EdgeInsets.zero,
+            title:
+                Text('tagVote.search'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
           ),
           onTap: () {
             final query = '$namespace:"$tag\$"';
@@ -1453,17 +1736,23 @@ class WebGalleryDetailPage extends StatelessWidget {
         if (controller.apiuid != null && controller.apikey != null) ...[
           PopupMenuItem(
             child: ListTile(
-              leading: const Icon(Icons.thumb_up, size: 20, color: Colors.green),
-              title: Text('tagVote.voteUp'.tr, style: const TextStyle(fontSize: 14)),
-              dense: true, contentPadding: EdgeInsets.zero,
+              leading:
+                  const Icon(Icons.thumb_up, size: 20, color: Colors.green),
+              title: Text('tagVote.voteUp'.tr,
+                  style: const TextStyle(fontSize: 14)),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
             ),
             onTap: () => _voteTag(namespace, tag, 1),
           ),
           PopupMenuItem(
             child: ListTile(
-              leading: const Icon(Icons.thumb_down, size: 20, color: Colors.red),
-              title: Text('tagVote.voteDown'.tr, style: const TextStyle(fontSize: 14)),
-              dense: true, contentPadding: EdgeInsets.zero,
+              leading:
+                  const Icon(Icons.thumb_down, size: 20, color: Colors.red),
+              title: Text('tagVote.voteDown'.tr,
+                  style: const TextStyle(fontSize: 14)),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
             ),
             onTap: () => _voteTag(namespace, tag, -1),
           ),
@@ -1471,8 +1760,10 @@ class WebGalleryDetailPage extends StatelessWidget {
         PopupMenuItem(
           child: ListTile(
             leading: const Icon(Icons.block, size: 20, color: Colors.orange),
-            title: Text('blockRule.blockTag'.tr, style: const TextStyle(fontSize: 14)),
-            dense: true, contentPadding: EdgeInsets.zero,
+            title: Text('blockRule.blockTag'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
           ),
           onTap: () => _quickBlockTag(namespace, tag),
         ),
@@ -1480,24 +1771,31 @@ class WebGalleryDetailPage extends StatelessWidget {
     );
   }
 
-  void _showUploaderContextMenu(BuildContext context, Offset position, String uploader) {
+  void _showUploaderContextMenu(
+      BuildContext context, Offset position, String uploader) {
     showMenu(
       context: context,
-      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx + 1, position.dy + 1),
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx + 1, position.dy + 1),
       items: [
         PopupMenuItem(
           child: ListTile(
             leading: const Icon(Icons.search, size: 20),
-            title: Text('tagVote.searchUploader'.tr, style: const TextStyle(fontSize: 14)),
-            dense: true, contentPadding: EdgeInsets.zero,
+            title: Text('tagVote.searchUploader'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
           ),
-          onTap: () => Get.offAllNamed('/web/home', arguments: {'search': 'uploader:$uploader'}),
+          onTap: () => Get.offAllNamed('/web/home',
+              arguments: {'search': 'uploader:$uploader'}),
         ),
         PopupMenuItem(
           child: ListTile(
             leading: const Icon(Icons.block, size: 20, color: Colors.orange),
-            title: Text('blockRule.blockUploader'.tr, style: const TextStyle(fontSize: 14)),
-            dense: true, contentPadding: EdgeInsets.zero,
+            title: Text('blockRule.blockUploader'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
           ),
           onTap: () => _quickBlockUploader(uploader),
         ),
@@ -1508,44 +1806,60 @@ class WebGalleryDetailPage extends StatelessWidget {
   Future<void> _voteTag(String namespace, String tag, int vote) async {
     try {
       await backendApiClient.voteTag(
-        gid: controller.gid, token: controller.token,
-        apiuid: controller.apiuid!, apikey: controller.apikey!,
-        namespace: namespace, tag: tag, vote: vote,
+        gid: controller.gid,
+        token: controller.token,
+        apiuid: controller.apiuid!,
+        apikey: controller.apikey!,
+        namespace: namespace,
+        tag: tag,
+        vote: vote,
       );
       Get.snackbar(
         'tagVote.success'.tr,
-        vote > 0 ? 'tagVote.votedUp'.trParams({'tag': tag}) : 'tagVote.votedDown'.trParams({'tag': tag}),
+        vote > 0
+            ? 'tagVote.votedUp'.trParams({'tag': tag})
+            : 'tagVote.votedDown'.trParams({'tag': tag}),
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
-      Get.snackbar('common.error'.tr, 'tagVote.failed'.trParams({'error': '$e'}),
-          snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.red.withValues(alpha: 0.7));
+      Get.snackbar(
+          'common.error'.tr, 'tagVote.failed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
     }
   }
 
   Future<void> _quickBlockTag(String namespace, String tag) async {
     try {
       await backendApiClient.saveBlockRule(
-        target: 'gallery', attribute: 'tag', pattern: 'like',
+        target: 'gallery',
+        attribute: 'tag',
+        pattern: 'like',
         expression: '$namespace:$tag',
       );
-      Get.snackbar('blockRule.blocked'.tr, 'blockRule.tagBlocked'.trParams({'tag': '$namespace:$tag'}),
+      Get.snackbar('blockRule.blocked'.tr,
+          'blockRule.tagBlocked'.trParams({'tag': '$namespace:$tag'}),
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
   Future<void> _quickBlockUploader(String uploader) async {
     try {
       await backendApiClient.saveBlockRule(
-        target: 'gallery', attribute: 'uploader', pattern: 'equal',
+        target: 'gallery',
+        attribute: 'uploader',
+        pattern: 'equal',
         expression: uploader,
       );
-      Get.snackbar('blockRule.blocked'.tr, 'blockRule.uploaderBlocked'.trParams({'uploader': uploader}),
+      Get.snackbar('blockRule.blocked'.tr,
+          'blockRule.uploaderBlocked'.trParams({'uploader': uploader}),
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
-      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -1562,7 +1876,10 @@ class WebGalleryDetailPage extends StatelessWidget {
             children: [
               Expanded(
                 child: Text('detail.thumbnails'.trParams({'count': '$total'}),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
               ),
               if (controller.isThumbsLoading.value)
                 const SizedBox(
@@ -1592,7 +1909,8 @@ class WebGalleryDetailPage extends StatelessWidget {
                   fit: StackFit.expand,
                   children: [
                     ColoredBox(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                     Positioned.fill(
                       child: WebEhThumbnail(
@@ -1604,14 +1922,16 @@ class WebGalleryDetailPage extends StatelessWidget {
                       bottom: 4,
                       right: 4,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           '${index + 1}',
-                          style: const TextStyle(color: Colors.white, fontSize: 11),
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 11),
                         ),
                       ),
                     ),
@@ -1624,7 +1944,8 @@ class WebGalleryDetailPage extends StatelessWidget {
             const SizedBox(height: 12),
             Center(
               child: OutlinedButton(
-                onPressed: () => Get.toNamed('/web/thumbnails/${controller.gid}/${controller.token}'),
+                onPressed: () => Get.toNamed(
+                    '/web/thumbnails/${controller.gid}/${controller.token}'),
                 child: Text('detail.viewAllThumbnails'.tr),
               ),
             ),
@@ -1642,8 +1963,13 @@ class WebGalleryDetailPage extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('detail.comments'.trParams({'count': '${controller.comments.length}'}),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                child: Text(
+                    'detail.comments'
+                        .trParams({'count': '${controller.comments.length}'}),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
               ),
               if (controller.comments.isNotEmpty)
                 TextButton(
@@ -1658,7 +1984,9 @@ class WebGalleryDetailPage extends StatelessWidget {
           if (controller.comments.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              child: Center(child: Text('comment.placeholder'.tr, style: const TextStyle(color: Colors.grey))),
+              child: Center(
+                  child: Text('comment.placeholder'.tr,
+                      style: const TextStyle(color: Colors.grey))),
             )
           else
             SizedBox(
@@ -1700,22 +2028,27 @@ class WebGalleryDetailPage extends StatelessWidget {
               child: Row(
                 children: [
                   Text('detail.allComments'.tr,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold)),
                   const Spacer(),
-                  IconButton(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+                  IconButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      icon: const Icon(Icons.close)),
                 ],
               ),
             ),
             Expanded(
               child: Obx(() => ListView.builder(
-                controller: scrollCtrl,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: controller.comments.length,
-                itemBuilder: (ctx, i) => _CommentCard(
-                  comment: controller.comments[i],
-                  onVote: (id, vote) => controller.voteComment(id, vote),
-                ),
-              )),
+                    controller: scrollCtrl,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: controller.comments.length,
+                    itemBuilder: (ctx, i) => _CommentCard(
+                      comment: controller.comments[i],
+                      onVote: (id, vote) => controller.voteComment(id, vote),
+                    ),
+                  )),
             ),
           ],
         ),
@@ -1752,7 +2085,8 @@ class _CommentInputState extends State<_CommentInput> {
             decoration: InputDecoration(
               hintText: 'comment.placeholder'.tr,
               border: const OutlineInputBorder(),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               isDense: true,
             ),
             maxLines: 2,
@@ -1763,7 +2097,10 @@ class _CommentInputState extends State<_CommentInput> {
         const SizedBox(width: 8),
         IconButton(
           icon: _sending
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.send),
           onPressed: _sending ? null : _send,
           tooltip: 'comment.send'.tr,
@@ -1786,7 +2123,8 @@ class _CommentCard extends StatelessWidget {
   final Map<String, dynamic> comment;
   final void Function(int commentId, int vote)? onVote;
   final bool compact;
-  const _CommentCard({required this.comment, this.onVote, this.compact = false});
+  const _CommentCard(
+      {required this.comment, this.onVote, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1811,20 +2149,30 @@ class _CommentCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(author,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
                 ),
                 if (score.isNotEmpty)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: score.startsWith('-') ? Colors.red.shade100 : Colors.green.shade100,
+                      color: score.startsWith('-')
+                          ? Colors.red.shade100
+                          : Colors.green.shade100,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(score, style: TextStyle(
-                      fontSize: 12,
-                      color: score.startsWith('-') ? Colors.red.shade800 : Colors.green.shade800,
-                    )),
+                    child: Text(score,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: score.startsWith('-')
+                              ? Colors.red.shade800
+                              : Colors.green.shade800,
+                        )),
                   ),
                 if (!compact && commentId != null && onVote != null) ...[
                   const SizedBox(width: 4),
@@ -1850,7 +2198,11 @@ class _CommentCard extends StatelessWidget {
             if (date.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(date, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+                child: Text(date,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Colors.grey)),
               ),
             const SizedBox(height: 4),
             Expanded(
@@ -1879,7 +2231,8 @@ class _CategoryChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(category,
-          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 }
@@ -1917,8 +2270,16 @@ Color _namespaceColor(String namespace) {
 
 Color _favSlotColor(int slot) {
   const colors = [
-    Colors.red, Colors.orange, Colors.amber, Colors.green, Colors.teal,
-    Colors.blue, Colors.indigo, Colors.purple, Colors.pink, Colors.brown,
+    Colors.red,
+    Colors.orange,
+    Colors.amber,
+    Colors.green,
+    Colors.teal,
+    Colors.blue,
+    Colors.indigo,
+    Colors.purple,
+    Colors.pink,
+    Colors.brown,
   ];
   return colors[slot % colors.length];
 }
@@ -1928,7 +2289,8 @@ class _WebFavoriteFolderDialog extends StatefulWidget {
   const _WebFavoriteFolderDialog({required this.controller});
 
   @override
-  State<_WebFavoriteFolderDialog> createState() => _WebFavoriteFolderDialogState();
+  State<_WebFavoriteFolderDialog> createState() =>
+      _WebFavoriteFolderDialogState();
 }
 
 class _WebFavoriteFolderDialogState extends State<_WebFavoriteFolderDialog> {
@@ -1941,7 +2303,9 @@ class _WebFavoriteFolderDialogState extends State<_WebFavoriteFolderDialog> {
     _note = TextEditingController();
     if (widget.controller.favoriteSlot.value != null) {
       _loadingNote = true;
-      backendApiClient.fetchFavoriteNote(widget.controller.gid, widget.controller.token).then((n) {
+      backendApiClient
+          .fetchFavoriteNote(widget.controller.gid, widget.controller.token)
+          .then((n) {
         if (mounted) {
           setState(() {
             _note.text = n;
@@ -1990,7 +2354,9 @@ class _WebFavoriteFolderDialogState extends State<_WebFavoriteFolderDialog> {
                     const SizedBox(height: 12),
                     ...List.generate(10, (i) {
                       final isSel = c.favoriteSlot.value == i;
-                      final countStr = c.favoriteCounts.length > i ? '${c.favoriteCounts[i]}' : '';
+                      final countStr = c.favoriteCounts.length > i
+                          ? '${c.favoriteCounts[i]}'
+                          : '';
                       return ListTile(
                         dense: true,
                         leading: Icon(Icons.favorite, color: _favSlotColor(i)),

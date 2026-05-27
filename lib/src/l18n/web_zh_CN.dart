@@ -465,6 +465,8 @@ class WebZhCN {
       // gallery detail extras
       'detail.parentGallery': '父画廊',
       'detail.newerVersion': '有更新版本',
+      'detail.versionHistory': '版本历史',
+      'detail.currentVersion': '当前版本',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可访问 EX）',

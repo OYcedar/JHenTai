@@ -490,6 +490,8 @@ class WebPtBR {
       // gallery detail extras
       'detail.parentGallery': 'Galeria Pai',
       'detail.newerVersion': 'Versão Mais Nova Disponível',
+      'detail.versionHistory': 'Histórico de Versões',
+      'detail.currentVersion': 'Versão Atual',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (inclui igneous — EX pronto)',

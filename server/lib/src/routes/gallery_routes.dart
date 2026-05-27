@@ -354,6 +354,7 @@ class GalleryRoutes {
           'parentUrl': detail.parentUrl,
           'ratingCount': detail.ratingCount,
           'newerVersionUrl': detail.newerVersionUrl,
+          'childVersions': detail.childVersions,
         }),
         headers: {'Content-Type': 'application/json'},
       );

@@ -496,6 +496,8 @@ class WebEnUS {
       // gallery detail extras
       'detail.parentGallery': 'Parent Gallery',
       'detail.newerVersion': 'Newer Version Available',
+      'detail.versionHistory': 'Version History',
+      'detail.currentVersion': 'Current Version',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (includes igneous — EX ready)',

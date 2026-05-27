@@ -1027,6 +1027,7 @@ class EHClient {
     if (newerEl != null) {
       result.newerVersionUrl = newerEl.attributes['href'];
     }
+    result.childVersions = _parseChildVersions(doc);
 
     final archiveLink =
         doc.querySelector('a[onclick*="archiver"]')?.attributes['onclick'];
@@ -1120,6 +1121,32 @@ class EHClient {
       result.galleryThumbnails,
     );
 
+    return result;
+  }
+
+  List<Map<String, String>> _parseChildVersions(Document doc) {
+    final result = <Map<String, String>>[];
+    final nodes = doc.querySelector('#gnd')?.nodes;
+    if (nodes == null || nodes.isEmpty) return result;
+
+    final timePattern = RegExp(r'added (\d\d\d\d-\d\d-\d\d \d\d:\d\d)');
+    for (var i = 0; i < nodes.length; i++) {
+      final node = nodes[i];
+      if (node is! Element || node.localName != 'a') continue;
+      final href = node.attributes['href'] ?? '';
+      if (href.isEmpty || !href.contains('/g/')) continue;
+      final title = node.text.trim();
+      var updateTime = '';
+      if (i + 1 < nodes.length && nodes[i + 1] is Text) {
+        updateTime =
+            timePattern.firstMatch((nodes[i + 1] as Text).data)?.group(1) ?? '';
+      }
+      result.add({
+        'url': href,
+        'title': title,
+        'updateTime': updateTime,
+      });
+    }
     return result;
   }
 
@@ -1240,6 +1267,7 @@ class GalleryDetailResult {
   String? parentUrl;
   int ratingCount = 0;
   String? newerVersionUrl;
+  List<Map<String, String>> childVersions = [];
 }
 
 class ImagePageResult {
