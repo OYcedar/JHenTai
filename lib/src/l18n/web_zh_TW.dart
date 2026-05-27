@@ -604,9 +604,12 @@ class WebZhTW {
       'downloads.editTask': '編輯任務',
       'downloads.pauseVisible': '暫停目前列表任務',
       'downloads.resumeVisible': '恢復目前列表任務',
+      'downloads.deleteVisible': '刪除目前列表任務',
+      'downloads.deleteVisibleConfirm': '刪除目前可見的 @count 個任務及其檔案？',
       'downloads.noBatchTargets': '目前列表沒有可操作任務',
       'downloads.batchPaused': '已暫停 @count 個任務',
       'downloads.batchResumed': '已恢復 @count 個任務',
+      'downloads.batchDeleted': '已刪除 @count 個任務',
 
       'detail.startDownloadTitle': '開始下載',
       'detail.downloadGroup': '分組',

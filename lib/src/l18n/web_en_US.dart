@@ -644,9 +644,13 @@ class WebEnUS {
       'downloads.editTask': 'Edit task',
       'downloads.pauseVisible': 'Pause visible tasks',
       'downloads.resumeVisible': 'Resume visible tasks',
+      'downloads.deleteVisible': 'Delete visible tasks',
+      'downloads.deleteVisibleConfirm':
+          'Delete @count visible tasks and their files?',
       'downloads.noBatchTargets': 'No matching tasks in the current list',
       'downloads.batchPaused': 'Paused @count tasks',
       'downloads.batchResumed': 'Resumed @count tasks',
+      'downloads.batchDeleted': 'Deleted @count tasks',
 
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',

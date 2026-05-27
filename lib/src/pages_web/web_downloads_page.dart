@@ -346,6 +346,47 @@ class WebDownloadsController extends GetxController
         snackPosition: SnackPosition.BOTTOM);
   }
 
+  Future<void> deleteVisibleTasks() async {
+    final galleryTab = tabController.index == 0;
+    final tasks =
+        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final ids =
+        tasks.map((t) => (t['gid'] as num?)?.toInt()).whereType<int>().toList();
+    if (ids.isEmpty) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('downloads.deleteVisible'.tr),
+        content: Text(
+          'downloads.deleteVisibleConfirm'.trParams({'count': '${ids.length}'}),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Get.back(result: true),
+            child: Text('common.delete'.tr,
+                style: const TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    await Future.wait(ids.map(galleryTab ? deleteGallery : deleteArchive));
+    await refresh();
+    Get.snackbar('common.success'.tr,
+        'downloads.batchDeleted'.trParams({'count': '${ids.length}'}),
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
   Future<void> patchGalleryTask(int gid, {int? priority, String? group}) async {
     await backendApiClient.patchGalleryDownload(gid,
         priority: priority, group: group);
@@ -377,6 +418,11 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
             icon: const Icon(Icons.play_circle_outline),
             tooltip: 'downloads.resumeVisible'.tr,
             onPressed: controller.resumeVisibleTasks,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_sweep_outlined),
+            tooltip: 'downloads.deleteVisible'.tr,
+            onPressed: controller.deleteVisibleTasks,
           ),
           IconButton(
               icon: const Icon(Icons.refresh), onPressed: controller.refresh),

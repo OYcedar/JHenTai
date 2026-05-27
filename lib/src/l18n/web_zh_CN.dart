@@ -612,9 +612,12 @@ class WebZhCN {
       'downloads.editTask': '编辑任务',
       'downloads.pauseVisible': '暂停当前列表任务',
       'downloads.resumeVisible': '恢复当前列表任务',
+      'downloads.deleteVisible': '删除当前列表任务',
+      'downloads.deleteVisibleConfirm': '删除当前可见的 @count 个任务及其文件？',
       'downloads.noBatchTargets': '当前列表没有可操作任务',
       'downloads.batchPaused': '已暂停 @count 个任务',
       'downloads.batchResumed': '已恢复 @count 个任务',
+      'downloads.batchDeleted': '已删除 @count 个任务',
 
       // detail download dialog
       'detail.startDownloadTitle': '开始下载',
