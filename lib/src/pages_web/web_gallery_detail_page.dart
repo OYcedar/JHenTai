@@ -2188,6 +2188,8 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   Widget _buildComments(BuildContext context) {
     return Obx(() {
+      final disableCommentVotes =
+          controller.comments.any((comment) => comment['fromMe'] == true);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2232,6 +2234,7 @@ class WebGalleryDetailPage extends StatelessWidget {
                     child: _CommentCard(
                       comment: controller.comments[i],
                       onVote: (id, vote) => controller.voteComment(id, vote),
+                      disableVoting: disableCommentVotes,
                       onBlockUser: (comment) =>
                           _confirmBlockCommentUser(context, comment),
                       onEdit: (comment) =>
@@ -2275,18 +2278,23 @@ class WebGalleryDetailPage extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: Obx(() => ListView.builder(
-                    controller: scrollCtrl,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: controller.comments.length,
-                    itemBuilder: (ctx, i) => _CommentCard(
-                      comment: controller.comments[i],
-                      onVote: (id, vote) => controller.voteComment(id, vote),
-                      onBlockUser: (comment) =>
-                          _confirmBlockCommentUser(ctx, comment),
-                      onEdit: (comment) => _showEditCommentDialog(ctx, comment),
-                    ),
-                  )),
+              child: Obx(() {
+                final disableCommentVotes = controller.comments
+                    .any((comment) => comment['fromMe'] == true);
+                return ListView.builder(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: controller.comments.length,
+                  itemBuilder: (ctx, i) => _CommentCard(
+                    comment: controller.comments[i],
+                    onVote: (id, vote) => controller.voteComment(id, vote),
+                    disableVoting: disableCommentVotes,
+                    onBlockUser: (comment) =>
+                        _confirmBlockCommentUser(ctx, comment),
+                    onEdit: (comment) => _showEditCommentDialog(ctx, comment),
+                  ),
+                );
+              }),
             ),
           ],
         ),
@@ -2492,12 +2500,14 @@ class _CommentCard extends StatelessWidget {
   final void Function(Map<String, dynamic> comment)? onBlockUser;
   final void Function(Map<String, dynamic> comment)? onEdit;
   final bool compact;
+  final bool disableVoting;
   const _CommentCard(
       {required this.comment,
       this.onVote,
       this.onBlockUser,
       this.onEdit,
-      this.compact = false});
+      this.compact = false,
+      this.disableVoting = false});
 
   @override
   Widget build(BuildContext context) {
@@ -2564,9 +2574,9 @@ class _CommentCard extends StatelessWidget {
                     child: Text('uploader'.tr,
                         style: Theme.of(context).textTheme.bodySmall),
                   ),
-                if (!compact &&
-                    score.isNotEmpty &&
+                if (score.isNotEmpty &&
                     !fromMe &&
+                    !disableVoting &&
                     commentId != null &&
                     onVote != null) ...[
                   const SizedBox(width: 4),
