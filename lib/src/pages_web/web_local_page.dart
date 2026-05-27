@@ -4,7 +4,10 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 
 class WebLocalController extends GetxController {
+  final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
+  final searchQuery = ''.obs;
+  final groupExpanded = <String, bool>{}.obs;
   final isLoading = true.obs;
   final isScanning = false.obs;
   final errorMessage = ''.obs;
@@ -15,12 +18,21 @@ class WebLocalController extends GetxController {
     _loadGalleries();
   }
 
+  @override
+  void onClose() {
+    searchTextController.dispose();
+    super.onClose();
+  }
+
   Future<void> _loadGalleries() async {
     isLoading.value = true;
     errorMessage.value = '';
     try {
       final data = await backendApiClient.listLocalGalleries();
       galleries.value = data.cast<Map<String, dynamic>>();
+      for (final group in groupedGalleries.keys) {
+        groupExpanded.putIfAbsent(group, () => true);
+      }
     } catch (e) {
       errorMessage.value = 'local.loadListFailed'.trParams({'error': '$e'});
     } finally {
@@ -75,6 +87,57 @@ class WebLocalController extends GetxController {
           'common.error'.tr, 'local.deleteFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM);
     }
+  }
+
+  List<Map<String, dynamic>> get filteredGalleries {
+    final q = searchQuery.value.trim().toLowerCase();
+    if (q.isEmpty) return galleries.toList();
+    return galleries.where((gallery) {
+      final title = gallery['title']?.toString().toLowerCase() ?? '';
+      final path = gallery['path']?.toString().toLowerCase() ?? '';
+      return title.contains(q) || path.contains(q);
+    }).toList();
+  }
+
+  Map<String, List<Map<String, dynamic>>> get groupedGalleries {
+    final groups = <String, List<Map<String, dynamic>>>{};
+    for (final gallery in filteredGalleries) {
+      final path = gallery['path']?.toString() ?? '';
+      final group = _parentPath(path);
+      groups.putIfAbsent(group, () => []).add(gallery);
+    }
+    final sortedKeys = groups.keys.toList()
+      ..sort((a, b) => _displayPath(a).compareTo(_displayPath(b)));
+    return {
+      for (final key in sortedKeys)
+        key: (groups[key]!
+          ..sort((a, b) => (a['title']?.toString() ?? '')
+              .toLowerCase()
+              .compareTo((b['title']?.toString() ?? '').toLowerCase())))
+    };
+  }
+
+  void toggleGroup(String group) {
+    groupExpanded[group] = !(groupExpanded[group] ?? true);
+    groupExpanded.refresh();
+  }
+
+  static String _parentPath(String path) {
+    final normalized = path.replaceAll(RegExp(r'/+$'), '');
+    final index = normalized.lastIndexOf('/');
+    if (index <= 0) return normalized;
+    return normalized.substring(0, index);
+  }
+
+  static String _displayPath(String path) {
+    final normalized = path.replaceAll(RegExp(r'/+$'), '');
+    if (normalized.isEmpty) return '/';
+    final parts = normalized.split('/').where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return normalized;
+    final tail = parts.length >= 2
+        ? '${parts[parts.length - 2]}/${parts.last}'
+        : parts.last;
+    return tail;
   }
 }
 
@@ -147,45 +210,109 @@ class WebLocalPage extends GetView<WebLocalController> {
             ),
           );
         }
-        return _buildGalleryList(context);
+        return Column(
+          children: [
+            _buildSearchField(),
+            Expanded(child: _buildGalleryList(context)),
+          ],
+        );
       }),
     );
   }
 
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: TextField(
+        controller: controller.searchTextController,
+        decoration: InputDecoration(
+          hintText: 'home.search'.tr,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: Obx(() => controller.searchQuery.value.isEmpty
+              ? const SizedBox.shrink()
+              : IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    controller.searchTextController.clear();
+                    controller.searchQuery.value = '';
+                  },
+                )),
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+        onChanged: (value) => controller.searchQuery.value = value,
+      ),
+    );
+  }
+
   Widget _buildGalleryList(BuildContext context) {
-    return Obx(() => ListView.builder(
-          padding: const EdgeInsets.all(8),
-          itemCount: controller.galleries.length,
-          itemBuilder: (context, index) {
-            final gallery = controller.galleries[index];
-            return Card(
-              child: ListTile(
-                leading: _buildGalleryCover(gallery),
-                title: Text(
-                  gallery['title'] as String? ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text('common.images'
-                    .trParams({'count': '${gallery['imageCount'] ?? 0}'})),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'common.delete'.tr,
-                      onPressed: () =>
-                          _confirmDeleteLocalGallery(context, gallery),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.menu_book),
-                  ],
-                ),
-                onTap: () => controller.openGallery(gallery),
-              ),
-            );
-          },
-        ));
+    return Obx(() {
+      final groups = controller.groupedGalleries;
+      if (groups.isEmpty) {
+        return Center(child: Text('home.noGalleries'.tr));
+      }
+      return ListView(
+        padding: const EdgeInsets.all(8),
+        children: [
+          for (final entry in groups.entries)
+            _buildGalleryGroup(context, entry.key, entry.value),
+        ],
+      );
+    });
+  }
+
+  Widget _buildGalleryGroup(
+    BuildContext context,
+    String group,
+    List<Map<String, dynamic>> galleries,
+  ) {
+    final expanded = controller.groupExpanded[group] ?? true;
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(expanded ? Icons.folder_open : Icons.folder),
+            title: Text(
+              WebLocalController._displayPath(group),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(group, maxLines: 1, overflow: TextOverflow.ellipsis),
+            trailing: Text('${galleries.length}'),
+            onTap: () => controller.toggleGroup(group),
+          ),
+          if (expanded)
+            for (final gallery in galleries)
+              _buildGalleryTile(context, gallery),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGalleryTile(BuildContext context, Map<String, dynamic> gallery) {
+    return ListTile(
+      leading: _buildGalleryCover(gallery),
+      title: Text(
+        gallery['title'] as String? ?? '',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+          'common.images'.trParams({'count': '${gallery['imageCount'] ?? 0}'})),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'common.delete'.tr,
+            onPressed: () => _confirmDeleteLocalGallery(context, gallery),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.menu_book),
+        ],
+      ),
+      onTap: () => controller.openGallery(gallery),
+    );
   }
 
   Widget _buildGalleryCover(Map<String, dynamic> gallery) {
