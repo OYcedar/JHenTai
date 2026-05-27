@@ -458,6 +458,10 @@ class WebZhCN {
       'tagVote.votedUp': '已为 "@tag" 投赞成票',
       'tagVote.votedDown': '已为 "@tag" 投反对票',
       'tagVote.failed': '投票失败: @error',
+      'tagVote.addTag': '添加标签',
+      'tagVote.addTagHint': '输入新标签，多个用逗号分隔',
+      'tagVote.addSuccess': '添加标签成功',
+      'tagVote.addFailed': '添加标签失败：@error',
 
       // responsive layout
       'home.selectGallery': '选择一个画廊查看详情',

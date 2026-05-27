@@ -481,6 +481,10 @@ class WebRuRU {
       'tagVote.votedUp': 'Проголосовали за "@tag"',
       'tagVote.votedDown': 'Проголосовали против "@tag"',
       'tagVote.failed': 'Ошибка голосования: @error',
+      'tagVote.addTag': 'Добавить тег',
+      'tagVote.addTagHint': 'Введите новые теги через запятую',
+      'tagVote.addSuccess': 'Тег добавлен',
+      'tagVote.addFailed': 'Не удалось добавить тег: @error',
 
       // responsive layout
       'home.selectGallery': 'Выберите галерею для просмотра деталей',

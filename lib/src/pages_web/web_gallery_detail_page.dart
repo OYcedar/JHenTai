@@ -1702,11 +1702,25 @@ class WebGalleryDetailPage extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('detail.tags'.tr,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          Row(
+            children: [
+              Expanded(
+                child: Text('detail.tags'.tr,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'tagVote.addTag'.tr,
+                onPressed:
+                    controller.apiuid != null && controller.apikey != null
+                        ? () => _showAddTagDialog(context)
+                        : null,
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           ...controller.tags.entries.map((entry) {
             return Padding(
@@ -1805,6 +1819,15 @@ class WebGalleryDetailPage extends StatelessWidget {
     });
   }
 
+  void _showAddTagDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _WebAddTagDialog(
+        onSubmit: (tags) => _addTags(tags),
+      ),
+    );
+  }
+
   void _showTagContextMenu(
       BuildContext context, Offset position, String namespace, String tag) {
     showMenu(
@@ -1897,7 +1920,7 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   Future<void> _voteTag(String namespace, String tag, int vote) async {
     try {
-      await backendApiClient.voteTag(
+      final result = await backendApiClient.voteTag(
         gid: controller.gid,
         token: controller.token,
         apiuid: controller.apiuid!,
@@ -1906,6 +1929,9 @@ class WebGalleryDetailPage extends StatelessWidget {
         tag: tag,
         vote: vote,
       );
+      if (result['success'] == false) {
+        throw result['message'] ?? result['error'] ?? 'Tag vote failed';
+      }
       Get.snackbar(
         'tagVote.success'.tr,
         vote > 0
@@ -1918,6 +1944,38 @@ class WebGalleryDetailPage extends StatelessWidget {
           'common.error'.tr, 'tagVote.failed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withValues(alpha: 0.7));
+    }
+  }
+
+  Future<bool> _addTags(String tags) async {
+    final value = tags.trim();
+    if (value.isEmpty) return false;
+    if (controller.apiuid == null || controller.apikey == null) {
+      Get.snackbar('common.error'.tr, 'detail.rateLoginRequired'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    }
+    try {
+      final result = await backendApiClient.addTags(
+        gid: controller.gid,
+        token: controller.token,
+        apiuid: controller.apiuid!,
+        apikey: controller.apikey!,
+        tags: value,
+      );
+      if (result['success'] == false) {
+        throw result['message'] ?? result['error'] ?? 'Add tag failed';
+      }
+      Get.snackbar('tagVote.addSuccess'.tr, value,
+          snackPosition: SnackPosition.BOTTOM);
+      await controller.refreshDetail();
+      return true;
+    } catch (e) {
+      Get.snackbar(
+          'common.error'.tr, 'tagVote.addFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
+      return false;
     }
   }
 
@@ -2492,6 +2550,76 @@ class _WebTorrentDialogState extends State<_WebTorrentDialog> {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text('common.cancel'.tr),
+        ),
+      ],
+    );
+  }
+}
+
+class _WebAddTagDialog extends StatefulWidget {
+  final Future<bool> Function(String tags) onSubmit;
+
+  const _WebAddTagDialog({required this.onSubmit});
+
+  @override
+  State<_WebAddTagDialog> createState() => _WebAddTagDialogState();
+}
+
+class _WebAddTagDialogState extends State<_WebAddTagDialog> {
+  final _controller = TextEditingController();
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final tags = _controller.text.trim();
+    if (tags.isEmpty) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final ok = await widget.onSubmit(tags);
+      if (ok && mounted) Navigator.pop(context);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('tagVote.addTag'.tr),
+      content: SizedBox(
+        width: 420,
+        child: TextField(
+          controller: _controller,
+          autofocus: true,
+          minLines: 1,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'tagVote.addTagHint'.tr,
+            border: const OutlineInputBorder(),
+          ),
+          onSubmitted: (_) => _submit(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton.icon(
+          icon: _isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.add),
+          label: Text('tagVote.addTag'.tr),
+          onPressed: _isSubmitting ? null : _submit,
         ),
       ],
     );

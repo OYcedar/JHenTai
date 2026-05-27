@@ -471,6 +471,10 @@ class WebKoKR {
       'tagVote.votedUp': '"@tag"에 추천했습니다',
       'tagVote.votedDown': '"@tag"에 비추천했습니다',
       'tagVote.failed': '투표 실패: @error',
+      'tagVote.addTag': '태그 추가',
+      'tagVote.addTagHint': '새 태그를 입력하고 여러 개는 쉼표로 구분하세요',
+      'tagVote.addSuccess': '태그가 추가되었습니다',
+      'tagVote.addFailed': '태그 추가 실패: @error',
 
       // responsive layout
       'home.selectGallery': '세부 정보를 보려면 갤러리를 선택하세요',

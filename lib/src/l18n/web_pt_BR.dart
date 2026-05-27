@@ -483,6 +483,10 @@ class WebPtBR {
       'tagVote.votedUp': 'Votou positivo para "@tag"',
       'tagVote.votedDown': 'Votou negativo para "@tag"',
       'tagVote.failed': 'Falha ao votar: @error',
+      'tagVote.addTag': 'Adicionar Tag',
+      'tagVote.addTagHint': 'Insira novas tags, separadas por vírgulas',
+      'tagVote.addSuccess': 'Tag adicionada',
+      'tagVote.addFailed': 'Falha ao adicionar tag: @error',
 
       // responsive layout
       'home.selectGallery': 'Selecione uma galeria para ver detalhes',

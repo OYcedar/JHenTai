@@ -917,6 +917,26 @@ class BackendApiClient {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> addTags({
+    required int gid,
+    required String token,
+    required int apiuid,
+    required String apikey,
+    required String tags,
+  }) async {
+    final response = await _dio.post(
+      '/api/tag/add',
+      data: {
+        'gid': gid,
+        'token': token,
+        'apiuid': apiuid,
+        'apikey': apikey,
+        'tags': tags,
+      },
+    );
+    return response.data;
+  }
+
   // --- Settings ---
 
   Future<Map<String, dynamic>> getSettings() async {

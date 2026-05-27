@@ -489,6 +489,10 @@ class WebEnUS {
       'tagVote.votedUp': 'Voted up for "@tag"',
       'tagVote.votedDown': 'Voted down for "@tag"',
       'tagVote.failed': 'Vote failed: @error',
+      'tagVote.addTag': 'Add Tag',
+      'tagVote.addTagHint': 'Enter new tags, separated with commas',
+      'tagVote.addSuccess': 'Tag added',
+      'tagVote.addFailed': 'Failed to add tag: @error',
 
       // responsive layout
       'home.selectGallery': 'Select a gallery to view details',

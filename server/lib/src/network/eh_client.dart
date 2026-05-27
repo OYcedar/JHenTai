@@ -886,6 +886,35 @@ class EHClient {
     }
   }
 
+  Future<Map<String, dynamic>> addTags({
+    required int apiuid,
+    required String apikey,
+    required int gid,
+    required String token,
+    required String tags,
+  }) async {
+    try {
+      final response = await _dio.post(
+        apiUrl,
+        options: Options(contentType: Headers.jsonContentType),
+        data: {
+          'method': 'taggallery',
+          'apiuid': apiuid,
+          'apikey': apikey,
+          'gid': gid,
+          'token': token,
+          'tags': tags,
+          'vote': 1,
+        },
+      );
+      return response.data is Map
+          ? Map<String, dynamic>.from(response.data)
+          : {'success': true};
+    } on DioException catch (e) {
+      return {'success': false, 'message': e.message ?? 'Failed to add tags'};
+    }
+  }
+
   // --- Stats / image lookup / my tags (Web parity with native) ---
 
   String get statsPageUrl => _site == 'EX'

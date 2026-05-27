@@ -454,6 +454,10 @@ class WebZhTW {
       'tagVote.votedUp': '已為 "@tag" 投贊成票',
       'tagVote.votedDown': '已為 "@tag" 投反對票',
       'tagVote.failed': '投票失敗: @error',
+      'tagVote.addTag': '新增標籤',
+      'tagVote.addTagHint': '輸入新標籤，多個請用逗號分隔',
+      'tagVote.addSuccess': '新增標籤成功',
+      'tagVote.addFailed': '新增標籤失敗：@error',
 
       // responsive layout
       'home.selectGallery': '選擇一個畫廊查看詳情',
