@@ -1,14 +1,19 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
+import 'package:jhentai/src/model/gallery_image_page_url.dart';
+import 'package:jhentai/src/model/gallery_url.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
+import 'package:html/dom.dart' as html_dom;
+import 'package:html/parser.dart' as html_parser;
 import 'package:web/web.dart' as web;
 
 List<String> _sortedDownloadGroupCandidates(WebDownloadService svc) {
@@ -2509,10 +2514,6 @@ class _CommentCard extends StatelessWidget {
     final fromMe = comment['fromMe'] == true;
     final body = comment['body'] as String? ?? '';
     final commentId = int.tryParse(comment['id']?.toString() ?? '');
-    final plainBody = body
-        .replaceAll(RegExp(r'<br\s*/?>'), '\n')
-        .replaceAll(RegExp(r'<[^>]+>'), '')
-        .trim();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -2635,10 +2636,10 @@ class _CommentCard extends StatelessWidget {
               ),
             const SizedBox(height: 4),
             Expanded(
-              child: Text(plainBody,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  maxLines: compact ? 4 : 100,
-                  overflow: TextOverflow.ellipsis),
+              child: _LinkedCommentBody(
+                body: body,
+                maxLines: compact ? 4 : 100,
+              ),
             ),
           ],
         ),
@@ -2665,6 +2666,188 @@ class _CommentCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CommentTextRun {
+  final String text;
+  final String? url;
+
+  const _CommentTextRun(this.text, {this.url});
+}
+
+class _LinkedCommentBody extends StatefulWidget {
+  final String body;
+  final int maxLines;
+
+  const _LinkedCommentBody({
+    required this.body,
+    required this.maxLines,
+  });
+
+  @override
+  State<_LinkedCommentBody> createState() => _LinkedCommentBodyState();
+}
+
+class _LinkedCommentBodyState extends State<_LinkedCommentBody> {
+  final _recognizers = <TapGestureRecognizer>[];
+
+  @override
+  void dispose() {
+    _disposeRecognizers();
+    super.dispose();
+  }
+
+  void _disposeRecognizers() {
+    for (final r in _recognizers) {
+      r.dispose();
+    }
+    _recognizers.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _disposeRecognizers();
+    final style = Theme.of(context).textTheme.bodyMedium;
+    final linkStyle = style?.copyWith(
+      color: Theme.of(context).colorScheme.primary,
+      decoration: TextDecoration.underline,
+      decorationColor: Theme.of(context).colorScheme.primary,
+    );
+
+    final spans = <InlineSpan>[];
+    for (final run in _parseCommentRuns(widget.body)) {
+      if (run.text.isEmpty) continue;
+      final url = run.url;
+      if (url == null || url.isEmpty) {
+        spans.add(TextSpan(text: run.text, style: style));
+        continue;
+      }
+      final recognizer = TapGestureRecognizer()
+        ..onTap = () => _openCommentUrl(url);
+      _recognizers.add(recognizer);
+      spans.add(TextSpan(
+        text: run.text,
+        style: linkStyle,
+        recognizer: recognizer,
+      ));
+    }
+
+    if (spans.isEmpty) return const SizedBox.shrink();
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: widget.maxLines,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+List<_CommentTextRun> _parseCommentRuns(String body) {
+  final fragment = html_parser.parseFragment(
+    body.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '<br>'),
+  );
+  final runs = <_CommentTextRun>[];
+
+  void addText(String text, {String? url}) {
+    if (text.isEmpty) return;
+    if (url != null && url.isNotEmpty) {
+      runs.add(_CommentTextRun(text, url: _normalizeCommentUrl(url)));
+      return;
+    }
+    runs.addAll(_splitPlainCommentLinks(text));
+  }
+
+  void walk(html_dom.Node node) {
+    if (node is html_dom.Text) {
+      addText(node.text);
+      return;
+    }
+    if (node is! html_dom.Element) return;
+    final tag = node.localName?.toLowerCase();
+    if (tag == 'br') {
+      addText('\n');
+      return;
+    }
+    if (tag == 'a') {
+      final href = node.attributes['href'] ?? '';
+      addText(node.text.isEmpty ? href : node.text, url: href);
+      return;
+    }
+    if (tag == 'img') {
+      final src = node.attributes['src'] ?? '';
+      addText('[${'image'.tr}]', url: src);
+      return;
+    }
+    for (final child in node.nodes) {
+      walk(child);
+    }
+  }
+
+  for (final node in fragment.nodes) {
+    walk(node);
+  }
+  return runs;
+}
+
+List<_CommentTextRun> _splitPlainCommentLinks(String text) {
+  final urlRe = RegExp(r'https?://[^\s<>"\]]+', caseSensitive: false);
+  final runs = <_CommentTextRun>[];
+  var last = 0;
+  for (final m in urlRe.allMatches(text)) {
+    if (m.start > last) {
+      runs.add(_CommentTextRun(text.substring(last, m.start)));
+    }
+    final raw = m.group(0)!;
+    final trailing = RegExp(r'[.,;:!?)]*$').firstMatch(raw)?.group(0) ?? '';
+    final url =
+        trailing.isEmpty ? raw : raw.substring(0, raw.length - trailing.length);
+    if (url.isNotEmpty) runs.add(_CommentTextRun(url, url: url));
+    if (trailing.isNotEmpty) runs.add(_CommentTextRun(trailing));
+    last = m.end;
+  }
+  if (last < text.length) runs.add(_CommentTextRun(text.substring(last)));
+  return runs;
+}
+
+String _normalizeCommentUrl(String url) {
+  if (url.startsWith('//')) return 'https:$url';
+  return url;
+}
+
+Future<void> _openCommentUrl(String url) async {
+  final normalized = _normalizeCommentUrl(url);
+  final galleryUrl = GalleryUrl.tryParse(normalized);
+  if (galleryUrl != null) {
+    Get.toNamed('/web/gallery/${galleryUrl.gid}/${galleryUrl.token}');
+    return;
+  }
+
+  final imagePageUrl = GalleryImagePageUrl.tryParse(normalized);
+  if (imagePageUrl != null) {
+    try {
+      final resolved = await backendApiClient.resolveImagePageUrl(
+        imagePageUrl.url,
+      );
+      final gid = (resolved['gid'] as num?)?.toInt();
+      final token = resolved['token']?.toString() ?? '';
+      final pageNo =
+          (resolved['pageNo'] as num?)?.toInt() ?? imagePageUrl.pageNo;
+      if (gid == null || token.isEmpty) {
+        throw resolved['error']?.toString() ?? 'Parent gallery not found';
+      }
+      final startPage = (pageNo - 1).clamp(0, 1 << 30);
+      Get.toNamed('/web/reader/$gid/$token?startPage=$startPage');
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'detail.loadFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
+    }
+    return;
+  }
+
+  web.window.open(normalized, '_blank');
 }
 
 class _CategoryChip extends StatelessWidget {
