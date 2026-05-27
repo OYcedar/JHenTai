@@ -467,6 +467,16 @@ class WebZhCN {
       'detail.newerVersion': '有更新版本',
       'detail.versionHistory': '版本历史',
       'detail.currentVersion': '当前版本',
+      'detail.torrents': '种子',
+      'detail.torrentCount': '种子（@count）',
+      'detail.noTorrents': '暂无种子',
+      'detail.outdatedTorrents': '已过期',
+      'detail.downloadTorrent': '下载种子',
+      'detail.copyMagnet': '复制磁力链接',
+      'detail.torrentSeeds': '种子 @count',
+      'detail.torrentPeers': '连接 @count',
+      'detail.torrentDownloads': '下载 @count',
+      'detail.loadTorrentsFailed': '加载种子失败：@error',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可访问 EX）',

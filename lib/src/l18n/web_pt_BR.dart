@@ -492,6 +492,16 @@ class WebPtBR {
       'detail.newerVersion': 'Versão Mais Nova Disponível',
       'detail.versionHistory': 'Histórico de Versões',
       'detail.currentVersion': 'Versão Atual',
+      'detail.torrents': 'Torrents',
+      'detail.torrentCount': 'Torrent (@count)',
+      'detail.noTorrents': 'Sem torrents',
+      'detail.outdatedTorrents': 'Desatualizados',
+      'detail.downloadTorrent': 'Baixar torrent',
+      'detail.copyMagnet': 'Copiar magnet',
+      'detail.torrentSeeds': 'Seeds @count',
+      'detail.torrentPeers': 'Peers @count',
+      'detail.torrentDownloads': 'Downloads @count',
+      'detail.loadTorrentsFailed': 'Falha ao carregar torrents: @error',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (inclui igneous — EX pronto)',

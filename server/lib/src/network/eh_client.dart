@@ -906,6 +906,14 @@ class EHClient {
     return response.data ?? '';
   }
 
+  Future<String> fetchTorrentPageHtml(int gid, String token) async {
+    final response = await _dio.get<String>(
+      '$baseUrl/gallerytorrents.php',
+      queryParameters: {'gid': gid, 't': token},
+    );
+    return response.data ?? '';
+  }
+
   /// Returns absolute or relative Location from EH image lookup (302).
   Future<String?> postImageLookup(List<int> bytes, String filename) async {
     try {
@@ -1035,6 +1043,11 @@ class EHClient {
       final urlMatch = RegExp(r"'(https?://[^']+)'").firstMatch(archiveLink);
       result.archiverUrl = urlMatch?.group(1);
     }
+    final torrentText =
+        doc.querySelector('#gd5 a[onclick*="gallerytorrents"]')?.text ?? '';
+    result.torrentCount =
+        int.tryParse(RegExp(r'\d+').firstMatch(torrentText)?.group(0) ?? '') ??
+            0;
 
     // Parse tags grouped by namespace (#taglist tr); also capture inline EH styles for Web parity.
     for (final tr in doc.querySelectorAll('#taglist tr')) {
@@ -1268,6 +1281,7 @@ class GalleryDetailResult {
   int ratingCount = 0;
   String? newerVersionUrl;
   List<Map<String, String>> childVersions = [];
+  int torrentCount = 0;
 }
 
 class ImagePageResult {

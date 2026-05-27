@@ -498,6 +498,16 @@ class WebEnUS {
       'detail.newerVersion': 'Newer Version Available',
       'detail.versionHistory': 'Version History',
       'detail.currentVersion': 'Current Version',
+      'detail.torrents': 'Torrents',
+      'detail.torrentCount': 'Torrent (@count)',
+      'detail.noTorrents': 'No torrents',
+      'detail.outdatedTorrents': 'Outdated',
+      'detail.downloadTorrent': 'Download torrent',
+      'detail.copyMagnet': 'Copy magnet',
+      'detail.torrentSeeds': 'Seeds @count',
+      'detail.torrentPeers': 'Peers @count',
+      'detail.torrentDownloads': 'Downloads @count',
+      'detail.loadTorrentsFailed': 'Failed to load torrents: @error',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (includes igneous — EX ready)',

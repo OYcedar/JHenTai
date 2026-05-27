@@ -480,6 +480,16 @@ class WebKoKR {
       'detail.newerVersion': '새 버전 사용 가능',
       'detail.versionHistory': '버전 기록',
       'detail.currentVersion': '현재 버전',
+      'detail.torrents': '토렌트',
+      'detail.torrentCount': '토렌트 (@count)',
+      'detail.noTorrents': '토렌트 없음',
+      'detail.outdatedTorrents': '오래됨',
+      'detail.downloadTorrent': '토렌트 다운로드',
+      'detail.copyMagnet': '마그넷 복사',
+      'detail.torrentSeeds': '시드 @count',
+      'detail.torrentPeers': '피어 @count',
+      'detail.torrentDownloads': '다운로드 @count',
+      'detail.loadTorrentsFailed': '토렌트 로드 실패: @error',
 
       // settings extras
       'settings.cookieStatusFull': '쿠키 정상 (igneous 포함 — EX 사용 가능)',

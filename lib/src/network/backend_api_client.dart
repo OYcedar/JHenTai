@@ -512,6 +512,18 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<List<Map<String, dynamic>>> fetchGalleryTorrents(
+      int gid, String token) async {
+    final response = await _dio.get('/api/gallery/torrents/$gid/$token');
+    final data = response.data;
+    if (data is Map && data['torrents'] is List) {
+      return (data['torrents'] as List)
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    }
+    return [];
+  }
+
   Future<Map<String, dynamic>> fetchGalleryListByUrl(String url) async {
     final response = await _dio.get(
       '/api/gallery/list-by-url',

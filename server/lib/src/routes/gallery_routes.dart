@@ -52,6 +52,7 @@ class GalleryRoutes {
     router.get('/list', _galleryList);
     router.get('/list-by-url', _galleryListByUrl);
     router.get('/stats/<gid>/<token>', _galleryStats);
+    router.get('/torrents/<gid>/<token>', _galleryTorrents);
     router.post('/image-lookup', _galleryImageLookup);
     router.get('/detail/<gid>/<token>', _galleryDetail);
     router.get('/images/<gid>/<token>', _galleryImagePages);
@@ -90,6 +91,88 @@ class GalleryRoutes {
         body: jsonEncode({'error': 'Failed to fetch stats: $e'}),
       );
     }
+  }
+
+  Future<Response> _galleryTorrents(
+      Request request, String gid, String token) async {
+    final id = int.tryParse(gid);
+    if (id == null) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    }
+    try {
+      final html = await _client.fetchTorrentPageHtml(id, token);
+      final torrents = _parseTorrentPageHtml(html);
+      return Response.ok(
+        jsonEncode({'torrents': torrents}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to fetch torrents: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  List<Map<String, dynamic>> _parseTorrentPageHtml(String html) {
+    final doc = html_parser.parse(html);
+    final result = <Map<String, dynamic>>[];
+    final forms = doc.querySelectorAll('#torrentinfo > div > form');
+    for (final form in forms) {
+      final rows = form.querySelectorAll('div > table > tbody > tr');
+      if (rows.length < 3) continue;
+      final link = rows[2].querySelector('td > a');
+      final torrentUrl = link?.attributes['href'] ?? '';
+      if (link == null || torrentUrl.isEmpty) continue;
+
+      final metaText = rows[0].text.replaceAll('\u00a0', ' ');
+      final uploaderText = rows.length > 1 ? rows[1].text : '';
+      final infoHash = RegExp(r'/([^/.]+)\.torrent(?:$|[?#])')
+          .firstMatch(torrentUrl)
+          ?.group(1);
+      final downloadUrl = torrentUrl.replaceFirst(
+        RegExp(r'https://exhentai\.org/torrent', caseSensitive: false),
+        'https://ehtracker.org/get',
+      );
+      result.add({
+        'title': link.text.trim(),
+        'postTime': _firstGroup(
+          RegExp(r'Posted:\s*(.*?)(?:\s+Size:|$)', caseSensitive: false),
+          metaText,
+        ),
+        'size': _firstGroup(
+          RegExp(r'Size:\s*(.*?)(?:\s+Seeds:|$)', caseSensitive: false),
+          metaText,
+        ),
+        'seeds': _parseMetaInt('Seeds', metaText),
+        'peers': _parseMetaInt('Peers', metaText),
+        'downloads': _parseMetaInt('Downloads', metaText),
+        'uploader': _firstGroup(
+          RegExp(r'(?:Posted by|Uploader):\s*(.*)$', caseSensitive: false),
+          uploaderText,
+        ),
+        'torrentUrl': torrentUrl,
+        'downloadUrl': downloadUrl,
+        'magnetUrl': infoHash == null ? '' : 'magnet:?xt=urn:btih:$infoHash',
+        'outdated': metaText.toLowerCase().contains('outdated') ||
+            (rows[0]
+                    .querySelector('span[style*="color:red"]')
+                    ?.attributes['style']
+                    ?.isNotEmpty ??
+                false),
+      });
+    }
+    return result;
+  }
+
+  String _firstGroup(RegExp pattern, String text) {
+    return pattern.firstMatch(text)?.group(1)?.trim() ?? '';
+  }
+
+  int _parseMetaInt(String label, String text) {
+    final match =
+        RegExp('$label:\\s*(\\d+)', caseSensitive: false).firstMatch(text);
+    return int.tryParse(match?.group(1) ?? '') ?? 0;
   }
 
   Future<Response> _galleryListByUrl(Request request) async {
@@ -355,6 +438,7 @@ class GalleryRoutes {
           'ratingCount': detail.ratingCount,
           'newerVersionUrl': detail.newerVersionUrl,
           'childVersions': detail.childVersions,
+          'torrentCount': detail.torrentCount,
         }),
         headers: {'Content-Type': 'application/json'},
       );

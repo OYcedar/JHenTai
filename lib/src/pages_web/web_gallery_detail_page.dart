@@ -88,6 +88,7 @@ class WebGalleryDetailController extends GetxController {
   final ratingCount = 0.obs;
   final newerVersionUrl = Rxn<String>();
   final childVersions = <Map<String, dynamic>>[].obs;
+  final torrentCount = 0.obs;
   final readProgress = 0.obs;
 
   /// True while fetching full thumbnail strip via [fetchGalleryImagePages] (EH shows ~20 per HTML page).
@@ -220,6 +221,7 @@ class WebGalleryDetailController extends GetxController {
               ?.map((item) => Map<String, dynamic>.from(item as Map))
               .toList() ??
           [];
+      torrentCount.value = (result['torrentCount'] as num?)?.toInt() ?? 0;
 
       backendApiClient
           .recordHistory(
@@ -1368,6 +1370,16 @@ class WebGalleryDetailPage extends StatelessWidget {
                       '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(mode: 'downloaded')}'),
                 ),
               _buildArchiveButton(context, aTask, aStatus),
+              Obx(() => OutlinedButton.icon(
+                    icon: const Icon(Icons.file_present),
+                    label: Text('detail.torrentCount'.trParams(
+                        {'count': '${controller.torrentCount.value}'})),
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(160, 44)),
+                    onPressed: controller.torrentCount.value > 0
+                        ? () => _showTorrentsDialog(context)
+                        : null,
+                  )),
               if (gTask != null || aTask != null)
                 OutlinedButton.icon(
                   icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -1595,6 +1607,68 @@ class WebGalleryDetailPage extends StatelessWidget {
                 style: const TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTorrentTile(Map<String, dynamic> torrent) {
+    final title = torrent['title']?.toString() ?? '';
+    final postTime = torrent['postTime']?.toString() ?? '';
+    final size = torrent['size']?.toString() ?? '';
+    final seeds = (torrent['seeds'] as num?)?.toInt() ?? 0;
+    final peers = (torrent['peers'] as num?)?.toInt() ?? 0;
+    final downloads = (torrent['downloads'] as num?)?.toInt() ?? 0;
+    final downloadUrl = torrent['downloadUrl']?.toString() ?? '';
+    final magnetUrl = torrent['magnetUrl']?.toString() ?? '';
+
+    return ListTile(
+      dense: true,
+      leading: const Icon(Icons.file_present),
+      title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+      subtitle: Wrap(
+        spacing: 10,
+        runSpacing: 4,
+        children: [
+          if (postTime.isNotEmpty) Text(postTime),
+          if (size.isNotEmpty) Text(size),
+          Text('detail.torrentSeeds'.trParams({'count': '$seeds'})),
+          Text('detail.torrentPeers'.trParams({'count': '$peers'})),
+          Text('detail.torrentDownloads'.trParams({'count': '$downloads'})),
+        ],
+      ),
+      trailing: Wrap(
+        spacing: 4,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.download),
+            tooltip: 'detail.downloadTorrent'.tr,
+            onPressed: downloadUrl.isEmpty
+                ? null
+                : () => web.window.open(downloadUrl, '_blank'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.link),
+            tooltip: 'detail.copyMagnet'.tr,
+            onPressed: magnetUrl.isEmpty
+                ? null
+                : () {
+                    Clipboard.setData(ClipboardData(text: magnetUrl));
+                    Get.snackbar('hasCopiedToClipboard'.tr, magnetUrl,
+                        snackPosition: SnackPosition.BOTTOM);
+                  },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTorrentsDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => _WebTorrentDialog(
+        gid: controller.gid,
+        token: controller.token,
+        buildTorrentTile: _buildTorrentTile,
       ),
     );
   }
@@ -2282,6 +2356,128 @@ Color _favSlotColor(int slot) {
     Colors.brown,
   ];
   return colors[slot % colors.length];
+}
+
+class _WebTorrentDialog extends StatefulWidget {
+  final int gid;
+  final String token;
+  final Widget Function(Map<String, dynamic> torrent) buildTorrentTile;
+
+  const _WebTorrentDialog({
+    required this.gid,
+    required this.token,
+    required this.buildTorrentTile,
+  });
+
+  @override
+  State<_WebTorrentDialog> createState() => _WebTorrentDialogState();
+}
+
+class _WebTorrentDialogState extends State<_WebTorrentDialog> {
+  bool _isLoading = true;
+  String _error = '';
+  List<Map<String, dynamic>> _torrents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+    try {
+      final torrents =
+          await backendApiClient.fetchGalleryTorrents(widget.gid, widget.token);
+      if (mounted) {
+        setState(() => _torrents = torrents);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() =>
+            _error = 'detail.loadTorrentsFailed'.trParams({'error': '$e'}));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final latest =
+        _torrents.where((torrent) => torrent['outdated'] != true).toList();
+    final outdated =
+        _torrents.where((torrent) => torrent['outdated'] == true).toList();
+    return AlertDialog(
+      title: Text('detail.torrents'.tr),
+      content: SizedBox(
+        width: 560,
+        child: _isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : _error.isNotEmpty
+                ? Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _error,
+                          style: TextStyle(
+                              color: Theme.of(context).colorScheme.error),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          icon: const Icon(Icons.refresh),
+                          label: Text('common.retry'.tr),
+                          onPressed: _load,
+                        ),
+                      ],
+                    ),
+                  )
+                : _torrents.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('detail.noTorrents'.tr),
+                      )
+                    : ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 460),
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: [
+                            ...latest.map(widget.buildTorrentTile),
+                            if (latest.isNotEmpty && outdated.isNotEmpty)
+                              const Divider(),
+                            if (outdated.isNotEmpty)
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                child: Text(
+                                  'detail.outdatedTorrents'.tr,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.labelLarge,
+                                ),
+                              ),
+                            ...outdated.map(widget.buildTorrentTile),
+                          ],
+                        ),
+                      ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('common.cancel'.tr),
+        ),
+      ],
+    );
+  }
 }
 
 class _WebFavoriteFolderDialog extends StatefulWidget {

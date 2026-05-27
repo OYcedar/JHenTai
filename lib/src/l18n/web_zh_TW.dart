@@ -463,6 +463,16 @@ class WebZhTW {
       'detail.newerVersion': '有更新版本',
       'detail.versionHistory': '版本歷史',
       'detail.currentVersion': '目前版本',
+      'detail.torrents': '種子',
+      'detail.torrentCount': '種子（@count）',
+      'detail.noTorrents': '暫無種子',
+      'detail.outdatedTorrents': '已過期',
+      'detail.downloadTorrent': '下載種子',
+      'detail.copyMagnet': '複製磁力連結',
+      'detail.torrentSeeds': '種子 @count',
+      'detail.torrentPeers': '連線 @count',
+      'detail.torrentDownloads': '下載 @count',
+      'detail.loadTorrentsFailed': '載入種子失敗：@error',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookie 正常（包含 igneous — 可存取 EX）',

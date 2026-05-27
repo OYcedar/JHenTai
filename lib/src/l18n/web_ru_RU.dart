@@ -490,6 +490,16 @@ class WebRuRU {
       'detail.newerVersion': 'Доступна новая версия',
       'detail.versionHistory': 'История версий',
       'detail.currentVersion': 'Текущая версия',
+      'detail.torrents': 'Торренты',
+      'detail.torrentCount': 'Торрент (@count)',
+      'detail.noTorrents': 'Нет торрентов',
+      'detail.outdatedTorrents': 'Устаревшие',
+      'detail.downloadTorrent': 'Скачать торрент',
+      'detail.copyMagnet': 'Копировать magnet',
+      'detail.torrentSeeds': 'Сиды @count',
+      'detail.torrentPeers': 'Пиры @count',
+      'detail.torrentDownloads': 'Загрузки @count',
+      'detail.loadTorrentsFailed': 'Не удалось загрузить торренты: @error',
 
       // settings extras
       'settings.cookieStatusFull': 'Cookies OK (включая igneous — EX доступен)',
