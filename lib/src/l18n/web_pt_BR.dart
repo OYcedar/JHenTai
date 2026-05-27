@@ -452,6 +452,7 @@ class WebPtBR {
       'quickSearch.empty': 'Nenhuma pesquisa salva',
       'quickSearch.saveCurrent': 'Salvar pesquisa atual',
       'quickSearch.saveTitle': 'Salvar Pesquisa Rápida',
+      'quickSearch.editTitle': 'Editar Pesquisa Rápida',
       'quickSearch.nameLabel': 'Nome',
       'quickSearch.addNew': 'Adicionar busca rápida',
       'quickSearch.keywordLabel': 'Palavra-chave',

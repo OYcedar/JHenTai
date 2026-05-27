@@ -438,6 +438,7 @@ class WebKoKR {
       'quickSearch.empty': '저장된 검색 없음',
       'quickSearch.saveCurrent': '현재 검색 저장',
       'quickSearch.saveTitle': '빠른 검색 저장',
+      'quickSearch.editTitle': '빠른 검색 편집',
       'quickSearch.nameLabel': '이름',
       'quickSearch.addNew': '빠른 검색 추가',
       'quickSearch.keywordLabel': '키워드',

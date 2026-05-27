@@ -450,6 +450,7 @@ class WebRuRU {
       'quickSearch.empty': 'Нет сохранённых поисков',
       'quickSearch.saveCurrent': 'Сохранить текущий поиск',
       'quickSearch.saveTitle': 'Сохранить быстрый поиск',
+      'quickSearch.editTitle': 'Редактировать быстрый поиск',
       'quickSearch.nameLabel': 'Название',
       'quickSearch.addNew': 'Добавить быстрый поиск',
       'quickSearch.keywordLabel': 'Ключевые слова',

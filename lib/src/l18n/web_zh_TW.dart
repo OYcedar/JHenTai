@@ -421,6 +421,7 @@ class WebZhTW {
       'quickSearch.empty': '沒有已儲存的搜尋',
       'quickSearch.saveCurrent': '儲存目前搜尋',
       'quickSearch.saveTitle': '儲存快速搜尋',
+      'quickSearch.editTitle': '編輯快速搜尋',
       'quickSearch.nameLabel': '名稱',
       'quickSearch.addNew': '新增快速搜尋',
       'quickSearch.keywordLabel': '關鍵字',

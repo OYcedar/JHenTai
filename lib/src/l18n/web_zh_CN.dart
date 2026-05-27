@@ -425,6 +425,7 @@ class WebZhCN {
       'quickSearch.empty': '没有已保存的搜索',
       'quickSearch.saveCurrent': '保存当前搜索',
       'quickSearch.saveTitle': '保存快速搜索',
+      'quickSearch.editTitle': '编辑快速搜索',
       'quickSearch.nameLabel': '名称',
       'quickSearch.addNew': '添加快速搜索',
       'quickSearch.keywordLabel': '关键词',

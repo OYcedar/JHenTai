@@ -92,6 +92,58 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
     }
   }
 
+  Map<String, dynamic> _decodeConfig(String config, {String keyword = ''}) {
+    try {
+      final decoded = jsonDecode(config);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (_) {}
+    return {
+      'keyword': keyword.trim(),
+      'categoryFilter': 0,
+      'minimumRating': 0,
+      'searchInName': true,
+      'searchInTags': true,
+      'searchInDesc': false,
+      'showExpunged': false,
+      'filterLanguage': null,
+      'disableFilterForLanguage': false,
+    };
+  }
+
+  Future<void> _updateQuickSearch({
+    required String oldName,
+    required String newName,
+    required String keyword,
+    required String oldConfig,
+    required int sortOrder,
+  }) async {
+    final trimmedName = newName.trim();
+    if (trimmedName.isEmpty) return;
+    final config = _decodeConfig(oldConfig, keyword: keyword);
+    config['keyword'] = keyword.trim();
+    try {
+      await backendApiClient.saveQuickSearch(
+        trimmedName,
+        jsonEncode(config),
+        sortOrder: sortOrder,
+      );
+      if (trimmedName != oldName) {
+        await backendApiClient.deleteQuickSearch(oldName);
+      }
+      await _load();
+      if (mounted) Get.back();
+      if (mounted) {
+        Get.snackbar('common.success'.tr, 'quickSearch.saved'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    }
+  }
+
   Future<void> _persistOrder() async {
     setState(() => _savingOrder = true);
     try {
@@ -160,6 +212,60 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
           FilledButton(
             onPressed: () => _add(nameCtrl.text, kwCtrl.text),
             child: Text('common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(Map<String, dynamic> item, int index) {
+    final oldName = item['name']?.toString() ?? '';
+    final oldConfig = item['config']?.toString() ?? '';
+    final config = _decodeConfig(oldConfig);
+    final nameCtrl = TextEditingController(text: oldName);
+    final kwCtrl =
+        TextEditingController(text: config['keyword']?.toString() ?? '');
+    final sortOrder = (item['sort_order'] as num?)?.toInt() ?? index;
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('quickSearch.editTitle'.tr),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.nameLabel'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: kwCtrl,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.keywordLabel'.tr,
+                  hintText: 'quickSearch.keywordHint'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () => _updateQuickSearch(
+              oldName: oldName,
+              newName: nameCtrl.text,
+              keyword: kwCtrl.text,
+              oldConfig: oldConfig,
+              sortOrder: sortOrder,
+            ),
+            child: Text('common.save'.tr),
           ),
         ],
       ),
@@ -245,34 +351,47 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                             title: Text(name),
                             subtitle: Text(subtitle,
                                 maxLines: 2, overflow: TextOverflow.ellipsis),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: _savingOrder
-                                  ? null
-                                  : () async {
-                                      final ok = await Get.dialog<bool>(
-                                        AlertDialog(
-                                          title: Text(
-                                              'quickSearch.deleteTitle'.tr),
-                                          content: Text(
-                                              'quickSearch.deleteConfirm'
-                                                  .trParams({'name': name})),
-                                          actions: [
-                                            TextButton(
-                                                onPressed: () =>
-                                                    Get.back(result: false),
-                                                child:
-                                                    Text('common.cancel'.tr)),
-                                            FilledButton(
-                                                onPressed: () =>
-                                                    Get.back(result: true),
-                                                child:
-                                                    Text('common.delete'.tr)),
-                                          ],
-                                        ),
-                                      );
-                                      if (ok == true) await _delete(name);
-                                    },
+                            trailing: Wrap(
+                              spacing: 4,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined),
+                                  tooltip: 'quickSearch.editTitle'.tr,
+                                  onPressed: _savingOrder
+                                      ? null
+                                      : () => _showEditDialog(item, i),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline),
+                                  onPressed: _savingOrder
+                                      ? null
+                                      : () async {
+                                          final ok = await Get.dialog<bool>(
+                                            AlertDialog(
+                                              title: Text(
+                                                  'quickSearch.deleteTitle'.tr),
+                                              content: Text(
+                                                  'quickSearch.deleteConfirm'
+                                                      .trParams(
+                                                          {'name': name})),
+                                              actions: [
+                                                TextButton(
+                                                    onPressed: () =>
+                                                        Get.back(result: false),
+                                                    child: Text(
+                                                        'common.cancel'.tr)),
+                                                FilledButton(
+                                                    onPressed: () =>
+                                                        Get.back(result: true),
+                                                    child: Text(
+                                                        'common.delete'.tr)),
+                                              ],
+                                            ),
+                                          );
+                                          if (ok == true) await _delete(name);
+                                        },
+                                ),
+                              ],
                             ),
                           ),
                         );

@@ -460,6 +460,7 @@ class WebEnUS {
       'quickSearch.empty': 'No saved searches',
       'quickSearch.saveCurrent': 'Save current search',
       'quickSearch.saveTitle': 'Save Quick Search',
+      'quickSearch.editTitle': 'Edit Quick Search',
       'quickSearch.nameLabel': 'Name',
       'quickSearch.addNew': 'Add quick search',
       'quickSearch.keywordLabel': 'Keyword',
