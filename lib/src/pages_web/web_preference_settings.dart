@@ -10,6 +10,7 @@ class WebPreferenceSettings {
   static const showAllCommentsKey = 'jh_web_show_all_comments';
   static const showUtcTimeKey = 'jh_web_show_utc_time';
   static const searchBehaviourKey = 'jh_web_search_behaviour';
+  static const enableDefaultFavoriteKey = 'jh_web_enable_default_favorite';
 
   const WebPreferenceSettings._();
 
@@ -24,6 +25,9 @@ class WebPreferenceSettings {
   static bool get showAllComments => _readBool(showAllCommentsKey, false);
 
   static bool get showUtcTime => _readBool(showUtcTimeKey, false);
+
+  static bool get enableDefaultFavorite =>
+      _readBool(enableDefaultFavoriteKey, false);
 
   static WebSearchBehaviour get searchBehaviour {
     final raw = web.window.localStorage.getItem(searchBehaviourKey);
@@ -46,6 +50,9 @@ class WebPreferenceSettings {
       _writeBool(showAllCommentsKey, value);
 
   static void saveShowUtcTime(bool value) => _writeBool(showUtcTimeKey, value);
+
+  static void saveEnableDefaultFavorite(bool value) =>
+      _writeBool(enableDefaultFavoriteKey, value);
 
   static void saveSearchBehaviour(WebSearchBehaviour value) {
     web.window.localStorage.setItem(searchBehaviourKey, value.name);

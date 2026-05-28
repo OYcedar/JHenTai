@@ -707,9 +707,10 @@ class WebGalleryDetailPage extends StatelessWidget {
                       ? _favSlotColor(controller.favoriteSlot.value ?? 0)
                       : null),
               tooltip: 'detail.addToFavTitle'.tr,
-              onPressed: () => _showFavoriteFolderDialog(context, controller),
-              onLongPress: () =>
-                  _quickAddToDefaultFavorite(context, controller),
+              onPressed: () => _handleFavoriteTap(context, controller),
+              onLongPress: WebPreferenceSettings.enableDefaultFavorite
+                  ? () => _showFavoriteFolderDialog(context, controller)
+                  : null,
             );
           }),
           PopupMenuButton<String>(
@@ -948,14 +949,20 @@ class WebGalleryDetailPage extends StatelessWidget {
     );
   }
 
-  void _quickAddToDefaultFavorite(
-      BuildContext context, WebGalleryDetailController c) {
-    if (c.favoriteSlot.value != null) return;
+  void _handleFavoriteTap(BuildContext context, WebGalleryDetailController c) {
+    if (!WebPreferenceSettings.enableDefaultFavorite ||
+        !_applyDefaultFavorite(c)) {
+      _showFavoriteFolderDialog(context, c);
+    }
+  }
+
+  bool _applyDefaultFavorite(WebGalleryDetailController c) {
     final raw = web.window.localStorage.getItem('jh_web_default_favcat');
-    if (raw == null || raw.isEmpty) return;
+    if (raw == null || raw.isEmpty) return false;
     final slot = int.tryParse(raw);
-    if (slot == null || slot < 0 || slot > 9) return;
+    if (slot == null || slot < 0 || slot > 9) return false;
     c.applyFavoriteFolder(slot, '');
+    return true;
   }
 
   void _handleOverflowMenu(BuildContext context, String value) {

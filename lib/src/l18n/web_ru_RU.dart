@@ -621,6 +621,8 @@ class WebRuRU {
       // settings reader
       'settings.defaultFavoriteSlot': 'Папка избранного по умолчанию',
       'settings.defaultFavoriteNone': 'Нет (спрашивать каждый раз)',
+      'settings.defaultFavoriteHint':
+          'When enabled, click the heart to use the default folder and long-press to choose another.',
       'settings.readerSettings': 'Настройки чтения',
       'settings.defaultDirection': 'Направление по умолчанию',
       'settings.imageSpacing': 'Отступы изображений',

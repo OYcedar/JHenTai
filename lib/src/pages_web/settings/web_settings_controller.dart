@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsController extends GetxController {
@@ -18,12 +19,14 @@ class WebSettingsController extends GetxController {
 
   /// `null` = always show folder picker; `0`–`9` = long-press heart on gallery detail adds to this slot.
   final defaultFavoriteSlot = Rxn<int>();
+  final enableDefaultFavorite = false.obs;
 
   static const _defaultFavCatKey = 'jh_web_default_favcat';
 
   @override
   void onInit() {
     super.onInit();
+    enableDefaultFavorite.value = WebPreferenceSettings.enableDefaultFavorite;
     _loadDefaultFavoriteSlot();
     _loadStatus();
   }
@@ -45,6 +48,11 @@ class WebSettingsController extends GetxController {
     } else {
       web.window.localStorage.setItem(_defaultFavCatKey, '$slot');
     }
+  }
+
+  void setEnableDefaultFavorite(bool value) {
+    enableDefaultFavorite.value = value;
+    WebPreferenceSettings.saveEnableDefaultFavorite(value);
   }
 
   Future<void> refreshStatus() => _loadStatus();

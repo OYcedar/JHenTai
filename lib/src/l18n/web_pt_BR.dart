@@ -624,6 +624,8 @@ class WebPtBR {
       // settings reader
       'settings.defaultFavoriteSlot': 'Pasta de favoritos padrão',
       'settings.defaultFavoriteNone': 'Nenhuma (perguntar sempre)',
+      'settings.defaultFavoriteHint':
+          'When enabled, click the heart to use the default folder and long-press to choose another.',
       'settings.readerSettings': 'Configurações do Leitor',
       'settings.defaultDirection': 'Direção Padrão',
       'settings.imageSpacing': 'Espaçamento de Imagem',

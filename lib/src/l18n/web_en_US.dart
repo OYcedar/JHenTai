@@ -625,6 +625,8 @@ class WebEnUS {
       // settings reader
       'settings.defaultFavoriteSlot': 'Default favorite folder',
       'settings.defaultFavoriteNone': 'None (always ask)',
+      'settings.defaultFavoriteHint':
+          'When enabled, click the heart to use the default folder and long-press to choose another.',
       'settings.usertags': 'Watched / hidden tags',
       'settings.readerSettings': 'Reader Settings',
       'settings.defaultDirection': 'Default Direction',

@@ -585,6 +585,7 @@ class WebZhTW {
       // settings reader
       'settings.defaultFavoriteSlot': '預設收藏夾',
       'settings.defaultFavoriteNone': '無（每次詢問）',
+      'settings.defaultFavoriteHint': '啟用後點擊愛心按鈕會使用預設收藏夾，長按可重新選擇。',
       'settings.readerSettings': '閱讀器設定',
       'settings.defaultDirection': '預設方向',
       'settings.imageSpacing': '圖片間距',

@@ -589,6 +589,7 @@ class WebZhCN {
       // settings reader
       'settings.defaultFavoriteSlot': '默认收藏夹',
       'settings.defaultFavoriteNone': '无（每次询问）',
+      'settings.defaultFavoriteHint': '启用后点击心形按钮会使用默认收藏夹，长按可重新选择。',
       'settings.usertags': '关注 / 隐藏标签',
       'settings.readerSettings': '阅读器设置',
       'settings.defaultDirection': '默认方向',

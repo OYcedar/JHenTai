@@ -38,12 +38,23 @@ class WebSettingsReadPage extends GetView<WebSettingsController> {
                             style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 4),
                         Text(
-                          'detail.favQuickAddTooltip'.tr,
+                          'settings.defaultFavoriteHint'.tr,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
                               ?.copyWith(color: Colors.grey),
                         ),
+                        const SizedBox(height: 12),
+                        Obx(() => SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text('enableDefaultFavorite'.tr),
+                              subtitle: Text(
+                                  controller.enableDefaultFavorite.value
+                                      ? 'enableDefaultFavoriteHint'.tr
+                                      : 'disableDefaultFavoriteHint'.tr),
+                              value: controller.enableDefaultFavorite.value,
+                              onChanged: controller.setEnableDefaultFavorite,
+                            )),
                         const SizedBox(height: 12),
                         Obx(() => DropdownButtonFormField<int?>(
                               decoration: InputDecoration(

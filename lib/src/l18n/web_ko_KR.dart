@@ -604,6 +604,8 @@ class WebKoKR {
       // settings reader
       'settings.defaultFavoriteSlot': '기본 즐겨찾기 폴더',
       'settings.defaultFavoriteNone': '없음 (매번 묻기)',
+      'settings.defaultFavoriteHint':
+          'When enabled, click the heart to use the default folder and long-press to choose another.',
       'settings.readerSettings': '리더 설정',
       'settings.defaultDirection': '기본 방향',
       'settings.imageSpacing': '이미지 간격',
