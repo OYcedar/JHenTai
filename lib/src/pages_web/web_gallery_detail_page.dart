@@ -2691,11 +2691,9 @@ class _CommentCard extends StatelessWidget {
                         ?.copyWith(color: Colors.grey)),
               ),
             const SizedBox(height: 4),
-            Expanded(
-              child: _LinkedCommentBody(
-                body: body,
-                maxLines: compact ? 4 : 100,
-              ),
+            _LinkedCommentBody(
+              body: body,
+              maxLines: compact ? 4 : 100,
             ),
           ],
         ),
