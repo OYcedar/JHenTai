@@ -259,6 +259,7 @@ class WebReaderController extends GetxController {
   final imageSpacing = 0.obs;
   final enablePageTurnAnimation = true.obs;
   final enableDoubleTapZoom = true.obs;
+  final enableTapDragZoom = false.obs;
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
   final gestureRegionWidthRatio = 60.obs;
@@ -484,6 +485,11 @@ class WebReaderController extends GetxController {
           await backendApiClient.getSetting(kWebEnableDoubleTapZoomKey);
       if (doubleTap != null) {
         enableDoubleTapZoom.value = doubleTap != 'false';
+      }
+      final tapDrag =
+          await backendApiClient.getSetting(kWebEnableTapDragZoomKey);
+      if (tapDrag != null) {
+        enableTapDragZoom.value = tapDrag == 'true';
       }
       final reverse =
           await backendApiClient.getSetting(kWebReverseTapPageTurnKey);
@@ -1667,6 +1673,9 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage>
   late AnimationController _animController;
   Animation<Matrix4>? _animation;
   TapDownDetails? _doubleTapDetails;
+  Offset? _tapDragFocalPoint;
+  double _tapDragStartY = 0;
+  double _tapDragStartScale = 1.0;
 
   /// When false, [InteractiveViewer] does not pan so mouse drags reach the parent [PageView].
   bool _pannable = false;
@@ -1717,6 +1726,36 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage>
           .animate(_animController);
       _animController.forward(from: 0);
     }
+  }
+
+  void _handleTapDragStart(DragStartDetails details) {
+    _tapDragFocalPoint = details.localPosition;
+    _tapDragStartY = details.localPosition.dy;
+    _tapDragStartScale =
+        _transformationController.value.getMaxScaleOnAxis().clamp(
+              _minScale,
+              _maxScale,
+            );
+  }
+
+  void _handleTapDragUpdate(DragUpdateDetails details) {
+    final focal = _tapDragFocalPoint ?? details.localPosition;
+    final dy = details.localPosition.dy - _tapDragStartY;
+    final factor = math.exp(-dy * 0.003);
+    final newScale = (_tapDragStartScale * factor).clamp(_minScale, _maxScale);
+    final current = _transformationController.value.getMaxScaleOnAxis();
+    if ((newScale - current).abs() < 1e-6) return;
+    final scaleBy = newScale / current;
+    final inner = Matrix4.identity()
+      ..translate(focal.dx, focal.dy)
+      ..scale(scaleBy)
+      ..translate(-focal.dx, -focal.dy);
+    _transformationController.value =
+        _transformationController.value.clone() * inner;
+  }
+
+  void _handleTapDragEnd() {
+    _tapDragFocalPoint = null;
   }
 
   static const double _minScale = 0.5;
@@ -1771,11 +1810,17 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage>
               dir != ReadDirection.vertical &&
               dir != ReadDirection.fitWidth;
       final enableDoubleTapZoom = widget.controller.enableDoubleTapZoom.value;
+      final enableTapDragZoom = widget.controller.enableTapDragZoom.value;
 
       final viewer = GestureDetector(
         onDoubleTapDown:
             enableDoubleTapZoom ? (d) => _doubleTapDetails = d : null,
         onDoubleTap: enableDoubleTapZoom ? _handleDoubleTap : null,
+        onVerticalDragStart: enableTapDragZoom ? _handleTapDragStart : null,
+        onVerticalDragUpdate: enableTapDragZoom ? _handleTapDragUpdate : null,
+        onVerticalDragEnd:
+            enableTapDragZoom ? (_) => _handleTapDragEnd() : null,
+        onVerticalDragCancel: enableTapDragZoom ? _handleTapDragEnd : null,
         child: InteractiveViewer(
           transformationController: _transformationController,
           panEnabled: _pannable,

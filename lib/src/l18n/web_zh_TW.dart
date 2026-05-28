@@ -506,6 +506,7 @@ class WebZhTW {
 
       'enablePageTurnAnime': '開啟翻頁動畫',
       'enableDoubleTapToScaleUp': '允許雙擊放大圖片',
+      'enableTapDragToScaleUp': '允許單擊後拖曳放大圖片',
       'reverseTurnPageDirection': '反轉點擊翻頁方向',
       'disablePageTurningOnTap': '停用點擊翻頁手勢',
       // block rules

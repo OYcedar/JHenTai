@@ -12,6 +12,7 @@ const kWebEnableBottomMenuKey = 'web_enable_bottom_menu';
 const kWebImageSpacingKey = 'web_image_spacing';
 const kWebEnablePageTurnAnimationKey = 'web_enable_page_turn_animation';
 const kWebEnableDoubleTapZoomKey = 'web_enable_double_tap_zoom';
+const kWebEnableTapDragZoomKey = 'web_enable_tap_drag_zoom';
 const kWebReverseTapPageTurnKey = 'web_reverse_tap_page_turn';
 const kWebDisableTapPageTurnKey = 'web_disable_tap_page_turn';
 const kWebGestureRegionWidthRatioKey = 'web_gesture_region_width_ratio';

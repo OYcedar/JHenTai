@@ -549,6 +549,7 @@ class WebEnUS {
 
       'enablePageTurnAnime': 'Enable page turn animation',
       'enableDoubleTapToScaleUp': 'Enable double-tap zoom',
+      'enableTapDragToScaleUp': 'Enable tap-drag zoom',
       'reverseTurnPageDirection': 'Reverse tap page turning direction',
       'disablePageTurningOnTap': 'Disable tap-to-turn-page',
       // block rules

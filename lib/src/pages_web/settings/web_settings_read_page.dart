@@ -115,6 +115,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final enableBottomMenu = true.obs;
   final enablePageTurnAnimation = true.obs;
   final enableDoubleTapZoom = true.obs;
+  final enableTapDragZoom = false.obs;
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
   final gestureRegionWidthRatio = 60.obs;
@@ -172,6 +173,11 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
           await backendApiClient.getSetting(kWebEnableDoubleTapZoomKey);
       if (doubleTap != null) {
         enableDoubleTapZoom.value = doubleTap != 'false';
+      }
+      final tapDrag =
+          await backendApiClient.getSetting(kWebEnableTapDragZoomKey);
+      if (tapDrag != null) {
+        enableTapDragZoom.value = tapDrag == 'true';
       }
       final reverse =
           await backendApiClient.getSetting(kWebReverseTapPageTurnKey);
@@ -450,6 +456,17 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       enableDoubleTapZoom.value = v;
                       backendApiClient
                           .putSetting(kWebEnableDoubleTapZoomKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('enableTapDragToScaleUp'.tr),
+                    value: enableTapDragZoom.value,
+                    onChanged: (v) {
+                      enableTapDragZoom.value = v;
+                      backendApiClient
+                          .putSetting(kWebEnableTapDragZoomKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,

@@ -524,6 +524,7 @@ class WebKoKR {
 
       'enablePageTurnAnime': '페이지 넘김 애니메이션 사용',
       'enableDoubleTapToScaleUp': '두 번 탭해 확대 사용',
+      'enableTapDragToScaleUp': '탭 후 드래그로 확대 사용',
       'reverseTurnPageDirection': '탭 페이지 넘김 방향 반전',
       'disablePageTurningOnTap': '탭으로 페이지 넘김 끄기',
       // block rules

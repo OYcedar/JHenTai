@@ -547,6 +547,7 @@ class WebPtBR {
 
       'enablePageTurnAnime': 'Ativar animação de virar página',
       'enableDoubleTapToScaleUp': 'Ativar zoom com toque duplo',
+      'enableTapDragToScaleUp': 'Ativar zoom ao tocar e arrastar',
       'reverseTurnPageDirection': 'Inverter direção ao tocar para virar página',
       'disablePageTurningOnTap': 'Desativar toque para virar página',
       // block rules

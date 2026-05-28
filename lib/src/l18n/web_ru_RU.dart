@@ -544,6 +544,8 @@ class WebRuRU {
 
       'enablePageTurnAnime': 'Включить анимацию перелистывания',
       'enableDoubleTapToScaleUp': 'Включить увеличение двойным нажатием',
+      'enableTapDragToScaleUp':
+          'Включить увеличение касанием с перетаскиванием',
       'reverseTurnPageDirection': 'Инвертировать перелистывание касанием',
       'disablePageTurningOnTap': 'Отключить перелистывание касанием',
       // block rules
