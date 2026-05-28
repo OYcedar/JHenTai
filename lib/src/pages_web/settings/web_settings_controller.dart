@@ -12,6 +12,7 @@ class WebSettingsController extends GetxController {
   final serverInfo = <String, dynamic>{}.obs;
   final networkInfo = <String, dynamic>{}.obs;
   final isLoading = true.obs;
+  final noImageMode = false.obs;
 
   final loginUserController = TextEditingController();
   final loginPassController = TextEditingController();
@@ -28,6 +29,7 @@ class WebSettingsController extends GetxController {
   void onInit() {
     super.onInit();
     enableDefaultFavorite.value = WebPreferenceSettings.enableDefaultFavorite;
+    noImageMode.value = WebPreferenceSettings.noImageMode;
     _loadDefaultFavoriteSlot();
     _loadStatus();
   }
@@ -54,6 +56,11 @@ class WebSettingsController extends GetxController {
   void setEnableDefaultFavorite(bool value) {
     enableDefaultFavorite.value = value;
     WebPreferenceSettings.saveEnableDefaultFavorite(value);
+  }
+
+  void setNoImageMode(bool value) {
+    noImageMode.value = value;
+    WebPreferenceSettings.saveNoImageMode(value);
   }
 
   Future<void> refreshStatus() => _loadStatus();

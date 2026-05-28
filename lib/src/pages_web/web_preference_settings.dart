@@ -19,6 +19,7 @@ class WebPreferenceSettings {
   static const preloadGalleryCoverKey = 'jh_web_preload_gallery_cover';
   static const showDawnInfoKey = 'jh_web_show_dawn_info';
   static const showHvInfoKey = 'jh_web_show_hv_info';
+  static const noImageModeKey = 'jh_web_no_image_mode';
 
   const WebPreferenceSettings._();
 
@@ -40,6 +41,8 @@ class WebPreferenceSettings {
   static bool get showDawnInfo => _readBool(showDawnInfoKey, false);
 
   static bool get showHvInfo => _readBool(showHvInfoKey, false);
+
+  static bool get noImageMode => _readBool(noImageModeKey, false);
 
   static bool get enableDefaultFavorite =>
       _readBool(enableDefaultFavoriteKey, false);
@@ -90,6 +93,8 @@ class WebPreferenceSettings {
       _writeBool(showDawnInfoKey, value);
 
   static void saveShowHvInfo(bool value) => _writeBool(showHvInfoKey, value);
+
+  static void saveNoImageMode(bool value) => _writeBool(noImageModeKey, value);
 
   static void saveEnableDefaultFavorite(bool value) =>
       _writeBool(enableDefaultFavoriteKey, value);

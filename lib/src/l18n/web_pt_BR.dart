@@ -399,9 +399,12 @@ class WebPtBR {
       'settings.resetPerformanceDefaults': 'Restaurar padrões de desempenho',
       'settings.performanceSaved': 'Configurações de desempenho salvas',
       'settings.advancedWebSummary':
-          'Revise caminhos Docker e veja, copie ou limpe logs do servidor.',
+          'Ative o modo sem imagens, revise caminhos Docker e gerencie logs do servidor.',
       'settings.advancedWebIntro':
-          'Veja logs do servidor e informações de caminhos Docker desta instância web.',
+          'Controle o carregamento de imagens, logs do servidor e caminhos Docker desta instância web.',
+      'settings.noImageMode': 'Modo sem imagens',
+      'settings.noImageModeHint':
+          'Oculta capas, miniaturas e imagens do leitor neste navegador.',
       'settings.serverLogs': 'Logs do servidor',
       'settings.clearLogsTitle': 'Limpar logs do servidor?',
       'settings.clearLogsConfirm':

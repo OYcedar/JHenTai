@@ -3,6 +3,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:get/get.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 
 /// Web counterpart to [EHThumbnail]: large = single image URL; small = sprite strip + cover into cell.
@@ -44,7 +47,9 @@ class WebEhThumbnail extends StatefulWidget {
   }
 
   static bool useSpriteSheet(Map<String, dynamic> data) {
-    if (_isLarge(data)) return false;
+    if (_isLarge(data)) {
+      return false;
+    }
     final off = _num(data, 'offSet');
     final tw = _num(data, 'thumbWidth');
     final th = _num(data, 'thumbHeight');
@@ -52,7 +57,8 @@ class WebEhThumbnail extends StatefulWidget {
   }
 
   /// Server sets when sprite offset is Y (e.g. `url(...) 0px -Npx`); default horizontal strip.
-  static bool spriteCropY(Map<String, dynamic> data) => data['spriteCropY'] == true;
+  static bool spriteCropY(Map<String, dynamic> data) =>
+      data['spriteCropY'] == true;
 
   @override
   State<WebEhThumbnail> createState() => _WebEhThumbnailState();
@@ -63,6 +69,7 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
   String? _loadError;
   ImageStream? _imageStream;
   ImageStreamListener? _listener;
+
   /// Source thumb URL (ehgt) we decoded for sprite mode; GET path uses proxy URL in [_resolveNetworkSprite].
   String? _resolvedSourceUrl;
   bool _spriteImageFromCodec = false;
@@ -91,7 +98,9 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
   }
 
   Future<void> _loadSpriteImage(String thumbUrl) async {
-    if (_resolvedSourceUrl == thumbUrl && _image != null && _loadError == null) {
+    if (_resolvedSourceUrl == thumbUrl &&
+        _image != null &&
+        _loadError == null) {
       return;
     }
     _cancelStream();
@@ -99,12 +108,16 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     _resolvedSourceUrl = thumbUrl;
     _loadError = null;
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     try {
       if (backendApiClient.shouldProxyImageUsePost(thumbUrl)) {
         final bytes = await backendApiClient.fetchProxiedImageBytes(thumbUrl);
-        if (!mounted || _resolvedSourceUrl != thumbUrl) return;
+        if (!mounted || _resolvedSourceUrl != thumbUrl) {
+          return;
+        }
         final codec = await ui.instantiateImageCodec(bytes);
         final frame = await codec.getNextFrame();
         if (!mounted || _resolvedSourceUrl != thumbUrl) {
@@ -117,7 +130,8 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
           _loadError = null;
         });
       } else {
-        _resolveNetworkSprite(backendApiClient.proxyImageUrl(thumbUrl), thumbUrl);
+        _resolveNetworkSprite(
+            backendApiClient.proxyImageUrl(thumbUrl), thumbUrl);
       }
     } catch (e) {
       if (mounted && _resolvedSourceUrl == thumbUrl) {
@@ -157,11 +171,20 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     stream.addListener(_listener!);
   }
 
+  bool get _noImageMode {
+    if (Get.isRegistered<WebSettingsController>()) {
+      return Get.find<WebSettingsController>().noImageMode.value;
+    }
+    return WebPreferenceSettings.noImageMode;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final thumbUrl = widget.data['thumbUrl'] as String? ?? '';
-    if (thumbUrl.isEmpty || !WebEhThumbnail.useSpriteSheet(widget.data)) {
+    if (_noImageMode ||
+        thumbUrl.isEmpty ||
+        !WebEhThumbnail.useSpriteSheet(widget.data)) {
       return;
     }
     _loadSpriteImage(thumbUrl);
@@ -173,12 +196,16 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     final oldU = oldWidget.data['thumbUrl'] as String? ?? '';
     final newU = widget.data['thumbUrl'] as String? ?? '';
     if (oldU == newU &&
-        WebEhThumbnail.useSpriteSheet(widget.data) == WebEhThumbnail.useSpriteSheet(oldWidget.data) &&
-        WebEhThumbnail.spriteCropY(widget.data) == WebEhThumbnail.spriteCropY(oldWidget.data)) {
+        WebEhThumbnail.useSpriteSheet(widget.data) ==
+            WebEhThumbnail.useSpriteSheet(oldWidget.data) &&
+        WebEhThumbnail.spriteCropY(widget.data) ==
+            WebEhThumbnail.spriteCropY(oldWidget.data)) {
       return;
     }
     final thumbUrl = widget.data['thumbUrl'] as String? ?? '';
-    if (thumbUrl.isEmpty || !WebEhThumbnail.useSpriteSheet(widget.data)) {
+    if (_noImageMode ||
+        thumbUrl.isEmpty ||
+        !WebEhThumbnail.useSpriteSheet(widget.data)) {
       _cancelStream();
       _disposeOwnedSpriteImage();
       setState(() {
@@ -212,7 +239,23 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
 
   @override
   Widget build(BuildContext context) {
+    if (Get.isRegistered<WebSettingsController>()) {
+      final controller = Get.find<WebSettingsController>();
+      return Obx(() => _buildThumbnail(context, controller.noImageMode.value));
+    }
+    return _buildThumbnail(context, WebPreferenceSettings.noImageMode);
+  }
+
+  Widget _buildThumbnail(BuildContext context, bool noImageMode) {
     final thumbUrl = widget.data['thumbUrl'] as String? ?? '';
+    if (noImageMode) {
+      final s = (widget.height ?? widget.width ?? 28).clamp(16.0, 56.0);
+      return Icon(
+        Icons.image_not_supported_outlined,
+        color: Colors.grey.shade600,
+        size: s,
+      );
+    }
     if (thumbUrl.isEmpty) {
       final s = (widget.height ?? widget.width ?? 28).clamp(16.0, 56.0);
       return Icon(Icons.image, color: Colors.grey.shade600, size: s);
@@ -222,6 +265,16 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     final tw = WebEhThumbnail._num(widget.data, 'thumbWidth');
     final th = WebEhThumbnail._num(widget.data, 'thumbHeight');
     final useSprite = WebEhThumbnail.useSpriteSheet(widget.data);
+    if (useSprite &&
+        _image == null &&
+        _loadError == null &&
+        _resolvedSourceUrl != thumbUrl) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_noImageMode) {
+          _loadSpriteImage(thumbUrl);
+        }
+      });
+    }
 
     if (!useSprite) {
       return LayoutBuilder(

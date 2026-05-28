@@ -63,7 +63,9 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true) {
+      return;
+    }
     try {
       await backendApiClient.clearServerLogs();
       await _loadLogs();
@@ -83,10 +85,14 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
 
   Future<void> _openLog(Map<String, dynamic> item) async {
     final name = item['name']?.toString() ?? '';
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      return;
+    }
     try {
       final content = await backendApiClient.readServerLog(name);
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       await Get.to(() => _WebLogPage(name: name, content: content));
       await _loadLogs();
     } catch (e) {
@@ -122,6 +128,16 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
             Text(
               'settings.advancedWebIntro'.tr,
               style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 24),
+            Card(
+              child: SwitchListTile(
+                secondary: const Icon(Icons.image_not_supported_outlined),
+                title: Text('settings.noImageMode'.tr),
+                subtitle: Text('settings.noImageModeHint'.tr),
+                value: controller.noImageMode.value,
+                onChanged: controller.setNoImageMode,
+              ),
             ),
             const SizedBox(height: 24),
             _buildLogsSection(context),
@@ -196,27 +212,29 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               : logsError != null
-              ? ListTile(
-                  leading: const Icon(Icons.error_outline),
-                  title: Text(
-                    'settings.loadLogsFailed'.trParams({'error': logsError!}),
-                  ),
-                  trailing: const Icon(Icons.refresh),
-                  onTap: _loadLogs,
-                )
-              : logs.isEmpty
-              ? ListTile(
-                  leading: const Icon(Icons.description_outlined),
-                  title: Text('settings.noLogs'.tr),
-                )
-              : Column(
-                  children: [
-                    for (var i = 0; i < logs.length; i++) ...[
-                      _logTile(logs[i]),
-                      if (i != logs.length - 1) const Divider(height: 1),
-                    ],
-                  ],
-                ),
+                  ? ListTile(
+                      leading: const Icon(Icons.error_outline),
+                      title: Text(
+                        'settings.loadLogsFailed'
+                            .trParams({'error': logsError!}),
+                      ),
+                      trailing: const Icon(Icons.refresh),
+                      onTap: _loadLogs,
+                    )
+                  : logs.isEmpty
+                      ? ListTile(
+                          leading: const Icon(Icons.description_outlined),
+                          title: Text('settings.noLogs'.tr),
+                        )
+                      : Column(
+                          children: [
+                            for (var i = 0; i < logs.length; i++) ...[
+                              _logTile(logs[i]),
+                              if (i != logs.length - 1)
+                                const Divider(height: 1),
+                            ],
+                          ],
+                        ),
         ),
       ],
     );
@@ -274,7 +292,9 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
 
   String _formatModified(String raw) {
     final date = DateTime.tryParse(raw)?.toLocal();
-    if (date == null) return raw;
+    if (date == null) {
+      return raw;
+    }
     String two(int n) => n.toString().padLeft(2, '0');
     return '${date.year}-${two(date.month)}-${two(date.day)} ${two(date.hour)}:${two(date.minute)}';
   }

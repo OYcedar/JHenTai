@@ -377,9 +377,11 @@ class WebKoKR {
           '다운로드 그룹의 작업 수가 이 값을 넘으면 펼침/접힘 아이콘 애니메이션을 끕니다. 0은 항상 끕니다.',
       'settings.resetPerformanceDefaults': '성능 기본값 복원',
       'settings.performanceSaved': '성능 설정이 저장되었습니다',
-      'settings.advancedWebSummary':
-          'Docker 경로 정보를 확인하고 서버 로그를 보고 복사하거나 지울 수 있습니다.',
-      'settings.advancedWebIntro': '이 웹 인스턴스의 서버 로그와 Docker 경로 정보를 확인합니다.',
+      'settings.advancedWebSummary': '이미지 없음 모드를 켜고 Docker 경로와 서버 로그를 관리합니다.',
+      'settings.advancedWebIntro':
+          '이 웹 인스턴스의 이미지 로드, 서버 로그, Docker 경로 정보를 관리합니다.',
+      'settings.noImageMode': '이미지 없음 모드',
+      'settings.noImageModeHint': '이 브라우저에서 갤러리 표지, 썸네일, 리더 이미지를 숨깁니다.',
       'settings.serverLogs': '서버 로그',
       'settings.clearLogsTitle': '서버 로그를 지울까요?',
       'settings.clearLogsConfirm': '현재 서버 로그 파일이 모두 삭제됩니다.',

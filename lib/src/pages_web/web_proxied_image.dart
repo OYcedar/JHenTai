@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_image_client_log.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 
 /// Loads an EH/EX CDN image through the API proxy. Uses POST with body when the GET URL would be too long
 /// for reverse proxies (Unraid + Nginx, etc.).
@@ -18,9 +20,11 @@ class WebProxiedImage extends StatefulWidget {
     this.errorIconSize = 28,
     this.readerStyle = false,
     this.readerTallLoading = false,
+
     /// Horizontal reader: give network/POST loading states a minimum height (avoids black sliver).
     this.readerFillMinLoadingHeight = false,
     this.readerErrorChild,
+
     /// Gallery cards: themed surface + spinner while loading (GET and POST paths).
     this.surfaceLoadingPlaceholder = false,
   });
@@ -32,6 +36,7 @@ class WebProxiedImage extends StatefulWidget {
   final double? height;
   final Alignment alignment;
   final double errorIconSize;
+
   /// White progress / reader layout hints.
   final bool readerStyle;
   final bool readerTallLoading;
@@ -62,7 +67,8 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
 
   void _syncPostFuture() {
     if (backendApiClient.shouldProxyImageUsePost(widget.sourceUrl)) {
-      webImageClientLogVerbose('WebProxiedImage POST path urlLen=${widget.sourceUrl.length}');
+      webImageClientLogVerbose(
+          'WebProxiedImage POST path urlLen=${widget.sourceUrl.length}');
       _postFuture = backendApiClient.fetchProxiedImageBytes(widget.sourceUrl);
     } else {
       webImageClientLogVerbose(
@@ -73,10 +79,16 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
   }
 
   double? _readerLoadingBoxHeight(BuildContext context) {
-    if (!widget.readerStyle) return null;
+    if (!widget.readerStyle) {
+      return null;
+    }
     final h = MediaQuery.sizeOf(context).height;
-    if (widget.readerTallLoading) return h * 0.8;
-    if (widget.readerFillMinLoadingHeight) return h * 0.55;
+    if (widget.readerTallLoading) {
+      return h * 0.8;
+    }
+    if (widget.readerFillMinLoadingHeight) {
+      return h * 0.55;
+    }
     return null;
   }
 
@@ -87,16 +99,28 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
 
   @override
   Widget build(BuildContext context) {
+    if (Get.isRegistered<WebSettingsController>()) {
+      final controller = Get.find<WebSettingsController>();
+      return Obx(() => _buildImage(context, controller.noImageMode.value));
+    }
+    return _buildImage(context, WebPreferenceSettings.noImageMode);
+  }
+
+  Widget _buildImage(BuildContext context, bool noImageMode) {
     final u = widget.sourceUrl;
     if (u.isEmpty) {
       webImageClientLogError('WebProxiedImage empty sourceUrl');
       return widget.readerErrorChild ?? _defaultError();
     }
+    if (noImageMode) {
+      return _noImagePlaceholder(context);
+    }
 
     // Downloaded / archive / local reader uses `/api/image/...` on this app — not the EH CDN proxy allowlist.
     final base = backendApiClient.baseUrl;
     if (base.isNotEmpty && u.startsWith(base) && u.contains('/api/image/')) {
-      webImageClientLogVerbose('WebProxiedImage direct Image.network api/image');
+      webImageClientLogVerbose(
+          'WebProxiedImage direct Image.network api/image');
       return Image.network(
         u,
         fit: widget.fit,
@@ -105,9 +129,13 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
         alignment: widget.alignment,
         loadingBuilder: widget.readerStyle
             ? (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
+                if (loadingProgress == null) {
+                  return child;
+                }
                 final total = loadingProgress.expectedTotalBytes;
-                final progress = total != null ? loadingProgress.cumulativeBytesLoaded / total : null;
+                final progress = total != null
+                    ? loadingProgress.cumulativeBytesLoaded / total
+                    : null;
                 return SizedBox(
                   height: _readerLoadingBoxHeight(context),
                   width: double.infinity,
@@ -115,11 +143,13 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(value: progress, color: Colors.white54),
+                        CircularProgressIndicator(
+                            value: progress, color: Colors.white54),
                         const SizedBox(height: 10),
                         Text(
                           'reader.loadingImage'.tr,
-                          style: const TextStyle(color: Colors.white54, fontSize: 13),
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 13),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -153,7 +183,8 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
                       const SizedBox(height: 10),
                       Text(
                         'reader.loadingImage'.tr,
-                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 13),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -196,14 +227,16 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
             width: widget.width,
             height: widget.height,
             alignment: widget.alignment,
-            errorBuilder: (_, __, ___) => widget.readerErrorChild ?? _defaultError(),
+            errorBuilder: (_, __, ___) =>
+                widget.readerErrorChild ?? _defaultError(),
           );
         },
       );
     }
 
     final proxied = backendApiClient.proxyImageUrl(u);
-    webImageClientLogVerbose('WebProxiedImage Image.network GET ${_urlPreview(proxied, max: 160)}');
+    webImageClientLogVerbose(
+        'WebProxiedImage Image.network GET ${_urlPreview(proxied, max: 160)}');
     return Image.network(
       proxied,
       fit: widget.fit,
@@ -212,9 +245,13 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       alignment: widget.alignment,
       loadingBuilder: widget.readerStyle
           ? (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
+              if (loadingProgress == null) {
+                return child;
+              }
               final total = loadingProgress.expectedTotalBytes;
-              final progress = total != null ? loadingProgress.cumulativeBytesLoaded / total : null;
+              final progress = total != null
+                  ? loadingProgress.cumulativeBytesLoaded / total
+                  : null;
               return SizedBox(
                 height: _readerLoadingBoxHeight(context),
                 width: double.infinity,
@@ -222,11 +259,13 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(value: progress, color: Colors.white54),
+                      CircularProgressIndicator(
+                          value: progress, color: Colors.white54),
                       const SizedBox(height: 10),
                       Text(
                         'reader.loadingImage'.tr,
-                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        style: const TextStyle(
+                            color: Colors.white54, fontSize: 13),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -236,9 +275,12 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
             }
           : widget.surfaceLoadingPlaceholder
               ? (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
+                  if (loadingProgress == null) {
+                    return child;
+                  }
                   return Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: const Center(
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
@@ -253,9 +295,31 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       },
     );
   }
+
+  Widget _noImagePlaceholder(BuildContext context) {
+    final child = Icon(
+      Icons.image_not_supported_outlined,
+      color: widget.readerStyle ? Colors.white54 : Colors.grey.shade600,
+      size: widget.errorIconSize,
+    );
+    if (widget.width == null && widget.height == null) {
+      return Center(child: child);
+    }
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      alignment: Alignment.center,
+      color: widget.readerStyle
+          ? Colors.transparent
+          : Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: child,
+    );
+  }
 }
 
 String _urlPreview(String url, {int max = 120}) {
-  if (url.length <= max) return url;
+  if (url.length <= max) {
+    return url;
+  }
   return '${url.substring(0, max)}…(len=${url.length})';
 }

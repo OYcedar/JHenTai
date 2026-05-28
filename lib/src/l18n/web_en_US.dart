@@ -399,9 +399,12 @@ class WebEnUS {
       'settings.resetPerformanceDefaults': 'Reset performance defaults',
       'settings.performanceSaved': 'Performance settings saved',
       'settings.advancedWebSummary':
-          'Review Docker path information, then view, copy, or clear server logs.',
+          'Enable no-image mode, review Docker paths, and manage server logs.',
       'settings.advancedWebIntro':
-          'View server logs and basic Docker path information for this web instance.',
+          'Control image loading, server logs, and Docker path information for this web instance.',
+      'settings.noImageMode': 'No image mode',
+      'settings.noImageModeHint':
+          'Hide gallery covers, thumbnails, and reader images in this browser.',
       'settings.serverLogs': 'Server logs',
       'settings.clearLogsTitle': 'Clear server logs?',
       'settings.clearLogsConfirm':
