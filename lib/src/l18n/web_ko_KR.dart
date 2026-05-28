@@ -219,6 +219,7 @@ class WebKoKR {
       'local.deleteConfirm': '"@title"의 로컬 파일을 삭제할까요?',
       'local.deleteSuccess': '로컬 갤러리가 삭제되었습니다',
       'local.deleteFailed': '로컬 갤러리 삭제 실패: @error',
+      'local.parentDirectory': '상위 폴더',
 
       // settings
       'settings.title': '설정',

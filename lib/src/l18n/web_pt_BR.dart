@@ -228,6 +228,7 @@ class WebPtBR {
       'local.deleteConfirm': 'Excluir arquivos locais de "@title"?',
       'local.deleteSuccess': 'Galeria local excluída',
       'local.deleteFailed': 'Falha ao excluir galeria local: @error',
+      'local.parentDirectory': 'Pasta Pai',
 
       // settings
       'settings.title': 'Configurações',

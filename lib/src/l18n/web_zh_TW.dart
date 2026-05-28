@@ -216,6 +216,7 @@ class WebZhTW {
       'local.deleteConfirm': '刪除「@title」的本機檔案？',
       'local.deleteSuccess': '本機畫廊已刪除',
       'local.deleteFailed': '刪除本機畫廊失敗: @error',
+      'local.parentDirectory': '上層目錄',
 
       // settings
       'settings.title': '設定',

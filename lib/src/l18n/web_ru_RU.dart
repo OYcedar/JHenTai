@@ -226,6 +226,7 @@ class WebRuRU {
       'local.deleteConfirm': 'Удалить локальные файлы для "@title"?',
       'local.deleteSuccess': 'Локальная галерея удалена',
       'local.deleteFailed': 'Не удалось удалить локальную галерею: @error',
+      'local.parentDirectory': 'Родительская папка',
 
       // settings
       'settings.title': 'Настройки',

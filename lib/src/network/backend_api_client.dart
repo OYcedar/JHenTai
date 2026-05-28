@@ -422,6 +422,11 @@ class BackendApiClient {
     return (response.data['galleries'] as List?) ?? [];
   }
 
+  Future<List<String>> listLocalGalleryRoots() async {
+    final response = await _dio.get('/api/local/roots');
+    return ((response.data['roots'] as List?) ?? []).cast<String>();
+  }
+
   Future<void> refreshLocalGalleries() async {
     await _dio.post('/api/local/refresh');
   }

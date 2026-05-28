@@ -6,6 +6,8 @@ import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 class WebLocalController extends GetxController {
   final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
+  final roots = <String>[].obs;
+  final currentPath = ''.obs;
   final searchQuery = ''.obs;
   final groupExpanded = <String, bool>{}.obs;
   final isLoading = true.obs;
@@ -28,8 +30,22 @@ class WebLocalController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     try {
-      final data = await backendApiClient.listLocalGalleries();
-      galleries.value = data.cast<Map<String, dynamic>>();
+      final results = await Future.wait([
+        backendApiClient.listLocalGalleryRoots(),
+        backendApiClient.listLocalGalleries(),
+      ]);
+      final rootData = (results[0] as List<String>)
+          .map(_normalizePath)
+          .where((path) => path.isNotEmpty)
+          .toList()
+        ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
+      roots.value = rootData;
+
+      galleries.value = results[1].cast<Map<String, dynamic>>();
+      if (currentPath.value.isNotEmpty &&
+          !_isCurrentPathStillVisible(currentPath.value)) {
+        currentPath.value = '';
+      }
       for (final group in groupedGalleries.keys) {
         groupExpanded.putIfAbsent(group, () => true);
       }
@@ -40,12 +56,13 @@ class WebLocalController extends GetxController {
     }
   }
 
-  Future<void> refresh() async {
+  Future<void> refreshGalleries() async {
     isScanning.value = true;
     try {
       await backendApiClient.refreshLocalGalleries();
       await Future.delayed(const Duration(seconds: 2));
       await _loadGalleries();
+      currentPath.value = '';
     } finally {
       isScanning.value = false;
     }
@@ -90,6 +107,8 @@ class WebLocalController extends GetxController {
     }
   }
 
+  bool get isSearching => searchQuery.value.trim().isNotEmpty;
+
   List<Map<String, dynamic>> get filteredGalleries {
     final q = searchQuery.value.trim().toLowerCase();
     if (q.isEmpty) return galleries.toList();
@@ -124,15 +143,92 @@ class WebLocalController extends GetxController {
     groupExpanded.refresh();
   }
 
+  void enterDirectory(String path) {
+    currentPath.value = _normalizePath(path);
+  }
+
+  void goUpDirectory() {
+    final current = currentPath.value;
+    if (current.isEmpty) return;
+    if (roots.contains(current)) {
+      currentPath.value = '';
+      return;
+    }
+    final parent = _parentPath(current);
+    currentPath.value = _isAtOrUnderRoot(parent) ? parent : '';
+  }
+
+  List<String> get childDirectories {
+    final dirs = <String>{};
+    final current = currentPath.value;
+    if (current.isEmpty) {
+      if (roots.isNotEmpty) return roots.toList();
+      dirs.addAll(
+          galleries.map((g) => _topDerivedRoot(g['path']?.toString() ?? '')));
+    } else {
+      for (final gallery in galleries) {
+        final galleryPath = _normalizePath(gallery['path']?.toString() ?? '');
+        final child = _nextChildDirectory(current, galleryPath);
+        if (child != null) dirs.add(child);
+      }
+    }
+    return dirs.where((path) => path.isNotEmpty).toList()
+      ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
+  }
+
+  List<Map<String, dynamic>> get currentDirectoryGalleries {
+    final current = currentPath.value;
+    if (current.isEmpty) return const [];
+    final items = galleries
+        .where((gallery) =>
+            _parentPath(gallery['path']?.toString() ?? '') == current)
+        .toList();
+    return items
+      ..sort((a, b) => _naturalCompare(
+            a['title']?.toString() ?? '',
+            b['title']?.toString() ?? '',
+          ));
+  }
+
+  bool _isCurrentPathStillVisible(String path) {
+    if (roots.contains(path)) return true;
+    return galleries.any((gallery) {
+      final galleryPath = _normalizePath(gallery['path']?.toString() ?? '');
+      return galleryPath == path || galleryPath.startsWith('$path/');
+    });
+  }
+
+  bool _isAtOrUnderRoot(String path) {
+    if (path.isEmpty) return false;
+    if (roots.isEmpty) return true;
+    return roots.any((root) => path == root || path.startsWith('$root/'));
+  }
+
+  static String? _nextChildDirectory(String parent, String galleryPath) {
+    if (parent.isEmpty || galleryPath.isEmpty) return null;
+    if (!galleryPath.startsWith('$parent/')) return null;
+    final rest = galleryPath.substring(parent.length + 1);
+    if (rest.isEmpty || !rest.contains('/')) return null;
+    return '$parent/${rest.split('/').first}';
+  }
+
+  static String _topDerivedRoot(String path) {
+    final parent = _parentPath(path);
+    if (parent.isEmpty) return '';
+    final parts = parent.split('/').where((p) => p.isNotEmpty).toList();
+    if (parts.length <= 2) return parent;
+    return '/${parts.take(2).join('/')}';
+  }
+
   static String _parentPath(String path) {
-    final normalized = path.replaceAll(RegExp(r'/+$'), '');
+    final normalized = _normalizePath(path);
     final index = normalized.lastIndexOf('/');
     if (index <= 0) return normalized;
     return normalized.substring(0, index);
   }
 
   static String _displayPath(String path) {
-    final normalized = path.replaceAll(RegExp(r'/+$'), '');
+    final normalized = _normalizePath(path);
     if (normalized.isEmpty) return '/';
     final parts = normalized.split('/').where((p) => p.isNotEmpty).toList();
     if (parts.isEmpty) return normalized;
@@ -140,6 +236,10 @@ class WebLocalController extends GetxController {
         ? '${parts[parts.length - 2]}/${parts.last}'
         : parts.last;
     return tail;
+  }
+
+  static String _normalizePath(String path) {
+    return path.replaceAll(RegExp(r'/+'), '/').replaceAll(RegExp(r'/+$'), '');
   }
 
   static int _naturalCompare(String a, String b) {
@@ -175,6 +275,14 @@ class WebLocalPage extends GetView<WebLocalController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: Obx(
+            () => controller.currentPath.value.isEmpty || controller.isSearching
+                ? const SizedBox.shrink()
+                : IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: 'local.parentDirectory'.tr,
+                    onPressed: controller.goUpDirectory,
+                  )),
         title: Text('local.title'.tr),
         actions: [
           Obx(() => controller.isScanning.value
@@ -187,7 +295,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                 )
               : IconButton(
                   icon: const Icon(Icons.refresh),
-                  onPressed: controller.refresh)),
+                  onPressed: controller.refreshGalleries)),
         ],
       ),
       body: Obx(() {
@@ -206,7 +314,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   icon: const Icon(Icons.refresh),
-                  onPressed: () => controller.refresh(),
+                  onPressed: () => controller.refreshGalleries(),
                   label: Text('common.retry'.tr),
                 ),
               ],
@@ -231,7 +339,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.refresh),
                   label: Text('local.scanNow'.tr),
-                  onPressed: controller.refresh,
+                  onPressed: controller.refreshGalleries,
                 ),
               ],
             ),
@@ -274,6 +382,10 @@ class WebLocalPage extends GetView<WebLocalController> {
 
   Widget _buildGalleryList(BuildContext context) {
     return Obx(() {
+      if (!controller.isSearching) {
+        return _buildDirectoryBrowser(context);
+      }
+
       final groups = controller.groupedGalleries;
       if (groups.isEmpty) {
         return Center(child: Text('home.noGalleries'.tr));
@@ -286,6 +398,78 @@ class WebLocalPage extends GetView<WebLocalController> {
         ],
       );
     });
+  }
+
+  Widget _buildDirectoryBrowser(BuildContext context) {
+    final dirs = controller.childDirectories;
+    final galleries = controller.currentDirectoryGalleries;
+    final currentPath = controller.currentPath.value;
+
+    if (dirs.isEmpty && galleries.isEmpty) {
+      return Center(child: Text('home.noGalleries'.tr));
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(8),
+      children: [
+        if (currentPath.isNotEmpty)
+          _buildCurrentDirectoryHeader(context, currentPath),
+        if (currentPath.isNotEmpty)
+          _buildDirectoryTile(
+            context,
+            title: 'local.parentDirectory'.tr,
+            subtitle: WebLocalController._parentPath(currentPath),
+            icon: Icons.keyboard_return,
+            onTap: controller.goUpDirectory,
+          ),
+        for (final dir in dirs)
+          _buildDirectoryTile(
+            context,
+            title: WebLocalController._displayPath(dir),
+            subtitle: dir,
+            icon: controller.roots.contains(dir)
+                ? Icons.folder_special
+                : Icons.folder_open,
+            onTap: () => controller.enterDirectory(dir),
+          ),
+        for (final gallery in galleries) _buildGalleryTile(context, gallery),
+      ],
+    );
+  }
+
+  Widget _buildCurrentDirectoryHeader(BuildContext context, String path) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: Text(
+        path,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+
+  Widget _buildDirectoryTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      child: ListTile(
+        leading: Icon(icon),
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: subtitle.isEmpty
+            ? null
+            : Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
   }
 
   Widget _buildGalleryGroup(

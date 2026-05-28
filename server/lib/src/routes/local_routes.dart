@@ -14,6 +14,7 @@ class LocalRoutes {
     final router = Router();
 
     router.get('/list', _listGalleries);
+    router.get('/roots', _listRoots);
     router.post('/refresh', _refresh);
     router.get('/images', _getImages);
     router.delete('/gallery', _deleteGallery);
@@ -28,6 +29,13 @@ class LocalRoutes {
         'galleries': galleries,
         'scanning': _service.isScanning,
       }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _listRoots(Request request) async {
+    return Response.ok(
+      jsonEncode({'roots': _service.allowedScanPaths}),
       headers: {'Content-Type': 'application/json'},
     );
   }

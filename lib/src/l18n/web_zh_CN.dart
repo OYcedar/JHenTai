@@ -216,6 +216,7 @@ class WebZhCN {
       'local.deleteConfirm': '删除「@title」的本地文件？',
       'local.deleteSuccess': '本地画廊已删除',
       'local.deleteFailed': '删除本地画廊失败: @error',
+      'local.parentDirectory': '上级目录',
 
       // settings
       'settings.title': '设置',

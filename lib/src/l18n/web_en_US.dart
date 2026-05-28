@@ -228,6 +228,7 @@ class WebEnUS {
       'local.deleteConfirm': 'Delete local files for "@title"?',
       'local.deleteSuccess': 'Local gallery deleted',
       'local.deleteFailed': 'Failed to delete local gallery: @error',
+      'local.parentDirectory': 'Parent Directory',
 
       // settings
       'settings.title': 'Settings',
