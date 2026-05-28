@@ -489,6 +489,45 @@ class WebDownloadsController extends GetxController
         priority: priority, group: group);
     await _svc.refresh();
   }
+
+  Future<void> renameTaskGroup({
+    required bool galleryTab,
+    required String oldGroup,
+    required String newGroup,
+  }) async {
+    final group = newGroup.trim().isEmpty ? 'default' : newGroup.trim();
+    if (group == oldGroup) return;
+    final tasks =
+        galleryTab ? _svc.galleryTasks.values : _svc.archiveTasks.values;
+    final ids = tasks
+        .where((t) => _taskGroupName(t) == oldGroup)
+        .map((t) => (t['gid'] as num?)?.toInt())
+        .whereType<int>()
+        .toList();
+    if (ids.isEmpty) return;
+    await Future.wait(
+      ids.map((gid) => galleryTab
+          ? backendApiClient.patchGalleryDownload(gid, group: group)
+          : backendApiClient.patchArchiveDownload(gid, group: group)),
+    );
+    final expanded = galleryTab ? galleryGroupExpanded : archiveGroupExpanded;
+    final oldExpanded = expanded.remove(oldGroup);
+    if (oldExpanded != null) {
+      expanded[group] = oldExpanded;
+      expanded.refresh();
+      if (galleryTab) {
+        _persistGalleryExpanded();
+      } else {
+        _persistArchiveExpanded();
+      }
+    }
+    await _svc.refresh();
+    Get.snackbar(
+      'common.success'.tr,
+      'downloads.groupRenamed'.trParams({'count': '${ids.length}'}),
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
 }
 
 class WebDownloadsPage extends GetView<WebDownloadsController> {
@@ -642,6 +681,58 @@ Future<String?> _showBatchGroupDialog(
   }
 }
 
+Future<String?> _showRenameGroupDialog(
+  BuildContext context,
+  String oldGroup,
+) async {
+  final controller = TextEditingController(text: oldGroup);
+  try {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('downloads.renameGroup'.tr),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('downloads.renameGroupConfirm'
+                    .trParams({'group': oldGroup})),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'downloads.setGroup'.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) {
+                    Navigator.pop(ctx, controller.text.trim());
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+              child: Text('common.ok'.tr),
+            ),
+          ],
+        );
+      },
+    );
+  } finally {
+    controller.dispose();
+  }
+}
+
 class _DownloadFilterBar extends StatelessWidget {
   final WebDownloadsController controller;
   const _DownloadFilterBar({required this.controller});
@@ -781,6 +872,7 @@ class _DownloadGroupHeader extends StatelessWidget {
   final bool expanded;
   final bool animate;
   final VoidCallback onTap;
+  final VoidCallback? onRename;
 
   const _DownloadGroupHeader({
     required this.groupName,
@@ -788,6 +880,7 @@ class _DownloadGroupHeader extends StatelessWidget {
     required this.expanded,
     this.animate = true,
     required this.onTap,
+    this.onRename,
   });
 
   @override
@@ -832,6 +925,26 @@ class _DownloadGroupHeader extends StatelessWidget {
                     animate ? const Duration(milliseconds: 200) : Duration.zero,
                 child: const Icon(Icons.chevron_right, size: 22),
               ),
+              if (onRename != null)
+                PopupMenuButton<_DownloadGroupAction>(
+                  tooltip: 'downloads.renameGroup'.tr,
+                  onSelected: (action) {
+                    switch (action) {
+                      case _DownloadGroupAction.rename:
+                        onRename?.call();
+                        break;
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: _DownloadGroupAction.rename,
+                      child: _DownloadTaskMenuItem(
+                        icon: Icons.drive_file_rename_outline,
+                        label: 'downloads.renameGroup'.tr,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -839,6 +952,8 @@ class _DownloadGroupHeader extends StatelessWidget {
     );
   }
 }
+
+enum _DownloadGroupAction { rename }
 
 void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
     Map<String, dynamic> task) {
@@ -999,11 +1114,27 @@ Future<bool> _showReDownloadGalleryDialog(BuildContext context) async {
   return ok == true;
 }
 
+Future<void> _renameDownloadGroup(
+  BuildContext context,
+  WebDownloadsController controller, {
+  required bool galleryTab,
+  required String oldGroup,
+}) async {
+  final next = await _showRenameGroupDialog(context, oldGroup);
+  if (next == null) return;
+  await controller.renameTaskGroup(
+    galleryTab: galleryTab,
+    oldGroup: oldGroup,
+    newGroup: next,
+  );
+}
+
 class _GroupedDownloadGrid extends StatelessWidget {
   final List<String> groups;
   final Map<String, List<Map<String, dynamic>>> byGroup;
   final Map<String, bool> expanded;
   final ValueChanged<String> onToggleGroup;
+  final ValueChanged<String>? onRenameGroup;
   final Widget Function(Map<String, dynamic> task) itemBuilder;
 
   const _GroupedDownloadGrid({
@@ -1011,6 +1142,7 @@ class _GroupedDownloadGrid extends StatelessWidget {
     required this.byGroup,
     required this.expanded,
     required this.onToggleGroup,
+    this.onRenameGroup,
     required this.itemBuilder,
   });
 
@@ -1039,6 +1171,9 @@ class _GroupedDownloadGrid extends StatelessWidget {
                 animate: byGroup[group]!.length <=
                     WebDownloadsController.maxGalleryNum4Animation,
                 onTap: () => onToggleGroup(group),
+                onRename: onRenameGroup == null
+                    ? null
+                    : () => onRenameGroup?.call(group),
               ),
               const SizedBox(height: 8),
               if (expanded[group] ?? true)
@@ -1475,6 +1610,12 @@ class _GalleryTaskList extends StatelessWidget {
           byGroup: byGroup,
           expanded: controller.galleryGroupExpanded,
           onToggleGroup: controller.toggleGalleryGroup,
+          onRenameGroup: (group) => _renameDownloadGroup(
+            context,
+            controller,
+            galleryTab: true,
+            oldGroup: group,
+          ),
           itemBuilder: (task) =>
               _GalleryTaskGridCard(task: task, controller: controller),
         );
@@ -1490,6 +1631,12 @@ class _GalleryTaskList extends StatelessWidget {
               animate: byGroup[g]!.length <=
                   WebDownloadsController.maxGalleryNum4Animation,
               onTap: () => controller.toggleGalleryGroup(g),
+              onRename: () => _renameDownloadGroup(
+                context,
+                controller,
+                galleryTab: true,
+                oldGroup: g,
+              ),
             ),
             const SizedBox(height: 6),
             if (controller.galleryGroupExpanded[g] ?? true)
@@ -1743,6 +1890,12 @@ class _ArchiveTaskList extends StatelessWidget {
           byGroup: byGroup,
           expanded: controller.archiveGroupExpanded,
           onToggleGroup: controller.toggleArchiveGroup,
+          onRenameGroup: (group) => _renameDownloadGroup(
+            context,
+            controller,
+            galleryTab: false,
+            oldGroup: group,
+          ),
           itemBuilder: (task) =>
               _ArchiveTaskGridCard(task: task, controller: controller),
         );
@@ -1758,6 +1911,12 @@ class _ArchiveTaskList extends StatelessWidget {
               animate: byGroup[g]!.length <=
                   WebDownloadsController.maxGalleryNum4Animation,
               onTap: () => controller.toggleArchiveGroup(g),
+              onRename: () => _renameDownloadGroup(
+                context,
+                controller,
+                galleryTab: false,
+                oldGroup: g,
+              ),
             ),
             const SizedBox(height: 6),
             if (controller.archiveGroupExpanded[g] ?? true)
