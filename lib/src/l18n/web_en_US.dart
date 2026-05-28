@@ -620,7 +620,8 @@ class WebEnUS {
       'settings.readerSettings': 'Reader Settings',
       'settings.defaultDirection': 'Default Direction',
       'settings.imageSpacing': 'Image Spacing',
-      'settings.preloadPages': 'Preload Pages',
+      'settings.preloadPages': 'Preload Pages (Online)',
+      'settings.preloadPagesLocal': 'Preload Pages (Local)',
       'settings.autoInterval': 'Auto-mode Interval',
       'settings.fitWidth': 'Fit Width',
 

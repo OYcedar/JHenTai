@@ -579,7 +579,8 @@ class WebZhTW {
       'settings.readerSettings': '閱讀器設定',
       'settings.defaultDirection': '預設方向',
       'settings.imageSpacing': '圖片間距',
-      'settings.preloadPages': '預載入頁數',
+      'settings.preloadPages': '預載入頁數（線上）',
+      'settings.preloadPagesLocal': '預載入頁數（本機）',
       'settings.autoInterval': '自動閱讀間隔',
       'settings.fitWidth': '適應寬度',
 

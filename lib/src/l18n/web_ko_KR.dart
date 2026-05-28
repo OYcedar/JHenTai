@@ -598,7 +598,8 @@ class WebKoKR {
       'settings.readerSettings': '리더 설정',
       'settings.defaultDirection': '기본 방향',
       'settings.imageSpacing': '이미지 간격',
-      'settings.preloadPages': '미리 로드 페이지',
+      'settings.preloadPages': '미리 로드 페이지(온라인)',
+      'settings.preloadPagesLocal': '미리 로드 페이지(로컬)',
       'settings.autoInterval': '자동 넘기기 간격',
       'settings.fitWidth': '너비 맞춤',
 

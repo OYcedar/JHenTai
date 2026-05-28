@@ -92,6 +92,7 @@ class _WebReaderCoreSettings extends StatefulWidget {
 class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final direction = 0.obs;
   final preloadPages = 3.obs;
+  final preloadPagesLocal = 3.obs;
   final autoInterval = 5.0.obs;
   final displayFirstPageAlone = false.obs;
   final showThumbnails = true.obs;
@@ -111,6 +112,11 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (d != null) direction.value = int.tryParse(d) ?? 0;
       final p = await backendApiClient.getSetting('web_preload_pages');
       if (p != null) preloadPages.value = int.tryParse(p) ?? 3;
+      final local =
+          await backendApiClient.getSetting('web_preload_pages_local');
+      if (local != null) {
+        preloadPagesLocal.value = int.tryParse(local) ?? 3;
+      }
       final a = await backendApiClient.getSetting('web_auto_interval');
       if (a != null) autoInterval.value = double.tryParse(a) ?? 5.0;
       final first =
@@ -182,6 +188,26 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       preloadPages.value = v.round();
                       backendApiClient
                           .putSetting('web_preload_pages', v.round())
+                          .catchError((_) {});
+                    },
+                  )),
+              const SizedBox(height: 8),
+              Obx(() => Row(
+                    children: [
+                      Expanded(child: Text('settings.preloadPagesLocal'.tr)),
+                      Text('${preloadPagesLocal.value}'),
+                    ],
+                  )),
+              Obx(() => Slider(
+                    value: preloadPagesLocal.value.toDouble(),
+                    min: 0,
+                    max: 10,
+                    divisions: 10,
+                    label: '${preloadPagesLocal.value}',
+                    onChanged: (v) {
+                      preloadPagesLocal.value = v.round();
+                      backendApiClient
+                          .putSetting('web_preload_pages_local', v.round())
                           .catchError((_) {});
                     },
                   )),

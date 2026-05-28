@@ -584,7 +584,8 @@ class WebZhCN {
       'settings.readerSettings': '阅读器设置',
       'settings.defaultDirection': '默认方向',
       'settings.imageSpacing': '图片间距',
-      'settings.preloadPages': '预加载页数',
+      'settings.preloadPages': '预加载页数（在线）',
+      'settings.preloadPagesLocal': '预加载页数（本地）',
       'settings.autoInterval': '自动阅读间隔',
       'settings.fitWidth': '适应宽度',
 

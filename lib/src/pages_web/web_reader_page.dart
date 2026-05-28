@@ -248,6 +248,7 @@ class WebReaderController extends GetxController {
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
   final preloadPages = 3.obs;
+  final preloadPagesLocal = 3.obs;
   final showThumbnails = true.obs;
   final showStatusInfo = true.obs;
   final imageSpacing = 0.obs;
@@ -425,8 +426,17 @@ class WebReaderController extends GetxController {
       if (value != null) {
         preloadPages.value = value.clamp(0, 10).toInt();
       }
+      final savedLocal =
+          await backendApiClient.getSetting('web_preload_pages_local');
+      final localValue = int.tryParse(savedLocal ?? '');
+      if (localValue != null) {
+        preloadPagesLocal.value = localValue.clamp(0, 10).toInt();
+      }
     } catch (_) {}
   }
+
+  int get cachePreloadPages =>
+      mode == ReaderMode.online ? preloadPages.value : preloadPagesLocal.value;
 
   Future<void> _loadDisplaySettings() async {
     try {
@@ -1233,7 +1243,7 @@ class _ReaderBody extends StatelessWidget {
               cacheExtent: math.max(
                 MediaQuery.sizeOf(context).height,
                 MediaQuery.sizeOf(context).height *
-                    (controller.preloadPages.value + 1),
+                    (controller.cachePreloadPages + 1),
               ),
               itemBuilder: (context, index) => Obx(() => Padding(
                     padding: EdgeInsets.only(
@@ -1278,7 +1288,7 @@ class _ReaderBody extends StatelessWidget {
               cacheExtent: math.max(
                 MediaQuery.sizeOf(context).height,
                 MediaQuery.sizeOf(context).height *
-                    (controller.preloadPages.value + 1),
+                    (controller.cachePreloadPages + 1),
               ),
               itemBuilder: (context, index) => Obx(() => Padding(
                     padding: EdgeInsets.only(

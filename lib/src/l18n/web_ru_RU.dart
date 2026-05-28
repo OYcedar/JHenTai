@@ -615,7 +615,8 @@ class WebRuRU {
       'settings.readerSettings': 'Настройки чтения',
       'settings.defaultDirection': 'Направление по умолчанию',
       'settings.imageSpacing': 'Отступы изображений',
-      'settings.preloadPages': 'Предзагрузка страниц',
+      'settings.preloadPages': 'Предзагрузка страниц (онлайн)',
+      'settings.preloadPagesLocal': 'Предзагрузка страниц (локально)',
       'settings.autoInterval': 'Интервал автопролистывания',
       'settings.fitWidth': 'По ширине',
 

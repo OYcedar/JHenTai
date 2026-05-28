@@ -618,7 +618,8 @@ class WebPtBR {
       'settings.readerSettings': 'Configurações do Leitor',
       'settings.defaultDirection': 'Direção Padrão',
       'settings.imageSpacing': 'Espaçamento de Imagem',
-      'settings.preloadPages': 'Páginas Pré-carregadas',
+      'settings.preloadPages': 'Páginas Pré-carregadas (Online)',
+      'settings.preloadPagesLocal': 'Páginas Pré-carregadas (Local)',
       'settings.autoInterval': 'Intervalo Auto-leitura',
       'settings.fitWidth': 'Ajustar Largura',
 
