@@ -186,6 +186,13 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
     _persistOrder();
   }
 
+  void _runQuickSearch(Map<String, dynamic> item) {
+    final config = _decodeConfig(item['config']?.toString() ?? '');
+    Get.offAllNamed('/web/home', arguments: {
+      'quickSearchConfig': jsonEncode(config),
+    });
+  }
+
   void _showAddDialog() {
     final nameCtrl = TextEditingController();
     final kwCtrl = TextEditingController();
@@ -354,6 +361,9 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                           key: ValueKey(name),
                           margin: const EdgeInsets.only(bottom: 8),
                           child: ListTile(
+                            onTap: _savingOrder
+                                ? null
+                                : () => _runQuickSearch(item),
                             leading: ReorderableDragStartListener(
                               index: i,
                               child: const Icon(Icons.drag_handle),
@@ -364,6 +374,13 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                             trailing: Wrap(
                               spacing: 4,
                               children: [
+                                IconButton(
+                                  icon: const Icon(Icons.search),
+                                  tooltip: 'tagVote.search'.tr,
+                                  onPressed: _savingOrder
+                                      ? null
+                                      : () => _runQuickSearch(item),
+                                ),
                                 IconButton(
                                   icon: const Icon(Icons.edit_outlined),
                                   tooltip: 'quickSearch.editTitle'.tr,

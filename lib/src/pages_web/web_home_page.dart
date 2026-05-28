@@ -138,13 +138,16 @@ class WebHomeController extends GetxController {
     _loadFavoritesListPrefs();
     _loadSearchHistoryPrefs();
     final args = Get.arguments;
-    if (args is Map<String, dynamic> && args['search'] is String) {
+    final appliedQuickSearch = _applyQuickSearchArgument(args);
+    if (!appliedQuickSearch &&
+        args is Map<String, dynamic> &&
+        args['search'] is String) {
       final searchQuery = args['search'] as String;
       searchController.text = searchQuery;
       _currentSearch = searchQuery;
       currentSearchText.value = searchQuery;
     }
-    if (_currentSearch.trim().isNotEmpty) {
+    if (appliedQuickSearch || _currentSearch.trim().isNotEmpty) {
       _loadHomePage();
     } else {
       _loadInitialSection();
@@ -154,6 +157,47 @@ class WebHomeController extends GetxController {
     loadQuickSearches();
     scrollController.addListener(_onScroll);
     unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+  }
+
+  bool _applyQuickSearchArgument(dynamic args) {
+    if (args is! Map<String, dynamic>) {
+      return false;
+    }
+    final rawConfig = args['quickSearchConfig'];
+    if (rawConfig == null) {
+      return false;
+    }
+    try {
+      final config = rawConfig is String
+          ? jsonDecode(rawConfig) as Map<String, dynamic>
+          : Map<String, dynamic>.from(rawConfig as Map);
+      final keyword = config['keyword'] as String? ?? '';
+      searchController.text = keyword;
+      _currentSearch = keyword;
+      currentSearchText.value = keyword;
+      categoryFilter.value = (config['categoryFilter'] as num?)?.toInt() ?? 0;
+      minimumRating.value = (config['minimumRating'] as num?)?.toInt() ?? 0;
+      searchInName.value = config['searchInName'] as bool? ?? true;
+      searchInTags.value = config['searchInTags'] as bool? ?? true;
+      searchInDesc.value = config['searchInDesc'] as bool? ?? false;
+      showExpunged.value = config['showExpunged'] as bool? ?? false;
+      onlyShowGalleriesWithTorrents.value =
+          config['onlyShowGalleriesWithTorrents'] as bool? ?? false;
+      pageAtLeast.value = (config['pageAtLeast'] as num?)?.toInt();
+      pageAtMost.value = (config['pageAtMost'] as num?)?.toInt();
+      final lang = config['filterLanguage'] as String?;
+      filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
+      disableFilterForLanguage.value =
+          config['disableFilterForLanguage'] as bool? ?? false;
+      disableFilterForUploader.value =
+          config['disableFilterForUploader'] as bool? ?? false;
+      disableFilterForTags.value =
+          config['disableFilterForTags'] as bool? ?? false;
+      persistAdvancedSearchSettings();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   void _loadAdvancedSearchFromStorage() {
