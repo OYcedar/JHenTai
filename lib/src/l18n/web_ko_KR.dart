@@ -191,6 +191,9 @@ class WebKoKR {
       'reader.wheelInvertPageTurn': '휠 페이지 넘김 방향 반전',
       'reader.wheelInvertPageTurnSubtitle':
           '휠/트랙패드 스크롤 시 다음 페이지와 이전 페이지에 대응하는 방향을 바꿉니다.',
+      'reader.wheelScrollSpeed': '휠 스크롤 속도',
+      'reader.wheelScrollSpeedSubtitle':
+          '세로 및 너비 맞춤 뷰어 모드에서 마우스 휠 스크롤 속도를 조절합니다.',
 
       // downloads
       'downloads.title': '다운로드',

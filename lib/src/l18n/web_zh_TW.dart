@@ -191,6 +191,8 @@ class WebZhTW {
           '直向與適應寬度模式一律捲動清單；本選項僅適用於由左至右、由右至左與雙頁模式。',
       'reader.wheelInvertPageTurn': '反轉滾輪翻頁方向',
       'reader.wheelInvertPageTurnSubtitle': '交換滾輪／觸控板捲動時「下一頁」與「上一頁」的對應方向。',
+      'reader.wheelScrollSpeed': '滑鼠滾輪速度',
+      'reader.wheelScrollSpeedSubtitle': '控制直向與適應寬度閱讀模式中的滑鼠滾輪捲動速度。',
 
       // downloads
       'downloads.title': '下載',

@@ -203,6 +203,9 @@ class WebPtBR {
       'reader.wheelInvertPageTurn': 'Inverter direção da roda (página)',
       'reader.wheelInvertPageTurnSubtitle':
           'Troca qual direção de rolagem da roda/trackpad vai para a próxima vs página anterior.',
+      'reader.wheelScrollSpeed': 'Velocidade da roda',
+      'reader.wheelScrollSpeedSubtitle':
+          'Controla a velocidade da roda do mouse nos modos vertical e ajustar à largura.',
 
       // downloads
       'downloads.title': 'Baixados',

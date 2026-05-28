@@ -201,6 +201,9 @@ class WebRuRU {
       'reader.wheelInvertPageTurn': 'Инвертировать листание колёсиком',
       'reader.wheelInvertPageTurnSubtitle':
           'Меняет, какое направление прокрутки колёсика/тачпада перелистывает вперёд или назад.',
+      'reader.wheelScrollSpeed': 'Скорость прокрутки колёсиком',
+      'reader.wheelScrollSpeedSubtitle':
+          'Управляет скоростью прокрутки мышью в вертикальном режиме и режиме по ширине.',
 
       // downloads
       'downloads.title': 'Загрузки',

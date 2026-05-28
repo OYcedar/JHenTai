@@ -189,6 +189,8 @@ class WebZhCN {
           '竖向与适应宽度模式始终滚动列表；本选项仅作用于从左到右、从右到左与双页模式。',
       'reader.wheelInvertPageTurn': '反转滚轮翻页方向',
       'reader.wheelInvertPageTurnSubtitle': '交换滚轮/触控板滚动时「下一页」与「上一页」的对应方向。',
+      'reader.wheelScrollSpeed': '鼠标滚轮速度',
+      'reader.wheelScrollSpeedSubtitle': '控制竖向与适应宽度阅读模式中的鼠标滚轮滚动速度。',
 
       // downloads
       'downloads.title': '下载',

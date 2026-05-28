@@ -201,6 +201,9 @@ class WebEnUS {
       'reader.wheelInvertPageTurn': 'Invert wheel page turn',
       'reader.wheelInvertPageTurnSubtitle':
           'Swaps which scroll direction goes to the next vs previous page (wheel / trackpad).',
+      'reader.wheelScrollSpeed': 'Wheel scroll speed',
+      'reader.wheelScrollSpeedSubtitle':
+          'Controls mouse wheel speed in vertical and fit-width reader modes.',
 
       // downloads
       'downloads.title': 'Downloads',

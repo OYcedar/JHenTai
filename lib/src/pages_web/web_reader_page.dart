@@ -246,6 +246,9 @@ class WebReaderController extends GetxController {
   /// When wheel turns pages, invert next/prev mapping (see [kWebReaderWheelInvertPageKey]).
   final wheelInvertPageTurn = false.obs;
 
+  /// Multiplier for mouse wheel scrolling in vertical / fit-width continuous modes.
+  final wheelScrollSpeed = 5.0.obs;
+
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
   final autoModeStyle = 'turnPage'.obs;
@@ -588,7 +591,35 @@ class WebReaderController extends GetxController {
       final inv =
           await backendApiClient.getSetting(kWebReaderWheelInvertPageKey);
       wheelInvertPageTurn.value = webReaderWheelInvertPageFromStorage(inv);
+      final speed =
+          await backendApiClient.getSetting(kWebReaderWheelScrollSpeedKey);
+      wheelScrollSpeed.value = webReaderWheelScrollSpeedFromStorage(speed);
     } catch (_) {}
+  }
+
+  void handleContinuousWheelScroll(PointerScrollEvent event) {
+    if (!scrollController.hasClients) {
+      return;
+    }
+    final speed = wheelScrollSpeed.value.clamp(0.5, 12.0);
+    final delta = event.scrollDelta.dy * speed;
+    if (delta == 0) {
+      return;
+    }
+    GestureBinding.instance.pointerSignalResolver.register(event, (_) {
+      final position = scrollController.position;
+      final target = (scrollController.offset + delta)
+          .clamp(0.0, position.maxScrollExtent);
+      if ((target - scrollController.offset).abs() < 0.5) {
+        return;
+      }
+      scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+      );
+    });
+    GestureBinding.instance.pointerSignalResolver.resolve(event);
   }
 
   Future<void> _restoreProgress() async {
@@ -1512,26 +1543,29 @@ class _ReaderBody extends StatelessWidget {
             behavior: _webReaderScrollBehavior,
             child: Obx(() => _maybeBuildReaderScrollbar(
                   controller: controller,
-                  child: ListView.builder(
-                    controller: controller.scrollController,
-                    itemCount: controller.totalPages.value,
-                    cacheExtent: math.max(
-                      MediaQuery.sizeOf(context).height,
-                      MediaQuery.sizeOf(context).height *
-                          (controller.cachePreloadPages + 1),
+                  child: _ContinuousWheelSpeedListener(
+                    controller: controller,
+                    child: ListView.builder(
+                      controller: controller.scrollController,
+                      itemCount: controller.totalPages.value,
+                      cacheExtent: math.max(
+                        MediaQuery.sizeOf(context).height,
+                        MediaQuery.sizeOf(context).height *
+                            (controller.cachePreloadPages + 1),
+                      ),
+                      itemBuilder: (context, index) => Obx(() => Padding(
+                            key: controller._imageItemKey(index),
+                            padding: EdgeInsets.only(
+                              bottom: index == controller.totalPages.value - 1
+                                  ? 0
+                                  : controller.imageSpacing.value.toDouble(),
+                            ),
+                            child: _ImagePage(
+                                controller: controller,
+                                index: index,
+                                isVertical: true),
+                          )),
                     ),
-                    itemBuilder: (context, index) => Obx(() => Padding(
-                          key: controller._imageItemKey(index),
-                          padding: EdgeInsets.only(
-                            bottom: index == controller.totalPages.value - 1
-                                ? 0
-                                : controller.imageSpacing.value.toDouble(),
-                          ),
-                          child: _ImagePage(
-                              controller: controller,
-                              index: index,
-                              isVertical: true),
-                        )),
                   ),
                 )),
           ),
@@ -1563,27 +1597,30 @@ class _ReaderBody extends StatelessWidget {
             behavior: _webReaderScrollBehavior,
             child: Obx(() => _maybeBuildReaderScrollbar(
                   controller: controller,
-                  child: ListView.builder(
-                    controller: controller.scrollController,
-                    itemCount: controller.totalPages.value,
-                    cacheExtent: math.max(
-                      MediaQuery.sizeOf(context).height,
-                      MediaQuery.sizeOf(context).height *
-                          (controller.cachePreloadPages + 1),
+                  child: _ContinuousWheelSpeedListener(
+                    controller: controller,
+                    child: ListView.builder(
+                      controller: controller.scrollController,
+                      itemCount: controller.totalPages.value,
+                      cacheExtent: math.max(
+                        MediaQuery.sizeOf(context).height,
+                        MediaQuery.sizeOf(context).height *
+                            (controller.cachePreloadPages + 1),
+                      ),
+                      itemBuilder: (context, index) => Obx(() => Padding(
+                            key: controller._imageItemKey(index),
+                            padding: EdgeInsets.only(
+                              bottom: index == controller.totalPages.value - 1
+                                  ? 0
+                                  : controller.imageSpacing.value.toDouble(),
+                            ),
+                            child: _ImagePage(
+                                controller: controller,
+                                index: index,
+                                isVertical: true,
+                                fitWidth: true),
+                          )),
                     ),
-                    itemBuilder: (context, index) => Obx(() => Padding(
-                          key: controller._imageItemKey(index),
-                          padding: EdgeInsets.only(
-                            bottom: index == controller.totalPages.value - 1
-                                ? 0
-                                : controller.imageSpacing.value.toDouble(),
-                          ),
-                          child: _ImagePage(
-                              controller: controller,
-                              index: index,
-                              isVertical: true,
-                              fitWidth: true),
-                        )),
                   ),
                 )),
           ),
@@ -1656,6 +1693,28 @@ Widget _maybeBuildReaderScrollbar({
     thumbVisibility: true,
     child: child,
   );
+}
+
+class _ContinuousWheelSpeedListener extends StatelessWidget {
+  final WebReaderController controller;
+  final Widget child;
+
+  const _ContinuousWheelSpeedListener({
+    required this.controller,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerSignal: (signal) {
+        if (signal is PointerScrollEvent) {
+          controller.handleContinuousWheelScroll(signal);
+        }
+      },
+      child: child,
+    );
+  }
 }
 
 class _DoubleTapZoomImage extends StatefulWidget {
