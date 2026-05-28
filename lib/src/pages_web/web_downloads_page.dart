@@ -1050,6 +1050,7 @@ class _ArchiveTaskGridCard extends StatelessWidget {
       statusName: 'downloads.aStatus$status'.tr,
       isCompleted: isCompleted,
       isArchive: true,
+      isOriginalArchive: task['isOriginal'] == true,
       progressLabel: total > 0
           ? '${_formatBytes(downloaded)} / ${_formatBytes(total)}'
           : '',
@@ -1079,6 +1080,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
   final String statusName;
   final bool isCompleted;
   final bool isArchive;
+  final bool isOriginalArchive;
   final String progressLabel;
   final double? progressValue;
   final String readRoute;
@@ -1093,6 +1095,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
     required this.statusName,
     required this.isCompleted,
     this.isArchive = false,
+    this.isOriginalArchive = false,
     required this.progressLabel,
     required this.progressValue,
     required this.readRoute,
@@ -1248,6 +1251,11 @@ class _DownloadTaskGridCard extends StatelessWidget {
                       ),
                       if (groupName != 'default')
                         _TinyLabel(label: groupName, color: Colors.blueGrey),
+                      if (isArchive && isOriginalArchive)
+                        _TinyLabel(
+                          label: 'originalImage'.tr,
+                          color: Colors.teal,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 6),
@@ -1691,6 +1699,7 @@ class _ArchiveTaskCard extends StatelessWidget {
     final progress = total > 0 ? downloaded / total : 0.0;
     final statusName = 'downloads.aStatus$status'.tr;
     final isCompleted = status == 6;
+    final isOriginal = task['isOriginal'] == true;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -1776,6 +1785,13 @@ class _ArchiveTaskCard extends StatelessWidget {
                             isCompleted: isCompleted,
                             isArchive: true),
                         const SizedBox(width: 8),
+                        if (isOriginal) ...[
+                          _TinyLabel(
+                            label: 'originalImage'.tr,
+                            color: Colors.teal,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 5, vertical: 1),
