@@ -530,6 +530,7 @@ class WebPtBR {
       'reader.autoStop': 'Parar Leitura Automática',
 
       'enablePageTurnAnime': 'Ativar animação de virar página',
+      'enableDoubleTapToScaleUp': 'Ativar zoom com toque duplo',
       'reverseTurnPageDirection': 'Inverter direção ao tocar para virar página',
       'disablePageTurningOnTap': 'Desativar toque para virar página',
       // block rules

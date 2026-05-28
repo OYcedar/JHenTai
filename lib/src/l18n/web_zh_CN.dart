@@ -495,6 +495,7 @@ class WebZhCN {
       'reader.autoStop': '停止自动阅读',
 
       'enablePageTurnAnime': '开启翻页动画',
+      'enableDoubleTapToScaleUp': '允许双击放大图片',
       'reverseTurnPageDirection': '反转点击翻页方向',
       'disablePageTurningOnTap': '禁用点击翻页手势',
       // block rules

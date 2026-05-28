@@ -528,6 +528,7 @@ class WebRuRU {
       'reader.autoStop': 'Остановить автопролистывание',
 
       'enablePageTurnAnime': 'Включить анимацию перелистывания',
+      'enableDoubleTapToScaleUp': 'Включить увеличение двойным нажатием',
       'reverseTurnPageDirection': 'Инвертировать перелистывание касанием',
       'disablePageTurningOnTap': 'Отключить перелистывание касанием',
       // block rules

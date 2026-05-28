@@ -533,6 +533,7 @@ class WebEnUS {
       'reader.autoStop': 'Stop Auto Read',
 
       'enablePageTurnAnime': 'Enable page turn animation',
+      'enableDoubleTapToScaleUp': 'Enable double-tap zoom',
       'reverseTurnPageDirection': 'Reverse tap page turning direction',
       'disablePageTurningOnTap': 'Disable tap-to-turn-page',
       // block rules

@@ -8,5 +8,6 @@ const kWebShowScrollBarKey = 'web_show_scroll_bar';
 const kWebShowStatusInfoKey = 'web_show_status_info';
 const kWebImageSpacingKey = 'web_image_spacing';
 const kWebEnablePageTurnAnimationKey = 'web_enable_page_turn_animation';
+const kWebEnableDoubleTapZoomKey = 'web_enable_double_tap_zoom';
 const kWebReverseTapPageTurnKey = 'web_reverse_tap_page_turn';
 const kWebDisableTapPageTurnKey = 'web_disable_tap_page_turn';

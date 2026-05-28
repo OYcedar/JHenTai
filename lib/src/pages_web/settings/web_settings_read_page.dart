@@ -111,6 +111,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
   final enablePageTurnAnimation = true.obs;
+  final enableDoubleTapZoom = true.obs;
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
   final imageSpacing = 0.obs;
@@ -147,6 +148,11 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
           await backendApiClient.getSetting(kWebEnablePageTurnAnimationKey);
       if (animation != null) {
         enablePageTurnAnimation.value = animation != 'false';
+      }
+      final doubleTap =
+          await backendApiClient.getSetting(kWebEnableDoubleTapZoomKey);
+      if (doubleTap != null) {
+        enableDoubleTapZoom.value = doubleTap != 'false';
       }
       final reverse =
           await backendApiClient.getSetting(kWebReverseTapPageTurnKey);
@@ -317,6 +323,17 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       enablePageTurnAnimation.value = v;
                       backendApiClient
                           .putSetting(kWebEnablePageTurnAnimationKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('enableDoubleTapToScaleUp'.tr),
+                    value: enableDoubleTapZoom.value,
+                    onChanged: (v) {
+                      enableDoubleTapZoom.value = v;
+                      backendApiClient
+                          .putSetting(kWebEnableDoubleTapZoomKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,

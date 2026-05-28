@@ -255,6 +255,7 @@ class WebReaderController extends GetxController {
   final showStatusInfo = true.obs;
   final imageSpacing = 0.obs;
   final enablePageTurnAnimation = true.obs;
+  final enableDoubleTapZoom = true.obs;
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
   Timer? _autoTimer;
@@ -458,6 +459,11 @@ class WebReaderController extends GetxController {
           await backendApiClient.getSetting(kWebEnablePageTurnAnimationKey);
       if (animation != null) {
         enablePageTurnAnimation.value = animation != 'false';
+      }
+      final doubleTap =
+          await backendApiClient.getSetting(kWebEnableDoubleTapZoomKey);
+      if (doubleTap != null) {
+        enableDoubleTapZoom.value = doubleTap != 'false';
       }
       final reverse =
           await backendApiClient.getSetting(kWebReverseTapPageTurnKey);
@@ -1559,10 +1565,12 @@ class _DoubleTapZoomImageState extends State<_DoubleTapZoomImage>
           widget.controller.wheelAction.value == WebReaderWheelAction.zoom &&
               dir != ReadDirection.vertical &&
               dir != ReadDirection.fitWidth;
+      final enableDoubleTapZoom = widget.controller.enableDoubleTapZoom.value;
 
       final viewer = GestureDetector(
-        onDoubleTapDown: (d) => _doubleTapDetails = d,
-        onDoubleTap: _handleDoubleTap,
+        onDoubleTapDown:
+            enableDoubleTapZoom ? (d) => _doubleTapDetails = d : null,
+        onDoubleTap: enableDoubleTapZoom ? _handleDoubleTap : null,
         child: InteractiveViewer(
           transformationController: _transformationController,
           panEnabled: _pannable,
