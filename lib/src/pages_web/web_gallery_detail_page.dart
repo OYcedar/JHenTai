@@ -332,8 +332,8 @@ class WebGalleryDetailController extends GetxController {
   /// Inline ARGB from gallery HTML (`tagsRich`), same order as [tags] rows.
   ({int? colorArgb, int? backgroundArgb})? tagHtmlStyleArgb(
       String namespace, String tagName) {
-    final list = tagsRich[namespace];
-    if (list == null) return null;
+    final m = tagRichMeta(namespace, tagName);
+    if (m == null) return null;
     int? asArgb(dynamic v) {
       if (v == null) return null;
       if (v is int) return v;
@@ -341,15 +341,33 @@ class WebGalleryDetailController extends GetxController {
       return int.tryParse(v.toString());
     }
 
+    return (
+      colorArgb: asArgb(m['color']),
+      backgroundArgb: asArgb(m['backgroundColor']),
+    );
+  }
+
+  Map<String, dynamic>? tagRichMeta(String namespace, String tagName) {
+    final list = tagsRich[namespace];
+    if (list == null) return null;
     for (final m in list) {
       if (m['name'] == tagName) {
-        return (
-          colorArgb: asArgb(m['color']),
-          backgroundArgb: asArgb(m['backgroundColor']),
-        );
+        return m;
       }
     }
     return null;
+  }
+
+  void updateTagVoteStatus(String namespace, String tagName, int vote) {
+    final m = tagRichMeta(namespace, tagName);
+    if (m == null) return;
+    final current = m['voteStatus'] as String? ?? 'none';
+    if (vote > 0) {
+      m['voteStatus'] = current == 'up' ? 'none' : 'up';
+    } else {
+      m['voteStatus'] = current == 'down' ? 'none' : 'down';
+    }
+    tagsRich.refresh();
   }
 
   /// [slotIndex] 0–9. If already in that folder, removes from favorites (EH behavior).
@@ -1875,6 +1893,9 @@ class WebGalleryDetailPage extends StatelessWidget {
                         final showTranslated = translated != tag;
                         final html =
                             controller.tagHtmlStyleArgb(entry.key, tag);
+                        final rich = controller.tagRichMeta(entry.key, tag);
+                        final voteStatus =
+                            rich?['voteStatus'] as String? ?? 'none';
                         final htmlBg = html?.backgroundArgb;
                         final htmlFg = html?.colorArgb;
                         final watchedBgArgb =
@@ -1918,7 +1939,10 @@ class WebGalleryDetailPage extends StatelessWidget {
                             message: showTranslated ? tag : '',
                             child: ActionChip(
                               label: Text(
-                                showTranslated ? translated : tag,
+                                _tagLabelWithVoteStatus(
+                                  showTranslated ? translated : tag,
+                                  voteStatus,
+                                ),
                                 style: TextStyle(fontSize: 12, color: labelFg),
                               ),
                               backgroundColor: chipBg,
@@ -2059,6 +2083,7 @@ class WebGalleryDetailPage extends StatelessWidget {
       if (result['success'] == false) {
         throw result['message'] ?? result['error'] ?? 'Tag vote failed';
       }
+      controller.updateTagVoteStatus(namespace, tag, vote);
       Get.snackbar(
         'tagVote.success'.tr,
         vote > 0
@@ -2951,6 +2976,14 @@ Color _namespaceColor(String namespace) {
     'reclass' => Colors.red,
     'other' => Colors.grey,
     _ => Colors.grey.shade600,
+  };
+}
+
+String _tagLabelWithVoteStatus(String label, String voteStatus) {
+  return switch (voteStatus) {
+    'up' => '$label↑',
+    'down' => '$label↓',
+    _ => label,
   };
 }
 

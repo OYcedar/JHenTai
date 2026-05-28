@@ -1167,6 +1167,16 @@ class EHClient {
         final m = <String, dynamic>{'name': name};
         if (cArgb != null) m['color'] = cArgb;
         if (bgArgb != null) m['backgroundColor'] = bgArgb;
+        m['tagStatus'] = a.parent?.classes.contains('gtl') == true
+            ? 'skepticism'
+            : a.parent?.classes.contains('gtw') == true
+                ? 'incorrect'
+                : 'confidence';
+        m['voteStatus'] = a.classes.contains('tup')
+            ? 'up'
+            : a.classes.contains('tdn')
+                ? 'down'
+                : 'none';
         tagRich.add(m);
       }
       if (tagValues.isNotEmpty) {
