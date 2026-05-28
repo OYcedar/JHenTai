@@ -1287,11 +1287,15 @@ class WebGalleryDetailPage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Obx(() => Text(controller.title.value,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold))),
+        Obx(() => _SelectableSearchText(
+              text: controller.title.value,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
+              maxLines: 5,
+              onSearch: _searchKeyword,
+            )),
         Obx(() {
           final titleJpn = controller.titleJpn.value.trim();
           if (!WebPreferenceSettings.showAllGalleryTitles || titleJpn.isEmpty) {
@@ -1299,11 +1303,15 @@ class WebGalleryDetailPage extends StatelessWidget {
           }
           return Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Text(titleJpn,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyLarge
-                    ?.copyWith(color: Colors.grey)),
+            child: _SelectableSearchText(
+              text: titleJpn,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.grey),
+              maxLines: 3,
+              onSearch: _searchKeyword,
+            ),
           );
         }),
         const SizedBox(height: 12),
@@ -2238,6 +2246,12 @@ class WebGalleryDetailPage extends StatelessWidget {
     if (value.isEmpty) return;
     Get.offAllNamed('/web/home',
         arguments: {'search': _webUploaderSearchQuery(value)});
+  }
+
+  void _searchKeyword(String keyword) {
+    final value = keyword.trim();
+    if (value.isEmpty) return;
+    Get.offAllNamed('/web/home', arguments: {'search': value});
   }
 
   Future<void> _voteTag(String namespace, String tag, int vote) async {
@@ -3737,6 +3751,49 @@ class _WebFavoriteFolderDialogState extends State<_WebFavoriteFolderDialog> {
           child: Text('common.cancel'.tr),
         ),
       ],
+    );
+  }
+}
+
+class _SelectableSearchText extends StatelessWidget {
+  final String text;
+  final TextStyle? style;
+  final int maxLines;
+  final ValueChanged<String> onSearch;
+
+  const _SelectableSearchText({
+    required this.text,
+    required this.style,
+    required this.maxLines,
+    required this.onSearch,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SelectableText(
+      text,
+      minLines: 1,
+      maxLines: maxLines,
+      style: style,
+      contextMenuBuilder: (context, editableTextState) {
+        final toolbar = AdaptiveTextSelectionToolbar.buttonItems(
+          buttonItems: editableTextState.contextMenuButtonItems,
+          anchors: editableTextState.contextMenuAnchors,
+        );
+        final selection = editableTextState.currentTextEditingValue.selection;
+        if (!selection.isCollapsed) {
+          toolbar.buttonItems?.add(
+            ContextMenuButtonItem(
+              label: 'tagVote.search'.tr,
+              onPressed: () {
+                ContextMenuController.removeAny();
+                onSearch(selection.textInside(text));
+              },
+            ),
+          );
+        }
+        return toolbar;
+      },
     );
   }
 }
