@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:web/web.dart' as web;
 
 class WebLocalController extends GetxController {
+  static const viewModeStorageKey = 'jh_web_local_view_mode';
+
   final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
   final roots = <String>[].obs;
   final currentPath = ''.obs;
   final searchQuery = ''.obs;
+  final viewMode = 'list'.obs;
   final groupExpanded = <String, bool>{}.obs;
   final isLoading = true.obs;
   final isScanning = false.obs;
@@ -17,6 +21,10 @@ class WebLocalController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    final savedViewMode = web.window.localStorage.getItem(viewModeStorageKey);
+    if (savedViewMode == 'grid' || savedViewMode == 'list') {
+      viewMode.value = savedViewMode!;
+    }
     _loadGalleries();
   }
 
@@ -141,6 +149,12 @@ class WebLocalController extends GetxController {
   void toggleGroup(String group) {
     groupExpanded[group] = !(groupExpanded[group] ?? true);
     groupExpanded.refresh();
+  }
+
+  void toggleViewMode() {
+    final next = viewMode.value == 'grid' ? 'list' : 'grid';
+    viewMode.value = next;
+    web.window.localStorage.setItem(viewModeStorageKey, next);
   }
 
   void enterDirectory(String path) {
@@ -285,6 +299,13 @@ class WebLocalPage extends GetView<WebLocalController> {
                   )),
         title: Text('local.title'.tr),
         actions: [
+          Obx(() => IconButton(
+                icon: Icon(controller.viewMode.value == 'grid'
+                    ? Icons.view_list
+                    : Icons.grid_view),
+                tooltip: 'listMode.toggle'.tr,
+                onPressed: controller.toggleViewMode,
+              )),
           Obx(() => controller.isScanning.value
               ? const Padding(
                   padding: EdgeInsets.all(16),
@@ -386,6 +407,14 @@ class WebLocalPage extends GetView<WebLocalController> {
         return _buildDirectoryBrowser(context);
       }
 
+      if (controller.viewMode.value == 'grid') {
+        final items = controller.filteredGalleries;
+        if (items.isEmpty) {
+          return Center(child: Text('home.noGalleries'.tr));
+        }
+        return _buildGalleryGrid(context, items);
+      }
+
       final groups = controller.groupedGalleries;
       if (groups.isEmpty) {
         return Center(child: Text('home.noGalleries'.tr));
@@ -407,6 +436,61 @@ class WebLocalPage extends GetView<WebLocalController> {
 
     if (dirs.isEmpty && galleries.isEmpty) {
       return Center(child: Text('home.noGalleries'.tr));
+    }
+
+    if (controller.viewMode.value == 'grid') {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (currentPath.isNotEmpty)
+            _buildCurrentDirectoryHeader(context, currentPath),
+          Expanded(
+            child: LayoutBuilder(builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final columns = width > 1100
+                  ? 6
+                  : width > 850
+                      ? 5
+                      : width > 650
+                          ? 4
+                          : width > 420
+                              ? 3
+                              : 2;
+              return GridView(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  childAspectRatio: 0.78,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                children: [
+                  if (currentPath.isNotEmpty)
+                    _buildDirectoryGridTile(
+                      context,
+                      title: 'local.parentDirectory'.tr,
+                      subtitle: WebLocalController._parentPath(currentPath),
+                      icon: Icons.keyboard_return,
+                      onTap: controller.goUpDirectory,
+                    ),
+                  for (final dir in dirs)
+                    _buildDirectoryGridTile(
+                      context,
+                      title: WebLocalController._displayPath(dir),
+                      subtitle: dir,
+                      icon: controller.roots.contains(dir)
+                          ? Icons.folder_special
+                          : Icons.folder_open,
+                      onTap: () => controller.enterDirectory(dir),
+                    ),
+                  for (final gallery in galleries)
+                    _buildGalleryGridTile(context, gallery),
+                ],
+              );
+            }),
+          ),
+        ],
+      );
     }
 
     return ListView(
@@ -472,6 +556,49 @@ class WebLocalPage extends GetView<WebLocalController> {
     );
   }
 
+  Widget _buildDirectoryGridTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 46, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildGalleryGroup(
     BuildContext context,
     String group,
@@ -526,6 +653,86 @@ class WebLocalPage extends GetView<WebLocalController> {
     );
   }
 
+  Widget _buildGalleryGrid(
+      BuildContext context, List<Map<String, dynamic>> items) {
+    return LayoutBuilder(builder: (context, constraints) {
+      final width = constraints.maxWidth;
+      final columns = width > 1200
+          ? 6
+          : width > 900
+              ? 5
+              : width > 680
+                  ? 4
+                  : width > 460
+                      ? 3
+                      : 2;
+      return GridView.builder(
+        padding: const EdgeInsets.all(10),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
+          childAspectRatio: 0.62,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+        ),
+        itemCount: items.length,
+        itemBuilder: (context, index) =>
+            _buildGalleryGridTile(context, items[index]),
+      );
+    });
+  }
+
+  Widget _buildGalleryGridTile(
+      BuildContext context, Map<String, dynamic> gallery) {
+    final title = gallery['title'] as String? ?? '';
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => controller.openGallery(gallery),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: _buildGalleryCoverLarge(context, gallery)),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+              child: Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 6, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'common.images'
+                          .trParams({'count': '${gallery['imageCount'] ?? 0}'}),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'common.delete'.tr,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        _confirmDeleteLocalGallery(context, gallery),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGalleryCover(Map<String, dynamic> gallery) {
     final coverPath = gallery['coverPath'] as String? ?? '';
     if (coverPath.isEmpty) {
@@ -545,6 +752,23 @@ class WebLocalPage extends GetView<WebLocalController> {
         fit: BoxFit.cover,
         errorIconSize: 32,
       ),
+    );
+  }
+
+  Widget _buildGalleryCoverLarge(
+      BuildContext context, Map<String, dynamic> gallery) {
+    final coverPath = gallery['coverPath'] as String? ?? '';
+    if (coverPath.isEmpty) {
+      return ColoredBox(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: const Center(child: Icon(Icons.photo_library, size: 48)),
+      );
+    }
+
+    return WebProxiedImage(
+      sourceUrl: backendApiClient.imageFileUrl(coverPath),
+      fit: BoxFit.cover,
+      errorIconSize: 40,
     );
   }
 
