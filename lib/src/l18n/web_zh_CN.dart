@@ -16,6 +16,10 @@ class WebZhCN {
       'common.unknown': '未知',
       'common.images': '@count 张图片',
       'common.pages': '@count 页',
+      'common.open': '打开',
+      'dawnOfaNewDay': '黎明之时',
+      'encounterMonster': '你遭遇了一只怪兽！',
+      'encounterMonsterHint': '点击跳转至 HentaiVerse 战斗。',
 
       'share': '分享',
       'save': '保存',
@@ -605,6 +609,8 @@ class WebZhCN {
       'always': '总是',
       'preloadGalleryCover': '预载画廊封面',
       'preloadGalleryCoverHint': '预先加载还未显示在页面上的画廊封面',
+      'showDawnInfo': '展示黎明之时事件',
+      'showEncounterMonster': '展示 HV 遭遇战事件',
 
       // home enhancements
       'home.scrollToTop': '回到顶部',

@@ -937,6 +937,13 @@ class BackendApiClient {
     return (response.data['results'] as List?) ?? [];
   }
 
+  // --- EH events ---
+
+  Future<Map<String, dynamic>> checkEvents() async {
+    final response = await _dio.get('/api/event/check');
+    return response.data as Map<String, dynamic>? ?? {};
+  }
+
   // --- Quick search ---
 
   Future<List<dynamic>> listQuickSearches() async {

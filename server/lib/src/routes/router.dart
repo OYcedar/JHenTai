@@ -16,6 +16,7 @@ import 'auth_routes.dart';
 import 'block_rule_routes.dart';
 import 'comment_routes.dart';
 import 'download_routes.dart';
+import 'event_routes.dart';
 import 'favorite_routes.dart';
 import 'gallery_routes.dart';
 import 'history_routes.dart';
@@ -69,6 +70,7 @@ class AppRouter {
     router.mount('/api/history/', HistoryRoutes().router.call);
     router.mount('/api/search-history/', SearchHistoryRoutes().router.call);
     router.mount('/api/comment/', CommentRoutes(ehClient).router.call);
+    router.mount('/api/event/', EventRoutes(ehClient).router.call);
     router.mount(
         '/api/tag/', TagRoutes(tagTranslationService, ehClient).router.call);
     router.mount('/api/usertags/', UsertagRoutes(ehClient).router.call);

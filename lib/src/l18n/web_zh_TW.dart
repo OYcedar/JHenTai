@@ -16,6 +16,10 @@ class WebZhTW {
       'common.unknown': '未知',
       'common.images': '@count 張圖片',
       'common.pages': '@count 頁',
+      'common.open': '開啟',
+      'dawnOfaNewDay': '黎明之時',
+      'encounterMonster': '你遭遇了一隻怪獸！',
+      'encounterMonsterHint': '點擊跳轉至 HentaiVerse 戰鬥。',
 
       'share': '分享',
       'save': '儲存',
@@ -600,6 +604,8 @@ class WebZhTW {
       'always': '總是',
       'preloadGalleryCover': '預先載入畫廊封面',
       'preloadGalleryCoverHint': '預先載入還未顯示在頁面上的畫廊封面',
+      'showDawnInfo': '顯示黎明之時事件',
+      'showEncounterMonster': '顯示 HV 遭遇戰事件',
 
       // home enhancements
       'home.scrollToTop': '回到頂部',

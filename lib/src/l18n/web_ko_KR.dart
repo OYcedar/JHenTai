@@ -16,6 +16,10 @@ class WebKoKR {
       'common.unknown': '알 수 없음',
       'common.images': '@count장',
       'common.pages': '@count 페이지',
+      'common.open': 'Open',
+      'dawnOfaNewDay': 'It is the dawn of a new day!',
+      'encounterMonster': 'You have encountered a monster!',
+      'encounterMonsterHint': 'Click to fight in the HentaiVerse.',
 
       'share': '공유',
       'save': '저장',
@@ -621,6 +625,8 @@ class WebKoKR {
       'preloadGalleryCover': 'Preload gallery cover',
       'preloadGalleryCoverHint':
           'Preload covers for galleries that are not displayed yet',
+      'showDawnInfo': 'Show new dawn event',
+      'showEncounterMonster': 'Show HentaiVerse encounter event',
 
       // home enhancements
       'home.scrollToTop': '맨 위로',

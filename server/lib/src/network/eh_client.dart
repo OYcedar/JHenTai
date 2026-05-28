@@ -409,6 +409,18 @@ class EHClient {
     }
   }
 
+  Future<Map<String, dynamic>> checkEvents() async {
+    final response = await _dio.get('$baseUrl/news.php');
+    final doc = html_parser.parse(response.data as String);
+    final eventPane = doc.querySelector('#eventpane');
+    if (eventPane == null) {
+      return {'dawnInfo': null, 'hvUrl': null};
+    }
+    final hvUrl = eventPane.querySelector('div > a')?.attributes['href'];
+    final dawnInfo = eventPane.querySelector('div > p:nth-child(2)')?.text;
+    return {'dawnInfo': dawnInfo, 'hvUrl': hvUrl};
+  }
+
   // --- Login ---
 
   Future<Map<String, dynamic>> login(String userName, String passWord) async {

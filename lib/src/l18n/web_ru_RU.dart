@@ -16,6 +16,10 @@ class WebRuRU {
       'common.unknown': 'Неизвестно',
       'common.images': '@count изобр.',
       'common.pages': '@count стр.',
+      'common.open': 'Open',
+      'dawnOfaNewDay': 'It is the dawn of a new day!',
+      'encounterMonster': 'You have encountered a monster!',
+      'encounterMonsterHint': 'Click to fight in the HentaiVerse.',
 
       'share': 'Поделиться',
       'save': 'Сохранить',
@@ -638,6 +642,8 @@ class WebRuRU {
       'preloadGalleryCover': 'Preload gallery cover',
       'preloadGalleryCoverHint':
           'Preload covers for galleries that are not displayed yet',
+      'showDawnInfo': 'Show new dawn event',
+      'showEncounterMonster': 'Show HentaiVerse encounter event',
 
       // home enhancements
       'home.scrollToTop': 'Наверх',

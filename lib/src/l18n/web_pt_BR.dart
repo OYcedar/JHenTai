@@ -16,6 +16,10 @@ class WebPtBR {
       'common.unknown': 'Desconhecido',
       'common.images': '@count imagens',
       'common.pages': '@count páginas',
+      'common.open': 'Open',
+      'dawnOfaNewDay': 'It is the dawn of a new day!',
+      'encounterMonster': 'You have encountered a monster!',
+      'encounterMonsterHint': 'Click to fight in the HentaiVerse.',
 
       'share': 'Compartilhar',
       'save': 'Salvar',
@@ -641,6 +645,8 @@ class WebPtBR {
       'preloadGalleryCover': 'Preload gallery cover',
       'preloadGalleryCoverHint':
           'Preload covers for galleries that are not displayed yet',
+      'showDawnInfo': 'Show new dawn event',
+      'showEncounterMonster': 'Show HentaiVerse encounter event',
 
       // home enhancements
       'home.scrollToTop': 'Voltar ao Topo',

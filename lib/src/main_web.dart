@@ -35,6 +35,7 @@ import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_stats_page.dart';
 import 'package:jhentai/src/pages_web/web_tag_sets_page.dart';
 import 'package:jhentai/src/pages_web/web_thumbnails_page.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:web/web.dart' as web;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -51,6 +52,7 @@ void main() async {
   Get.put(WebLayoutController());
   Get.put(WebDownloadService());
   Get.put(WebWatchedTagStylesController(), permanent: true);
+  Get.put(WebEventNoticeService(), permanent: true);
 
   runApp(const JHenTaiWebApp());
 }
@@ -207,6 +209,62 @@ class WebDownloadService extends GetxController {
   Future<void> refresh() => _loadTasks();
 }
 
+class WebEventNoticeService extends GetxController {
+  static const _dawnSessionKey = 'jh_web_last_dawn_info';
+  static const _hvSessionKey = 'jh_web_last_hv_url';
+
+  @override
+  void onReady() {
+    super.onReady();
+    if (!backendApiClient.hasToken) return;
+    activate();
+  }
+
+  void activate() {
+    unawaited(_checkEvents());
+  }
+
+  Future<void> _checkEvents() async {
+    if (!WebPreferenceSettings.showDawnInfo &&
+        !WebPreferenceSettings.showHvInfo) {
+      return;
+    }
+    try {
+      final result = await backendApiClient.checkEvents();
+      final dawnInfo = result['dawnInfo']?.toString() ?? '';
+      final hvUrl = result['hvUrl']?.toString() ?? '';
+      if (WebPreferenceSettings.showDawnInfo &&
+          dawnInfo.isNotEmpty &&
+          web.window.sessionStorage.getItem(_dawnSessionKey) != dawnInfo) {
+        web.window.sessionStorage.setItem(_dawnSessionKey, dawnInfo);
+        Get.snackbar(
+          'dawnOfaNewDay'.tr,
+          dawnInfo,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 8),
+        );
+      }
+      if (WebPreferenceSettings.showHvInfo &&
+          hvUrl.isNotEmpty &&
+          web.window.sessionStorage.getItem(_hvSessionKey) != hvUrl) {
+        web.window.sessionStorage.setItem(_hvSessionKey, hvUrl);
+        Get.snackbar(
+          'encounterMonster'.tr,
+          'encounterMonsterHint'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 8),
+          mainButton: TextButton(
+            onPressed: () => web.window.open(hvUrl, '_blank'),
+            child: Text('common.open'.tr),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('WebEventNoticeService check failed: $e');
+    }
+  }
+}
+
 class JHenTaiWebApp extends StatelessWidget {
   const JHenTaiWebApp({super.key});
 
@@ -216,29 +274,31 @@ class JHenTaiWebApp extends StatelessWidget {
     final tc = Get.find<ThemeController>();
 
     return Obx(() => GetMaterialApp(
-      title: 'JHenTai',
-      translations: WebLocaleText(),
-      themeMode: tc.themeMode.value,
-      theme: ThemeController.buildTheme(Brightness.light, tc.seedColor.value),
-      darkTheme: ThemeController.buildTheme(Brightness.dark, tc.seedColor.value),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en', 'US'),
-        Locale('zh', 'CN'),
-        Locale('zh', 'TW'),
-        Locale('ko', 'KR'),
-        Locale('pt', 'BR'),
-        Locale('ru', 'RU'),
-      ],
-      locale: locale,
-      fallbackLocale: const Locale('en', 'US'),
-      getPages: _webRoutes,
-      initialRoute: backendApiClient.hasToken ? '/web/home' : '/web/setup',
-    ));
+          title: 'JHenTai',
+          translations: WebLocaleText(),
+          themeMode: tc.themeMode.value,
+          theme:
+              ThemeController.buildTheme(Brightness.light, tc.seedColor.value),
+          darkTheme:
+              ThemeController.buildTheme(Brightness.dark, tc.seedColor.value),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en', 'US'),
+            Locale('zh', 'CN'),
+            Locale('zh', 'TW'),
+            Locale('ko', 'KR'),
+            Locale('pt', 'BR'),
+            Locale('ru', 'RU'),
+          ],
+          locale: locale,
+          fallbackLocale: const Locale('en', 'US'),
+          getPages: _webRoutes,
+          initialRoute: backendApiClient.hasToken ? '/web/home' : '/web/setup',
+        ));
   }
 
   Locale _detectLocale() {
@@ -323,7 +383,6 @@ final _webRoutes = [
       Get.lazyPut(() => WebLocalController());
     }),
   ),
-  
   GetPage(
     name: '/web/settings',
     page: () => const WebSettingsPage(),
@@ -464,10 +523,8 @@ class _WebSetupPageState extends State<WebSetupPage> {
   static const _tokenLen = 64;
 
   /// Commands are English; shown in monospace for copy-paste.
-  static const _dockerLogsCmd =
-      'docker logs jhentai 2>&1 | grep JHenTai';
-  static const _sqliteCmd =
-      'docker exec jhentai sqlite3 /data/db.sqlite '
+  static const _dockerLogsCmd = 'docker logs jhentai 2>&1 | grep JHenTai';
+  static const _sqliteCmd = 'docker exec jhentai sqlite3 /data/db.sqlite '
       '"SELECT value FROM config WHERE key=\'api_token\' AND sub_key=\'\';"';
 
   @override
@@ -496,8 +553,8 @@ class _WebSetupPageState extends State<WebSetupPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock_outline, size: 48,
-                      color: Theme.of(context).colorScheme.primary),
+                  Icon(Icons.lock_outline,
+                      size: 48, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 16),
                   Text('setup.title'.tr,
                       style: Theme.of(context).textTheme.headlineSmall),
@@ -567,7 +624,8 @@ class _WebSetupPageState extends State<WebSetupPage> {
                     controller: _tokenController,
                     maxLines: 3,
                     minLines: 2,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                    style:
+                        const TextStyle(fontFamily: 'monospace', fontSize: 13),
                     decoration: InputDecoration(
                       labelText: 'setup.tokenLabel'.tr,
                       hintText: 'setup.tokenPasteHint'.tr,
@@ -587,7 +645,9 @@ class _WebSetupPageState extends State<WebSetupPage> {
                     child: FilledButton(
                       onPressed: _verifying ? null : _verify,
                       child: _verifying
-                          ? const SizedBox(width: 20, height: 20,
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2))
                           : Text('setup.connect'.tr),
                     ),
@@ -607,7 +667,8 @@ class _WebSetupPageState extends State<WebSetupPage> {
       setState(() => _error = 'setup.emptyToken'.tr);
       return;
     }
-    if (token.length != _tokenLen || !RegExp(r'^[0-9a-fA-F]+$').hasMatch(token)) {
+    if (token.length != _tokenLen ||
+        !RegExp(r'^[0-9a-fA-F]+$').hasMatch(token)) {
       setState(() => _error = 'setup.tokenWrongLength'.tr);
       return;
     }
@@ -623,6 +684,7 @@ class _WebSetupPageState extends State<WebSetupPage> {
       web.window.localStorage.setItem('jh_api_token', token);
       unawaited(Get.find<WebWatchedTagStylesController>().refresh());
       Get.find<WebDownloadService>().activate();
+      Get.find<WebEventNoticeService>().activate();
       Get.offAllNamed('/web/home');
     } else {
       setState(() {

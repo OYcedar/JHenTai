@@ -17,6 +17,10 @@ class WebEnUS {
       'common.images': '@count images',
       'common.pages': '@count pages',
       'common.save': 'Save',
+      'common.open': 'Open',
+      'dawnOfaNewDay': 'It is the dawn of a new day!',
+      'encounterMonster': 'You have encountered a monster!',
+      'encounterMonsterHint': 'Click to fight in the HentaiVerse.',
 
       // reader / gallery actions (align with native .tr keys)
       'share': 'Share',
@@ -643,6 +647,8 @@ class WebEnUS {
       'preloadGalleryCover': 'Preload gallery cover',
       'preloadGalleryCoverHint':
           'Preload covers for galleries that are not displayed yet',
+      'showDawnInfo': 'Show new dawn event',
+      'showEncounterMonster': 'Show HentaiVerse encounter event',
 
       // home enhancements
       'home.scrollToTop': 'Scroll to Top',

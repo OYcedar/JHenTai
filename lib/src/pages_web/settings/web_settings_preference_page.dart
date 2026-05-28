@@ -70,6 +70,8 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool showAllComments;
   late bool showUtcTime;
   late bool preloadGalleryCover;
+  late bool showDawnInfo;
+  late bool showHvInfo;
   late WebSearchBehaviour searchBehaviour;
   late WebScrollToTopButtonMode scrollToTopButtonMode;
 
@@ -82,6 +84,8 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
     showAllComments = WebPreferenceSettings.showAllComments;
     showUtcTime = WebPreferenceSettings.showUtcTime;
     preloadGalleryCover = WebPreferenceSettings.preloadGalleryCover;
+    showDawnInfo = WebPreferenceSettings.showDawnInfo;
+    showHvInfo = WebPreferenceSettings.showHvInfo;
     searchBehaviour = WebPreferenceSettings.searchBehaviour;
     scrollToTopButtonMode = WebPreferenceSettings.scrollToTopButtonMode;
   }
@@ -155,6 +159,24 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
           onChanged: (value) {
             setState(() => preloadGalleryCover = value);
             WebPreferenceSettings.savePreloadGalleryCover(value);
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.wb_twilight_outlined),
+          title: Text('showDawnInfo'.tr),
+          value: showDawnInfo,
+          onChanged: (value) {
+            setState(() => showDawnInfo = value);
+            WebPreferenceSettings.saveShowDawnInfo(value);
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.sports_martial_arts_outlined),
+          title: Text('showEncounterMonster'.tr),
+          value: showHvInfo,
+          onChanged: (value) {
+            setState(() => showHvInfo = value);
+            WebPreferenceSettings.saveShowHvInfo(value);
           },
         ),
         ListTile(
