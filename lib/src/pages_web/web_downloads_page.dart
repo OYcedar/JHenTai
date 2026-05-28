@@ -21,11 +21,13 @@ class WebDownloadsController extends GetxController
       'jh_web_downloads_gallery_groups_expanded';
   static const _kArchiveGroupsExpanded =
       'jh_web_downloads_archive_groups_expanded';
+  static const _kViewMode = 'jh_web_downloads_view_mode';
 
   final searchQuery = ''.obs;
   final selectedCategoryFilter = Rxn<String>();
   final gallerySort = WebDownloadSort.priorityDesc.obs;
   final archiveSort = WebDownloadSort.priorityDesc.obs;
+  final viewMode = 'list'.obs;
 
   final galleryGroupExpanded = RxMap<String, bool>();
   final archiveGroupExpanded = RxMap<String, bool>();
@@ -87,6 +89,19 @@ class WebDownloadsController extends GetxController
   void _loadExpandedFromStorage() {
     _mergeExpandedMap(_kGalleryGroupsExpanded, galleryGroupExpanded);
     _mergeExpandedMap(_kArchiveGroupsExpanded, archiveGroupExpanded);
+  }
+
+  void _loadViewModeFromStorage() {
+    final saved = web.window.localStorage.getItem(_kViewMode);
+    if (saved == 'grid' || saved == 'list') {
+      viewMode.value = saved!;
+    }
+  }
+
+  void toggleViewMode() {
+    final next = viewMode.value == 'grid' ? 'list' : 'grid';
+    viewMode.value = next;
+    web.window.localStorage.setItem(_kViewMode, next);
   }
 
   void _mergeExpandedMap(String key, RxMap<String, bool> target) {
@@ -281,6 +296,7 @@ class WebDownloadsController extends GetxController
     super.onInit();
     tabController = TabController(length: 2, vsync: this);
     _loadExpandedFromStorage();
+    _loadViewModeFromStorage();
     tabController.addListener(_syncCategoryFilterWithTab);
   }
 
@@ -441,6 +457,15 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
       appBar: AppBar(
         title: Text('downloads.title'.tr),
         actions: [
+          Obx(
+            () => IconButton(
+              icon: Icon(controller.viewMode.value == 'grid'
+                  ? Icons.view_list
+                  : Icons.grid_view),
+              tooltip: 'listMode.toggle'.tr,
+              onPressed: controller.toggleViewMode,
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.pause_circle_outline),
             tooltip: 'downloads.pauseVisible'.tr,
@@ -905,6 +930,429 @@ Future<bool?> _showDeleteTaskDialog(BuildContext context) {
   );
 }
 
+class _GroupedDownloadGrid extends StatelessWidget {
+  final List<String> groups;
+  final Map<String, List<Map<String, dynamic>>> byGroup;
+  final Map<String, bool> expanded;
+  final ValueChanged<String> onToggleGroup;
+  final Widget Function(Map<String, dynamic> task) itemBuilder;
+
+  const _GroupedDownloadGrid({
+    required this.groups,
+    required this.byGroup,
+    required this.expanded,
+    required this.onToggleGroup,
+    required this.itemBuilder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final columns = width >= 1280
+            ? 6
+            : width >= 1000
+                ? 5
+                : width >= 760
+                    ? 4
+                    : width >= 520
+                        ? 3
+                        : 2;
+        return ListView(
+          padding: const EdgeInsets.all(8),
+          children: [
+            for (final group in groups) ...[
+              _DownloadGroupHeader(
+                groupName: group,
+                count: byGroup[group]!.length,
+                expanded: expanded[group] ?? true,
+                animate: byGroup[group]!.length <=
+                    WebDownloadsController.maxGalleryNum4Animation,
+                onTap: () => onToggleGroup(group),
+              ),
+              const SizedBox(height: 8),
+              if (expanded[group] ?? true)
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: byGroup[group]!.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 0.62,
+                  ),
+                  itemBuilder: (context, index) =>
+                      itemBuilder(byGroup[group]![index]),
+                ),
+              const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GalleryTaskGridCard extends StatelessWidget {
+  final Map<String, dynamic> task;
+  final WebDownloadsController controller;
+
+  const _GalleryTaskGridCard({required this.task, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final gid = _taskInt(task, 'gid');
+    final token = task['token'] as String? ?? '';
+    final status = _taskInt(task, 'status');
+    final isCompleted = status == 3;
+    return _DownloadTaskGridCard(
+      task: task,
+      statusName: 'downloads.gStatus$status'.tr,
+      isCompleted: isCompleted,
+      progressLabel:
+          '${_taskInt(task, 'completedCount')} / ${_taskInt(task, 'pageCount')}',
+      progressValue:
+          _ratio(_taskInt(task, 'completedCount'), _taskInt(task, 'pageCount')),
+      readRoute: '/web/reader/$gid/$token?mode=downloaded',
+      onEdit: () => _showGalleryPatchDialog(context, controller, task),
+      onPause: status == 1 ? () => controller.pauseGallery(gid) : null,
+      onResume: status == 2 || status == 4
+          ? () => controller.resumeGallery(gid)
+          : null,
+      onDelete: () async {
+        final deleteFiles = await _showDeleteTaskDialog(context);
+        if (deleteFiles == null) return;
+        await controller.deleteGallery(gid, deleteFiles: deleteFiles);
+      },
+    );
+  }
+}
+
+class _ArchiveTaskGridCard extends StatelessWidget {
+  final Map<String, dynamic> task;
+  final WebDownloadsController controller;
+
+  const _ArchiveTaskGridCard({required this.task, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final gid = _taskInt(task, 'gid');
+    final token = task['token'] as String? ?? '';
+    final status = _taskInt(task, 'status');
+    final downloaded = _taskInt(task, 'downloadedBytes');
+    final total = _taskInt(task, 'totalBytes');
+    final isCompleted = status == 6;
+    return _DownloadTaskGridCard(
+      task: task,
+      fallbackIcon: Icons.archive,
+      statusName: 'downloads.aStatus$status'.tr,
+      isCompleted: isCompleted,
+      isArchive: true,
+      progressLabel: total > 0
+          ? '${_formatBytes(downloaded)} / ${_formatBytes(total)}'
+          : '',
+      progressValue: status == 3
+          ? _ratio(downloaded, total)
+          : isCompleted
+              ? 1
+              : null,
+      readRoute: '/web/reader/$gid/$token?mode=archive',
+      onEdit: () => _showArchivePatchDialog(context, controller, task),
+      onPause: status == 3 ? () => controller.pauseArchive(gid) : null,
+      onResume: status == 7 || status == 8
+          ? () => controller.resumeArchive(gid)
+          : null,
+      onDelete: () async {
+        final deleteFiles = await _showDeleteTaskDialog(context);
+        if (deleteFiles == null) return;
+        await controller.deleteArchive(gid, deleteFiles: deleteFiles);
+      },
+    );
+  }
+}
+
+class _DownloadTaskGridCard extends StatelessWidget {
+  final Map<String, dynamic> task;
+  final IconData fallbackIcon;
+  final String statusName;
+  final bool isCompleted;
+  final bool isArchive;
+  final String progressLabel;
+  final double? progressValue;
+  final String readRoute;
+  final VoidCallback onEdit;
+  final VoidCallback? onPause;
+  final VoidCallback? onResume;
+  final VoidCallback onDelete;
+
+  const _DownloadTaskGridCard({
+    required this.task,
+    this.fallbackIcon = Icons.photo_library,
+    required this.statusName,
+    required this.isCompleted,
+    this.isArchive = false,
+    required this.progressLabel,
+    required this.progressValue,
+    required this.readRoute,
+    required this.onEdit,
+    required this.onPause,
+    required this.onResume,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = task['title'] as String? ?? '';
+    final category = task['category'] as String? ?? '';
+    final coverUrl = task['coverUrl'] as String? ?? '';
+    final priority = _taskInt(task, 'priority');
+    final groupName =
+        (task['group_name'] ?? task['groupName'] ?? 'default') as String;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: isCompleted ? () => Get.toNamed(readRoute) : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  coverUrl.isNotEmpty
+                      ? WebProxiedImage(
+                          sourceUrl: coverUrl,
+                          fit: BoxFit.cover,
+                          readerErrorChild: _GridCoverFallback(
+                            icon: fallbackIcon,
+                          ),
+                        )
+                      : _GridCoverFallback(icon: fallbackIcon),
+                  if (!isCompleted)
+                    Positioned.fill(
+                      child: ColoredBox(
+                        color: Colors.black.withValues(alpha: 0.18),
+                      ),
+                    ),
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: PopupMenuButton<_DownloadTaskAction>(
+                      tooltip: 'downloads.editTask'.tr,
+                      icon: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.all(3),
+                        child: const Icon(Icons.more_vert,
+                            color: Colors.white, size: 18),
+                      ),
+                      onSelected: (action) {
+                        switch (action) {
+                          case _DownloadTaskAction.read:
+                            Get.toNamed(readRoute);
+                            break;
+                          case _DownloadTaskAction.edit:
+                            onEdit();
+                            break;
+                          case _DownloadTaskAction.pause:
+                            onPause?.call();
+                            break;
+                          case _DownloadTaskAction.resume:
+                            onResume?.call();
+                            break;
+                          case _DownloadTaskAction.delete:
+                            onDelete();
+                            break;
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        if (isCompleted)
+                          PopupMenuItem(
+                            value: _DownloadTaskAction.read,
+                            child: _DownloadTaskMenuItem(
+                              icon: Icons.menu_book,
+                              label: 'downloads.read'.tr,
+                            ),
+                          ),
+                        PopupMenuItem(
+                          value: _DownloadTaskAction.edit,
+                          child: _DownloadTaskMenuItem(
+                            icon: Icons.tune,
+                            label: 'downloads.editTask'.tr,
+                          ),
+                        ),
+                        if (onPause != null)
+                          PopupMenuItem(
+                            value: _DownloadTaskAction.pause,
+                            child: _DownloadTaskMenuItem(
+                              icon: Icons.pause,
+                              label: 'downloads.pause'.tr,
+                            ),
+                          ),
+                        if (onResume != null)
+                          PopupMenuItem(
+                            value: _DownloadTaskAction.resume,
+                            child: _DownloadTaskMenuItem(
+                              icon: Icons.play_arrow,
+                              label: 'downloads.resume'.tr,
+                            ),
+                          ),
+                        PopupMenuItem(
+                          value: _DownloadTaskAction.delete,
+                          child: _DownloadTaskMenuItem(
+                            icon: Icons.delete_outline,
+                            label: 'common.delete'.tr,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 7, 8, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
+                    children: [
+                      if (category.isNotEmpty)
+                        _TinyLabel(
+                          label: category,
+                          color: _categoryColor(category),
+                          filled: true,
+                        ),
+                      _TinyLabel(
+                        label: 'downloads.priorityLabel'
+                            .trParams({'n': '$priority'}),
+                        color: Colors.purple,
+                      ),
+                      if (groupName != 'default')
+                        _TinyLabel(label: groupName, color: Colors.blueGrey),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: _StatusBadge(
+                          statusIndex: _taskInt(task, 'status'),
+                          statusName: statusName,
+                          isCompleted: isCompleted,
+                          isArchive: isArchive,
+                        ),
+                      ),
+                      if (progressLabel.isNotEmpty) ...[
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            progressLabel,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  LinearProgressIndicator(value: progressValue),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GridCoverFallback extends StatelessWidget {
+  final IconData icon;
+  const _GridCoverFallback({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Icon(icon, color: Colors.grey),
+    );
+  }
+}
+
+class _TinyLabel extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool filled;
+
+  const _TinyLabel({
+    required this.label,
+    required this.color,
+    this.filled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: filled ? color : color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: filled ? Colors.white : color,
+          fontSize: 10,
+          fontWeight: filled ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+}
+
+class _DownloadTaskMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _DownloadTaskMenuItem({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 10),
+        Text(label),
+      ],
+    );
+  }
+}
+
+enum _DownloadTaskAction { read, edit, pause, resume, delete }
+
 // --- Gallery Tasks ---
 
 class _GalleryTaskList extends StatelessWidget {
@@ -927,6 +1375,16 @@ class _GalleryTaskList extends StatelessWidget {
         byGroup.putIfAbsent(g, () => []).add(t);
       }
       final groups = WebDownloadsController.sortedGroupNames(byGroup.keys);
+      if (controller.viewMode.value == 'grid') {
+        return _GroupedDownloadGrid(
+          groups: groups,
+          byGroup: byGroup,
+          expanded: controller.galleryGroupExpanded,
+          onToggleGroup: controller.toggleGalleryGroup,
+          itemBuilder: (task) =>
+              _GalleryTaskGridCard(task: task, controller: controller),
+        );
+      }
       return ListView(
         padding: const EdgeInsets.all(8),
         children: [
@@ -1177,6 +1635,16 @@ class _ArchiveTaskList extends StatelessWidget {
         byGroup.putIfAbsent(g, () => []).add(t);
       }
       final groups = WebDownloadsController.sortedGroupNames(byGroup.keys);
+      if (controller.viewMode.value == 'grid') {
+        return _GroupedDownloadGrid(
+          groups: groups,
+          byGroup: byGroup,
+          expanded: controller.archiveGroupExpanded,
+          onToggleGroup: controller.toggleArchiveGroup,
+          itemBuilder: (task) =>
+              _ArchiveTaskGridCard(task: task, controller: controller),
+        );
+      }
       return ListView(
         padding: const EdgeInsets.all(8),
         children: [
@@ -1475,3 +1943,9 @@ String _formatBytes(int bytes) {
   if (bytes < 1073741824) return '${(bytes / 1048576).toStringAsFixed(1)} MB';
   return '${(bytes / 1073741824).toStringAsFixed(1)} GB';
 }
+
+int _taskInt(Map<String, dynamic> task, String key) =>
+    (task[key] as num?)?.toInt() ?? 0;
+
+double? _ratio(int completed, int total) =>
+    total > 0 ? completed / total : null;
