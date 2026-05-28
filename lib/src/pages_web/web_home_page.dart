@@ -209,6 +209,54 @@ class WebHomeController extends GetxController {
   String _currentSearch = '';
   String _ranklistTl = '15';
 
+  String? _initialRouteSection() {
+    final args = Get.arguments;
+    String? section;
+    if (args is Map<String, dynamic>) {
+      section = args['section'] as String?;
+    }
+    section ??= Get.parameters['section'];
+    if (section != null && defaultSections.contains(section)) return section;
+    return null;
+  }
+
+  String? _initialRouteRanklistTl() {
+    final args = Get.arguments;
+    String? tl;
+    if (args is Map<String, dynamic>) {
+      tl = args['tl'] as String?;
+    }
+    tl ??= Get.parameters['tl'];
+    return _normalizeRanklistTl(tl);
+  }
+
+  String? _normalizeRanklistTl(String? tl) {
+    return switch (tl) {
+      '15' || '13' || '12' || '11' => tl,
+      _ => null,
+    };
+  }
+
+  String _sectionUrl(String section, {String? tl}) {
+    if (section == 'home') return '/web/home';
+    final params = <String, String>{'section': section};
+    if (section == 'ranklist') params['tl'] = _normalizeRanklistTl(tl) ?? '15';
+    final query = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    return '/web/home?$query';
+  }
+
+  void _syncSectionUrl(String section, {String? tl}) {
+    final url = _sectionUrl(section, tl: tl);
+    if (Uri.base.path + (Uri.base.hasQuery ? '?${Uri.base.query}' : '') ==
+        url) {
+      return;
+    }
+    web.window.history.pushState(null, '', url);
+  }
+
   final dashboardRanklist = <Map<String, dynamic>>[].obs;
   final dashboardPopular = <Map<String, dynamic>>[].obs;
   final isDashboardLoading = false.obs;
@@ -270,6 +318,7 @@ class WebHomeController extends GetxController {
       currentSearchText.value = '';
       searchController.clear();
       currentSection.value = 'home';
+      _syncSectionUrl('home');
       await _fetchListByUrl(redirect);
     } catch (e) {
       Get.snackbar(
@@ -372,14 +421,19 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> _loadInitialSection() async {
+    final initialRouteSection = _initialRouteSection();
     final saved = web.window.localStorage.getItem(defaultSectionStorageKey);
-    final section =
-        saved != null && defaultSections.contains(saved) ? saved : 'home';
+    final section = initialRouteSection ??
+        (saved != null && defaultSections.contains(saved) ? saved : 'home');
     if (section == 'home') {
       await _loadHomePage();
       return;
     }
-    await loadUrl(section, tl: section == 'ranklist' ? '15' : null);
+    await loadUrl(
+      section,
+      tl: section == 'ranklist' ? (_initialRouteRanklistTl() ?? '15') : null,
+      syncUrl: false,
+    );
   }
 
   Future<void> search(String keyword) async {
@@ -389,6 +443,7 @@ class WebHomeController extends GetxController {
     currentSection.value = 'home';
     currentPage.value = 0;
     _clearPaginationCursors();
+    _syncSectionUrl('home');
     if (keyword.trim().isNotEmpty) {
       backendApiClient.recordSearchHistory(keyword.trim()).catchError((_) {});
       loadSearchHistory();
@@ -521,14 +576,17 @@ class WebHomeController extends GetxController {
     await _fetchGalleryList();
   }
 
-  Future<void> loadUrl(String section, {String? tl}) async {
+  Future<void> loadUrl(String section,
+      {String? tl, bool syncUrl = true}) async {
     _exitListByUrlMode();
     currentSection.value = section;
     _currentSearch = '';
     currentSearchText.value = '';
     currentPage.value = 0;
     _clearPaginationCursors();
-    if (tl != null) _ranklistTl = tl;
+    final normalizedTl = _normalizeRanklistTl(tl);
+    if (normalizedTl != null) _ranklistTl = normalizedTl;
+    if (syncUrl) _syncSectionUrl(section, tl: _ranklistTl);
     await _fetchGalleryList();
   }
 
@@ -816,6 +874,7 @@ class WebHomeController extends GetxController {
       currentPage.value = 0;
       _clearPaginationCursors();
       currentSection.value = 'home';
+      _syncSectionUrl('home');
       persistAdvancedSearchSettings();
       _fetchGalleryList();
     } catch (_) {}
