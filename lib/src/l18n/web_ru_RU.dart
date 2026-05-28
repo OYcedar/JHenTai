@@ -421,6 +421,14 @@ class WebRuRU {
           'Скачать настройки, правила блокировки, историю, историю поиска и быстрые поиски в JSON. Токены и cookies исключены.',
       'settings.exportDataSuccess': 'Экспорт данных загружен',
       'settings.exportDataFailed': 'Не удалось экспортировать данные: @error',
+      'settings.importData': 'Импорт данных',
+      'settings.importDataHint':
+          'Импортировать JSON, экспортированный из Web, и объединить с этим сервером. Настройки и именованные элементы перезаписываются; правила блокировки дедублируются.',
+      'settings.importDataTitle': 'Импортировать данные?',
+      'settings.importDataConfirm':
+          'Выберите файл экспорта JHenTai Web. Импортированные настройки могут перезаписать текущие значения.',
+      'settings.importDataSuccess': 'Импортировано элементов: @count',
+      'settings.importDataFailed': 'Не удалось импортировать данные: @error',
       'settings.noImageMode': 'Режим без изображений',
       'settings.noImageModeHint':
           'Скрывает обложки галерей, миниатюры и изображения читалки в этом браузере.',

@@ -386,6 +386,13 @@ class WebZhCN {
           '将设置、屏蔽规则、浏览历史、搜索历史和快速搜索导出为 JSON，不包含 Token 和 Cookie。',
       'settings.exportDataSuccess': '数据导出已下载',
       'settings.exportDataFailed': '导出数据失败：@error',
+      'settings.importData': '导入数据',
+      'settings.importDataHint':
+          '导入 Web 导出的 JSON 并合并到当前服务端；设置和命名数据会覆盖，屏蔽规则会自动去重。',
+      'settings.importDataTitle': '导入数据？',
+      'settings.importDataConfirm': '请选择 JHenTai Web 导出的 JSON 文件。导入的设置可能覆盖当前值。',
+      'settings.importDataSuccess': '已导入 @count 项数据',
+      'settings.importDataFailed': '导入数据失败：@error',
       'settings.noImageMode': '无图模式',
       'settings.noImageModeHint': '在当前浏览器隐藏画廊封面、缩略图和阅读器图片。',
       'settings.pageCache': '页面缓存',

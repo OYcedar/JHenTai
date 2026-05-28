@@ -26,6 +26,7 @@ class SettingRoutes {
     router.get('/profiles', _listProfiles);
     router.put('/profile', _selectProfile);
     router.get('/export', _exportData);
+    router.post('/import', _importData);
     router.get('/cache/page', _getPageCache);
     router.delete('/cache/page', _clearPageCache);
     router.get('/logs', _listLogs);
@@ -299,6 +300,148 @@ class SettingRoutes {
     );
   }
 
+  Future<Response> _importData(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid JSON body'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    if (body['format'] != 'jhentai-web-export-v1' || body['sections'] is! Map) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Unsupported import format'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final sections = Map<String, dynamic>.from(body['sections'] as Map);
+    final imported = <String, int>{
+      'config': 0,
+      'blockRules': 0,
+      'history': 0,
+      'searchHistory': 0,
+      'quickSearch': 0,
+    };
+    final now = DateTime.now().toIso8601String();
+
+    db.raw.execute('BEGIN TRANSACTION');
+    try {
+      for (final row in _importRows(sections['config'])) {
+        final key = _importString(row['key']);
+        if (key.isEmpty || _reservedKeys.contains(key)) {
+          continue;
+        }
+        final subKey = _importString(row['sub_key']);
+        final value = row['value'];
+        final valueStr = value is String ? value : jsonEncode(value);
+        db.raw.execute(
+          'INSERT OR REPLACE INTO config (key, sub_key, value, utime) VALUES (?, ?, ?, ?)',
+          [key, subKey, valueStr, _importString(row['utime'], fallback: now)],
+        );
+        imported['config'] = imported['config']! + 1;
+      }
+
+      final existingRules = db
+          .selectAllBlockRules()
+          .map((rule) => _blockRuleFingerprint(rule))
+          .toSet();
+      for (final row in _importRows(sections['blockRules'])) {
+        final rule = {
+          'group_id': _importString(row['group_id']),
+          'target': _importString(row['target'], fallback: 'gallery'),
+          'attribute': _importString(row['attribute'], fallback: 'title'),
+          'pattern': _importString(row['pattern'], fallback: 'like'),
+          'expression': _importString(row['expression']),
+        };
+        if ((rule['expression'] as String).isEmpty) {
+          continue;
+        }
+        final fingerprint = _blockRuleFingerprint(rule);
+        if (existingRules.contains(fingerprint)) {
+          continue;
+        }
+        db.insertBlockRule(rule);
+        existingRules.add(fingerprint);
+        imported['blockRules'] = imported['blockRules']! + 1;
+      }
+
+      for (final row in _importRows(sections['history'])) {
+        final gid = _importInt(row['gid']);
+        if (gid == null) {
+          continue;
+        }
+        db.raw.execute(
+          '''
+          INSERT OR REPLACE INTO history
+          (gid, token, title, cover_url, category, visit_time)
+          VALUES (?, ?, ?, ?, ?, ?)
+        ''',
+          [
+            gid,
+            _importString(row['token']),
+            _importString(row['title']),
+            _importString(row['cover_url']),
+            _importString(row['category']),
+            _importString(row['visit_time'], fallback: now),
+          ],
+        );
+        imported['history'] = imported['history']! + 1;
+      }
+
+      for (final row in _importRows(sections['searchHistory'])) {
+        final keyword = _importString(row['keyword']).trim();
+        if (keyword.isEmpty) {
+          continue;
+        }
+        db.raw.execute(
+          '''
+          INSERT OR REPLACE INTO search_history
+          (keyword, use_count, last_used)
+          VALUES (?, ?, ?)
+        ''',
+          [
+            keyword,
+            _importInt(row['use_count']) ?? 1,
+            _importString(row['last_used'], fallback: now),
+          ],
+        );
+        imported['searchHistory'] = imported['searchHistory']! + 1;
+      }
+
+      for (final row in _importRows(sections['quickSearch'])) {
+        final name = _importString(row['name']).trim();
+        if (name.isEmpty) {
+          continue;
+        }
+        final config = row['config'] is String
+            ? row['config'] as String
+            : jsonEncode(row['config']);
+        db.upsertQuickSearch(
+          name,
+          config,
+          sortOrder: _importInt(row['sort_order']) ?? 0,
+        );
+        imported['quickSearch'] = imported['quickSearch']! + 1;
+      }
+
+      db.raw.execute('COMMIT');
+    } catch (e) {
+      db.raw.execute('ROLLBACK');
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to import data: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    return Response.ok(
+      jsonEncode({'success': true, 'imported': imported}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
   Future<Response> _getSettings(Request request) async {
     final settingKeys = [
       'EHSetting',
@@ -427,5 +570,45 @@ class SettingRoutes {
       map[key] = row[key];
     }
     return map;
+  }
+
+  List<Map<String, dynamic>> _importRows(dynamic value) {
+    if (value is! List) {
+      return const [];
+    }
+    return value
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
+
+  String _importString(dynamic value, {String fallback = ''}) {
+    if (value == null) {
+      return fallback;
+    }
+    return value.toString();
+  }
+
+  int? _importInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value);
+    }
+    return null;
+  }
+
+  String _blockRuleFingerprint(Map<String, dynamic> rule) {
+    return [
+      _importString(rule['group_id']),
+      _importString(rule['target']),
+      _importString(rule['attribute']),
+      _importString(rule['pattern']),
+      _importString(rule['expression']),
+    ].join('\u{1f}');
   }
 }

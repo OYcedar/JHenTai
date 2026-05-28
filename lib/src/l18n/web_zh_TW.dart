@@ -386,6 +386,13 @@ class WebZhTW {
           '將設定、屏蔽規則、瀏覽歷史、搜尋歷史和快速搜尋匯出為 JSON，不包含 Token 和 Cookie。',
       'settings.exportDataSuccess': '資料匯出已下載',
       'settings.exportDataFailed': '匯出資料失敗：@error',
+      'settings.importData': '匯入資料',
+      'settings.importDataHint':
+          '匯入 Web 匯出的 JSON 並合併到目前伺服器；設定和命名資料會覆蓋，屏蔽規則會自動去重。',
+      'settings.importDataTitle': '匯入資料？',
+      'settings.importDataConfirm': '請選擇 JHenTai Web 匯出的 JSON 檔案。匯入的設定可能覆蓋目前值。',
+      'settings.importDataSuccess': '已匯入 @count 項資料',
+      'settings.importDataFailed': '匯入資料失敗：@error',
       'settings.noImageMode': '無圖模式',
       'settings.noImageModeHint': '在目前瀏覽器隱藏畫廊封面、縮圖和閱讀器圖片。',
       'settings.pageCache': '頁面快取',

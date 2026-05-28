@@ -423,6 +423,14 @@ class WebEnUS {
           'Download settings, block rules, history, search history, and quick searches as JSON. Tokens and cookies are excluded.',
       'settings.exportDataSuccess': 'Data export downloaded',
       'settings.exportDataFailed': 'Failed to export data: @error',
+      'settings.importData': 'Import data',
+      'settings.importDataHint':
+          'Import a JSON export and merge it into this server. Settings and named items are overwritten; block rules are de-duplicated.',
+      'settings.importDataTitle': 'Import data?',
+      'settings.importDataConfirm':
+          'Choose a JHenTai Web export file. Imported settings may overwrite current values.',
+      'settings.importDataSuccess': 'Imported @count items',
+      'settings.importDataFailed': 'Failed to import data: @error',
       'settings.noImageMode': 'No image mode',
       'settings.noImageModeHint':
           'Hide gallery covers, thumbnails, and reader images in this browser.',

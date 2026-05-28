@@ -424,6 +424,14 @@ class WebPtBR {
           'Baixe configurações, regras de bloqueio, histórico, histórico de busca e buscas rápidas como JSON. Tokens e cookies são excluídos.',
       'settings.exportDataSuccess': 'Exportação de dados baixada',
       'settings.exportDataFailed': 'Falha ao exportar dados: @error',
+      'settings.importData': 'Importar dados',
+      'settings.importDataHint':
+          'Importe um JSON exportado pelo Web e mescle neste servidor. Configurações e itens nomeados são sobrescritos; regras de bloqueio são deduplicadas.',
+      'settings.importDataTitle': 'Importar dados?',
+      'settings.importDataConfirm':
+          'Escolha um arquivo de exportação do JHenTai Web. Configurações importadas podem sobrescrever valores atuais.',
+      'settings.importDataSuccess': '@count itens importados',
+      'settings.importDataFailed': 'Falha ao importar dados: @error',
       'settings.noImageMode': 'Modo sem imagens',
       'settings.noImageModeHint':
           'Oculta capas, miniaturas e imagens do leitor neste navegador.',

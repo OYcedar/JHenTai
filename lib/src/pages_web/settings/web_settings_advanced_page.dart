@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +27,7 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
   int pageCacheSize = 0;
   int pageCacheCount = 0;
   bool exportingData = false;
+  bool importingData = false;
 
   @override
   void initState() {
@@ -175,6 +177,65 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
     }
   }
 
+  Future<void> _importData() async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('settings.importDataTitle'.tr),
+        content: Text('settings.importDataConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('settings.importData'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) {
+      return;
+    }
+
+    try {
+      final text = await _pickJsonFileText();
+      if (text == null) {
+        return;
+      }
+      final decoded = jsonDecode(text);
+      if (decoded is! Map) {
+        throw const FormatException('JSON root must be an object');
+      }
+      setState(() => importingData = true);
+      final result = await backendApiClient
+          .importUserData(Map<String, dynamic>.from(decoded));
+      final imported = result['imported'] is Map
+          ? Map<String, dynamic>.from(result['imported'] as Map)
+          : const <String, dynamic>{};
+      final count = imported.values.fold<int>(
+        0,
+        (sum, value) => sum + ((value as num?)?.toInt() ?? 0),
+      );
+      await controller.refreshStatus();
+      Get.snackbar(
+        'common.success'.tr,
+        'settings.importDataSuccess'.trParams({'count': '$count'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.importDataFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => importingData = false);
+      }
+    }
+  }
+
   Future<void> _openLog(Map<String, dynamic> item) async {
     final name = item['name']?.toString() ?? '';
     if (name.isEmpty) {
@@ -233,17 +294,34 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
             ),
             const SizedBox(height: 24),
             Card(
-              child: ListTile(
-                leading: const Icon(Icons.file_download_outlined),
-                title: Text('settings.exportData'.tr),
-                subtitle: Text('settings.exportDataHint'.tr),
-                trailing: exportingData
-                    ? const SizedBox.square(
-                        dimension: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download_outlined),
-                onTap: exportingData ? null : _exportData,
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.file_download_outlined),
+                    title: Text('settings.exportData'.tr),
+                    subtitle: Text('settings.exportDataHint'.tr),
+                    trailing: exportingData
+                        ? const SizedBox.square(
+                            dimension: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_outlined),
+                    onTap: exportingData ? null : _exportData,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.upload_file_outlined),
+                    title: Text('settings.importData'.tr),
+                    subtitle: Text('settings.importDataHint'.tr),
+                    trailing: importingData
+                        ? const SizedBox.square(
+                            dimension: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.upload_file_outlined),
+                    onTap: importingData ? null : _importData,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 24),
@@ -458,6 +536,38 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
     }
     String two(int n) => n.toString().padLeft(2, '0');
     return '${date.year}-${two(date.month)}-${two(date.day)} ${two(date.hour)}:${two(date.minute)}';
+  }
+}
+
+Future<String?> _pickJsonFileText() async {
+  final input = web.HTMLInputElement()
+    ..type = 'file'
+    ..accept = 'application/json,.json'
+    ..style.display = 'none';
+  web.document.body?.appendChild(input);
+  try {
+    final changed = input.onChange.first;
+    input.click();
+    await changed;
+    final file = input.files?.item(0);
+    if (file == null) {
+      return null;
+    }
+    final reader = web.FileReader();
+    final completer = Completer<String>();
+    reader.onLoadEnd.first.then((_) {
+      final error = reader.error;
+      if (error != null) {
+        completer.completeError(error.message);
+        return;
+      }
+      final result = reader.result;
+      completer.complete(result == null ? '' : (result as JSString).toDart);
+    });
+    reader.readAsText(file);
+    return completer.future;
+  } finally {
+    input.remove();
   }
 }
 

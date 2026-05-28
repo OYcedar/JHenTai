@@ -1165,6 +1165,11 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> importUserData(Map<String, dynamic> data) async {
+    final response = await _dio.post('/api/setting/import', data: data);
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   // --- Health ---
 
   Future<Map<String, dynamic>> health() async {
