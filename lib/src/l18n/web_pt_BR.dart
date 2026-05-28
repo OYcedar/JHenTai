@@ -768,6 +768,9 @@ class WebPtBR {
           'Excluir os arquivos baixados desta galeria e iniciar novamente?',
       'downloads.reDownloadVisibleConfirm':
           'Excluir arquivos e reiniciar @count galerias visíveis?',
+      'downloads.reUnlockArchive': 'Desbloquear arquivo novamente',
+      'downloads.reUnlockArchiveConfirm':
+          'Limpar o link de download do arquivo e desbloquear novamente?',
       'downloads.changeVisibleGroup': 'Alterar grupo das tarefas visíveis',
       'downloads.changeVisibleGroupConfirm':
           'Mover @count tarefas visíveis para este grupo.',

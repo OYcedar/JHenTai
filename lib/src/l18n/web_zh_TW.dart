@@ -716,6 +716,8 @@ class WebZhTW {
       'downloads.reDownloadVisible': '重新下載目前列表畫廊',
       'downloads.reDownloadConfirm': '刪除此畫廊已下載檔案並重新開始下載？',
       'downloads.reDownloadVisibleConfirm': '刪除目前可見的 @count 個畫廊檔案並重新下載？',
+      'downloads.reUnlockArchive': '重新解鎖歸檔',
+      'downloads.reUnlockArchiveConfirm': '清空目前歸檔下載連結並重新解鎖？',
       'downloads.changeVisibleGroup': '修改目前列表分組',
       'downloads.changeVisibleGroupConfirm': '將目前可見的 @count 個任務移動到此分組。',
       'downloads.deleteVisible': '刪除目前列表任務',

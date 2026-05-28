@@ -736,6 +736,8 @@ class WebKoKR {
       'downloads.reDownloadConfirm': '이 갤러리의 다운로드된 파일을 삭제하고 다시 시작할까요?',
       'downloads.reDownloadVisibleConfirm':
           '현재 보이는 @count개 갤러리 파일을 삭제하고 다시 다운로드할까요?',
+      'downloads.reUnlockArchive': '아카이브 다시 잠금 해제',
+      'downloads.reUnlockArchiveConfirm': '아카이브 다운로드 링크를 지우고 다시 잠금 해제할까요?',
       'downloads.changeVisibleGroup': '현재 목록 그룹 변경',
       'downloads.changeVisibleGroupConfirm': '현재 보이는 @count개 작업을 이 그룹으로 이동합니다.',
       'downloads.deleteVisible': '현재 목록 작업 삭제',

@@ -770,6 +770,9 @@ class WebEnUS {
           'Delete downloaded files for this gallery and start it again?',
       'downloads.reDownloadVisibleConfirm':
           'Delete files and restart @count visible gallery tasks?',
+      'downloads.reUnlockArchive': 'Re-unlock archive',
+      'downloads.reUnlockArchiveConfirm':
+          'Clear the archive download link and unlock it again?',
       'downloads.changeVisibleGroup': 'Change visible tasks group',
       'downloads.changeVisibleGroupConfirm':
           'Move @count visible tasks to this group.',

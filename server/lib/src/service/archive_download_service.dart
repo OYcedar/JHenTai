@@ -265,6 +265,36 @@ class ArchiveDownloadService {
     _processQueue();
   }
 
+  Future<bool> reUnlock(int gid) async {
+    final task = _tasks[gid];
+    if (task == null) return false;
+
+    task._cancelToken?.cancel('reunlock');
+    _activeDownloads.remove(gid);
+    task.status = ArchiveStatus.unlocking;
+    task.downloadPageUrl = '';
+    task.downloadUrl = '';
+    task.downloadedBytes = 0;
+    task.totalBytes = 0;
+
+    final zipFile = File(_archiveZipPath(gid));
+    if (await zipFile.exists()) {
+      await zipFile.delete();
+    }
+
+    db.updateArchiveDownloadUrls(gid, downloadPageUrl: '', downloadUrl: '');
+    db.updateArchiveDownloadStatus(
+      gid,
+      ArchiveStatus.unlocking.index,
+      downloadedBytes: 0,
+      totalBytes: 0,
+    );
+    _saveMetadata(task);
+    _notifyProgress(task);
+    _processQueue();
+    return true;
+  }
+
   Future<void> deleteDownload(int gid, {bool deleteFiles = true}) async {
     final task = _tasks.remove(gid);
     task?._cancelToken?.cancel('deleted');

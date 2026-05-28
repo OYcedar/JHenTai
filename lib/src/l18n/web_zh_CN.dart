@@ -724,6 +724,8 @@ class WebZhCN {
       'downloads.reDownloadVisible': '重新下载当前列表画廊',
       'downloads.reDownloadConfirm': '删除此画廊已下载文件并重新开始下载？',
       'downloads.reDownloadVisibleConfirm': '删除当前可见的 @count 个画廊文件并重新下载？',
+      'downloads.reUnlockArchive': '重新解锁归档',
+      'downloads.reUnlockArchiveConfirm': '清空当前归档下载链接并重新解锁？',
       'downloads.changeVisibleGroup': '修改当前列表分组',
       'downloads.changeVisibleGroupConfirm': '将当前可见的 @count 个任务移动到此分组。',
       'downloads.deleteVisible': '删除当前列表任务',

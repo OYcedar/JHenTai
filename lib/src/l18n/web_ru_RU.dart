@@ -767,6 +767,9 @@ class WebRuRU {
           'Удалить скачанные файлы этой галереи и начать заново?',
       'downloads.reDownloadVisibleConfirm':
           'Удалить файлы и перезапустить @count видимых галерей?',
+      'downloads.reUnlockArchive': 'Разблокировать архив заново',
+      'downloads.reUnlockArchiveConfirm':
+          'Очистить ссылку загрузки архива и разблокировать заново?',
       'downloads.changeVisibleGroup': 'Изменить группу видимых задач',
       'downloads.changeVisibleGroupConfirm':
           'Переместить @count видимых задач в эту группу.',

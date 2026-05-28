@@ -314,6 +314,7 @@ class WebDownloadsController extends GetxController
       _svc.deleteGallery(gid, deleteFiles: deleteFiles);
   Future<void> pauseArchive(int gid) => _svc.pauseArchive(gid);
   Future<void> resumeArchive(int gid) => _svc.resumeArchive(gid);
+  Future<void> reUnlockArchive(int gid) => _svc.reUnlockArchive(gid);
   Future<void> deleteArchive(int gid, {bool deleteFiles = true}) =>
       _svc.deleteArchive(gid, deleteFiles: deleteFiles);
 
@@ -1114,6 +1115,27 @@ Future<bool> _showReDownloadGalleryDialog(BuildContext context) async {
   return ok == true;
 }
 
+Future<bool> _showReUnlockArchiveDialog(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('downloads.reUnlockArchive'.tr),
+      content: Text('downloads.reUnlockArchiveConfirm'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text('downloads.reUnlockArchive'.tr),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
+}
+
 Future<void> _renameDownloadGroup(
   BuildContext context,
   WebDownloadsController controller, {
@@ -1269,6 +1291,12 @@ class _ArchiveTaskGridCard extends StatelessWidget {
               : null,
       readRoute: '/web/reader/$gid/$token?mode=archive',
       onEdit: () => _showArchivePatchDialog(context, controller, task),
+      onReUnlock: status == 6
+          ? null
+          : () async {
+              if (!await _showReUnlockArchiveDialog(context)) return;
+              await controller.reUnlockArchive(gid);
+            },
       onPause: status == 3 ? () => controller.pauseArchive(gid) : null,
       onResume: status == 7 || status == 8
           ? () => controller.resumeArchive(gid)
@@ -1294,6 +1322,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
   final String readRoute;
   final VoidCallback onEdit;
   final VoidCallback? onReDownload;
+  final VoidCallback? onReUnlock;
   final VoidCallback? onPause;
   final VoidCallback? onResume;
   final VoidCallback onDelete;
@@ -1310,6 +1339,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
     required this.readRoute,
     required this.onEdit,
     this.onReDownload,
+    this.onReUnlock,
     required this.onPause,
     required this.onResume,
     required this.onDelete,
@@ -1376,6 +1406,9 @@ class _DownloadTaskGridCard extends StatelessWidget {
                           case _DownloadTaskAction.reDownload:
                             onReDownload?.call();
                             break;
+                          case _DownloadTaskAction.reUnlock:
+                            onReUnlock?.call();
+                            break;
                           case _DownloadTaskAction.pause:
                             onPause?.call();
                             break;
@@ -1409,6 +1442,14 @@ class _DownloadTaskGridCard extends StatelessWidget {
                             child: _DownloadTaskMenuItem(
                               icon: Icons.restart_alt,
                               label: 'reDownload'.tr,
+                            ),
+                          ),
+                        if (onReUnlock != null)
+                          PopupMenuItem(
+                            value: _DownloadTaskAction.reUnlock,
+                            child: _DownloadTaskMenuItem(
+                              icon: Icons.lock_reset,
+                              label: 'downloads.reUnlockArchive'.tr,
                             ),
                           ),
                         if (onPause != null)
@@ -1580,7 +1621,15 @@ class _DownloadTaskMenuItem extends StatelessWidget {
   }
 }
 
-enum _DownloadTaskAction { read, edit, reDownload, pause, resume, delete }
+enum _DownloadTaskAction {
+  read,
+  edit,
+  reDownload,
+  reUnlock,
+  pause,
+  resume,
+  delete,
+}
 
 // --- Gallery Tasks ---
 
@@ -2102,6 +2151,15 @@ class _ArchiveTaskCard extends StatelessWidget {
                   onPressed: () =>
                       _showArchivePatchDialog(context, controller, task),
                 ),
+                if (!isCompleted)
+                  IconButton(
+                    icon: const Icon(Icons.lock_reset, size: 20),
+                    tooltip: 'downloads.reUnlockArchive'.tr,
+                    onPressed: () async {
+                      if (!await _showReUnlockArchiveDialog(context)) return;
+                      await controller.reUnlockArchive(gid);
+                    },
+                  ),
                 if (isCompleted)
                   IconButton(
                     icon: const Icon(Icons.menu_book, color: Colors.green),

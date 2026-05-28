@@ -428,6 +428,10 @@ class BackendApiClient {
     await _dio.post('/api/download/archive/$gid/resume');
   }
 
+  Future<void> reUnlockArchiveDownload(int gid) async {
+    await _dio.post('/api/download/archive/$gid/reunlock');
+  }
+
   Future<void> deleteArchiveDownload(int gid, {bool deleteFiles = true}) async {
     await _dio.delete(
       '/api/download/archive/$gid',

@@ -39,6 +39,7 @@ class DownloadRoutes {
     router.patch('/archive/<gid>', _patchArchiveDownload);
     router.post('/archive/<gid>/pause', _pauseArchiveDownload);
     router.post('/archive/<gid>/resume', _resumeArchiveDownload);
+    router.post('/archive/<gid>/reunlock', _reUnlockArchive);
     router.delete('/archive/<gid>', _deleteArchiveDownload);
     router.get('/archive/<gid>/images', _listArchiveImages);
 
@@ -304,6 +305,22 @@ class DownloadRoutes {
     if (id == null)
       return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     _archiveService.resumeDownload(id);
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
+  }
+
+  Future<Response> _reUnlockArchive(Request request, String gid) async {
+    final id = int.tryParse(gid);
+    if (id == null) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    }
+    final ok = await _archiveService.reUnlock(id);
+    if (!ok) {
+      return Response.notFound(
+        jsonEncode({'success': false, 'error': 'Archive task not found'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
     return Response.ok(jsonEncode({'success': true}),
         headers: {'Content-Type': 'application/json'});
   }
