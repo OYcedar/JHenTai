@@ -157,6 +157,15 @@ class WebGalleryDetailController extends GetxController {
     return '?${parts.join('&')}';
   }
 
+  String get shareableGalleryUrl {
+    final exact = galleryUrl.value.trim();
+    if (exact.isNotEmpty) {
+      return exact;
+    }
+    final domain = site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
+    return 'https://$domain/g/$gid/$token/';
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -693,14 +702,11 @@ class WebGalleryDetailPage extends StatelessWidget {
             Text(controller.title.value, overflow: TextOverflow.ellipsis)),
         actions: [
           Obx(() {
-            final domain =
-                controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
             return IconButton(
               icon: const Icon(Icons.copy),
               tooltip: 'detail.copyUrl'.tr,
               onPressed: () {
-                final url =
-                    'https://$domain/g/${controller.gid}/${controller.token}/';
+                final url = controller.shareableGalleryUrl;
                 Clipboard.setData(ClipboardData(text: url));
                 Get.snackbar('detail.copied'.tr, url,
                     snackPosition: SnackPosition.BOTTOM);
@@ -985,9 +991,7 @@ class WebGalleryDetailPage extends StatelessWidget {
   void _handleOverflowMenu(BuildContext context, String value) {
     switch (value) {
       case 'share':
-        final domain =
-            controller.site.value == 'EX' ? 'exhentai.org' : 'e-hentai.org';
-        final url = 'https://$domain/g/${controller.gid}/${controller.token}/';
+        final url = controller.shareableGalleryUrl;
         try {
           final shareData =
               web.ShareData(title: controller.title.value, url: url);
