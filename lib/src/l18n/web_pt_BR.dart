@@ -34,6 +34,8 @@ class WebPtBR {
       'restoredGalleryCount': 'Galerias restauradas',
       'restoredArchiveCount': 'Arquivos restaurados',
       'reDownload': 'Baixar novamente',
+      'deleteTask': 'Apagar apenas tarefa',
+      'deleteTaskAndImages': 'Apagar tarefa e imagens',
       'hasCopiedToClipboard': 'Copiado para a área de transferência',
       'displayFirstPageAlone': 'Mostrar primeira página sozinha',
       'showThumbnails': 'Mostrar miniaturas',
@@ -193,7 +195,8 @@ class WebPtBR {
       'downloads.pause': 'Pausar',
       'downloads.resume': 'Retomar',
       'downloads.deleteTitle': 'Excluir Download',
-      'downloads.deleteConfirm': 'Excluir este download e seus arquivos?',
+      'downloads.deleteConfirm':
+          'Escolha se deseja manter os arquivos baixados.',
       'downloads.loadFailed': 'Falha ao carregar tarefas: @error',
       'downloads.gStatus0': 'Nenhum',
       'downloads.gStatus1': 'Baixando',
@@ -662,7 +665,7 @@ class WebPtBR {
           'Mover @count tarefas visíveis para este grupo.',
       'downloads.deleteVisible': 'Excluir tarefas visíveis',
       'downloads.deleteVisibleConfirm':
-          'Excluir @count tarefas visíveis e seus arquivos?',
+          'Escolha como excluir @count tarefas visíveis.',
       'downloads.noBatchTargets': 'Nenhuma tarefa compatível na lista atual',
       'downloads.batchPaused': '@count tarefas pausadas',
       'downloads.batchResumed': '@count tarefas retomadas',

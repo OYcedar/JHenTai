@@ -293,10 +293,12 @@ class WebDownloadsController extends GetxController
 
   Future<void> pauseGallery(int gid) => _svc.pauseGallery(gid);
   Future<void> resumeGallery(int gid) => _svc.resumeGallery(gid);
-  Future<void> deleteGallery(int gid) => _svc.deleteGallery(gid);
+  Future<void> deleteGallery(int gid, {bool deleteFiles = true}) =>
+      _svc.deleteGallery(gid, deleteFiles: deleteFiles);
   Future<void> pauseArchive(int gid) => _svc.pauseArchive(gid);
   Future<void> resumeArchive(int gid) => _svc.resumeArchive(gid);
-  Future<void> deleteArchive(int gid) => _svc.deleteArchive(gid);
+  Future<void> deleteArchive(int gid, {bool deleteFiles = true}) =>
+      _svc.deleteArchive(gid, deleteFiles: deleteFiles);
 
   Future<void> refresh() => _svc.refresh();
 
@@ -358,7 +360,7 @@ class WebDownloadsController extends GetxController
       return;
     }
 
-    final ok = await Get.dialog<bool>(
+    final deleteFiles = await Get.dialog<bool>(
       AlertDialog(
         title: Text('downloads.deleteVisible'.tr),
         content: Text(
@@ -366,21 +368,27 @@ class WebDownloadsController extends GetxController
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(result: false),
+            onPressed: () => Get.back(),
             child: Text('common.cancel'.tr),
           ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('deleteTask'.tr,
+                style: const TextStyle(color: Colors.red)),
+          ),
+          TextButton(
             onPressed: () => Get.back(result: true),
-            child: Text('common.delete'.tr,
-                style: const TextStyle(color: Colors.white)),
+            child: Text('deleteTaskAndImages'.tr,
+                style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
-    if (ok != true) return;
+    if (deleteFiles == null) return;
 
-    await Future.wait(ids.map(galleryTab ? deleteGallery : deleteArchive));
+    await Future.wait(ids.map((gid) => galleryTab
+        ? deleteGallery(gid, deleteFiles: deleteFiles)
+        : deleteArchive(gid, deleteFiles: deleteFiles)));
     await refresh();
     Get.snackbar('common.success'.tr,
         'downloads.batchDeleted'.trParams({'count': '${ids.length}'}),
@@ -867,6 +875,36 @@ void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl,
   );
 }
 
+Future<bool?> _showDeleteTaskDialog(BuildContext context) {
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('downloads.deleteTitle'.tr),
+      content: Text('downloads.deleteConfirm'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text('common.cancel'.tr),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(
+            'deleteTask'.tr,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text(
+            'deleteTaskAndImages'.tr,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 // --- Gallery Tasks ---
 
 class _GalleryTaskList extends StatelessWidget {
@@ -1110,27 +1148,10 @@ class _GalleryTaskCard extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, int gid) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('downloads.deleteTitle'.tr),
-        content: Text('downloads.deleteConfirm'.tr),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('common.cancel'.tr)),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.deleteGallery(gid);
-            },
-            child: Text('common.delete'.tr,
-                style: const TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+  Future<void> _confirmDelete(BuildContext context, int gid) async {
+    final deleteFiles = await _showDeleteTaskDialog(context);
+    if (deleteFiles == null) return;
+    await controller.deleteGallery(gid, deleteFiles: deleteFiles);
   }
 }
 
@@ -1374,27 +1395,10 @@ class _ArchiveTaskCard extends StatelessWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, int gid) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('downloads.deleteTitle'.tr),
-        content: Text('downloads.deleteConfirm'.tr),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('common.cancel'.tr)),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.deleteArchive(gid);
-            },
-            child: Text('common.delete'.tr,
-                style: const TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+  Future<void> _confirmDelete(BuildContext context, int gid) async {
+    final deleteFiles = await _showDeleteTaskDialog(context);
+    if (deleteFiles == null) return;
+    await controller.deleteArchive(gid, deleteFiles: deleteFiles);
   }
 }
 

@@ -191,12 +191,18 @@ class WebDownloadService extends GetxController {
   bool isGalleryDownloaded(int gid) => getGalleryStatus(gid) == 3;
   bool isGalleryDownloading(int gid) => getGalleryStatus(gid) == 1;
 
-  Future<void> pauseGallery(int gid) => backendApiClient.pauseGalleryDownload(gid);
-  Future<void> resumeGallery(int gid) => backendApiClient.resumeGalleryDownload(gid);
-  Future<void> deleteGallery(int gid) => backendApiClient.deleteGalleryDownload(gid);
-  Future<void> pauseArchive(int gid) => backendApiClient.pauseArchiveDownload(gid);
-  Future<void> resumeArchive(int gid) => backendApiClient.resumeArchiveDownload(gid);
-  Future<void> deleteArchive(int gid) => backendApiClient.deleteArchiveDownload(gid);
+  Future<void> pauseGallery(int gid) =>
+      backendApiClient.pauseGalleryDownload(gid);
+  Future<void> resumeGallery(int gid) =>
+      backendApiClient.resumeGalleryDownload(gid);
+  Future<void> deleteGallery(int gid, {bool deleteFiles = true}) =>
+      backendApiClient.deleteGalleryDownload(gid, deleteFiles: deleteFiles);
+  Future<void> pauseArchive(int gid) =>
+      backendApiClient.pauseArchiveDownload(gid);
+  Future<void> resumeArchive(int gid) =>
+      backendApiClient.resumeArchiveDownload(gid);
+  Future<void> deleteArchive(int gid, {bool deleteFiles = true}) =>
+      backendApiClient.deleteArchiveDownload(gid, deleteFiles: deleteFiles);
 
   Future<void> refresh() => _loadTasks();
 }

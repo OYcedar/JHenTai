@@ -36,6 +36,8 @@ class WebEnUS {
       'restoredGalleryCount': 'Restored galleries',
       'restoredArchiveCount': 'Restored archives',
       'reDownload': 'Re-Download',
+      'deleteTask': 'Delete Task Only',
+      'deleteTaskAndImages': 'Delete Task And Images',
       'hasCopiedToClipboard': 'Copied to clipboard',
       'displayFirstPageAlone': 'Display First Page Alone',
       'showThumbnails': 'Show Thumbnails',
@@ -192,7 +194,7 @@ class WebEnUS {
       'downloads.pause': 'Pause',
       'downloads.resume': 'Resume',
       'downloads.deleteTitle': 'Delete Download',
-      'downloads.deleteConfirm': 'Delete this download and its files?',
+      'downloads.deleteConfirm': 'Choose whether to keep downloaded files.',
       'downloads.loadFailed': 'Failed to load tasks: @error',
       // gallery statuses
       'downloads.gStatus0': 'None',
@@ -668,7 +670,7 @@ class WebEnUS {
           'Move @count visible tasks to this group.',
       'downloads.deleteVisible': 'Delete visible tasks',
       'downloads.deleteVisibleConfirm':
-          'Delete @count visible tasks and their files?',
+          'Choose how to delete @count visible tasks.',
       'downloads.noBatchTargets': 'No matching tasks in the current list',
       'downloads.batchPaused': 'Paused @count tasks',
       'downloads.batchResumed': 'Resumed @count tasks',
