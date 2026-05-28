@@ -36,6 +36,13 @@ List<String> _sortedDownloadGroupCandidates(WebDownloadService svc) {
   return list;
 }
 
+int? _webDetailThumbnailColumnsSetting() {
+  final raw =
+      web.window.localStorage.getItem('jh_web_detail_thumbnail_columns');
+  final value = int.tryParse(raw ?? '');
+  return value != null && value >= 2 && value <= 8 ? value : null;
+}
+
 Map<String, dynamic> _thumbMapForDetail(
     WebGalleryDetailController c, int index) {
   if (index < c.galleryThumbnails.length) {
@@ -2335,53 +2342,67 @@ class WebGalleryDetailPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1,
-            ),
-            itemCount: displayCount,
-            itemBuilder: (ctx, index) {
-              return InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: () => Get.toNamed(
-                    '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: index)}'),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ColoredBox(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                    ),
-                    Positioned.fill(
-                      child: WebEhThumbnail(
-                        data: _thumbMapForDetail(controller, index),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 4,
-                      right: 4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${index + 1}',
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11),
-                        ),
-                      ),
-                    ),
-                  ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final configuredColumns = _webDetailThumbnailColumnsSetting();
+              final autoColumns = constraints.maxWidth > 900
+                  ? 6
+                  : constraints.maxWidth > 640
+                      ? 5
+                      : constraints.maxWidth > 420
+                          ? 4
+                          : 3;
+              final columns = configuredColumns ?? autoColumns;
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1,
                 ),
+                itemCount: displayCount,
+                itemBuilder: (ctx, index) {
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => Get.toNamed(
+                        '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: index)}'),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ColoredBox(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
+                        ),
+                        Positioned.fill(
+                          child: WebEhThumbnail(
+                            data: _thumbMapForDetail(controller, index),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 11),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           ),

@@ -337,6 +337,9 @@ class WebRuRU {
       'settings.listModeCompact': 'Компактно',
       'settings.gridColumns': 'Колонки сетки',
       'settings.gridColumnsAuto': 'Авто',
+      'settings.detailThumbnailColumns': 'Колонки миниатюр в деталях',
+      'settings.detailThumbnailColumnsHint':
+          'Применяется к миниатюрам на странице галереи и полной странице миниатюр.',
       'settings.galleryListStyleHint':
           'Применяется к списку галерей на веб-главной сразу и сохраняется в этом браузере.',
       'settings.networkWebSummary':

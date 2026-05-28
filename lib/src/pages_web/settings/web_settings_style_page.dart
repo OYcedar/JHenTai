@@ -12,8 +12,12 @@ class WebSettingsStylePage extends StatefulWidget {
 }
 
 class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
+  static const detailThumbnailColumnsStorageKey =
+      'jh_web_detail_thumbnail_columns';
+
   late String listMode;
   int? gridColumns;
+  int? detailThumbnailColumns;
 
   @override
   void initState() {
@@ -30,11 +34,19 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
     gridColumns = home?.gridColumns.value ??
         _parseGridColumns(web.window.localStorage
             .getItem(WebHomeController.gridColumnsStorageKey));
+    detailThumbnailColumns = _parseDetailThumbnailColumns(
+      web.window.localStorage.getItem(detailThumbnailColumnsStorageKey),
+    );
   }
 
   int? _parseGridColumns(String? raw) {
     final value = int.tryParse(raw ?? '');
     return value != null && value >= 1 && value <= 6 ? value : null;
+  }
+
+  int? _parseDetailThumbnailColumns(String? raw) {
+    final value = int.tryParse(raw ?? '');
+    return value != null && value >= 2 && value <= 8 ? value : null;
   }
 
   void _setListMode(String mode) {
@@ -58,6 +70,16 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
     } else {
       web.window.localStorage
           .setItem(WebHomeController.gridColumnsStorageKey, '$count');
+    }
+  }
+
+  void _setDetailThumbnailColumns(int? count) {
+    setState(() => detailThumbnailColumns = count);
+    if (count == null) {
+      web.window.localStorage.removeItem(detailThumbnailColumnsStorageKey);
+    } else {
+      web.window.localStorage
+          .setItem(detailThumbnailColumnsStorageKey, '$count');
     }
   }
 
@@ -181,7 +203,7 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
                             style: Theme.of(context).textTheme.titleSmall),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<int?>(
-                          value: gridColumns,
+                          initialValue: gridColumns,
                           decoration: const InputDecoration(
                               border: OutlineInputBorder()),
                           items: [
@@ -198,6 +220,32 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
                         const SizedBox(height: 8),
                         Text(
                           'settings.galleryListStyleHint'.tr,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey),
+                        ),
+                        const Divider(height: 32),
+                        Text('settings.detailThumbnailColumns'.tr,
+                            style: Theme.of(context).textTheme.titleSmall),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<int?>(
+                          initialValue: detailThumbnailColumns,
+                          decoration: const InputDecoration(
+                              border: OutlineInputBorder()),
+                          items: [
+                            DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('settings.gridColumnsAuto'.tr)),
+                            for (final n in [2, 3, 4, 5, 6, 7, 8])
+                              DropdownMenuItem<int?>(
+                                  value: n, child: Text('$n')),
+                          ],
+                          onChanged: _setDetailThumbnailColumns,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'settings.detailThumbnailColumnsHint'.tr,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

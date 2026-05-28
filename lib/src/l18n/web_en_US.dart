@@ -339,6 +339,9 @@ class WebEnUS {
       'settings.listModeCompact': 'Compact',
       'settings.gridColumns': 'Grid columns',
       'settings.gridColumnsAuto': 'Auto',
+      'settings.detailThumbnailColumns': 'Detail thumbnail columns',
+      'settings.detailThumbnailColumnsHint':
+          'Applies to gallery detail thumbnails and the full thumbnail page.',
       'settings.galleryListStyleHint':
           'Applies to the web home gallery list immediately and is saved in this browser.',
       'settings.networkWebSummary':

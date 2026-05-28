@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
+import 'package:web/web.dart' as web;
 
 Map<String, dynamic> _thumbMapForThumbsPage(
     WebThumbnailsController c, int index) {
@@ -22,6 +23,13 @@ Map<String, dynamic> _thumbMapForThumbsPage(
     return {'thumbUrl': cover, 'isLarge': true};
   }
   return {'thumbUrl': '', 'isLarge': true};
+}
+
+int? _webDetailThumbnailColumnsSetting() {
+  final raw =
+      web.window.localStorage.getItem('jh_web_detail_thumbnail_columns');
+  final value = int.tryParse(raw ?? '');
+  return value != null && value >= 2 && value <= 8 ? value : null;
 }
 
 class WebThumbnailsController extends GetxController {
@@ -183,13 +191,15 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
       const padding = 8.0;
       const spacing = 6.0;
       const childAspectRatio = 0.7;
-      final crossAxisCount = constraints.maxWidth > 1200
-          ? 8
-          : constraints.maxWidth > 800
-              ? 6
-              : constraints.maxWidth > 500
-                  ? 4
-                  : 3;
+      final configuredColumns = _webDetailThumbnailColumnsSetting();
+      final crossAxisCount = configuredColumns ??
+          (constraints.maxWidth > 1200
+              ? 8
+              : constraints.maxWidth > 800
+                  ? 6
+                  : constraints.maxWidth > 500
+                      ? 4
+                      : 3);
       final usableWidth = math.max(0.0,
           constraints.maxWidth - padding * 2 - spacing * (crossAxisCount - 1));
       final tileWidth = usableWidth / crossAxisCount;

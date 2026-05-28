@@ -339,6 +339,9 @@ class WebPtBR {
       'settings.listModeCompact': 'Compacta',
       'settings.gridColumns': 'Colunas da grade',
       'settings.gridColumnsAuto': 'Automático',
+      'settings.detailThumbnailColumns': 'Colunas de miniaturas dos detalhes',
+      'settings.detailThumbnailColumnsHint':
+          'Aplica às miniaturas dos detalhes da galeria e à página completa de miniaturas.',
       'settings.galleryListStyleHint':
           'Aplica imediatamente à lista de galerias da página inicial web e fica salvo neste navegador.',
       'settings.networkWebSummary':

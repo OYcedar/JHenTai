@@ -319,6 +319,8 @@ class WebZhTW {
       'settings.listModeCompact': '緊湊',
       'settings.gridColumns': '網格欄數',
       'settings.gridColumnsAuto': '自動',
+      'settings.detailThumbnailColumns': '詳情頁縮圖欄數',
+      'settings.detailThumbnailColumnsHint': '套用到畫廊詳情頁縮圖和完整縮圖頁。',
       'settings.galleryListStyleHint': '會立即套用到 Web 首頁畫廊列表，並儲存在目前瀏覽器。',
       'settings.networkWebSummary': '網路代理狀態請在「網路」頁查看；修改 Docker 環境變數後需重啟伺服器。',
       'settings.proxyRouting': '請求路由',

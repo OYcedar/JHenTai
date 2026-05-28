@@ -319,6 +319,8 @@ class WebZhCN {
       'settings.listModeCompact': '紧凑',
       'settings.gridColumns': '网格列数',
       'settings.gridColumnsAuto': '自动',
+      'settings.detailThumbnailColumns': '详情页缩略图列数',
+      'settings.detailThumbnailColumnsHint': '应用到画廊详情页缩略图和完整缩略图页。',
       'settings.galleryListStyleHint': '会立即应用到 Web 首页画廊列表，并保存在当前浏览器。',
       'settings.networkWebSummary': '网络代理状态请在「网络」页查看；修改 Docker 环境变量后需重启服务端。',
       'settings.proxyRouting': '请求路由',

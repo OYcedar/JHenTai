@@ -323,6 +323,8 @@ class WebKoKR {
       'settings.listModeCompact': '간단히',
       'settings.gridColumns': '그리드 열 수',
       'settings.gridColumnsAuto': '자동',
+      'settings.detailThumbnailColumns': '상세 썸네일 열 수',
+      'settings.detailThumbnailColumnsHint': '갤러리 상세 썸네일과 전체 썸네일 페이지에 적용됩니다.',
       'settings.galleryListStyleHint': '웹 홈 갤러리 목록에 즉시 적용되며 이 브라우저에 저장됩니다.',
       'settings.networkWebSummary':
           '프록시 상태는 네트워크 페이지에서 확인하세요. Docker 환경 변수를 변경한 뒤 서버를 재시작하세요.',
