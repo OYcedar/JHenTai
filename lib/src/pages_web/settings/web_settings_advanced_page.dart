@@ -204,12 +204,11 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
         return;
       }
       final decoded = jsonDecode(text);
-      if (decoded is! Map) {
-        throw const FormatException('JSON root must be an object');
+      if (decoded is! Map && decoded is! List) {
+        throw const FormatException('JSON root must be an object or list');
       }
       setState(() => importingData = true);
-      final result = await backendApiClient
-          .importUserData(Map<String, dynamic>.from(decoded));
+      final result = await backendApiClient.importUserData(decoded as Object);
       final imported = result['imported'] is Map
           ? Map<String, dynamic>.from(result['imported'] as Map)
           : const <String, dynamic>{};

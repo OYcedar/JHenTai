@@ -301,130 +301,35 @@ class SettingRoutes {
   }
 
   Future<Response> _importData(Request request) async {
-    Map<String, dynamic> body;
+    dynamic body;
     try {
-      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      body = jsonDecode(await request.readAsString());
     } catch (_) {
       return Response.badRequest(
         body: jsonEncode({'error': 'Invalid JSON body'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
-    if (body['format'] != 'jhentai-web-export-v1' || body['sections'] is! Map) {
-      return Response.badRequest(
-        body: jsonEncode({'error': 'Unsupported import format'}),
-        headers: {'Content-Type': 'application/json'},
-      );
-    }
-
-    final sections = Map<String, dynamic>.from(body['sections'] as Map);
-    final imported = <String, int>{
-      'config': 0,
-      'blockRules': 0,
-      'history': 0,
-      'searchHistory': 0,
-      'quickSearch': 0,
-    };
-    final now = DateTime.now().toIso8601String();
 
     db.raw.execute('BEGIN TRANSACTION');
+    late Map<String, int> imported;
+    late String source;
     try {
-      for (final row in _importRows(sections['config'])) {
-        final key = _importString(row['key']);
-        if (key.isEmpty || _reservedKeys.contains(key)) {
-          continue;
-        }
-        final subKey = _importString(row['sub_key']);
-        final value = row['value'];
-        final valueStr = value is String ? value : jsonEncode(value);
-        db.raw.execute(
-          'INSERT OR REPLACE INTO config (key, sub_key, value, utime) VALUES (?, ?, ?, ?)',
-          [key, subKey, valueStr, _importString(row['utime'], fallback: now)],
+      if (body is Map &&
+          body['format'] == 'jhentai-web-export-v1' &&
+          body['sections'] is Map) {
+        imported = _importWebExportSections(
+            Map<String, dynamic>.from(body['sections']));
+        source = 'web';
+      } else if (body is List) {
+        imported = _importAppCloudConfigs(body);
+        source = 'app';
+      } else {
+        db.raw.execute('ROLLBACK');
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Unsupported import format'}),
+          headers: {'Content-Type': 'application/json'},
         );
-        imported['config'] = imported['config']! + 1;
-      }
-
-      final existingRules = db
-          .selectAllBlockRules()
-          .map((rule) => _blockRuleFingerprint(rule))
-          .toSet();
-      for (final row in _importRows(sections['blockRules'])) {
-        final rule = {
-          'group_id': _importString(row['group_id']),
-          'target': _importString(row['target'], fallback: 'gallery'),
-          'attribute': _importString(row['attribute'], fallback: 'title'),
-          'pattern': _importString(row['pattern'], fallback: 'like'),
-          'expression': _importString(row['expression']),
-        };
-        if ((rule['expression'] as String).isEmpty) {
-          continue;
-        }
-        final fingerprint = _blockRuleFingerprint(rule);
-        if (existingRules.contains(fingerprint)) {
-          continue;
-        }
-        db.insertBlockRule(rule);
-        existingRules.add(fingerprint);
-        imported['blockRules'] = imported['blockRules']! + 1;
-      }
-
-      for (final row in _importRows(sections['history'])) {
-        final gid = _importInt(row['gid']);
-        if (gid == null) {
-          continue;
-        }
-        db.raw.execute(
-          '''
-          INSERT OR REPLACE INTO history
-          (gid, token, title, cover_url, category, visit_time)
-          VALUES (?, ?, ?, ?, ?, ?)
-        ''',
-          [
-            gid,
-            _importString(row['token']),
-            _importString(row['title']),
-            _importString(row['cover_url']),
-            _importString(row['category']),
-            _importString(row['visit_time'], fallback: now),
-          ],
-        );
-        imported['history'] = imported['history']! + 1;
-      }
-
-      for (final row in _importRows(sections['searchHistory'])) {
-        final keyword = _importString(row['keyword']).trim();
-        if (keyword.isEmpty) {
-          continue;
-        }
-        db.raw.execute(
-          '''
-          INSERT OR REPLACE INTO search_history
-          (keyword, use_count, last_used)
-          VALUES (?, ?, ?)
-        ''',
-          [
-            keyword,
-            _importInt(row['use_count']) ?? 1,
-            _importString(row['last_used'], fallback: now),
-          ],
-        );
-        imported['searchHistory'] = imported['searchHistory']! + 1;
-      }
-
-      for (final row in _importRows(sections['quickSearch'])) {
-        final name = _importString(row['name']).trim();
-        if (name.isEmpty) {
-          continue;
-        }
-        final config = row['config'] is String
-            ? row['config'] as String
-            : jsonEncode(row['config']);
-        db.upsertQuickSearch(
-          name,
-          config,
-          sortOrder: _importInt(row['sort_order']) ?? 0,
-        );
-        imported['quickSearch'] = imported['quickSearch']! + 1;
       }
 
       db.raw.execute('COMMIT');
@@ -437,7 +342,7 @@ class SettingRoutes {
     }
 
     return Response.ok(
-      jsonEncode({'success': true, 'imported': imported}),
+      jsonEncode({'success': true, 'source': source, 'imported': imported}),
       headers: {'Content-Type': 'application/json'},
     );
   }
@@ -570,6 +475,329 @@ class SettingRoutes {
       map[key] = row[key];
     }
     return map;
+  }
+
+  Map<String, int> _importWebExportSections(Map<String, dynamic> sections) {
+    final imported = _emptyImportCounts();
+    final now = DateTime.now().toIso8601String();
+
+    for (final row in _importRows(sections['config'])) {
+      final key = _importString(row['key']);
+      if (key.isEmpty || _reservedKeys.contains(key)) {
+        continue;
+      }
+      final subKey = _importString(row['sub_key']);
+      final value = row['value'];
+      final valueStr = value is String ? value : jsonEncode(value);
+      _writeConfigRow(
+        key: key,
+        subKey: subKey,
+        value: valueStr,
+        utime: _importString(row['utime'], fallback: now),
+      );
+      imported['config'] = imported['config']! + 1;
+    }
+
+    final existingRules = db
+        .selectAllBlockRules()
+        .map((rule) => _blockRuleFingerprint(rule))
+        .toSet();
+    for (final row in _importRows(sections['blockRules'])) {
+      if (_insertBlockRuleIfNew(row, existingRules)) {
+        imported['blockRules'] = imported['blockRules']! + 1;
+      }
+    }
+
+    for (final row in _importRows(sections['history'])) {
+      final gid = _importInt(row['gid']);
+      if (gid == null) {
+        continue;
+      }
+      _writeHistoryRow(
+        gid: gid,
+        token: _importString(row['token']),
+        title: _importString(row['title']),
+        coverUrl: _importString(row['cover_url']),
+        category: _importString(row['category']),
+        visitTime: _importString(row['visit_time'], fallback: now),
+      );
+      imported['history'] = imported['history']! + 1;
+    }
+
+    for (final row in _importRows(sections['searchHistory'])) {
+      final keyword = _importString(row['keyword']).trim();
+      if (keyword.isEmpty) {
+        continue;
+      }
+      _writeSearchHistoryRow(
+        keyword: keyword,
+        useCount: _importInt(row['use_count']) ?? 1,
+        lastUsed: _importString(row['last_used'], fallback: now),
+      );
+      imported['searchHistory'] = imported['searchHistory']! + 1;
+    }
+
+    for (final row in _importRows(sections['quickSearch'])) {
+      final name = _importString(row['name']).trim();
+      if (name.isEmpty) {
+        continue;
+      }
+      final config = row['config'] is String
+          ? row['config'] as String
+          : jsonEncode(row['config']);
+      db.upsertQuickSearch(
+        name,
+        config,
+        sortOrder: _importInt(row['sort_order']) ?? 0,
+      );
+      imported['quickSearch'] = imported['quickSearch']! + 1;
+    }
+
+    return imported;
+  }
+
+  Map<String, int> _importAppCloudConfigs(List<dynamic> configs) {
+    final imported = _emptyImportCounts();
+    final existingRules = db
+        .selectAllBlockRules()
+        .map((rule) => _blockRuleFingerprint(rule))
+        .toSet();
+    for (final item in configs.whereType<Map>()) {
+      final config = Map<String, dynamic>.from(item);
+      final type = _importInt(config['type']);
+      final raw = _importString(config['config']);
+      if (type == null || raw.isEmpty) {
+        continue;
+      }
+      final decoded = jsonDecode(raw);
+      switch (type) {
+        case 1:
+          for (final row in _importRows(decoded)) {
+            final subKey = _importString(row['subConfigKey']).trim();
+            final value = _importString(row['value']).trim();
+            if (subKey.isEmpty || value.isEmpty) {
+              continue;
+            }
+            _writeConfigRow(
+              key: 'read_progress_$subKey',
+              value: value,
+              utime: _importString(row['utime'],
+                  fallback: DateTime.now().toIso8601String()),
+            );
+            imported['readProgress'] = imported['readProgress']! + 1;
+          }
+        case 2:
+          if (decoded is Map) {
+            var order = 0;
+            for (final entry in decoded.entries) {
+              final name = entry.key.toString().trim();
+              if (name.isEmpty) {
+                continue;
+              }
+              db.upsertQuickSearch(
+                name,
+                entry.value is String
+                    ? entry.value as String
+                    : jsonEncode(entry.value),
+                sortOrder: order++,
+              );
+              imported['quickSearch'] = imported['quickSearch']! + 1;
+            }
+          }
+        case 3:
+          for (final row in _importRows(decoded)) {
+            final rule = _convertAppBlockRule(row);
+            if (rule != null && _insertBlockRuleIfNew(rule, existingRules)) {
+              imported['blockRules'] = imported['blockRules']! + 1;
+            }
+          }
+        case 4:
+          if (decoded is List) {
+            var offset = 0;
+            final now = DateTime.now();
+            for (final item in decoded) {
+              final keyword = _importString(item).trim();
+              if (keyword.isEmpty) {
+                continue;
+              }
+              _writeSearchHistoryRow(
+                keyword: keyword,
+                useCount: 1,
+                lastUsed:
+                    now.subtract(Duration(seconds: offset++)).toIso8601String(),
+              );
+              imported['searchHistory'] = imported['searchHistory']! + 1;
+            }
+          }
+        case 5:
+          for (final row in _importRows(decoded)) {
+            if (_importAppHistoryRow(row)) {
+              imported['history'] = imported['history']! + 1;
+            }
+          }
+      }
+    }
+    return imported;
+  }
+
+  Map<String, int> _emptyImportCounts() {
+    return {
+      'config': 0,
+      'blockRules': 0,
+      'history': 0,
+      'searchHistory': 0,
+      'quickSearch': 0,
+      'readProgress': 0,
+    };
+  }
+
+  void _writeConfigRow({
+    required String key,
+    String subKey = '',
+    required String value,
+    required String utime,
+  }) {
+    db.raw.execute(
+      'INSERT OR REPLACE INTO config (key, sub_key, value, utime) VALUES (?, ?, ?, ?)',
+      [key, subKey, value, utime],
+    );
+  }
+
+  bool _insertBlockRuleIfNew(
+    Map<String, dynamic> row,
+    Set<String> existingRules,
+  ) {
+    final rule = {
+      'group_id': _importString(row['group_id'] ?? row['groupId']),
+      'target': _importString(row['target'], fallback: 'gallery'),
+      'attribute': _importString(row['attribute'], fallback: 'title'),
+      'pattern': _importString(row['pattern'], fallback: 'like'),
+      'expression': _importString(row['expression']),
+    };
+    if ((rule['expression'] as String).isEmpty) {
+      return false;
+    }
+    final fingerprint = _blockRuleFingerprint(rule);
+    if (existingRules.contains(fingerprint)) {
+      return false;
+    }
+    db.insertBlockRule(rule);
+    existingRules.add(fingerprint);
+    return true;
+  }
+
+  Map<String, dynamic>? _convertAppBlockRule(Map<String, dynamic> row) {
+    const targets = {
+      0: 'gallery',
+      1: 'comment',
+    };
+    const attributes = {
+      0: 'title',
+      10: 'tag',
+      20: 'uploader',
+      30: 'gid',
+      100: 'userName',
+      110: 'userId',
+      120: 'score',
+      130: 'content',
+    };
+    const patterns = {
+      0: 'equal',
+      10: 'gt',
+      20: 'gte',
+      30: 'st',
+      40: 'ste',
+      50: 'like',
+      60: 'notContain',
+      70: 'regex',
+    };
+    final target = targets[_importInt(row['target'])];
+    final attribute = attributes[_importInt(row['attribute'])];
+    final pattern = patterns[_importInt(row['pattern'])];
+    final expression = _importString(row['expression']);
+    if (target == null ||
+        attribute == null ||
+        pattern == null ||
+        expression.isEmpty) {
+      return null;
+    }
+    return {
+      'group_id': _importString(row['groupId']),
+      'target': target,
+      'attribute': attribute,
+      'pattern': pattern,
+      'expression': expression,
+    };
+  }
+
+  void _writeSearchHistoryRow({
+    required String keyword,
+    required int useCount,
+    required String lastUsed,
+  }) {
+    db.raw.execute(
+      '''
+      INSERT OR REPLACE INTO search_history
+      (keyword, use_count, last_used)
+      VALUES (?, ?, ?)
+    ''',
+      [keyword, useCount, lastUsed],
+    );
+  }
+
+  void _writeHistoryRow({
+    required int gid,
+    required String token,
+    required String title,
+    required String coverUrl,
+    required String category,
+    required String visitTime,
+  }) {
+    db.raw.execute(
+      '''
+      INSERT OR REPLACE INTO history
+      (gid, token, title, cover_url, category, visit_time)
+      VALUES (?, ?, ?, ?, ?, ?)
+    ''',
+      [gid, token, title, coverUrl, category, visitTime],
+    );
+  }
+
+  bool _importAppHistoryRow(Map<String, dynamic> row) {
+    final gid = _importInt(row['gid']);
+    final jsonBodyRaw = row['jsonBody'];
+    if (gid == null || jsonBodyRaw is! String || jsonBodyRaw.isEmpty) {
+      return false;
+    }
+    final body = jsonDecode(jsonBodyRaw);
+    if (body is! Map) {
+      return false;
+    }
+    final gallery = Map<String, dynamic>.from(body);
+    final parsed = _parseGalleryUrl(_importString(gallery['galleryUrl']));
+    _writeHistoryRow(
+      gid: gid,
+      token: parsed.token,
+      title: _importString(gallery['title']),
+      coverUrl: _importString(gallery['coverUrl']),
+      category: _importString(gallery['category']),
+      visitTime: _importString(
+        row['lastReadTime'],
+        fallback: DateTime.now().toIso8601String(),
+      ),
+    );
+    return true;
+  }
+
+  ({int? gid, String token}) _parseGalleryUrl(String url) {
+    final match = RegExp(r'/g/(\d+)/([^/?#]+)').firstMatch(url);
+    if (match == null) {
+      return (gid: null, token: '');
+    }
+    return (
+      gid: int.tryParse(match.group(1) ?? ''),
+      token: match.group(2) ?? ''
+    );
   }
 
   List<Map<String, dynamic>> _importRows(dynamic value) {

@@ -402,10 +402,10 @@ class WebKoKR {
       'settings.exportDataFailed': '데이터 내보내기 실패: @error',
       'settings.importData': '데이터 가져오기',
       'settings.importDataHint':
-          '웹 내보내기 JSON을 가져와 이 서버에 병합합니다. 설정과 이름 있는 항목은 덮어쓰고 차단 규칙은 중복 제거됩니다.',
+          '웹 내보내기 또는 앱 JHenTaiConfig JSON을 가져와 이 서버에 병합합니다. 설정과 이름 있는 항목은 덮어쓰고 차단 규칙은 중복 제거됩니다.',
       'settings.importDataTitle': '데이터를 가져올까요?',
       'settings.importDataConfirm':
-          'JHenTai Web 내보내기 JSON 파일을 선택하세요. 가져온 설정이 현재 값을 덮어쓸 수 있습니다.',
+          'JHenTai Web 내보내기 또는 앱 JHenTaiConfig 파일을 선택하세요. 가져온 설정이 현재 값을 덮어쓸 수 있습니다.',
       'settings.importDataSuccess': '@count개 항목을 가져왔습니다',
       'settings.importDataFailed': '데이터 가져오기 실패: @error',
       'settings.noImageMode': '이미지 없음 모드',

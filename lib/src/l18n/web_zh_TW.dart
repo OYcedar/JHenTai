@@ -388,9 +388,10 @@ class WebZhTW {
       'settings.exportDataFailed': '匯出資料失敗：@error',
       'settings.importData': '匯入資料',
       'settings.importDataHint':
-          '匯入 Web 匯出的 JSON 並合併到目前伺服器；設定和命名資料會覆蓋，屏蔽規則會自動去重。',
+          '匯入 Web 匯出的 JSON 或 App 的 JHenTaiConfig 檔案並合併到目前伺服器；設定和命名資料會覆蓋，屏蔽規則會自動去重。',
       'settings.importDataTitle': '匯入資料？',
-      'settings.importDataConfirm': '請選擇 JHenTai Web 匯出的 JSON 檔案。匯入的設定可能覆蓋目前值。',
+      'settings.importDataConfirm':
+          '請選擇 JHenTai Web 匯出的 JSON 或 App 的 JHenTaiConfig 檔案。匯入的設定可能覆蓋目前值。',
       'settings.importDataSuccess': '已匯入 @count 項資料',
       'settings.importDataFailed': '匯入資料失敗：@error',
       'settings.noImageMode': '無圖模式',

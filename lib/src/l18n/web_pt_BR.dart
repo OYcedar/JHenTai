@@ -426,10 +426,10 @@ class WebPtBR {
       'settings.exportDataFailed': 'Falha ao exportar dados: @error',
       'settings.importData': 'Importar dados',
       'settings.importDataHint':
-          'Importe um JSON exportado pelo Web e mescle neste servidor. Configurações e itens nomeados são sobrescritos; regras de bloqueio são deduplicadas.',
+          'Importe um JSON exportado pelo Web ou um JHenTaiConfig do app e mescle neste servidor. Configurações e itens nomeados são sobrescritos; regras de bloqueio são deduplicadas.',
       'settings.importDataTitle': 'Importar dados?',
       'settings.importDataConfirm':
-          'Escolha um arquivo de exportação do JHenTai Web. Configurações importadas podem sobrescrever valores atuais.',
+          'Escolha uma exportação do JHenTai Web ou um arquivo JHenTaiConfig do app. Configurações importadas podem sobrescrever valores atuais.',
       'settings.importDataSuccess': '@count itens importados',
       'settings.importDataFailed': 'Falha ao importar dados: @error',
       'settings.noImageMode': 'Modo sem imagens',
