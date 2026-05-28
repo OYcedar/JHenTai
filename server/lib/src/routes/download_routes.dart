@@ -8,6 +8,7 @@ import 'package:shelf_router/shelf_router.dart';
 import '../config/server_config.dart';
 import '../service/gallery_download_service.dart';
 import '../service/archive_download_service.dart';
+import '../utils/archive_util.dart';
 
 class DownloadRoutes {
   final GalleryDownloadService _galleryService;
@@ -318,14 +319,24 @@ class DownloadRoutes {
       );
     }
 
-    final imageExtensions = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'};
+    final imageExtensions = {
+      '.jpg',
+      '.jpeg',
+      '.png',
+      '.gif',
+      '.webp',
+      '.bmp',
+      '.avif',
+    };
     final files = dir
         .listSync()
         .whereType<File>()
         .where(
             (f) => imageExtensions.contains(p.extension(f.path).toLowerCase()))
         .toList();
-    files.sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
+    files.sort(
+      (a, b) => naturalCompare(p.basename(a.path), p.basename(b.path)),
+    );
 
     return Response.ok(
       jsonEncode({'images': files.map((f) => p.basename(f.path)).toList()}),
