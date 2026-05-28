@@ -309,6 +309,11 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> restoreGalleryDownloads() async {
+    final response = await _dio.post('/api/download/gallery/restore');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<void> patchGalleryDownload(
     int gid, {
     int? priority,

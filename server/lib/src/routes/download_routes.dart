@@ -23,6 +23,7 @@ class DownloadRoutes {
     router.get('/gallery/list', _listGalleryDownloads);
     router.post('/gallery/start', _startGalleryDownload);
     router.post('/gallery/upgrade', _upgradeGalleryDownload);
+    router.post('/gallery/restore', _restoreGalleryDownloads);
     router.patch('/gallery/<gid>', _patchGalleryDownload);
     router.post('/gallery/<gid>/pause', _pauseGalleryDownload);
     router.post('/gallery/<gid>/resume', _resumeGalleryDownload);
@@ -118,6 +119,14 @@ class DownloadRoutes {
     }
     return Response.ok(
       jsonEncode({'success': true, 'newGid': r.newGid}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _restoreGalleryDownloads(Request request) async {
+    final restored = await _galleryService.restoreDownloadsFromMetadata();
+    return Response.ok(
+      jsonEncode({'success': true, 'restoredGalleryCount': restored}),
       headers: {'Content-Type': 'application/json'},
     );
   }

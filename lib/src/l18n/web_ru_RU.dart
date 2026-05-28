@@ -26,6 +26,10 @@ class WebRuRU {
       'downloadOriginalImage': 'Скачать оригинальное изображение',
       'downloadOriginalImageByDefault':
           'Выбирать оригинальное изображение по умолчанию',
+      'restoreDownloadTasks': 'Восстановить задачи загрузки',
+      'restoreDownloadTasksHint': 'Восстановить задачи загрузки по метаданным',
+      'restoredGalleryCount': 'Восстановлено галерей',
+      'restoredArchiveCount': 'Восстановлено архивов',
       'reDownload': 'Скачать снова',
       'hasCopiedToClipboard': 'Скопировано в буфер обмена',
       'displayFirstPageAlone': 'Отдельно показывать первую страницу',

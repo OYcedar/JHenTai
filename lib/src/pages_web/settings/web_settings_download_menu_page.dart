@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
+import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:web/web.dart' as web;
 
@@ -26,6 +27,7 @@ class _WebSettingsDownloadMenuPageState
   bool galleryDownloadOriginalImage = false;
   final archiveGroupController = TextEditingController();
   final archivePriorityController = TextEditingController();
+  bool restoreRunning = false;
 
   @override
   void initState() {
@@ -110,6 +112,31 @@ class _WebSettingsDownloadMenuPageState
     _saveDefaults();
   }
 
+  Future<void> _restoreDownloadTasks() async {
+    if (restoreRunning) return;
+    setState(() => restoreRunning = true);
+    try {
+      final result = await backendApiClient.restoreGalleryDownloads();
+      await Get.find<WebDownloadService>().refresh();
+      final galleryCount =
+          (result['restoredGalleryCount'] as num?)?.toInt() ?? 0;
+      Get.snackbar(
+        'common.success'.tr,
+        '${'restoredGalleryCount'.tr}: $galleryCount\n${'restoredArchiveCount'.tr}: 0',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
+    } finally {
+      if (mounted) setState(() => restoreRunning = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final groups = _groupCandidates();
@@ -178,6 +205,18 @@ class _WebSettingsDownloadMenuPageState
               onPressed: () => Get.toNamed('/web/downloads'),
               icon: const Icon(Icons.download_outlined),
               label: Text('settings.openDownloads'.tr),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: restoreRunning ? null : _restoreDownloadTasks,
+              icon: restoreRunning
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.restore_outlined),
+              label: Text('restoreDownloadTasks'.tr),
             ),
           ],
         );

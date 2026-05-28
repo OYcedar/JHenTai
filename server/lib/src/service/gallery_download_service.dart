@@ -344,6 +344,109 @@ class GalleryDownloadService {
     _processQueue();
   }
 
+  Future<int> restoreDownloadsFromMetadata() async {
+    final root = Directory(p.join(_config.downloadDir, 'gallery'));
+    if (!await root.exists()) return 0;
+
+    var restored = 0;
+    await for (final entity in root.list(followLinks: false)) {
+      if (entity is! Directory) continue;
+      final metaFile = File(p.join(entity.path, 'metadata.json'));
+      if (!await metaFile.exists()) continue;
+
+      Map<String, dynamic> meta;
+      try {
+        final decoded = jsonDecode(await metaFile.readAsString());
+        if (decoded is! Map) continue;
+        meta = decoded.cast<String, dynamic>();
+      } catch (e) {
+        log.warning('Restore gallery metadata failed: ${metaFile.path}: $e');
+        continue;
+      }
+
+      final gid = (meta['gid'] as num?)?.toInt() ??
+          int.tryParse(p.basename(entity.path));
+      if (gid == null || _tasks.containsKey(gid)) continue;
+
+      final token = meta['token']?.toString() ?? '';
+      final title = meta['title']?.toString() ?? '';
+      final galleryUrl = meta['galleryUrl']?.toString() ?? '';
+      if (token.isEmpty || title.isEmpty || galleryUrl.isEmpty) continue;
+
+      final imagePageUrls = (meta['imagePageUrls'] as List?)
+              ?.map((e) => e.toString())
+              .where((e) => e.isNotEmpty)
+              .toList() ??
+          const <String>[];
+      final pageCount =
+          (meta['pageCount'] as num?)?.toInt() ?? imagePageUrls.length;
+      final completedCount = _countExistingImages(entity);
+      final status = pageCount > 0 && completedCount >= pageCount
+          ? GalleryDownloadStatus.completed
+          : GalleryDownloadStatus.paused;
+      final insertTime = (await metaFile.stat()).modified.toIso8601String();
+
+      final task = GalleryDownloadTask(
+        gid: gid,
+        token: token,
+        title: title,
+        category: meta['category']?.toString() ?? '',
+        pageCount: pageCount,
+        galleryUrl: galleryUrl,
+        coverUrl: meta['coverUrl']?.toString() ?? '',
+        uploader: meta['uploader']?.toString() ?? '',
+        status: status,
+        completedCount: completedCount,
+        group: meta['group']?.toString() ??
+            meta['groupName']?.toString() ??
+            'default',
+        priority: (meta['priority'] as num?)?.toInt() ?? 0,
+        downloadOriginalImage: meta['downloadOriginalImage'] as bool? ?? false,
+        insertTime: insertTime,
+      );
+
+      _tasks[gid] = task;
+      db.insertGalleryDownload({
+        'gid': gid,
+        'token': token,
+        'title': title,
+        'category': task.category,
+        'page_count': pageCount,
+        'gallery_url': galleryUrl,
+        'cover_url': task.coverUrl,
+        'uploader': task.uploader,
+        'publish_time': insertTime,
+        'download_status': status.index,
+        'insert_time': insertTime,
+        'completed_count': completedCount,
+        'group_name': task.group,
+        'priority': task.priority,
+        'download_original_image': task.downloadOriginalImage ? 1 : 0,
+      });
+
+      for (var i = 0; i < pageCount; i++) {
+        final imageFile = _findExistingImage(gid, i);
+        if (imageFile == null) continue;
+        db.upsertGalleryImage({
+          'gid': gid,
+          'serial_no': i,
+          'url': '',
+          'image_url': '',
+          'image_hash': '',
+          'path': imageFile.path,
+          'download_status': 1,
+          'image_page_url': i < imagePageUrls.length ? imagePageUrls[i] : '',
+        });
+      }
+
+      restored++;
+      _notifyProgress(task);
+    }
+
+    if (restored > 0) _processQueue();
+    return restored;
+  }
+
   GalleryDownloadTask? _nextQueuedTask() {
     final candidates = _tasks.values
         .where((t) =>
@@ -623,6 +726,19 @@ class GalleryDownloadService {
     }
   }
 
+  int _countExistingImages(Directory dir) {
+    final pattern = RegExp(r'^\d{5}\.[^.]+$');
+    try {
+      return dir
+          .listSync(followLinks: false)
+          .whereType<File>()
+          .where((f) => pattern.hasMatch(p.basename(f.path)))
+          .length;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   void _saveMetadata(GalleryDownloadTask task, List<String> imagePageUrls) {
     final metaFile = File(p.join(_galleryDir(task.gid), 'metadata.json'));
     metaFile.writeAsStringSync(jsonEncode({
@@ -634,6 +750,9 @@ class GalleryDownloadService {
       'galleryUrl': task.galleryUrl,
       'coverUrl': task.coverUrl,
       'uploader': task.uploader,
+      'group': task.group,
+      'priority': task.priority,
+      'downloadOriginalImage': task.downloadOriginalImage,
       'imagePageUrls': imagePageUrls,
     }));
   }
