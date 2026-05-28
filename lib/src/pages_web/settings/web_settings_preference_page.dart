@@ -68,6 +68,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool showGalleryTagVoteStatus;
   late bool showComments;
   late bool showAllComments;
+  late bool showUtcTime;
 
   @override
   void initState() {
@@ -76,6 +77,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
     showGalleryTagVoteStatus = WebPreferenceSettings.showGalleryTagVoteStatus;
     showComments = WebPreferenceSettings.showComments;
     showAllComments = WebPreferenceSettings.showAllComments;
+    showUtcTime = WebPreferenceSettings.showUtcTime;
   }
 
   @override
@@ -130,6 +132,15 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
               WebPreferenceSettings.saveShowAllComments(value);
             },
           ),
+        SwitchListTile(
+          secondary: const Icon(Icons.schedule_outlined),
+          title: Text('showUtcTime'.tr),
+          value: showUtcTime,
+          onChanged: (value) {
+            setState(() => showUtcTime = value);
+            WebPreferenceSettings.saveShowUtcTime(value);
+          },
+        ),
         const Divider(height: 1),
       ],
     );

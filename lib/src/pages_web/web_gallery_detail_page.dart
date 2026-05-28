@@ -13,6 +13,7 @@ import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/utils/date_util.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:web/web.dart' as web;
@@ -53,6 +54,17 @@ String _webSimilarTitleQuery(String title) {
   final cleaned = title.replaceAll(RegExp(r'\[.*?\]|\(.*?\)|{.*?}'), '').trim();
   if (cleaned.isEmpty) return title.trim();
   return 'title:"$cleaned"';
+}
+
+String _webPreferredTime(String value) {
+  if (WebPreferenceSettings.showUtcTime || value.trim().isEmpty) {
+    return value;
+  }
+  try {
+    return DateUtil.transformUtc2LocalTimeString(value);
+  } catch (_) {
+    return value;
+  }
 }
 
 class WebGalleryDetailController extends GetxController {
@@ -1340,9 +1352,10 @@ class WebGalleryDetailPage extends StatelessWidget {
                     const Icon(Icons.calendar_today,
                         size: 14, color: Colors.grey),
                     const SizedBox(width: 4),
-                    Text(controller.publishDate.value,
-                        style:
-                            const TextStyle(fontSize: 13, color: Colors.grey)),
+                    Text(
+                      _webPreferredTime(controller.publishDate.value),
+                      style: const TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
                   ],
                 ),
               )
@@ -1775,7 +1788,7 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   Widget _buildTorrentTile(Map<String, dynamic> torrent) {
     final title = torrent['title']?.toString() ?? '';
-    final postTime = torrent['postTime']?.toString() ?? '';
+    final postTime = _webPreferredTime(torrent['postTime']?.toString() ?? '');
     final size = torrent['size']?.toString() ?? '';
     final seeds = (torrent['seeds'] as num?)?.toInt() ?? 0;
     final peers = (torrent['peers'] as num?)?.toInt() ?? 0;
@@ -2611,7 +2624,7 @@ class _CommentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final author = comment['author'] as String? ?? 'detail.anonymous'.tr;
-    final date = comment['date'] as String? ?? '';
+    final date = _webPreferredTime(comment['date'] as String? ?? '');
     final score = comment['score'] as String? ?? '';
     final scoreDetails = (comment['scoreDetails'] as List?)
             ?.map((item) => item.toString())
