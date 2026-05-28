@@ -70,6 +70,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool showAllComments;
   late bool showUtcTime;
   late WebSearchBehaviour searchBehaviour;
+  late WebScrollToTopButtonMode scrollToTopButtonMode;
 
   @override
   void initState() {
@@ -80,6 +81,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
     showAllComments = WebPreferenceSettings.showAllComments;
     showUtcTime = WebPreferenceSettings.showUtcTime;
     searchBehaviour = WebPreferenceSettings.searchBehaviour;
+    scrollToTopButtonMode = WebPreferenceSettings.scrollToTopButtonMode;
   }
 
   @override
@@ -170,6 +172,39 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
               }
               setState(() => searchBehaviour = value);
               WebPreferenceSettings.saveSearchBehaviour(value);
+            },
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.vertical_align_top),
+          title: Text('hideScroll2TopButton'.tr),
+          trailing: DropdownButton<WebScrollToTopButtonMode>(
+            value: scrollToTopButtonMode,
+            alignment: AlignmentDirectional.centerEnd,
+            items: [
+              DropdownMenuItem(
+                value: WebScrollToTopButtonMode.scrollUp,
+                child: Text('whenScrollUp'.tr),
+              ),
+              DropdownMenuItem(
+                value: WebScrollToTopButtonMode.scrollDown,
+                child: Text('whenScrollDown'.tr),
+              ),
+              DropdownMenuItem(
+                value: WebScrollToTopButtonMode.never,
+                child: Text('never'.tr),
+              ),
+              DropdownMenuItem(
+                value: WebScrollToTopButtonMode.always,
+                child: Text('always'.tr),
+              ),
+            ],
+            onChanged: (value) {
+              if (value == null) {
+                return;
+              }
+              setState(() => scrollToTopButtonMode = value);
+              WebPreferenceSettings.saveScrollToTopButtonMode(value);
             },
           ),
         ),

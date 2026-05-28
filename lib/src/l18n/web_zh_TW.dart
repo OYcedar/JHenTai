@@ -593,6 +593,11 @@ class WebZhTW {
       'settings.preloadPagesLocal': '預載入頁數（本機）',
       'settings.autoInterval': '自動閱讀間隔',
       'settings.fitWidth': '適應寬度',
+      'hideScroll2TopButton': '快速回頂按鈕',
+      'whenScrollUp': '向上捲動時',
+      'whenScrollDown': '向下捲動時',
+      'never': '從不',
+      'always': '總是',
 
       // home enhancements
       'home.scrollToTop': '回到頂部',

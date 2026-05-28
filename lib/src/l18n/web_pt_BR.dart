@@ -633,6 +633,11 @@ class WebPtBR {
       'settings.preloadPagesLocal': 'Páginas Pré-carregadas (Local)',
       'settings.autoInterval': 'Intervalo Auto-leitura',
       'settings.fitWidth': 'Ajustar Largura',
+      'hideScroll2TopButton': 'Scroll to top button',
+      'whenScrollUp': 'When scrolling up',
+      'whenScrollDown': 'When scrolling down',
+      'never': 'Never',
+      'always': 'Always',
 
       // home enhancements
       'home.scrollToTop': 'Voltar ao Topo',

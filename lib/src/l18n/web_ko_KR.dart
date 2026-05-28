@@ -613,6 +613,11 @@ class WebKoKR {
       'settings.preloadPagesLocal': '미리 로드 페이지(로컬)',
       'settings.autoInterval': '자동 넘기기 간격',
       'settings.fitWidth': '너비 맞춤',
+      'hideScroll2TopButton': 'Scroll to top button',
+      'whenScrollUp': 'When scrolling up',
+      'whenScrollDown': 'When scrolling down',
+      'never': 'Never',
+      'always': 'Always',
 
       // home enhancements
       'home.scrollToTop': '맨 위로',

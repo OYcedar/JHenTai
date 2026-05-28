@@ -96,6 +96,7 @@ class WebHomeController extends GetxController {
   // Scroll-to-top FAB
   final scrollController = ScrollController();
   final showFab = false.obs;
+  double _lastScrollOffset = 0;
 
   // Quick search
   final quickSearches = <Map<String, dynamic>>[].obs;
@@ -262,8 +263,23 @@ class WebHomeController extends GetxController {
   }
 
   void _onScroll() {
-    showFab.value =
-        scrollController.hasClients && scrollController.offset > 300;
+    if (!scrollController.hasClients) {
+      showFab.value = false;
+      return;
+    }
+    final offset = scrollController.offset;
+    final isScrollingDown = offset > _lastScrollOffset;
+    _lastScrollOffset = offset;
+    if (offset <= 300) {
+      showFab.value = false;
+      return;
+    }
+    showFab.value = switch (WebPreferenceSettings.scrollToTopButtonMode) {
+      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
+      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
+      WebScrollToTopButtonMode.never => false,
+      WebScrollToTopButtonMode.always => true,
+    };
   }
 
   /// Gallery list section: `home`, `popular`, `favorites`, etc. Filters apply only on [home].

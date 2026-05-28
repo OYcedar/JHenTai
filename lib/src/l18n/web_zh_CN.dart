@@ -598,6 +598,11 @@ class WebZhCN {
       'settings.preloadPagesLocal': '预加载页数（本地）',
       'settings.autoInterval': '自动阅读间隔',
       'settings.fitWidth': '适应宽度',
+      'hideScroll2TopButton': '快速回顶按钮',
+      'whenScrollUp': '向上滚动时',
+      'whenScrollDown': '向下滚动时',
+      'never': '从不',
+      'always': '总是',
 
       // home enhancements
       'home.scrollToTop': '回到顶部',

@@ -2,6 +2,8 @@ import 'package:web/web.dart' as web;
 
 enum WebSearchBehaviour { inheritAll, inheritPartially, none }
 
+enum WebScrollToTopButtonMode { scrollUp, scrollDown, never, always }
+
 class WebPreferenceSettings {
   static const showAllGalleryTitlesKey = 'jh_web_show_all_gallery_titles';
   static const showGalleryTagVoteStatusKey =
@@ -13,6 +15,7 @@ class WebPreferenceSettings {
   static const enableDefaultFavoriteKey = 'jh_web_enable_default_favorite';
   static const enableDefaultTagSetKey = 'jh_web_enable_default_tag_set';
   static const defaultTagSetNoKey = 'jh_web_default_tag_set_no';
+  static const scrollToTopButtonModeKey = 'jh_web_scroll_to_top_button_mode';
 
   const WebPreferenceSettings._();
 
@@ -38,6 +41,14 @@ class WebPreferenceSettings {
     final raw = web.window.localStorage.getItem(defaultTagSetNoKey);
     final value = int.tryParse(raw ?? '');
     return value != null && value > 0 ? value : null;
+  }
+
+  static WebScrollToTopButtonMode get scrollToTopButtonMode {
+    final raw = web.window.localStorage.getItem(scrollToTopButtonModeKey);
+    return WebScrollToTopButtonMode.values.firstWhere(
+      (value) => value.name == raw,
+      orElse: () => WebScrollToTopButtonMode.scrollDown,
+    );
   }
 
   static WebSearchBehaviour get searchBehaviour {
@@ -74,6 +85,10 @@ class WebPreferenceSettings {
     } else {
       web.window.localStorage.setItem(defaultTagSetNoKey, '$value');
     }
+  }
+
+  static void saveScrollToTopButtonMode(WebScrollToTopButtonMode value) {
+    web.window.localStorage.setItem(scrollToTopButtonModeKey, value.name);
   }
 
   static void saveSearchBehaviour(WebSearchBehaviour value) {

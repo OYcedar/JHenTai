@@ -635,6 +635,11 @@ class WebEnUS {
       'settings.preloadPagesLocal': 'Preload Pages (Local)',
       'settings.autoInterval': 'Auto-mode Interval',
       'settings.fitWidth': 'Fit Width',
+      'hideScroll2TopButton': 'Scroll to top button',
+      'whenScrollUp': 'When scrolling up',
+      'whenScrollDown': 'When scrolling down',
+      'never': 'Never',
+      'always': 'Always',
 
       // home enhancements
       'home.scrollToTop': 'Scroll to Top',

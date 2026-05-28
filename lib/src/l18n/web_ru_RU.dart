@@ -630,6 +630,11 @@ class WebRuRU {
       'settings.preloadPagesLocal': 'Предзагрузка страниц (локально)',
       'settings.autoInterval': 'Интервал автопролистывания',
       'settings.fitWidth': 'По ширине',
+      'hideScroll2TopButton': 'Scroll to top button',
+      'whenScrollUp': 'When scrolling up',
+      'whenScrollDown': 'When scrolling down',
+      'never': 'Never',
+      'always': 'Always',
 
       // home enhancements
       'home.scrollToTop': 'Наверх',
