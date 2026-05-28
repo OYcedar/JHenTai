@@ -294,7 +294,7 @@ class WebHomeController extends GetxController {
   final currentSection = 'home'.obs;
   final currentSearchText = ''.obs;
   String _currentSearch = '';
-  String _ranklistTl = '15';
+  final ranklistTl = '15'.obs;
 
   String? _initialRouteSection() {
     final args = Get.arguments;
@@ -321,6 +321,26 @@ class WebHomeController extends GetxController {
     return switch (tl) {
       '15' || '13' || '12' || '11' => tl,
       _ => null,
+    };
+  }
+
+  String get ranklistTitle {
+    return switch (ranklistTl.value) {
+      '15' => 'ranklist.allTime'.tr,
+      '13' => 'ranklist.year'.tr,
+      '12' => 'ranklist.month'.tr,
+      '11' => 'ranklist.yesterday'.tr,
+      _ => 'ranklist.yesterday'.tr,
+    };
+  }
+
+  String get sectionTitle {
+    return switch (currentSection.value) {
+      'popular' => 'home.popular'.tr,
+      'favorites' => 'home.favorites'.tr,
+      'watched' => 'home.watched'.tr,
+      'ranklist' => '$ranklistTitle ${'ranklist.title'.tr}',
+      _ => 'home.title'.tr,
     };
   }
 
@@ -796,8 +816,12 @@ class WebHomeController extends GetxController {
     currentPage.value = 0;
     _clearPaginationCursors();
     final normalizedTl = _normalizeRanklistTl(tl);
-    if (normalizedTl != null) _ranklistTl = normalizedTl;
-    if (syncUrl) _syncSectionUrl(section, tl: _ranklistTl);
+    if (normalizedTl != null) {
+      ranklistTl.value = normalizedTl;
+    }
+    if (syncUrl) {
+      _syncSectionUrl(section, tl: ranklistTl.value);
+    }
     await _fetchGalleryList();
   }
 
@@ -892,7 +916,7 @@ class WebHomeController extends GetxController {
       }
       final advParams = _buildAdvancedParams() ?? <String, dynamic>{};
       if (currentSection.value == 'ranklist') {
-        advParams['tl'] = _ranklistTl;
+        advParams['tl'] = ranklistTl.value;
       }
       String? favSort;
       int? favcat;
@@ -1875,7 +1899,10 @@ class _SinglePaneHome extends StatelessWidget {
     return Scaffold(
       drawer: _HomeDrawer(controller: controller),
       appBar: AppBar(
-        title: Text('home.title'.tr),
+        title: Obx(() => Text(
+              controller.sectionTitle,
+              overflow: TextOverflow.ellipsis,
+            )),
         actions: [
           Obx(() => IconButton(
                 icon: Icon(controller.listModeIcon),
@@ -2059,22 +2086,24 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
     return Scaffold(
       drawer: _HomeDrawer(controller: controller),
       appBar: AppBar(
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                'home.title'.tr,
-                overflow: TextOverflow.ellipsis,
+        title: Obx(
+          () => Row(
+            children: [
+              Expanded(
+                child: Text(
+                  controller.sectionTitle,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'home.leftPaneWidthPx'.trParams({'w': '${clamped.round()}'}),
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                'home.leftPaneWidthPx'.trParams({'w': '${clamped.round()}'}),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
         ),
         actions: [
           Obx(() => IconButton(
@@ -2232,47 +2261,55 @@ class _HomeDrawer extends StatelessWidget {
               ],
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.home),
-            title: Text('home.home'.tr),
-            onTap: () {
-              Navigator.pop(context);
-              // Must reset section — refresh() alone would keep e.g. favorites and only refetch that list.
-              controller.loadUrl('home');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.local_fire_department),
-            title: Text('home.popular'.tr),
-            onTap: () {
-              Navigator.pop(context);
-              controller.loadUrl('popular');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.favorite),
-            title: Text('home.favorites'.tr),
-            onTap: () {
-              Navigator.pop(context);
-              controller.loadUrl('favorites');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.visibility),
-            title: Text('home.watched'.tr),
-            onTap: () {
-              Navigator.pop(context);
-              controller.loadUrl('watched');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.leaderboard),
-            title: Text('home.ranklist'.tr),
-            onTap: () {
-              Navigator.pop(context);
-              _showRanklistPicker(context);
-            },
-          ),
+          Obx(() => ListTile(
+                selected: controller.currentSection.value == 'home',
+                leading: const Icon(Icons.home),
+                title: Text('home.home'.tr),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Must reset section — refresh() alone would keep e.g. favorites and only refetch that list.
+                  controller.loadUrl('home');
+                },
+              )),
+          Obx(() => ListTile(
+                selected: controller.currentSection.value == 'popular',
+                leading: const Icon(Icons.local_fire_department),
+                title: Text('home.popular'.tr),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.loadUrl('popular');
+                },
+              )),
+          Obx(() => ListTile(
+                selected: controller.currentSection.value == 'favorites',
+                leading: const Icon(Icons.favorite),
+                title: Text('home.favorites'.tr),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.loadUrl('favorites');
+                },
+              )),
+          Obx(() => ListTile(
+                selected: controller.currentSection.value == 'watched',
+                leading: const Icon(Icons.visibility),
+                title: Text('home.watched'.tr),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.loadUrl('watched');
+                },
+              )),
+          Obx(() => ListTile(
+                selected: controller.currentSection.value == 'ranklist',
+                leading: const Icon(Icons.leaderboard),
+                title: Text('home.ranklist'.tr),
+                subtitle: controller.currentSection.value == 'ranklist'
+                    ? Text(controller.ranklistTitle)
+                    : null,
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRanklistPicker(context);
+                },
+              )),
           ListTile(
             leading: const Icon(Icons.history),
             title: Text('home.history'.tr),
@@ -2335,37 +2372,36 @@ class _HomeDrawer extends StatelessWidget {
   void _showRanklistPicker(BuildContext context) {
     showDialog(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: Text('ranklist.title'.tr),
+      builder: (ctx) => Obx(
+        () => SimpleDialog(
+          title: Text('ranklist.title'.tr),
+          children: [
+            _ranklistOption(ctx, '15', 'ranklist.allTime'.tr),
+            _ranklistOption(ctx, '13', 'ranklist.year'.tr),
+            _ranklistOption(ctx, '12', 'ranklist.month'.tr),
+            _ranklistOption(ctx, '11', 'ranklist.yesterday'.tr),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _ranklistOption(BuildContext context, String tl, String title) {
+    final selected = controller.currentSection.value == 'ranklist' &&
+        controller.ranklistTl.value == tl;
+    return SimpleDialogOption(
+      onPressed: () {
+        Navigator.pop(context);
+        controller.loadUrl('ranklist', tl: tl);
+      },
+      child: Row(
         children: [
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.loadUrl('ranklist', tl: '15');
-            },
-            child: Text('ranklist.allTime'.tr),
+          Icon(
+            selected ? Icons.check_circle : Icons.radio_button_unchecked,
+            size: 20,
           ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.loadUrl('ranklist', tl: '13');
-            },
-            child: Text('ranklist.year'.tr),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.loadUrl('ranklist', tl: '12');
-            },
-            child: Text('ranklist.month'.tr),
-          ),
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(ctx);
-              controller.loadUrl('ranklist', tl: '11');
-            },
-            child: Text('ranklist.yesterday'.tr),
-          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(title)),
         ],
       ),
     );
