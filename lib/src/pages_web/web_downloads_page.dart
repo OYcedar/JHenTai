@@ -309,6 +309,7 @@ class WebDownloadsController extends GetxController
 
   Future<void> pauseGallery(int gid) => _svc.pauseGallery(gid);
   Future<void> resumeGallery(int gid) => _svc.resumeGallery(gid);
+  Future<void> reDownloadGallery(int gid) => _svc.reDownloadGallery(gid);
   Future<void> deleteGallery(int gid, {bool deleteFiles = true}) =>
       _svc.deleteGallery(gid, deleteFiles: deleteFiles);
   Future<void> pauseArchive(int gid) => _svc.pauseArchive(gid);
@@ -361,6 +362,48 @@ class WebDownloadsController extends GetxController
     await refresh();
     Get.snackbar('common.success'.tr,
         'downloads.batchResumed'.trParams({'count': '${ids.length}'}),
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
+  Future<void> reDownloadVisibleGalleryTasks() async {
+    if (tabController.index != 0) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    final ids = sortedFilteredGalleryTasks
+        .map((t) => (t['gid'] as num?)?.toInt())
+        .whereType<int>()
+        .toList();
+    if (ids.isEmpty) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('reDownload'.tr),
+        content: Text(
+          'downloads.reDownloadVisibleConfirm'
+              .trParams({'count': '${ids.length}'}),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('reDownload'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await Future.wait(ids.map(reDownloadGallery));
+    await refresh();
+    Get.snackbar('common.success'.tr,
+        'downloads.batchRedownloaded'.trParams({'count': '${ids.length}'}),
         snackPosition: SnackPosition.BOTTOM);
   }
 
@@ -475,6 +518,11 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
             icon: const Icon(Icons.play_circle_outline),
             tooltip: 'downloads.resumeVisible'.tr,
             onPressed: controller.resumeVisibleTasks,
+          ),
+          IconButton(
+            icon: const Icon(Icons.restart_alt),
+            tooltip: 'downloads.reDownloadVisible'.tr,
+            onPressed: controller.reDownloadVisibleGalleryTasks,
           ),
           IconButton(
             icon: const Icon(Icons.drive_file_move_outline),
@@ -930,6 +978,27 @@ Future<bool?> _showDeleteTaskDialog(BuildContext context) {
   );
 }
 
+Future<bool> _showReDownloadGalleryDialog(BuildContext context) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('reDownload'.tr),
+      content: Text('downloads.reDownloadConfirm'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text('reDownload'.tr),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
+}
+
 class _GroupedDownloadGrid extends StatelessWidget {
   final List<String> groups;
   final Map<String, List<Map<String, dynamic>>> byGroup;
@@ -1017,6 +1086,10 @@ class _GalleryTaskGridCard extends StatelessWidget {
           _ratio(_taskInt(task, 'completedCount'), _taskInt(task, 'pageCount')),
       readRoute: '/web/reader/$gid/$token?mode=downloaded',
       onEdit: () => _showGalleryPatchDialog(context, controller, task),
+      onReDownload: () async {
+        if (!await _showReDownloadGalleryDialog(context)) return;
+        await controller.reDownloadGallery(gid);
+      },
       onPause: status == 1 ? () => controller.pauseGallery(gid) : null,
       onResume: status == 2 || status == 4
           ? () => controller.resumeGallery(gid)
@@ -1085,6 +1158,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
   final double? progressValue;
   final String readRoute;
   final VoidCallback onEdit;
+  final VoidCallback? onReDownload;
   final VoidCallback? onPause;
   final VoidCallback? onResume;
   final VoidCallback onDelete;
@@ -1100,6 +1174,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
     required this.progressValue,
     required this.readRoute,
     required this.onEdit,
+    this.onReDownload,
     required this.onPause,
     required this.onResume,
     required this.onDelete,
@@ -1163,6 +1238,9 @@ class _DownloadTaskGridCard extends StatelessWidget {
                           case _DownloadTaskAction.edit:
                             onEdit();
                             break;
+                          case _DownloadTaskAction.reDownload:
+                            onReDownload?.call();
+                            break;
                           case _DownloadTaskAction.pause:
                             onPause?.call();
                             break;
@@ -1190,6 +1268,14 @@ class _DownloadTaskGridCard extends StatelessWidget {
                             label: 'downloads.editTask'.tr,
                           ),
                         ),
+                        if (onReDownload != null)
+                          PopupMenuItem(
+                            value: _DownloadTaskAction.reDownload,
+                            child: _DownloadTaskMenuItem(
+                              icon: Icons.restart_alt,
+                              label: 'reDownload'.tr,
+                            ),
+                          ),
                         if (onPause != null)
                           PopupMenuItem(
                             value: _DownloadTaskAction.pause,
@@ -1359,7 +1445,7 @@ class _DownloadTaskMenuItem extends StatelessWidget {
   }
 }
 
-enum _DownloadTaskAction { read, edit, pause, resume, delete }
+enum _DownloadTaskAction { read, edit, reDownload, pause, resume, delete }
 
 // --- Gallery Tasks ---
 
@@ -1583,6 +1669,14 @@ class _GalleryTaskCard extends StatelessWidget {
                   tooltip: 'downloads.editTask'.tr,
                   onPressed: () =>
                       _showGalleryPatchDialog(context, controller, task),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.restart_alt, size: 20),
+                  tooltip: 'reDownload'.tr,
+                  onPressed: () async {
+                    if (!await _showReDownloadGalleryDialog(context)) return;
+                    await controller.reDownloadGallery(gid);
+                  },
                 ),
                 if (isCompleted)
                   IconButton(

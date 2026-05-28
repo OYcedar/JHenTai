@@ -350,6 +350,10 @@ class BackendApiClient {
     await _dio.post('/api/download/gallery/$gid/resume');
   }
 
+  Future<void> reDownloadGallery(int gid) async {
+    await _dio.post('/api/download/gallery/$gid/redownload');
+  }
+
   Future<void> deleteGalleryDownload(int gid, {bool deleteFiles = true}) async {
     await _dio.delete(
       '/api/download/gallery/$gid',

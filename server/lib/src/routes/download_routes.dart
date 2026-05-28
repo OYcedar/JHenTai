@@ -28,6 +28,7 @@ class DownloadRoutes {
     router.patch('/gallery/<gid>', _patchGalleryDownload);
     router.post('/gallery/<gid>/pause', _pauseGalleryDownload);
     router.post('/gallery/<gid>/resume', _resumeGalleryDownload);
+    router.post('/gallery/<gid>/redownload', _reDownloadGallery);
     router.delete('/gallery/<gid>', _deleteGalleryDownload);
     router.get('/gallery/<gid>/images', _listGalleryImages);
 
@@ -169,6 +170,22 @@ class DownloadRoutes {
     if (id == null)
       return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     _galleryService.resumeDownload(id);
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
+  }
+
+  Future<Response> _reDownloadGallery(Request request, String gid) async {
+    final id = int.tryParse(gid);
+    if (id == null) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    }
+    final ok = await _galleryService.reDownload(id);
+    if (!ok) {
+      return Response.notFound(
+        jsonEncode({'success': false, 'error': 'Gallery task not found'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
     return Response.ok(jsonEncode({'success': true}),
         headers: {'Content-Type': 'application/json'});
   }

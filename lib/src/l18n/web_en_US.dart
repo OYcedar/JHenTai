@@ -762,6 +762,11 @@ class WebEnUS {
       'downloads.editTask': 'Edit task',
       'downloads.pauseVisible': 'Pause visible tasks',
       'downloads.resumeVisible': 'Resume visible tasks',
+      'downloads.reDownloadVisible': 'Re-download visible gallery tasks',
+      'downloads.reDownloadConfirm':
+          'Delete downloaded files for this gallery and start it again?',
+      'downloads.reDownloadVisibleConfirm':
+          'Delete files and restart @count visible gallery tasks?',
       'downloads.changeVisibleGroup': 'Change visible tasks group',
       'downloads.changeVisibleGroupConfirm':
           'Move @count visible tasks to this group.',
@@ -771,6 +776,7 @@ class WebEnUS {
       'downloads.noBatchTargets': 'No matching tasks in the current list',
       'downloads.batchPaused': 'Paused @count tasks',
       'downloads.batchResumed': 'Resumed @count tasks',
+      'downloads.batchRedownloaded': 'Restarted @count tasks',
       'downloads.batchGroupChanged': 'Changed group for @count tasks',
       'downloads.batchDeleted': 'Deleted @count tasks',
 

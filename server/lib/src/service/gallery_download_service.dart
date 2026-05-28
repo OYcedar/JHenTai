@@ -328,6 +328,51 @@ class GalleryDownloadService {
     _processQueue();
   }
 
+  Future<bool> reDownload(int gid) async {
+    final old = _tasks[gid];
+    if (old == null) return false;
+
+    old.status = GalleryDownloadStatus.paused;
+    old._cancelToken?.cancel('redownload');
+    _activeDownloads.remove(gid);
+
+    final token = old.token;
+    final title = old.title;
+    final category = old.category;
+    final pageCount = old.pageCount;
+    final galleryUrl = old.galleryUrl;
+    final coverUrl = old.coverUrl;
+    final uploader = old.uploader;
+    final group = old.group;
+    final priority = old.priority;
+    final downloadOriginalImage = old.downloadOriginalImage;
+    final supersedesGid = old.supersedesGid;
+
+    _tasks.remove(gid);
+    db.deleteGalleryDownload(gid);
+
+    final dir = Directory(_galleryDir(gid));
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
+
+    await startDownload(
+      gid: gid,
+      token: token,
+      title: title,
+      category: category,
+      pageCount: pageCount,
+      galleryUrl: galleryUrl,
+      coverUrl: coverUrl,
+      uploader: uploader,
+      group: group,
+      priority: priority,
+      downloadOriginalImage: downloadOriginalImage,
+      supersedesGid: supersedesGid,
+    );
+    return true;
+  }
+
   Future<void> deleteDownload(int gid, {bool deleteFiles = true}) async {
     final task = _tasks.remove(gid);
     task?._cancelToken?.cancel('deleted');

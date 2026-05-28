@@ -759,6 +759,11 @@ class WebRuRU {
       'downloads.editTask': 'Редактировать задачу',
       'downloads.pauseVisible': 'Поставить видимые задачи на паузу',
       'downloads.resumeVisible': 'Возобновить видимые задачи',
+      'downloads.reDownloadVisible': 'Скачать видимые галереи заново',
+      'downloads.reDownloadConfirm':
+          'Удалить скачанные файлы этой галереи и начать заново?',
+      'downloads.reDownloadVisibleConfirm':
+          'Удалить файлы и перезапустить @count видимых галерей?',
       'downloads.changeVisibleGroup': 'Изменить группу видимых задач',
       'downloads.changeVisibleGroupConfirm':
           'Переместить @count видимых задач в эту группу.',
@@ -768,6 +773,7 @@ class WebRuRU {
       'downloads.noBatchTargets': 'В текущем списке нет подходящих задач',
       'downloads.batchPaused': 'Поставлено на паузу: @count',
       'downloads.batchResumed': 'Возобновлено: @count',
+      'downloads.batchRedownloaded': 'Перезапущено задач: @count',
       'downloads.batchGroupChanged': 'Группа изменена для задач: @count',
       'downloads.batchDeleted': 'Удалено задач: @count',
       'detail.startDownloadTitle': 'Начать загрузку',

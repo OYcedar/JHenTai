@@ -197,6 +197,8 @@ class WebDownloadService extends GetxController {
       backendApiClient.pauseGalleryDownload(gid);
   Future<void> resumeGallery(int gid) =>
       backendApiClient.resumeGalleryDownload(gid);
+  Future<void> reDownloadGallery(int gid) =>
+      backendApiClient.reDownloadGallery(gid);
   Future<void> deleteGallery(int gid, {bool deleteFiles = true}) =>
       backendApiClient.deleteGalleryDownload(gid, deleteFiles: deleteFiles);
   Future<void> pauseArchive(int gid) =>

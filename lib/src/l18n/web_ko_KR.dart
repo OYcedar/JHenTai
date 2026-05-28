@@ -729,6 +729,10 @@ class WebKoKR {
       'downloads.editTask': '작업 편집',
       'downloads.pauseVisible': '현재 목록 작업 일시정지',
       'downloads.resumeVisible': '현재 목록 작업 재개',
+      'downloads.reDownloadVisible': '현재 목록 갤러리 다시 다운로드',
+      'downloads.reDownloadConfirm': '이 갤러리의 다운로드된 파일을 삭제하고 다시 시작할까요?',
+      'downloads.reDownloadVisibleConfirm':
+          '현재 보이는 @count개 갤러리 파일을 삭제하고 다시 다운로드할까요?',
       'downloads.changeVisibleGroup': '현재 목록 그룹 변경',
       'downloads.changeVisibleGroupConfirm': '현재 보이는 @count개 작업을 이 그룹으로 이동합니다.',
       'downloads.deleteVisible': '현재 목록 작업 삭제',
@@ -736,6 +740,7 @@ class WebKoKR {
       'downloads.noBatchTargets': '현재 목록에 처리할 작업이 없습니다',
       'downloads.batchPaused': '@count개 작업을 일시정지했습니다',
       'downloads.batchResumed': '@count개 작업을 재개했습니다',
+      'downloads.batchRedownloaded': '@count개 작업을 다시 시작했습니다',
       'downloads.batchGroupChanged': '@count개 작업의 그룹을 변경했습니다',
       'downloads.batchDeleted': '@count개 작업을 삭제했습니다',
       'detail.startDownloadTitle': '다운로드 시작',

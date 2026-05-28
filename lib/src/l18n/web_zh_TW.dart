@@ -710,6 +710,9 @@ class WebZhTW {
       'downloads.editTask': '編輯任務',
       'downloads.pauseVisible': '暫停目前列表任務',
       'downloads.resumeVisible': '恢復目前列表任務',
+      'downloads.reDownloadVisible': '重新下載目前列表畫廊',
+      'downloads.reDownloadConfirm': '刪除此畫廊已下載檔案並重新開始下載？',
+      'downloads.reDownloadVisibleConfirm': '刪除目前可見的 @count 個畫廊檔案並重新下載？',
       'downloads.changeVisibleGroup': '修改目前列表分組',
       'downloads.changeVisibleGroupConfirm': '將目前可見的 @count 個任務移動到此分組。',
       'downloads.deleteVisible': '刪除目前列表任務',
@@ -717,6 +720,7 @@ class WebZhTW {
       'downloads.noBatchTargets': '目前列表沒有可操作任務',
       'downloads.batchPaused': '已暫停 @count 個任務',
       'downloads.batchResumed': '已恢復 @count 個任務',
+      'downloads.batchRedownloaded': '已重新開始 @count 個任務',
       'downloads.batchGroupChanged': '已修改 @count 個任務的分組',
       'downloads.batchDeleted': '已刪除 @count 個任務',
 
