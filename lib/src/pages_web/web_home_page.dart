@@ -17,6 +17,11 @@ import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
 
+String _webHomeUploaderSearchQuery(String uploader) {
+  final escaped = uploader.trim().replaceAll('"', r'\"');
+  return 'uploader:"$escaped"';
+}
+
 class WebHomeController extends GetxController {
   static const listModeStorageKey = 'jh_web_list_mode';
   static const pageListModeStorageKey = 'jh_web_page_list_modes';
@@ -3194,11 +3199,31 @@ class _GalleryListTile extends StatelessWidget {
                                   fontWeight: FontWeight.bold)),
                         ),
                         if (uploader.isNotEmpty)
-                          Text(uploader,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: Colors.grey)),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(4),
+                            onTap: () {
+                              final query =
+                                  _webHomeUploaderSearchQuery(uploader);
+                              homeController.searchController.text = query;
+                              homeController.searchOrOpenGalleryUrl(query,
+                                  isLeftPane: isLeftPane);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 2, vertical: 1),
+                              child: Text(
+                                uploader,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                              ),
+                            ),
+                          ),
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
