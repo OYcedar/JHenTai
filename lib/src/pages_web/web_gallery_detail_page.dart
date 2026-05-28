@@ -68,6 +68,11 @@ String _webSimilarTitleQuery(String title) {
   return 'title:"$cleaned"';
 }
 
+String _webUploaderSearchQuery(String uploader) {
+  final escaped = uploader.trim().replaceAll('"', r'\"');
+  return 'uploader:"$escaped"';
+}
+
 String _webPreferredTime(String value) {
   if (WebPreferenceSettings.showUtcTime || value.trim().isEmpty) {
     return value;
@@ -1308,6 +1313,9 @@ class WebGalleryDetailPage extends StatelessWidget {
           children: [
             Obx(() => _CategoryChip(category: controller.category.value)),
             Obx(() => GestureDetector(
+                  onTap: controller.uploader.value.isEmpty
+                      ? null
+                      : () => _searchUploader(controller.uploader.value),
                   onSecondaryTapUp: (details) {
                     _showUploaderContextMenu(context, details.globalPosition,
                         controller.uploader.value);
@@ -2209,8 +2217,7 @@ class WebGalleryDetailPage extends StatelessWidget {
             dense: true,
             contentPadding: EdgeInsets.zero,
           ),
-          onTap: () => Get.offAllNamed('/web/home',
-              arguments: {'search': 'uploader:$uploader'}),
+          onTap: () => _searchUploader(uploader),
         ),
         PopupMenuItem(
           child: ListTile(
@@ -2224,6 +2231,13 @@ class WebGalleryDetailPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  void _searchUploader(String uploader) {
+    final value = uploader.trim();
+    if (value.isEmpty) return;
+    Get.offAllNamed('/web/home',
+        arguments: {'search': _webUploaderSearchQuery(value)});
   }
 
   Future<void> _voteTag(String namespace, String tag, int vote) async {
