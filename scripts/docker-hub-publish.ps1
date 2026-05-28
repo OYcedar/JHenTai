@@ -1,6 +1,6 @@
 # Build and push JHenTai Docker image (tag x.y.z-hhh). Run from repo root or any path.
 # Prerequisites: docker login
-# Env: DOCKERHUB_USERNAME (default hemumoe)
+# Env: DOCKERHUB_USERNAME (default hemumoe), DOCKER_PLATFORMS (default linux/amd64,linux/arm64)
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $Root
@@ -29,8 +29,13 @@ $image = "${user}/jhentai"
 $tag = "${semver}-${hhh}"
 
 Write-Host "Image: ${image}:${tag} (fork_revision=$frNum -> 0x$hhh)"
-docker build -t "${image}:${tag}" $Root
-docker tag "${image}:${tag}" "${image}:latest"
-docker push "${image}:${tag}"
-docker push "${image}:latest"
-Write-Host "Pushed ${image}:${tag} and ${image}:latest"
+$platforms = if ($env:DOCKER_PLATFORMS) { $env:DOCKER_PLATFORMS } else { 'linux/amd64,linux/arm64' }
+
+Write-Host "Platforms: $platforms"
+docker buildx build `
+    --platform "$platforms" `
+    -t "${image}:${tag}" `
+    -t "${image}:latest" `
+    --push `
+    $Root
+Write-Host "Pushed ${image}:${tag} and ${image}:latest for $platforms"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build and push the JHenTai Docker image to Docker Hub with tag x.y.z-hhh (no GitHub Actions).
 # Prerequisites: docker login
-# Env: DOCKERHUB_USERNAME (default hemumoe), optional DOCKER_BUILDKIT=1
+# Env: DOCKERHUB_USERNAME (default hemumoe), DOCKER_PLATFORMS (default linux/amd64,linux/arm64)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -29,8 +29,13 @@ IMAGE="${USER}/jhentai"
 TAG="${SEMVER}-${HHH}"
 
 echo "Image: ${IMAGE}:${TAG} (fork_revision=$FR -> 0x$HHH)"
-docker build -t "${IMAGE}:${TAG}" .
-docker tag "${IMAGE}:${TAG}" "${IMAGE}:latest"
-docker push "${IMAGE}:${TAG}"
-docker push "${IMAGE}:latest"
-echo "Pushed ${IMAGE}:${TAG} and ${IMAGE}:latest"
+PLATFORMS="${DOCKER_PLATFORMS:-linux/amd64,linux/arm64}"
+
+echo "Platforms: ${PLATFORMS}"
+docker buildx build \
+  --platform "${PLATFORMS}" \
+  -t "${IMAGE}:${TAG}" \
+  -t "${IMAGE}:latest" \
+  --push \
+  .
+echo "Pushed ${IMAGE}:${TAG} and ${IMAGE}:latest for ${PLATFORMS}"
