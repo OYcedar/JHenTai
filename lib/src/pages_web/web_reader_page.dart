@@ -915,6 +915,22 @@ class WebReaderController extends GetxController {
     goToPage(currentPage.value - 1);
   }
 
+  void toRight() {
+    if (readDirection.value == ReadDirection.rtl) {
+      prevPage();
+    } else {
+      nextPage();
+    }
+  }
+
+  void toLeft() {
+    if (readDirection.value == ReadDirection.rtl) {
+      nextPage();
+    } else {
+      prevPage();
+    }
+  }
+
   void toggleOverlay() => showOverlay.value = !showOverlay.value;
 
   void setReadDirection(ReadDirection newDir) {
@@ -1105,12 +1121,25 @@ class _ReaderBody extends StatelessWidget {
       autofocus: true,
       onKeyEvent: (event) {
         if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
-              event.logicalKey == LogicalKeyboardKey.space) {
+          if (event.logicalKey == LogicalKeyboardKey.pageDown ||
+              event.logicalKey == LogicalKeyboardKey.arrowDown) {
             controller.nextPage();
-          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+          } else if (event.logicalKey == LogicalKeyboardKey.pageUp ||
+              event.logicalKey == LogicalKeyboardKey.arrowUp) {
             controller.prevPage();
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowRight ||
+              event.logicalKey == LogicalKeyboardKey.keyD) {
+            controller.toRight();
+          } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft ||
+              event.logicalKey == LogicalKeyboardKey.keyA) {
+            controller.toLeft();
+          } else if (event.logicalKey == LogicalKeyboardKey.space) {
+            controller.toggleOverlay();
+          } else if (event.logicalKey == LogicalKeyboardKey.keyM) {
+            controller.toggleDisplayFirstPageAlone();
           } else if (event.logicalKey == LogicalKeyboardKey.escape) {
+            _popOrExitWebReader(context, controller);
+          } else if (event.logicalKey == LogicalKeyboardKey.end) {
             _popOrExitWebReader(context, controller);
           }
         }
