@@ -108,13 +108,14 @@ class WebLocalController extends GetxController {
       groups.putIfAbsent(group, () => []).add(gallery);
     }
     final sortedKeys = groups.keys.toList()
-      ..sort((a, b) => _displayPath(a).compareTo(_displayPath(b)));
+      ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
     return {
       for (final key in sortedKeys)
         key: (groups[key]!
-          ..sort((a, b) => (a['title']?.toString() ?? '')
-              .toLowerCase()
-              .compareTo((b['title']?.toString() ?? '').toLowerCase())))
+          ..sort((a, b) => _naturalCompare(
+                a['title']?.toString() ?? '',
+                b['title']?.toString() ?? '',
+              )))
     };
   }
 
@@ -139,6 +140,31 @@ class WebLocalController extends GetxController {
         ? '${parts[parts.length - 2]}/${parts.last}'
         : parts.last;
     return tail;
+  }
+
+  static int _naturalCompare(String a, String b) {
+    final pattern = RegExp(r'(\d+|\D+)');
+    final aParts = pattern.allMatches(a.toLowerCase()).toList();
+    final bParts = pattern.allMatches(b.toLowerCase()).toList();
+    final len = aParts.length < bParts.length ? aParts.length : bParts.length;
+
+    for (var i = 0; i < len; i++) {
+      final aPart = aParts[i].group(0)!;
+      final bPart = bParts[i].group(0)!;
+      if (aPart == bPart) continue;
+
+      final aNum = int.tryParse(aPart);
+      final bNum = int.tryParse(bPart);
+      if (aNum != null && bNum != null) {
+        final cmp = aNum.compareTo(bNum);
+        if (cmp != 0) return cmp;
+      }
+
+      final cmp = aPart.compareTo(bPart);
+      if (cmp != 0) return cmp;
+    }
+
+    return aParts.length.compareTo(bParts.length);
   }
 }
 
