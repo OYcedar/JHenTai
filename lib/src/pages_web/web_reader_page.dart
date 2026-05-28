@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -289,6 +290,7 @@ class WebReaderController extends GetxController {
   final focusNode = FocusNode();
 
   List<String>? localImages;
+  String? localProgressKey;
 
   Timer? _saveProgressTimer;
   int? _startPage;
@@ -524,9 +526,10 @@ class WebReaderController extends GetxController {
       _initPageController(_startPage!);
       return;
     }
-    if (gid == 0) return;
+    final key = _progressSettingKey();
+    if (key == null) return;
     try {
-      final saved = await backendApiClient.getSetting('read_progress_$gid');
+      final saved = await backendApiClient.getSetting(key);
       if (saved != null) {
         final page = int.tryParse(saved) ?? 0;
         if (page > 0 && page < totalPages.value) {
@@ -556,10 +559,20 @@ class WebReaderController extends GetxController {
   }
 
   void _saveProgressNow() {
-    if (gid == 0) return;
-    backendApiClient
-        .putSetting('read_progress_$gid', currentPage.value)
-        .catchError((_) {});
+    final key = _progressSettingKey();
+    if (key == null) return;
+    backendApiClient.putSetting(key, currentPage.value).catchError((_) {});
+  }
+
+  String? _progressSettingKey() {
+    if (mode != ReaderMode.local) {
+      if (gid == 0) return null;
+      return 'read_progress_$gid';
+    }
+    final key = localProgressKey;
+    if (key == null || key.isEmpty) return null;
+    final encoded = base64Url.encode(utf8.encode(key)).replaceAll('=', '');
+    return 'read_progress_local_$encoded';
   }
 
   Future<void> _loadGallery() async {
@@ -1174,6 +1187,7 @@ class _ReaderBody extends StatelessWidget {
                     .round();
                 if (page != controller.currentPage.value) {
                   controller.currentPage.value = page;
+                  controller._scheduleSaveProgress();
                   if (controller.mode == ReaderMode.online) {
                     controller._preloadAround(page);
                   }
@@ -1218,6 +1232,7 @@ class _ReaderBody extends StatelessWidget {
                     .round();
                 if (page != controller.currentPage.value) {
                   controller.currentPage.value = page;
+                  controller._scheduleSaveProgress();
                   if (controller.mode == ReaderMode.online) {
                     controller._preloadAround(page);
                   }
@@ -1255,7 +1270,6 @@ class _ReaderBody extends StatelessWidget {
 
   Widget _buildDoubleColumnReader(BuildContext context) {
     return Obx(() {
-      final total = controller.totalPages.value;
       final pageCount = controller.doubleColumnPageCount();
       return ScrollConfiguration(
         behavior: _webReaderScrollBehavior,

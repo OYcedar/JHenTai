@@ -301,6 +301,10 @@ final _webRoutes = [
         if (t is String && t.isNotEmpty) {
           controller.galleryTitle.value = t;
         }
+        final progressKey = args['progressKey'];
+        if (progressKey is String && progressKey.isNotEmpty) {
+          controller.localProgressKey = progressKey;
+        }
       }
       Get.lazyPut(() => controller);
     }),

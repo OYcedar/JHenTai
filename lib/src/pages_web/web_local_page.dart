@@ -65,6 +65,7 @@ class WebLocalController extends GetxController {
       Get.toNamed('/web/reader/0/local?mode=local', arguments: {
         'images': images,
         'title': title,
+        'progressKey': gallery['coverPath'] ?? path,
       });
     } catch (e) {
       Get.snackbar(
