@@ -20,6 +20,7 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
               child: Text('settings.ehRequiresLogin'.tr,
                   textAlign: TextAlign.center));
         }
+        final site = controller.site.value;
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Center(
@@ -31,7 +32,7 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
                   const SizedBox(height: 12),
                   _linkCard(context),
                   const SizedBox(height: 12),
-                  const _EhProfileCard(),
+                  _EhProfileCard(key: ValueKey(site), site: site),
                 ],
               ),
             ),
@@ -124,7 +125,9 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
 }
 
 class _EhProfileCard extends StatefulWidget {
-  const _EhProfileCard();
+  final String site;
+
+  const _EhProfileCard({super.key, required this.site});
 
   @override
   State<_EhProfileCard> createState() => _EhProfileCardState();
@@ -253,7 +256,7 @@ class _EhProfileCardState extends State<_EhProfileCard> {
               ),
             const SizedBox(height: 8),
             Text(
-              'settings.ehProfileHint'.tr,
+              'settings.ehProfileHint'.trParams({'site': widget.site}),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),

@@ -292,7 +292,8 @@ class WebZhTW {
       'settings.ehSiteSettingHint': '在新分頁開啟 E-Hentai / ExHentai 設定頁',
       'settings.ehProfile': 'Profile 設定',
       'settings.ehSelectedProfile': '目前 Profile',
-      'settings.ehProfileHint': '與 App 一樣透過 sp Cookie 切換目前站台使用的 Profile。',
+      'settings.ehProfileHint':
+          '目前站台: @site。與 App 一樣透過 sp Cookie 切換目前站台使用的 Profile。',
       'settings.ehProfileEmpty': '找不到可用 Profile',
       'settings.ehProfileSaved': 'Profile 已切換',
       'settings.ehProfileSaveFailed': '切換 Profile 失敗: @error',

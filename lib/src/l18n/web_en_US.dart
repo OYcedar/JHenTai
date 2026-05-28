@@ -310,7 +310,7 @@ class WebEnUS {
       'settings.ehProfile': 'Profile settings',
       'settings.ehSelectedProfile': 'Selected profile',
       'settings.ehProfileHint':
-          'Switches the active site profile through the sp cookie, matching the app.',
+          'Current site: @site. Switches the active site profile through the sp cookie, matching the app.',
       'settings.ehProfileEmpty': 'No profiles found',
       'settings.ehProfileSaved': 'Profile switched',
       'settings.ehProfileSaveFailed': 'Failed to switch profile: @error',
