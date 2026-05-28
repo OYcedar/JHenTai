@@ -585,6 +585,7 @@ class WebEnUS {
       // detail enhancements
       'detail.share': 'Share',
       'detail.jumpToPage': 'Jump to Page',
+      'detail.jumpToThumbnail': 'Jump to Thumbnail',
       'detail.similarSearch': 'Similar Search',
       'detail.blockGallery': 'Block Gallery',
       'detail.allComments': 'All Comments',

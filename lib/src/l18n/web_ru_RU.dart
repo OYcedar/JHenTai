@@ -581,6 +581,7 @@ class WebRuRU {
       // detail enhancements
       'detail.share': 'Поделиться',
       'detail.jumpToPage': 'Перейти к странице',
+      'detail.jumpToThumbnail': 'Перейти к миниатюре',
       'detail.similarSearch': 'Похожий поиск',
       'detail.blockGallery': 'Заблокировать галерею',
       'detail.allComments': 'Все комментарии',

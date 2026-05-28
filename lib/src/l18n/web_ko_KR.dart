@@ -565,6 +565,7 @@ class WebKoKR {
       // detail enhancements
       'detail.share': '공유',
       'detail.jumpToPage': '페이지 이동',
+      'detail.jumpToThumbnail': '썸네일로 이동',
       'detail.similarSearch': '유사 검색',
       'detail.blockGallery': '갤러리 차단',
       'detail.allComments': '모든 댓글',

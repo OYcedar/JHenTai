@@ -965,6 +965,14 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   void _showJumpToPageDialog(BuildContext context) {
     final textCtrl = TextEditingController();
+    int? parsePage() {
+      final page = int.tryParse(textCtrl.text);
+      if (page != null && page >= 1 && page <= controller.pageCount.value) {
+        return page;
+      }
+      return null;
+    }
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -978,10 +986,8 @@ class WebGalleryDetailPage extends StatelessWidget {
           ),
           autofocus: true,
           onSubmitted: (_) {
-            final page = int.tryParse(textCtrl.text);
-            if (page != null &&
-                page >= 1 &&
-                page <= controller.pageCount.value) {
+            final page = parsePage();
+            if (page != null) {
               Navigator.pop(ctx);
               Get.toNamed(
                   '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: page - 1)}');
@@ -992,12 +998,21 @@ class WebGalleryDetailPage extends StatelessWidget {
           TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text('common.cancel'.tr)),
+          TextButton(
+            onPressed: () {
+              final page = parsePage();
+              if (page != null) {
+                Navigator.pop(ctx);
+                Get.toNamed(
+                    '/web/thumbnails/${controller.gid}/${controller.token}?page=$page');
+              }
+            },
+            child: Text('detail.jumpToThumbnail'.tr),
+          ),
           FilledButton(
             onPressed: () {
-              final page = int.tryParse(textCtrl.text);
-              if (page != null &&
-                  page >= 1 &&
-                  page <= controller.pageCount.value) {
+              final page = parsePage();
+              if (page != null) {
                 Navigator.pop(ctx);
                 Get.toNamed(
                     '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(startPage: page - 1)}');

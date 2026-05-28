@@ -547,6 +547,7 @@ class WebZhTW {
       // detail enhancements
       'detail.share': '分享',
       'detail.jumpToPage': '跳轉到頁',
+      'detail.jumpToThumbnail': '跳到縮圖',
       'detail.similarSearch': '相似搜尋',
       'detail.blockGallery': '封鎖畫廊',
       'detail.allComments': '全部評論',

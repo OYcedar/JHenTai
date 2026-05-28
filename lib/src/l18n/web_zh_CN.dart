@@ -551,6 +551,7 @@ class WebZhCN {
       // detail enhancements
       'detail.share': '分享',
       'detail.jumpToPage': '跳转到页',
+      'detail.jumpToThumbnail': '跳到缩略图',
       'detail.similarSearch': '相似搜索',
       'detail.blockGallery': '屏蔽画廊',
       'detail.allComments': '全部评论',

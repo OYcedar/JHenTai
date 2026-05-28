@@ -584,6 +584,7 @@ class WebPtBR {
       // detail enhancements
       'detail.share': 'Compartilhar',
       'detail.jumpToPage': 'Ir para Página',
+      'detail.jumpToThumbnail': 'Ir para miniatura',
       'detail.similarSearch': 'Pesquisa Similar',
       'detail.blockGallery': 'Bloquear Galeria',
       'detail.allComments': 'Todos os Comentários',

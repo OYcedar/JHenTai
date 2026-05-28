@@ -37,6 +37,7 @@ class WebThumbnailsController extends GetxController {
   final errorMessage = ''.obs;
   final scrollController = ScrollController();
 
+  int? _initialPageNo;
   int _crossAxisCount = 3;
   double _rowExtent = 0;
 
@@ -45,7 +46,15 @@ class WebThumbnailsController extends GetxController {
     super.onInit();
     gid = int.tryParse(Get.parameters['gid'] ?? '') ?? 0;
     token = Get.parameters['token'] ?? '';
+    _initialPageNo = _readInitialPageNo();
     _load();
+  }
+
+  int? _readInitialPageNo() {
+    final uri = Uri.parse(Uri.base.toString());
+    final raw = uri.queryParameters['page'] ?? Get.parameters['page'];
+    final value = int.tryParse(raw ?? '');
+    return value != null && value > 0 ? value : null;
   }
 
   Future<void> _load() async {
@@ -78,6 +87,13 @@ class WebThumbnailsController extends GetxController {
       errorMessage.value = 'thumbnails.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
+      final pageNo = _initialPageNo;
+      if (pageNo != null) {
+        _initialPageNo = null;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          scrollToPageNo(pageNo);
+        });
+      }
     }
   }
 
