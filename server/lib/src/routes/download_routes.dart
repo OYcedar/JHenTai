@@ -33,6 +33,7 @@ class DownloadRoutes {
     // Archive downloads
     router.get('/archive/list', _listArchiveDownloads);
     router.post('/archive/start', _startArchiveDownload);
+    router.post('/archive/restore', _restoreArchiveDownloads);
     router.patch('/archive/<gid>', _patchArchiveDownload);
     router.post('/archive/<gid>/pause', _pauseArchiveDownload);
     router.post('/archive/<gid>/resume', _resumeArchiveDownload);
@@ -261,6 +262,14 @@ class DownloadRoutes {
     );
     return Response.ok(jsonEncode({'success': true}),
         headers: {'Content-Type': 'application/json'});
+  }
+
+  Future<Response> _restoreArchiveDownloads(Request request) async {
+    final restored = await _archiveService.restoreDownloadsFromMetadata();
+    return Response.ok(
+      jsonEncode({'success': true, 'restoredArchiveCount': restored}),
+      headers: {'Content-Type': 'application/json'},
+    );
   }
 
   Future<Response> _pauseArchiveDownload(Request request, String gid) async {

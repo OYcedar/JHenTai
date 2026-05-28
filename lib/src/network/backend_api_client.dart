@@ -348,6 +348,11 @@ class BackendApiClient {
     return (response.data['tasks'] as List?) ?? [];
   }
 
+  Future<Map<String, dynamic>> restoreArchiveDownloads() async {
+    final response = await _dio.post('/api/download/archive/restore');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<void> startArchiveDownload({
     required int gid,
     required String token,

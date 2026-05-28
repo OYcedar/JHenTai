@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -72,27 +73,27 @@ class ArchiveDownloadTask {
   });
 
   Map<String, dynamic> toJson() => {
-    'gid': gid,
-    'token': token,
-    'title': title,
-    'category': category,
-    'pageCount': pageCount,
-    'galleryUrl': galleryUrl,
-    'coverUrl': coverUrl,
-    'uploader': uploader,
-    'size': size,
-    'archivePageUrl': archivePageUrl,
-    'isOriginal': isOriginal,
-    'status': status.index,
-    'downloadPageUrl': downloadPageUrl,
-    'downloadUrl': downloadUrl,
-    'downloadedBytes': downloadedBytes,
-    'totalBytes': totalBytes,
-    'group': group,
-    'group_name': group,
-    'priority': priority,
-    'insertTime': insertTime,
-  };
+        'gid': gid,
+        'token': token,
+        'title': title,
+        'category': category,
+        'pageCount': pageCount,
+        'galleryUrl': galleryUrl,
+        'coverUrl': coverUrl,
+        'uploader': uploader,
+        'size': size,
+        'archivePageUrl': archivePageUrl,
+        'isOriginal': isOriginal,
+        'status': status.index,
+        'downloadPageUrl': downloadPageUrl,
+        'downloadUrl': downloadUrl,
+        'downloadedBytes': downloadedBytes,
+        'totalBytes': totalBytes,
+        'group': group,
+        'group_name': group,
+        'priority': priority,
+        'insertTime': insertTime,
+      };
 }
 
 class ArchiveDownloadService {
@@ -124,14 +125,16 @@ class ArchiveDownloadService {
         size: row['size'] as String? ?? '',
         archivePageUrl: row['archive_page_url'] as String? ?? '',
         isOriginal: (row['is_original'] as int? ?? 0) == 1,
-        status: _safeEnum(ArchiveStatus.values, row['archive_status'] as int, ArchiveStatus.failed),
+        status: _safeEnum(ArchiveStatus.values, row['archive_status'] as int,
+            ArchiveStatus.failed),
         downloadPageUrl: row['download_page_url'] as String? ?? '',
         downloadUrl: row['download_url'] as String? ?? '',
         downloadedBytes: row['downloaded_bytes'] as int? ?? 0,
         totalBytes: row['total_bytes'] as int? ?? 0,
         group: row['group_name'] as String? ?? 'default',
         priority: row['priority'] as int? ?? 0,
-        insertTime: row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
+        insertTime:
+            row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
       );
       _tasks[task.gid] = task;
     }
@@ -144,7 +147,8 @@ class ArchiveDownloadService {
       ArchiveStatus.downloaded,
       ArchiveStatus.unpacking,
     };
-    final toResume = _tasks.values.where((t) => activeStatuses.contains(t.status)).toList();
+    final toResume =
+        _tasks.values.where((t) => activeStatuses.contains(t.status)).toList();
     for (final task in toResume) {
       log.info('Resuming archive download: ${task.gid} (${task.title})');
       task.status = ArchiveStatus.unlocking;
@@ -172,7 +176,8 @@ class ArchiveDownloadService {
   }) async {
     if (_tasks.containsKey(gid)) {
       final existing = _tasks[gid]!;
-      if (existing.status == ArchiveStatus.paused || existing.status == ArchiveStatus.failed) {
+      if (existing.status == ArchiveStatus.paused ||
+          existing.status == ArchiveStatus.failed) {
         existing.status = ArchiveStatus.unlocking;
         db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
         _processQueue();
@@ -218,6 +223,7 @@ class ArchiveDownloadService {
       'insert_time': now,
       'priority': priority,
     });
+    _saveMetadata(task);
 
     _notifyProgress(task);
     _processQueue();
@@ -251,7 +257,8 @@ class ArchiveDownloadService {
   void resumeDownload(int gid) {
     final task = _tasks[gid];
     if (task == null) return;
-    if (task.status != ArchiveStatus.paused && task.status != ArchiveStatus.failed) return;
+    if (task.status != ArchiveStatus.paused &&
+        task.status != ArchiveStatus.failed) return;
     task.status = ArchiveStatus.unlocking;
     db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
     _notifyProgress(task);
@@ -274,9 +281,100 @@ class ArchiveDownloadService {
     _processQueue();
   }
 
+  Future<int> restoreDownloadsFromMetadata() async {
+    final root = Directory(p.join(_config.downloadDir, 'archive'));
+    if (!await root.exists()) return 0;
+
+    var restored = 0;
+    await for (final entity in root.list(followLinks: false)) {
+      if (entity is! Directory) continue;
+      final metaFile = File(p.join(entity.path, 'metadata.json'));
+      if (!await metaFile.exists()) continue;
+
+      Map<String, dynamic> meta;
+      try {
+        final decoded = jsonDecode(await metaFile.readAsString());
+        if (decoded is! Map) continue;
+        meta = decoded.cast<String, dynamic>();
+      } catch (e) {
+        log.warning('Restore archive metadata failed: ${metaFile.path}: $e');
+        continue;
+      }
+
+      final gid = (meta['gid'] as num?)?.toInt() ??
+          int.tryParse(p.basename(entity.path));
+      if (gid == null || _tasks.containsKey(gid)) continue;
+
+      final token = meta['token']?.toString() ?? '';
+      final title = meta['title']?.toString() ?? '';
+      final galleryUrl = meta['galleryUrl']?.toString() ?? '';
+      final archivePageUrl = meta['archivePageUrl']?.toString() ?? '';
+      if (token.isEmpty ||
+          title.isEmpty ||
+          galleryUrl.isEmpty ||
+          archivePageUrl.isEmpty) {
+        continue;
+      }
+
+      final hasImages = _hasExtractedImages(entity);
+      final insertTime = (await metaFile.stat()).modified.toIso8601String();
+      final task = ArchiveDownloadTask(
+        gid: gid,
+        token: token,
+        title: title,
+        category: meta['category']?.toString() ?? '',
+        pageCount: (meta['pageCount'] as num?)?.toInt() ?? 0,
+        galleryUrl: galleryUrl,
+        coverUrl: meta['coverUrl']?.toString() ?? '',
+        uploader: meta['uploader']?.toString() ?? '',
+        size: meta['size']?.toString() ?? '',
+        archivePageUrl: archivePageUrl,
+        isOriginal: meta['isOriginal'] as bool? ?? false,
+        group: meta['group']?.toString() ??
+            meta['groupName']?.toString() ??
+            'default',
+        priority: (meta['priority'] as num?)?.toInt() ?? 0,
+        insertTime: insertTime,
+        status: hasImages ? ArchiveStatus.completed : ArchiveStatus.paused,
+        downloadPageUrl: meta['downloadPageUrl']?.toString() ?? '',
+        downloadUrl: meta['downloadUrl']?.toString() ?? '',
+      );
+
+      _tasks[gid] = task;
+      db.insertArchiveDownload({
+        'gid': gid,
+        'token': token,
+        'title': title,
+        'category': task.category,
+        'page_count': task.pageCount,
+        'gallery_url': galleryUrl,
+        'cover_url': task.coverUrl,
+        'uploader': task.uploader,
+        'size': task.size,
+        'publish_time': insertTime,
+        'archive_status': task.status.index,
+        'archive_page_url': archivePageUrl,
+        'download_page_url': task.downloadPageUrl,
+        'download_url': task.downloadUrl,
+        'is_original': task.isOriginal ? 1 : 0,
+        'group_name': task.group,
+        'insert_time': insertTime,
+        'priority': task.priority,
+      });
+
+      restored++;
+      _notifyProgress(task);
+    }
+
+    if (restored > 0) _processQueue();
+    return restored;
+  }
+
   ArchiveDownloadTask? _nextQueuedTask() {
     final candidates = _tasks.values
-        .where((t) => t.status == ArchiveStatus.unlocking && !_activeDownloads.contains(t.gid))
+        .where((t) =>
+            t.status == ArchiveStatus.unlocking &&
+            !_activeDownloads.contains(t.gid))
         .toList();
     if (candidates.isEmpty) return null;
     candidates.sort((a, b) {
@@ -310,7 +408,9 @@ class ArchiveDownloadService {
           cancelToken: task._cancelToken,
         );
         task.downloadPageUrl = downloadPageUrl;
-        db.updateArchiveDownloadUrls(task.gid, downloadPageUrl: downloadPageUrl);
+        db.updateArchiveDownloadUrls(task.gid,
+            downloadPageUrl: downloadPageUrl);
+        _saveMetadata(task);
       }
 
       task.status = ArchiveStatus.parsingUrl;
@@ -319,7 +419,9 @@ class ArchiveDownloadService {
 
       if (task.downloadUrl.isEmpty) {
         String? downloadUrl;
-        for (var i = 0; i < 10 && task.status == ArchiveStatus.parsingUrl; i++) {
+        for (var i = 0;
+            i < 10 && task.status == ArchiveStatus.parsingUrl;
+            i++) {
           downloadUrl = await _client.parseArchiveDownloadUrl(
             task.downloadPageUrl,
             cancelToken: task._cancelToken,
@@ -333,6 +435,7 @@ class ArchiveDownloadService {
         }
         task.downloadUrl = downloadUrl;
         db.updateArchiveDownloadUrls(task.gid, downloadUrl: downloadUrl);
+        _saveMetadata(task);
       }
 
       task.status = ArchiveStatus.downloading;
@@ -381,6 +484,7 @@ class ArchiveDownloadService {
 
       task.status = ArchiveStatus.completed;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.completed.index);
+      _saveMetadata(task);
       _notifyProgress(task);
       log.info('Archive ${task.gid} download and extraction completed');
     } on ArchiveUnlockException catch (e) {
@@ -405,8 +509,43 @@ class ArchiveDownloadService {
     }
   }
 
-  String _archiveDir(int gid) => p.join(_config.downloadDir, 'archive', gid.toString());
-  String _archiveZipPath(int gid) => p.join(_config.tempDir, 'archive_$gid.zip');
+  String _archiveDir(int gid) =>
+      p.join(_config.downloadDir, 'archive', gid.toString());
+  String _archiveZipPath(int gid) =>
+      p.join(_config.tempDir, 'archive_$gid.zip');
+
+  bool _hasExtractedImages(Directory dir) {
+    try {
+      return dir
+          .listSync(recursive: true, followLinks: false)
+          .whereType<File>()
+          .any((f) => isImageFile(f.path));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _saveMetadata(ArchiveDownloadTask task) {
+    final metaFile = File(p.join(_archiveDir(task.gid), 'metadata.json'));
+    metaFile.parent.createSync(recursive: true);
+    metaFile.writeAsStringSync(jsonEncode({
+      'gid': task.gid,
+      'token': task.token,
+      'title': task.title,
+      'category': task.category,
+      'pageCount': task.pageCount,
+      'galleryUrl': task.galleryUrl,
+      'coverUrl': task.coverUrl,
+      'uploader': task.uploader,
+      'size': task.size,
+      'archivePageUrl': task.archivePageUrl,
+      'isOriginal': task.isOriginal,
+      'group': task.group,
+      'priority': task.priority,
+      'downloadPageUrl': task.downloadPageUrl,
+      'downloadUrl': task.downloadUrl,
+    }));
+  }
 
   void _notifyProgress(ArchiveDownloadTask task) {
     _eventBus.fire('archive_download_progress', task.toJson());

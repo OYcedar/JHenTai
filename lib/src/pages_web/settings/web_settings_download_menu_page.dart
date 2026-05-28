@@ -116,13 +116,18 @@ class _WebSettingsDownloadMenuPageState
     if (restoreRunning) return;
     setState(() => restoreRunning = true);
     try {
-      final result = await backendApiClient.restoreGalleryDownloads();
+      final results = await Future.wait([
+        backendApiClient.restoreGalleryDownloads(),
+        backendApiClient.restoreArchiveDownloads(),
+      ]);
       await Get.find<WebDownloadService>().refresh();
       final galleryCount =
-          (result['restoredGalleryCount'] as num?)?.toInt() ?? 0;
+          (results[0]['restoredGalleryCount'] as num?)?.toInt() ?? 0;
+      final archiveCount =
+          (results[1]['restoredArchiveCount'] as num?)?.toInt() ?? 0;
       Get.snackbar(
         'common.success'.tr,
-        '${'restoredGalleryCount'.tr}: $galleryCount\n${'restoredArchiveCount'.tr}: 0',
+        '${'restoredGalleryCount'.tr}: $galleryCount\n${'restoredArchiveCount'.tr}: $archiveCount',
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
