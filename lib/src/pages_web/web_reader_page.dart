@@ -989,7 +989,7 @@ class WebReaderController extends GetxController {
     Get.dialog(
       StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Auto Mode Interval'),
+          title: Text('reader.autoInterval'.tr),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1007,7 +1007,7 @@ class WebReaderController extends GetxController {
           actions: [
             TextButton(
               onPressed: () => Get.back(),
-              child: const Text('Cancel'),
+              child: Text('common.cancel'.tr),
             ),
             FilledButton(
               onPressed: () {
@@ -1016,7 +1016,7 @@ class WebReaderController extends GetxController {
                 isAutoMode.value = true;
                 _startAutoTimer();
               },
-              child: const Text('Start'),
+              child: Text('reader.startAutoMode'.tr),
             ),
           ],
         ),

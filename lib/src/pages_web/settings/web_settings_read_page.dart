@@ -145,7 +145,13 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
 
   @override
   Widget build(BuildContext context) {
-    const dirLabels = ['LTR', 'RTL', 'Vertical', 'Fit Width', 'Double'];
+    final dirLabels = [
+      'reader.ltr'.tr,
+      'reader.rtl'.tr,
+      'reader.vertical'.tr,
+      'reader.fitWidth'.tr,
+      'reader.doubleColumn'.tr,
+    ];
 
     return Obx(() {
       if (!loaded.value) {
