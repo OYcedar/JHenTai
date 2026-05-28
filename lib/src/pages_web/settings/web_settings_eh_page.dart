@@ -61,6 +61,18 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
                   onSelectionChanged: (selected) =>
                       controller.switchSite(selected.first),
                 )),
+            Obx(() {
+              if (controller.site.value != 'EX') {
+                return const SizedBox.shrink();
+              }
+              return SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text('redirect2Eh'.tr),
+                subtitle: Text('redirect2EhHint'.tr),
+                value: controller.redirectToEh.value,
+                onChanged: controller.setRedirectToEh,
+              );
+            }),
             const SizedBox(height: 8),
             Obx(() {
               final status = controller.cookieStatus.value;

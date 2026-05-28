@@ -251,6 +251,8 @@ class WebZhTW {
       'settings.loginError': '登入失敗: @error',
       'settings.emptyCredentials': '請輸入使用者名稱和密碼',
       'settings.site': '站點',
+      'redirect2Eh': '優先重新導向至表站',
+      'redirect2EhHint': '優先嘗試從表站載入畫廊詳情頁，以獲得更好的網路體驗。',
       'settings.appearance': '外觀',
       'settings.themeMode': '主題模式',
       'settings.system': '跟隨系統',

@@ -254,6 +254,8 @@ class WebKoKR {
       'settings.loginError': '로그인 실패: @error',
       'settings.emptyCredentials': '사용자 이름과 비밀번호를 입력하세요',
       'settings.site': '사이트',
+      'redirect2Eh': '가능하면 EH로 리디렉션',
+      'redirect2EhHint': '더 나은 네트워크 성능을 위해 갤러리 상세를 EH에서 먼저 불러옵니다.',
       'settings.appearance': '외관',
       'settings.themeMode': '테마 모드',
       'settings.system': '시스템',

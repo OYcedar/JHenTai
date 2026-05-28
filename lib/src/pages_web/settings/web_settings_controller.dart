@@ -7,6 +7,7 @@ import 'package:web/web.dart' as web;
 class WebSettingsController extends GetxController {
   final isLoggedIn = false.obs;
   final site = 'EH'.obs;
+  final redirectToEh = true.obs;
   final userName = ''.obs;
   final serverInfo = <String, dynamic>{}.obs;
   final networkInfo = <String, dynamic>{}.obs;
@@ -67,6 +68,9 @@ class WebSettingsController extends GetxController {
       final settings = await backendApiClient.getSettings();
       serverInfo.value = settings['server'] as Map<String, dynamic>? ?? {};
       networkInfo.value = settings['network'] as Map<String, dynamic>? ?? {};
+      final redirectRaw =
+          await backendApiClient.getSetting('web_redirect_to_eh');
+      redirectToEh.value = redirectRaw != 'false';
 
       if (settings.containsKey('userSetting')) {
         final user = settings['userSetting'];
@@ -195,6 +199,20 @@ class WebSettingsController extends GetxController {
       Get.snackbar('common.error'.tr,
           'settings.switchSiteFailed'.trParams({'error': '$e'}),
           snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> setRedirectToEh(bool value) async {
+    redirectToEh.value = value;
+    try {
+      await backendApiClient.putSetting('web_redirect_to_eh', value);
+    } catch (e) {
+      redirectToEh.value = !value;
+      Get.snackbar(
+        'common.error'.tr,
+        '${'common.failed'.tr}: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 }

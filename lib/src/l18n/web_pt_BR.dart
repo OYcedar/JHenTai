@@ -266,6 +266,9 @@ class WebPtBR {
       'settings.loginError': 'Falha no login: @error',
       'settings.emptyCredentials': 'Por favor, insira usuário e senha',
       'settings.site': 'Site',
+      'redirect2Eh': 'Redirecionar para EH, se disponível',
+      'redirect2EhHint':
+          'Tenta carregar os detalhes da galeria pelo EH primeiro para melhor desempenho de rede.',
       'settings.appearance': 'Aparência',
       'settings.themeMode': 'Modo de Tema',
       'settings.system': 'Sistema',

@@ -263,6 +263,9 @@ class WebRuRU {
       'settings.loginError': 'Ошибка входа: @error',
       'settings.emptyCredentials': 'Введите имя пользователя и пароль',
       'settings.site': 'Сайт',
+      'redirect2Eh': 'Перенаправлять на EH, если доступно',
+      'redirect2EhHint':
+          'Сначала пробовать загрузить детали галереи через EH для лучшей производительности сети.',
       'settings.appearance': 'Внешний вид',
       'settings.themeMode': 'Тема',
       'settings.system': 'Системная',

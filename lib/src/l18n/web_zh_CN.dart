@@ -251,6 +251,8 @@ class WebZhCN {
       'settings.loginError': '登录失败: @error',
       'settings.emptyCredentials': '请输入用户名和密码',
       'settings.site': '站点',
+      'redirect2Eh': '优先重定向至表站',
+      'redirect2EhHint': '优先尝试从表站加载画廊详情页，以获得更好的网络体验。',
       'settings.appearance': '外观',
       'settings.themeMode': '主题模式',
       'settings.system': '跟随系统',

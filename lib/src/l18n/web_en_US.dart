@@ -266,6 +266,9 @@ class WebEnUS {
       'settings.loginError': 'Login failed: @error',
       'settings.emptyCredentials': 'Please enter username and password',
       'settings.site': 'Site',
+      'redirect2Eh': 'Redirect to EH if available',
+      'redirect2EhHint':
+          'Try loading gallery details from EH first for better network performance.',
       'settings.appearance': 'Appearance',
       'settings.themeMode': 'Theme Mode',
       'settings.system': 'System',

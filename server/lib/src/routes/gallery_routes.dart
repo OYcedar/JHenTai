@@ -625,10 +625,10 @@ class GalleryRoutes {
 
   Future<Response> _galleryDetail(
       Request request, String gid, String token) async {
-    final galleryUrl = '${_client.baseUrl}/g/$gid/$token/';
-
     try {
-      final detail = await _client.fetchGalleryDetail(galleryUrl);
+      final result = await _fetchGalleryDetailWithRedirect(gid, token);
+      final galleryUrl = result.galleryUrl;
+      final detail = result.detail;
       final comments = detail.comments
           .map((comment) => Map<String, dynamic>.from(comment))
           .toList();
@@ -687,9 +687,8 @@ class GalleryRoutes {
 
   Future<Response> _galleryImagePages(
       Request request, String gid, String token) async {
-    final galleryUrl = '${_client.baseUrl}/g/$gid/$token/';
-
     try {
+      final galleryUrl = await _resolveGalleryUrlForPages(gid, token);
       final allPageUrls = <String>[];
       final allThumbUrls = <String>[];
       final allGalleryThumbs = <Map<String, dynamic>>[];
@@ -750,6 +749,54 @@ class GalleryRoutes {
         body: jsonEncode({'error': 'Failed to fetch image pages: $e'}),
       );
     }
+  }
+
+  List<String> _galleryUrlCandidates(String gid, String token) {
+    final current = '${_client.baseUrl}/g/$gid/$token/';
+    final redirectToEh = db.readConfig('web_redirect_to_eh') != 'false';
+    if (_client.site != 'EX' || !redirectToEh) {
+      return [current];
+    }
+    final eh = 'https://e-hentai.org/g/$gid/$token/';
+    return [eh, current];
+  }
+
+  Future<({GalleryDetailResult detail, String galleryUrl})>
+      _fetchGalleryDetailWithRedirect(String gid, String token) async {
+    Object? firstError;
+    for (final galleryUrl in _galleryUrlCandidates(gid, token)) {
+      try {
+        final detail = await _client.fetchGalleryDetail(galleryUrl);
+        return (detail: detail, galleryUrl: galleryUrl);
+      } catch (e) {
+        firstError ??= e;
+      }
+    }
+    throw firstError ?? StateError('Failed to fetch gallery detail');
+  }
+
+  Future<String> _resolveGalleryUrlForPages(String gid, String token) async {
+    final candidates = _galleryUrlCandidates(gid, token);
+    if (candidates.length == 1) {
+      return candidates.first;
+    }
+    Object? firstError;
+    for (final galleryUrl in candidates) {
+      try {
+        final result = await _client.proxyGet(galleryUrl);
+        final html = result['data']?.toString() ?? '';
+        final statusCode = result['statusCode'] as int? ?? 0;
+        final doc = html_parser.parse(html);
+        if (statusCode == 200 &&
+            doc.querySelectorAll('a[href*="/s/"]').isNotEmpty) {
+          return galleryUrl;
+        }
+        firstError ??= 'No gallery thumbnail links found';
+      } catch (e) {
+        firstError ??= e;
+      }
+    }
+    throw firstError ?? StateError('Failed to resolve gallery pages');
   }
 
   Element? _pttLinkAdjacentToCurrent(Document doc, {required bool next}) {
