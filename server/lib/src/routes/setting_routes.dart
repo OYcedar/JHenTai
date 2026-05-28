@@ -91,12 +91,21 @@ class SettingRoutes {
     return '${uri.scheme}://${uri.host}$port';
   }
 
+  static bool _proxyHasCredentials(String? raw) {
+    if (raw == null || raw.trim().isEmpty) return false;
+    final value = raw.trim();
+    final uri = Uri.tryParse(value.contains('://') ? value : 'http://$value');
+    if (uri == null || uri.host.isEmpty) return false;
+    return uri.userInfo.isNotEmpty;
+  }
+
   static Map<String, dynamic> _proxyEnvItem(String name) {
     final value = _envValue(name);
     return {
       'name': name,
       'configured': value != null && value.trim().isNotEmpty,
       'value': _maskProxyValue(value),
+      'hasCredentials': _proxyHasCredentials(value),
     };
   }
 

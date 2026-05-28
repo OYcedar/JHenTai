@@ -375,6 +375,7 @@ class WebEnUS {
           'No proxy environment values were reported.',
       'settings.proxyEnvironmentHint':
           'Only protocol, host, and port are shown here. Credentials are hidden.',
+      'settings.proxyAuthConfigured': 'auth configured',
       'settings.networkRuntimeFlags': 'Network diagnostics',
       'settings.networkRestartHint':
           'These values come from the server startup environment. Restart the container after changing them.',

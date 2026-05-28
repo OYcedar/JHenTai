@@ -375,6 +375,7 @@ class WebPtBR {
       'settings.proxyEnvironmentEmpty': 'Nenhum valor de proxy foi informado.',
       'settings.proxyEnvironmentHint':
           'Apenas protocolo, host e porta aparecem aqui. Credenciais ficam ocultas.',
+      'settings.proxyAuthConfigured': 'autenticação configurada',
       'settings.networkRuntimeFlags': 'Diagnóstico de rede',
       'settings.networkRestartHint':
           'Esses valores vêm do ambiente de inicialização do servidor. Reinicie o contêiner após alterá-los.',

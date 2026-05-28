@@ -372,6 +372,7 @@ class WebRuRU {
       'settings.proxyEnvironmentEmpty': 'Значения прокси не обнаружены.',
       'settings.proxyEnvironmentHint':
           'Здесь показаны только протокол, хост и порт. Учётные данные скрыты.',
+      'settings.proxyAuthConfigured': 'авторизация настроена',
       'settings.networkRuntimeFlags': 'Диагностика сети',
       'settings.networkRestartHint':
           'Эти значения берутся из окружения запуска сервера. После изменения перезапустите контейнер.',

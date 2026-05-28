@@ -135,11 +135,7 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
                 _infoRow(
                   context,
                   item['name']?.toString() ?? '-',
-                  item['configured'] == true
-                      ? (item['value']?.toString().isNotEmpty == true
-                          ? item['value'].toString()
-                          : 'settings.configured'.tr)
-                      : 'settings.notConfigured'.tr,
+                  _proxyEnvLabel(item),
                   active: item['configured'] == true,
                 ),
             const SizedBox(height: 10),
@@ -222,8 +218,23 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
   }
 
   String _sourceLabel(String source) {
-    if (source == 'DIRECT') return 'settings.directConnection'.tr;
+    if (source == 'DIRECT') {
+      return 'settings.directConnection'.tr;
+    }
     return source;
+  }
+
+  String _proxyEnvLabel(Map item) {
+    if (item['configured'] != true) {
+      return 'settings.notConfigured'.tr;
+    }
+    final value = item['value']?.toString();
+    final label =
+        value != null && value.isNotEmpty ? value : 'settings.configured'.tr;
+    if (item['hasCredentials'] == true) {
+      return '$label (${'settings.proxyAuthConfigured'.tr})';
+    }
+    return label;
   }
 
   String _boolLabel(bool value) =>

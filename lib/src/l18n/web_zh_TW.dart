@@ -348,6 +348,7 @@ class WebZhTW {
       'settings.proxyEnvironment': '代理環境變數',
       'settings.proxyEnvironmentEmpty': '未讀取到代理環境變數。',
       'settings.proxyEnvironmentHint': '為安全起見，這裡只顯示協議、主機和連接埠，不顯示帳號密碼。',
+      'settings.proxyAuthConfigured': '已設定認證',
       'settings.networkRuntimeFlags': '網路診斷開關',
       'settings.networkRestartHint': '這些值來自伺服器啟動環境，修改後需要重啟容器生效。',
       'settings.directConnection': '直連',

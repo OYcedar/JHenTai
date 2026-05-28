@@ -94,12 +94,47 @@ bool _noProxyMatches(Uri uri, String? rawNoProxy) {
 }
 
 String? _proxyDirectiveFromUrl(String? rawProxy) {
+  final config = _proxyConfigFromUrl(rawProxy);
+  return config == null ? null : 'PROXY ${config.host}:${config.port}';
+}
+
+({String host, int port, String? username, String? password})?
+    _proxyConfigFromUrl(String? rawProxy) {
   if (rawProxy == null || rawProxy.trim().isEmpty) return null;
   final value = rawProxy.trim();
   final uri = Uri.tryParse(value.contains('://') ? value : 'http://$value');
   if (uri == null || uri.host.isEmpty) return null;
   final port = uri.hasPort ? uri.port : (uri.scheme == 'https' ? 443 : 80);
-  return 'PROXY ${uri.host}:$port';
+  final userInfo = uri.userInfo;
+  String? username;
+  String? password;
+  if (userInfo.isNotEmpty) {
+    final separator = userInfo.indexOf(':');
+    if (separator >= 0) {
+      username = Uri.decodeComponent(userInfo.substring(0, separator));
+      password = Uri.decodeComponent(userInfo.substring(separator + 1));
+    } else {
+      username = Uri.decodeComponent(userInfo);
+      password = '';
+    }
+    if (username.isEmpty) {
+      username = null;
+      password = null;
+    }
+  }
+  return (host: uri.host, port: port, username: username, password: password);
+}
+
+HttpClientBasicCredentials? _proxyCredentialsFor(String host, int port) {
+  for (final name in const ['JH_HATH_PROXY', 'HTTPS_PROXY', 'HTTP_PROXY']) {
+    final config = _proxyConfigFromUrl(_envValue(name));
+    if (config == null) continue;
+    if (config.host != host || config.port != port) continue;
+    final username = config.username;
+    if (username == null || username.isEmpty) continue;
+    return HttpClientBasicCredentials(username, config.password ?? '');
+  }
+  return null;
 }
 
 String _findProxyForRequest(Uri uri) {
@@ -125,6 +160,14 @@ String _findProxyForRequest(Uri uri) {
 HttpClient _createProxyAwareHttpClient({bool preferHathIpv4 = false}) {
   final client = HttpClient();
   client.findProxy = _findProxyForRequest;
+  client.authenticateProxy = (host, port, scheme, realm) {
+    final credentials = _proxyCredentialsFor(host, port);
+    if (credentials == null) {
+      return Future.value(false);
+    }
+    client.addProxyCredentials(host, port, realm ?? '', credentials);
+    return Future.value(true);
+  };
   if (preferHathIpv4) {
     client.connectionFactory = _hathIpv4ConnectionFactory;
   }

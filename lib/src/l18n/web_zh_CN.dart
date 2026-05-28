@@ -348,6 +348,7 @@ class WebZhCN {
       'settings.proxyEnvironment': '代理环境变量',
       'settings.proxyEnvironmentEmpty': '未读取到代理环境变量。',
       'settings.proxyEnvironmentHint': '为安全起见，这里只显示协议、主机和端口，不显示账号密码。',
+      'settings.proxyAuthConfigured': '已配置认证',
       'settings.networkRuntimeFlags': '网络诊断开关',
       'settings.networkRestartHint': '这些值来自服务端启动环境，修改后需要重启容器生效。',
       'settings.directConnection': '直连',

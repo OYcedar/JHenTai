@@ -354,6 +354,7 @@ class WebKoKR {
       'settings.proxyEnvironment': '프록시 환경',
       'settings.proxyEnvironmentEmpty': '보고된 프록시 환경 값이 없습니다.',
       'settings.proxyEnvironmentHint': '여기에는 프로토콜, 호스트, 포트만 표시되며 인증 정보는 숨깁니다.',
+      'settings.proxyAuthConfigured': '인증 설정됨',
       'settings.networkRuntimeFlags': '네트워크 진단',
       'settings.networkRestartHint':
           '이 값들은 서버 시작 환경에서 가져옵니다. 변경 후 컨테이너를 재시작하세요.',
