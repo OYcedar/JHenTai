@@ -17,6 +17,7 @@ class WebPreferenceSettings {
   static const defaultTagSetNoKey = 'jh_web_default_tag_set_no';
   static const scrollToTopButtonModeKey = 'jh_web_scroll_to_top_button_mode';
   static const preloadGalleryCoverKey = 'jh_web_preload_gallery_cover';
+  static const simpleDashboardModeKey = 'jh_web_simple_dashboard_mode';
   static const showDawnInfoKey = 'jh_web_show_dawn_info';
   static const showHvInfoKey = 'jh_web_show_hv_info';
   static const noImageModeKey = 'jh_web_no_image_mode';
@@ -37,6 +38,9 @@ class WebPreferenceSettings {
 
   static bool get preloadGalleryCover =>
       _readBool(preloadGalleryCoverKey, false);
+
+  static bool get simpleDashboardMode =>
+      _readBool(simpleDashboardModeKey, false);
 
   static bool get showDawnInfo => _readBool(showDawnInfoKey, false);
 
@@ -88,6 +92,9 @@ class WebPreferenceSettings {
 
   static void savePreloadGalleryCover(bool value) =>
       _writeBool(preloadGalleryCoverKey, value);
+
+  static void saveSimpleDashboardMode(bool value) =>
+      _writeBool(simpleDashboardModeKey, value);
 
   static void saveShowDawnInfo(bool value) =>
       _writeBool(showDawnInfoKey, value);

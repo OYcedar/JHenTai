@@ -1167,6 +1167,12 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> _loadDashboardPreviews({bool force = false}) async {
+    if (WebPreferenceSettings.simpleDashboardMode) {
+      dashboardRanklist.clear();
+      dashboardPopular.clear();
+      isDashboardLoading.value = false;
+      return;
+    }
     if (isDashboardLoading.value) return;
     if (!force && dashboardRanklist.isNotEmpty && dashboardPopular.isNotEmpty) {
       return;
@@ -1294,7 +1300,8 @@ class WebHomePage extends GetView<WebHomeController> {
               final shouldShow = controller.currentSection.value == 'home' &&
                   controller.currentSearchText.value.trim().isEmpty &&
                   !controller.listByUrlMode.value &&
-                  controller.currentPage.value == 0;
+                  controller.currentPage.value == 0 &&
+                  !WebPreferenceSettings.simpleDashboardMode;
               if (!shouldShow) return const SizedBox.shrink();
               return _DashboardPreview(
                 controller: controller,

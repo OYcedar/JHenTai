@@ -658,6 +658,8 @@ class WebKoKR {
       'always': '항상',
       'preloadGalleryCover': '갤러리 표지 미리 로드',
       'preloadGalleryCoverHint': '아직 화면에 표시되지 않은 갤러리 표지를 미리 로드합니다',
+      'simpleDashboardMode': 'Simple Home Page',
+      'simpleDashboardModeHint': 'Hide Ranklist and Popular',
       'showDawnInfo': '새벽 이벤트 표시',
       'showEncounterMonster': 'HentaiVerse 조우 이벤트 표시',
 

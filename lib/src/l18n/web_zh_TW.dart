@@ -637,6 +637,8 @@ class WebZhTW {
       'always': '總是',
       'preloadGalleryCover': '預先載入畫廊封面',
       'preloadGalleryCoverHint': '預先載入還未顯示在頁面上的畫廊封面',
+      'simpleDashboardMode': '精簡主頁面',
+      'simpleDashboardModeHint': '隱藏排行榜和熱門模組',
       'showDawnInfo': '顯示黎明之時事件',
       'showEncounterMonster': '顯示 HV 遭遇戰事件',
 

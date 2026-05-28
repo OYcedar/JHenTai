@@ -642,6 +642,8 @@ class WebZhCN {
       'always': '总是',
       'preloadGalleryCover': '预载画廊封面',
       'preloadGalleryCoverHint': '预先加载还未显示在页面上的画廊封面',
+      'simpleDashboardMode': '精简主页面',
+      'simpleDashboardModeHint': '隐藏排行榜和热门模块',
       'showDawnInfo': '展示黎明之时事件',
       'showEncounterMonster': '展示 HV 遭遇战事件',
 

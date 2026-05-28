@@ -687,6 +687,8 @@ class WebEnUS {
       'preloadGalleryCover': 'Preload gallery cover',
       'preloadGalleryCoverHint':
           'Preload covers for galleries that are not displayed yet',
+      'simpleDashboardMode': 'Simple Home Page',
+      'simpleDashboardModeHint': 'Hide Ranklist and Popular',
       'showDawnInfo': 'Show new dawn event',
       'showEncounterMonster': 'Show HentaiVerse encounter event',
 

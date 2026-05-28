@@ -70,6 +70,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool showAllComments;
   late bool showUtcTime;
   late bool preloadGalleryCover;
+  late bool simpleDashboardMode;
   late bool showDawnInfo;
   late bool showHvInfo;
   bool useBuiltInBlockedUsers = true;
@@ -86,6 +87,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
     showAllComments = WebPreferenceSettings.showAllComments;
     showUtcTime = WebPreferenceSettings.showUtcTime;
     preloadGalleryCover = WebPreferenceSettings.preloadGalleryCover;
+    simpleDashboardMode = WebPreferenceSettings.simpleDashboardMode;
     showDawnInfo = WebPreferenceSettings.showDawnInfo;
     showHvInfo = WebPreferenceSettings.showHvInfo;
     searchBehaviour = WebPreferenceSettings.searchBehaviour;
@@ -178,6 +180,16 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
           onChanged: (value) {
             setState(() => preloadGalleryCover = value);
             WebPreferenceSettings.savePreloadGalleryCover(value);
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.dashboard_customize_outlined),
+          title: Text('simpleDashboardMode'.tr),
+          subtitle: Text('simpleDashboardModeHint'.tr),
+          value: simpleDashboardMode,
+          onChanged: (value) {
+            setState(() => simpleDashboardMode = value);
+            WebPreferenceSettings.saveSimpleDashboardMode(value);
           },
         ),
         SwitchListTile(

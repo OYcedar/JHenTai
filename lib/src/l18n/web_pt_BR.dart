@@ -686,6 +686,8 @@ class WebPtBR {
       'preloadGalleryCover': 'Pré-carregar capas das galerias',
       'preloadGalleryCoverHint':
           'Pré-carrega capas de galerias que ainda não estão na tela',
+      'simpleDashboardMode': 'Simple Home Page',
+      'simpleDashboardModeHint': 'Hide Ranklist and Popular',
       'showDawnInfo': 'Mostrar evento de amanhecer',
       'showEncounterMonster': 'Mostrar encontro do HentaiVerse',
 

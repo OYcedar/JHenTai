@@ -684,6 +684,8 @@ class WebRuRU {
       'preloadGalleryCover': 'Предзагружать обложки галерей',
       'preloadGalleryCoverHint':
           'Предзагружает обложки галерей, которые ещё не показаны',
+      'simpleDashboardMode': 'Упрощенная главная страница',
+      'simpleDashboardModeHint': 'Скрыть Рейтинги и Популярное',
       'showDawnInfo': 'Показывать событие рассвета',
       'showEncounterMonster': 'Показывать событие встречи HentaiVerse',
 
