@@ -11,6 +11,8 @@ class WebPreferenceSettings {
   static const showUtcTimeKey = 'jh_web_show_utc_time';
   static const searchBehaviourKey = 'jh_web_search_behaviour';
   static const enableDefaultFavoriteKey = 'jh_web_enable_default_favorite';
+  static const enableDefaultTagSetKey = 'jh_web_enable_default_tag_set';
+  static const defaultTagSetNoKey = 'jh_web_default_tag_set_no';
 
   const WebPreferenceSettings._();
 
@@ -28,6 +30,15 @@ class WebPreferenceSettings {
 
   static bool get enableDefaultFavorite =>
       _readBool(enableDefaultFavoriteKey, false);
+
+  static bool get enableDefaultTagSet =>
+      _readBool(enableDefaultTagSetKey, true);
+
+  static int? get defaultTagSetNo {
+    final raw = web.window.localStorage.getItem(defaultTagSetNoKey);
+    final value = int.tryParse(raw ?? '');
+    return value != null && value > 0 ? value : null;
+  }
 
   static WebSearchBehaviour get searchBehaviour {
     final raw = web.window.localStorage.getItem(searchBehaviourKey);
@@ -53,6 +64,17 @@ class WebPreferenceSettings {
 
   static void saveEnableDefaultFavorite(bool value) =>
       _writeBool(enableDefaultFavoriteKey, value);
+
+  static void saveEnableDefaultTagSet(bool value) =>
+      _writeBool(enableDefaultTagSetKey, value);
+
+  static void saveDefaultTagSetNo(int? value) {
+    if (value == null || value <= 0) {
+      web.window.localStorage.removeItem(defaultTagSetNoKey);
+    } else {
+      web.window.localStorage.setItem(defaultTagSetNoKey, '$value');
+    }
+  }
 
   static void saveSearchBehaviour(WebSearchBehaviour value) {
     web.window.localStorage.setItem(searchBehaviourKey, value.name);

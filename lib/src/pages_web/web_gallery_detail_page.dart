@@ -2055,6 +2055,28 @@ class WebGalleryDetailPage extends StatelessWidget {
         ],
         PopupMenuItem(
           child: ListTile(
+            leading:
+                const Icon(Icons.favorite_outline, size: 20, color: Colors.red),
+            title:
+                Text('usertags.watch'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _addUsertagFromDetail(namespace, tag, watch: true),
+        ),
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.visibility_off_outlined,
+                size: 20, color: Colors.blueGrey),
+            title: Text('usertags.hidden'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _addUsertagFromDetail(namespace, tag, watch: false),
+        ),
+        PopupMenuItem(
+          child: ListTile(
             leading: const Icon(Icons.block, size: 20, color: Colors.orange),
             title: Text('blockRule.blockTag'.tr,
                 style: const TextStyle(fontSize: 14)),
@@ -2065,6 +2087,97 @@ class WebGalleryDetailPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _addUsertagFromDetail(
+    String namespace,
+    String tag, {
+    required bool watch,
+  }) async {
+    try {
+      int? tagSetNo;
+      if (WebPreferenceSettings.enableDefaultTagSet) {
+        tagSetNo = WebPreferenceSettings.defaultTagSetNo;
+      }
+      if (tagSetNo == null) {
+        final result = await _showTagSetChoiceDialog();
+        if (result == null) {
+          return;
+        }
+        tagSetNo = result.tagSetNo;
+        if (result.remember) {
+          WebPreferenceSettings.saveDefaultTagSetNo(tagSetNo);
+        }
+      }
+
+      await backendApiClient.addUsertag(
+        tag: '$namespace:$tag',
+        tagSetNo: tagSetNo,
+        watch: watch,
+        hidden: !watch,
+      );
+      Get.snackbar(
+        'common.success'.tr,
+        watch ? 'usertags.watchAdded'.tr : 'usertags.hiddenAdded'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+      await controller.refreshDetail();
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        '$e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
+    }
+  }
+
+  Future<({int tagSetNo, bool remember})?> _showTagSetChoiceDialog() async {
+    try {
+      final data = await backendApiClient.listUsertags(tagset: 1);
+      final sets =
+          (data['tagSets'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      if (sets.isEmpty) {
+        return null;
+      }
+      var remember = false;
+      return Get.dialog<({int tagSetNo, bool remember})>(
+        StatefulBuilder(
+          builder: (context, setDialogState) => SimpleDialog(
+            title: Text('chooseTagSet'.tr),
+            children: [
+              ...sets.map((set) {
+                final number = (set['number'] as num?)?.toInt() ?? 1;
+                return ListTile(
+                  title: Text(set['name']?.toString() ?? '$number'),
+                  onTap: () => Navigator.of(context).pop((
+                    tagSetNo: number,
+                    remember: remember,
+                  )),
+                );
+              }),
+              if (WebPreferenceSettings.enableDefaultTagSet)
+                CheckboxListTile(
+                  dense: true,
+                  title: Text('asYourDefault'.tr),
+                  value: remember,
+                  onChanged: (value) =>
+                      setDialogState(() => remember = value ?? false),
+                ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'usertags.loadFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
+      return null;
+    }
   }
 
   void _showUploaderContextMenu(

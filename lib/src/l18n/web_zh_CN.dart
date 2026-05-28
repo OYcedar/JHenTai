@@ -626,6 +626,10 @@ class WebZhCN {
       'usertags.tagHint': '格式 namespace:key',
       'usertags.watch': '关注',
       'usertags.hidden': '隐藏',
+      'usertags.watchAdded': '已添加到关注标签',
+      'usertags.hiddenAdded': '已添加到隐藏标签',
+      'usertags.defaultTagSet': '默认标签集',
+      'usertags.defaultTagSetNone': '无（每次询问）',
       'usertags.none': '未标记',
       'usertags.weight': '权重',
       'usertags.editTitle': '编辑标签',
@@ -634,6 +638,11 @@ class WebZhCN {
       'usertags.updated': '已更新',
       'usertags.deleted': '已删除',
       'usertags.currentList': '已配置标签',
+      'enableDefaultTagSet': '关注标签时使用默认标签集',
+      'enableDefaultTagSetHint': '默认直接关注，长按重新选择',
+      'disableDefaultTagSetHint': '手动选择',
+      'chooseTagSet': '选择标签集',
+      'asYourDefault': '作为默认选择',
 
       // downloads queue
       'downloads.sortBy': '排序',

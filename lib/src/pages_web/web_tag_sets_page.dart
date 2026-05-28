@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 
 /// Watched / hidden tags (EH My Tags), proxied by the server.
@@ -15,6 +16,8 @@ class WebTagSetsPage extends StatefulWidget {
 
 class _WebTagSetsPageState extends State<WebTagSetsPage> {
   int _tagSetNo = 1;
+  bool _enableDefaultTagSet = true;
+  int? _defaultTagSetNo;
   Map<String, dynamic>? _data;
   String? _error;
   bool _loading = true;
@@ -27,6 +30,11 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
   @override
   void initState() {
     super.initState();
+    _enableDefaultTagSet = WebPreferenceSettings.enableDefaultTagSet;
+    _defaultTagSetNo = WebPreferenceSettings.defaultTagSetNo;
+    if (_enableDefaultTagSet && _defaultTagSetNo != null) {
+      _tagSetNo = _defaultTagSetNo!;
+    }
     _load();
   }
 
@@ -60,11 +68,14 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
     if (t.isEmpty) {
       return;
     }
+    final targetTagSetNo = _enableDefaultTagSet && _defaultTagSetNo != null
+        ? _defaultTagSetNo!
+        : _tagSetNo;
     setState(() => _busy = true);
     try {
       await backendApiClient.addUsertag(
         tag: t,
-        tagSetNo: _tagSetNo,
+        tagSetNo: targetTagSetNo,
         watch: _watch,
         hidden: _hidden,
       );
@@ -72,6 +83,9 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
       Get.snackbar('common.success'.tr, 'usertags.added'.tr,
           snackPosition: SnackPosition.BOTTOM);
       unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+      if (_tagSetNo != targetTagSetNo) {
+        setState(() => _tagSetNo = targetTagSetNo);
+      }
       await _load();
     } catch (e) {
       Get.snackbar('common.error'.tr, '$e',
@@ -285,6 +299,46 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
                   },
           ),
         if (sets.length > 1) const SizedBox(height: 16),
+        if (sets.isNotEmpty) ...[
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('enableDefaultTagSet'.tr),
+            subtitle: Text(_enableDefaultTagSet
+                ? 'enableDefaultTagSetHint'.tr
+                : 'disableDefaultTagSetHint'.tr),
+            value: _enableDefaultTagSet,
+            onChanged: _busy
+                ? null
+                : (value) {
+                    setState(() => _enableDefaultTagSet = value);
+                    WebPreferenceSettings.saveEnableDefaultTagSet(value);
+                  },
+          ),
+          DropdownButtonFormField<int?>(
+            initialValue: _defaultTagSetNo,
+            decoration: InputDecoration(
+              labelText: 'usertags.defaultTagSet'.tr,
+              border: const OutlineInputBorder(),
+            ),
+            items: [
+              DropdownMenuItem<int?>(
+                value: null,
+                child: Text('usertags.defaultTagSetNone'.tr),
+              ),
+              ...sets.map((s) => DropdownMenuItem<int?>(
+                    value: (s['number'] as num?)?.toInt() ?? 1,
+                    child: Text(s['name']?.toString() ?? ''),
+                  )),
+            ],
+            onChanged: _busy
+                ? null
+                : (v) {
+                    setState(() => _defaultTagSetNo = v);
+                    WebPreferenceSettings.saveDefaultTagSetNo(v);
+                  },
+          ),
+          const SizedBox(height: 16),
+        ],
         Text('usertags.add'.tr, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         TextField(
