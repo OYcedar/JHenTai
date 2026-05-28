@@ -358,6 +358,9 @@ class WebPtBR {
       'settings.detailThumbnailColumns': 'Colunas de miniaturas dos detalhes',
       'settings.detailThumbnailColumnsHint':
           'Aplica às miniaturas dos detalhes da galeria e à página completa de miniaturas.',
+      'moveCover2RightSide': 'Mover capa para o lado direito',
+      'settings.moveCoverWebHint':
+          'Aplica às páginas largas de detalhes da galeria neste navegador.',
       'settings.galleryListStyleHint':
           'Aplica imediatamente à lista de galerias da página inicial web e fica salvo neste navegador.',
       'settings.pageListStyleHint':

@@ -335,6 +335,8 @@ class WebZhTW {
       'settings.gridColumnsAuto': '自動',
       'settings.detailThumbnailColumns': '詳情頁縮圖欄數',
       'settings.detailThumbnailColumnsHint': '套用到畫廊詳情頁縮圖和完整縮圖頁。',
+      'moveCover2RightSide': '移動封面圖至右側',
+      'settings.moveCoverWebHint': '套用到目前瀏覽器中的寬螢幕畫廊詳情頁。',
       'settings.galleryListStyleHint': '會立即套用到 Web 首頁畫廊列表，並儲存在目前瀏覽器。',
       'settings.pageListStyleHint': '為各個 Web 頁面單獨覆蓋畫廊列表樣式；全域表示使用上方樣式。',
       'settings.networkWebSummary': '網路代理狀態請在「網路」頁查看；修改 Docker 環境變數後需重啟伺服器。',

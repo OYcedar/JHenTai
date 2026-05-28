@@ -335,6 +335,8 @@ class WebZhCN {
       'settings.gridColumnsAuto': '自动',
       'settings.detailThumbnailColumns': '详情页缩略图列数',
       'settings.detailThumbnailColumnsHint': '应用到画廊详情页缩略图和完整缩略图页。',
+      'moveCover2RightSide': '移动封面图至右侧',
+      'settings.moveCoverWebHint': '应用到当前浏览器中的宽屏画廊详情页。',
       'settings.galleryListStyleHint': '会立即应用到 Web 首页画廊列表，并保存在当前浏览器。',
       'settings.pageListStyleHint': '为各个 Web 页面单独覆盖画廊列表样式；全局表示使用上方样式。',
       'settings.networkWebSummary': '网络代理状态请在「网络」页查看；修改 Docker 环境变量后需重启服务端。',

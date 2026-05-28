@@ -333,6 +333,7 @@ class zh_CN {
       'global': '全局',
       'auto': '自动',
       'moveCover2RightSide': '移动封面图至右侧',
+      'settings.moveCoverWebHint': '应用到当前浏览器中的宽屏画廊详情页。',
       'coverStyle': '封面图片样式',
       'cover': '覆盖',
       'adaptive': '自适应',

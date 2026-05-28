@@ -357,6 +357,9 @@ class WebEnUS {
       'settings.detailThumbnailColumns': 'Detail thumbnail columns',
       'settings.detailThumbnailColumnsHint':
           'Applies to gallery detail thumbnails and the full thumbnail page.',
+      'moveCover2RightSide': 'Move Cover to Right Side',
+      'settings.moveCoverWebHint':
+          'Applies to wide gallery detail pages in this browser.',
       'settings.galleryListStyleHint':
           'Applies to the web home gallery list immediately and is saved in this browser.',
       'settings.pageListStyleHint':

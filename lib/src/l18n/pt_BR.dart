@@ -334,6 +334,8 @@ class pt_BR {
       'global': 'Global',
       'auto': 'Auto',
       'moveCover2RightSide': 'Mover a tampa para o lado direito',
+      'settings.moveCoverWebHint':
+          'Aplica às páginas largas de detalhes da galeria neste navegador.',
       'coverStyle': 'Estilo da tampa',
       'cover': 'Tampa',
       'adaptive': 'Adaptativo',

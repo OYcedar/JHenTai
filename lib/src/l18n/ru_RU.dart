@@ -338,6 +338,8 @@ class ru_RU {
       'global': 'Глобально',
       'auto': 'Авто',
       'moveCover2RightSide': 'Переместить обложку вправо',
+      'settings.moveCoverWebHint':
+          'Применяется к широким страницам деталей галереи в этом браузере.',
       'coverStyle': 'Стиль обложки',
       'cover': 'Обложка',
       'adaptive': 'Адаптивный',

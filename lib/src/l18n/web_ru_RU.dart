@@ -355,6 +355,9 @@ class WebRuRU {
       'settings.detailThumbnailColumns': 'Колонки миниатюр в деталях',
       'settings.detailThumbnailColumnsHint':
           'Применяется к миниатюрам на странице галереи и полной странице миниатюр.',
+      'moveCover2RightSide': 'Переместить обложку вправо',
+      'settings.moveCoverWebHint':
+          'Применяется к широким страницам деталей галереи в этом браузере.',
       'settings.galleryListStyleHint':
           'Применяется к списку галерей на веб-главной сразу и сохраняется в этом браузере.',
       'settings.pageListStyleHint':

@@ -16,10 +16,12 @@ class WebSettingsStylePage extends StatefulWidget {
 class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
   static const detailThumbnailColumnsStorageKey =
       'jh_web_detail_thumbnail_columns';
+  static const moveCoverToRightStorageKey = 'jh_web_move_cover_to_right';
 
   late String listMode;
   int? gridColumns;
   int? detailThumbnailColumns;
+  late bool moveCoverToRight;
   late Map<String, String> pageListModes;
 
   @override
@@ -40,6 +42,8 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
     detailThumbnailColumns = _parseDetailThumbnailColumns(
       web.window.localStorage.getItem(detailThumbnailColumnsStorageKey),
     );
+    moveCoverToRight =
+        web.window.localStorage.getItem(moveCoverToRightStorageKey) == 'true';
     pageListModes = _loadPageListModes();
   }
 
@@ -85,6 +89,12 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
       web.window.localStorage
           .setItem(detailThumbnailColumnsStorageKey, '$count');
     }
+  }
+
+  void _setMoveCoverToRight(bool value) {
+    setState(() => moveCoverToRight = value);
+    web.window.localStorage
+        .setItem(moveCoverToRightStorageKey, value ? 'true' : 'false');
   }
 
   Map<String, String> _loadPageListModes() {
@@ -349,6 +359,15 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
                               .textTheme
                               .bodySmall
                               ?.copyWith(color: Colors.grey),
+                        ),
+                        const Divider(height: 32),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          secondary: const Icon(Icons.flip_to_back_outlined),
+                          title: Text('moveCover2RightSide'.tr),
+                          subtitle: Text('settings.moveCoverWebHint'.tr),
+                          value: moveCoverToRight,
+                          onChanged: _setMoveCoverToRight,
                         ),
                       ],
                     ),

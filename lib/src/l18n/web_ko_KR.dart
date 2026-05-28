@@ -339,6 +339,8 @@ class WebKoKR {
       'settings.gridColumnsAuto': '자동',
       'settings.detailThumbnailColumns': '상세 썸네일 열 수',
       'settings.detailThumbnailColumnsHint': '갤러리 상세 썸네일과 전체 썸네일 페이지에 적용됩니다.',
+      'moveCover2RightSide': '섬네일을 오른쪽으로 배치',
+      'settings.moveCoverWebHint': '이 브라우저의 넓은 갤러리 상세 페이지에 적용됩니다.',
       'settings.galleryListStyleHint': '웹 홈 갤러리 목록에 즉시 적용되며 이 브라우저에 저장됩니다.',
       'settings.pageListStyleHint':
           '각 Web 섹션의 갤러리 목록 스타일을 개별로 덮어씁니다. 전역은 위 스타일을 사용합니다.',

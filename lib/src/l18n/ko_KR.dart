@@ -333,6 +333,7 @@ class ko_KR {
       'global': '기본값',
       'auto': '자동',
       'moveCover2RightSide': '섬네일을 오른쪽으로 배치',
+      'settings.moveCoverWebHint': '이 브라우저의 넓은 갤러리 상세 페이지에 적용됩니다.',
       'coverStyle': '커버 스타일',
       'cover': '커버',
       'adaptive': '적응형',

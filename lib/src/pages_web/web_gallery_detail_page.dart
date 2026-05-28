@@ -43,6 +43,11 @@ int? _webDetailThumbnailColumnsSetting() {
   return value != null && value >= 2 && value <= 8 ? value : null;
 }
 
+bool _webMoveCoverToRightSetting() {
+  return web.window.localStorage.getItem('jh_web_move_cover_to_right') ==
+      'true';
+}
+
 Map<String, dynamic> _thumbMapForDetail(
     WebGalleryDetailController c, int index) {
   if (index < c.galleryThumbnails.length) {
@@ -1183,13 +1188,15 @@ class WebGalleryDetailPage extends StatelessWidget {
   }
 
   Widget _buildWideHeader(BuildContext context) {
+    final cover = _buildCover(context, width: 220, height: 310);
+    final metadata = Expanded(child: _buildMetadata(context));
+    const gap = SizedBox(width: 20);
+    final children = _webMoveCoverToRightSetting()
+        ? [metadata, gap, cover]
+        : [cover, gap, metadata];
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildCover(context, width: 220, height: 310),
-        const SizedBox(width: 20),
-        Expanded(child: _buildMetadata(context)),
-      ],
+      children: children,
     );
   }
 
