@@ -48,6 +48,12 @@ Map<String, dynamic> _thumbMapForDetail(
   return {'thumbUrl': '', 'isLarge': true};
 }
 
+String _webSimilarTitleQuery(String title) {
+  final cleaned = title.replaceAll(RegExp(r'\[.*?\]|\(.*?\)|{.*?}'), '').trim();
+  if (cleaned.isEmpty) return title.trim();
+  return 'title:"$cleaned"';
+}
+
 class WebGalleryDetailController extends GetxController {
   late int gid;
   late String token;
@@ -947,8 +953,9 @@ class WebGalleryDetailPage extends StatelessWidget {
         Get.toNamed('/web/stats/${controller.gid}/${controller.token}');
         break;
       case 'similarSearch':
-        Get.offAllNamed('/web/home',
-            arguments: {'search': controller.title.value});
+        Get.offAllNamed('/web/home', arguments: {
+          'search': _webSimilarTitleQuery(controller.title.value)
+        });
         break;
       case 'blockGallery':
         _blockGallery();
