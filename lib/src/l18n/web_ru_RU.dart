@@ -47,6 +47,7 @@ class WebRuRU {
       'hasCopiedToClipboard': 'Скопировано в буфер обмена',
       'displayFirstPageAlone': 'Отдельно показывать первую страницу',
       'showThumbnails': 'Показывать миниатюры',
+      'showScrollBar': 'Показывать полосу прокрутки',
       'showStatusInfo': 'Показывать статус снизу',
       'spaceBetweenImages': 'Отступы между изображениями',
       'defaultTab': 'Вкладка по умолчанию',

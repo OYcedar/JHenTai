@@ -250,6 +250,7 @@ class WebReaderController extends GetxController {
   final preloadPages = 3.obs;
   final preloadPagesLocal = 3.obs;
   final showThumbnails = true.obs;
+  final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
   final imageSpacing = 0.obs;
   Timer? _autoTimer;
@@ -443,6 +444,9 @@ class WebReaderController extends GetxController {
       final showThumbs =
           await backendApiClient.getSetting('web_show_thumbnails');
       if (showThumbs != null) showThumbnails.value = showThumbs != 'false';
+      final showScrollbar =
+          await backendApiClient.getSetting('web_show_scroll_bar');
+      if (showScrollbar != null) showScrollBar.value = showScrollbar != 'false';
       final showStatus =
           await backendApiClient.getSetting('web_show_status_info');
       if (showStatus != null) showStatusInfo.value = showStatus != 'false';
@@ -1237,24 +1241,29 @@ class _ReaderBody extends StatelessWidget {
           },
           child: ScrollConfiguration(
             behavior: _webReaderScrollBehavior,
-            child: ListView.builder(
-              controller: controller.scrollController,
-              itemCount: controller.totalPages.value,
-              cacheExtent: math.max(
-                MediaQuery.sizeOf(context).height,
-                MediaQuery.sizeOf(context).height *
-                    (controller.cachePreloadPages + 1),
-              ),
-              itemBuilder: (context, index) => Obx(() => Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == controller.totalPages.value - 1
-                          ? 0
-                          : controller.imageSpacing.value.toDouble(),
+            child: Obx(() => _maybeBuildReaderScrollbar(
+                  controller: controller,
+                  child: ListView.builder(
+                    controller: controller.scrollController,
+                    itemCount: controller.totalPages.value,
+                    cacheExtent: math.max(
+                      MediaQuery.sizeOf(context).height,
+                      MediaQuery.sizeOf(context).height *
+                          (controller.cachePreloadPages + 1),
                     ),
-                    child: _ImagePage(
-                        controller: controller, index: index, isVertical: true),
-                  )),
-            ),
+                    itemBuilder: (context, index) => Obx(() => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: index == controller.totalPages.value - 1
+                                ? 0
+                                : controller.imageSpacing.value.toDouble(),
+                          ),
+                          child: _ImagePage(
+                              controller: controller,
+                              index: index,
+                              isVertical: true),
+                        )),
+                  ),
+                )),
           ),
         ));
   }
@@ -1282,27 +1291,30 @@ class _ReaderBody extends StatelessWidget {
           },
           child: ScrollConfiguration(
             behavior: _webReaderScrollBehavior,
-            child: ListView.builder(
-              controller: controller.scrollController,
-              itemCount: controller.totalPages.value,
-              cacheExtent: math.max(
-                MediaQuery.sizeOf(context).height,
-                MediaQuery.sizeOf(context).height *
-                    (controller.cachePreloadPages + 1),
-              ),
-              itemBuilder: (context, index) => Obx(() => Padding(
-                    padding: EdgeInsets.only(
-                      bottom: index == controller.totalPages.value - 1
-                          ? 0
-                          : controller.imageSpacing.value.toDouble(),
+            child: Obx(() => _maybeBuildReaderScrollbar(
+                  controller: controller,
+                  child: ListView.builder(
+                    controller: controller.scrollController,
+                    itemCount: controller.totalPages.value,
+                    cacheExtent: math.max(
+                      MediaQuery.sizeOf(context).height,
+                      MediaQuery.sizeOf(context).height *
+                          (controller.cachePreloadPages + 1),
                     ),
-                    child: _ImagePage(
-                        controller: controller,
-                        index: index,
-                        isVertical: true,
-                        fitWidth: true),
-                  )),
-            ),
+                    itemBuilder: (context, index) => Obx(() => Padding(
+                          padding: EdgeInsets.only(
+                            bottom: index == controller.totalPages.value - 1
+                                ? 0
+                                : controller.imageSpacing.value.toDouble(),
+                          ),
+                          child: _ImagePage(
+                              controller: controller,
+                              index: index,
+                              isVertical: true,
+                              fitWidth: true),
+                        )),
+                  ),
+                )),
           ),
         ));
   }
@@ -1359,6 +1371,20 @@ class _ReaderBody extends StatelessWidget {
       );
     });
   }
+}
+
+Widget _maybeBuildReaderScrollbar({
+  required WebReaderController controller,
+  required Widget child,
+}) {
+  if (!controller.showScrollBar.value) {
+    return child;
+  }
+  return Scrollbar(
+    controller: controller.scrollController,
+    thumbVisibility: true,
+    child: child,
+  );
 }
 
 class _DoubleTapZoomImage extends StatefulWidget {

@@ -44,6 +44,7 @@ class WebKoKR {
       'hasCopiedToClipboard': '클립보드에 복사했습니다',
       'displayFirstPageAlone': '첫 페이지만 표시',
       'showThumbnails': '썸네일 표시',
+      'showScrollBar': '스크롤바 표시',
       'showStatusInfo': '하단 상태 표시',
       'spaceBetweenImages': '이미지 간격',
       'defaultTab': '기본 탭',

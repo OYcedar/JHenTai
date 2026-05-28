@@ -107,6 +107,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final autoInterval = 5.0.obs;
   final displayFirstPageAlone = false.obs;
   final showThumbnails = true.obs;
+  final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
   final imageSpacing = 0.obs;
   final loaded = false.obs;
@@ -135,6 +136,9 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (first != null) displayFirstPageAlone.value = first == 'true';
       final thumbs = await backendApiClient.getSetting('web_show_thumbnails');
       if (thumbs != null) showThumbnails.value = thumbs != 'false';
+      final scrollbar =
+          await backendApiClient.getSetting('web_show_scroll_bar');
+      if (scrollbar != null) showScrollBar.value = scrollbar != 'false';
       final status = await backendApiClient.getSetting('web_show_status_info');
       if (status != null) showStatusInfo.value = status != 'false';
       final spacing = await backendApiClient.getSetting('web_image_spacing');
@@ -267,6 +271,17 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       showThumbnails.value = v;
                       backendApiClient
                           .putSetting('web_show_thumbnails', v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('showScrollBar'.tr),
+                    value: showScrollBar.value,
+                    onChanged: (v) {
+                      showScrollBar.value = v;
+                      backendApiClient
+                          .putSetting('web_show_scroll_bar', v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,

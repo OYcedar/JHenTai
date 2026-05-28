@@ -44,6 +44,7 @@ class WebZhTW {
       'hasCopiedToClipboard': '已複製到剪貼簿',
       'displayFirstPageAlone': '單獨顯示首頁',
       'showThumbnails': '顯示縮圖',
+      'showScrollBar': '顯示滾動條',
       'showStatusInfo': '底部顯示狀態資訊',
       'spaceBetweenImages': '圖片間隔',
       'defaultTab': '啟動時預設選單',

@@ -46,6 +46,7 @@ class WebPtBR {
       'hasCopiedToClipboard': 'Copiado para a área de transferência',
       'displayFirstPageAlone': 'Mostrar primeira página sozinha',
       'showThumbnails': 'Mostrar miniaturas',
+      'showScrollBar': 'Mostrar barra de rolagem',
       'showStatusInfo': 'Mostrar status na parte inferior',
       'spaceBetweenImages': 'Espaçamento entre imagens',
       'defaultTab': 'Aba padrão',

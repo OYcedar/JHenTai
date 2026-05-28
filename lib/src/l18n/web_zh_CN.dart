@@ -44,6 +44,7 @@ class WebZhCN {
       'hasCopiedToClipboard': '已复制到剪贴板',
       'displayFirstPageAlone': '单独展示首页',
       'showThumbnails': '显示缩略图',
+      'showScrollBar': '显示滚动条',
       'showStatusInfo': '底部显示状态信息',
       'spaceBetweenImages': '图片间隔',
       'defaultTab': '启动时默认菜单',

@@ -48,6 +48,7 @@ class WebEnUS {
       'hasCopiedToClipboard': 'Copied to clipboard',
       'displayFirstPageAlone': 'Display First Page Alone',
       'showThumbnails': 'Show Thumbnails',
+      'showScrollBar': 'Show Scroll Bar',
       'showStatusInfo': 'Show Status at Bottom',
       'spaceBetweenImages': 'Space Between Images',
       'defaultTab': 'Default Tab',
