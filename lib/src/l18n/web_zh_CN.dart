@@ -77,6 +77,7 @@ class WebZhCN {
       'home.noGalleries': '未找到画廊',
       'home.previous': '上一页',
       'home.next': '下一页',
+      'home.jumpDate': '跳转到日期',
       'home.page': '第 @page 页',
       'home.loadFailed': '加载失败: @error',
       'home.favSortTitle': '收藏排序',

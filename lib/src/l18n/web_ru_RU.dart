@@ -84,6 +84,7 @@ class WebRuRU {
       'home.noGalleries': 'Галереи не найдены',
       'home.previous': 'Назад',
       'home.next': 'Вперёд',
+      'home.jumpDate': 'Перейти к дате',
       'home.page': 'Стр. @page',
       'home.loadFailed': 'Ошибка загрузки: @error',
       'home.favSortTitle': 'Сортировка избранного',

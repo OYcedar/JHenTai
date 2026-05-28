@@ -479,6 +479,7 @@ class GalleryRoutes {
     final cursorPrev = request.url.queryParameters['prev'];
     final search = request.url.queryParameters['f_search'];
     final section = request.url.queryParameters['section'] ?? 'home';
+    final seek = request.url.queryParameters['seek'];
 
     final tl = request.url.queryParameters['tl'];
 
@@ -502,6 +503,8 @@ class GalleryRoutes {
         queryParams['next'] = cursorNext;
       } else if (cursorPrev != null && cursorPrev.isNotEmpty) {
         queryParams['prev'] = cursorPrev;
+      } else if (seek != null && seek.isNotEmpty) {
+        queryParams['seek'] = seek;
       } else if (page != null && page.isNotEmpty) {
         queryParams['page'] = page;
       }
@@ -1016,7 +1019,7 @@ class GalleryRoutes {
     final extra = <String, dynamic>{};
 
     // Page count: look for "N pages" text
-    final allText = element.text ?? '';
+    final allText = element.text;
     final pageMatch = RegExp(r'(\d+)\s*pages?').firstMatch(allText);
     if (pageMatch != null) {
       extra['pageCount'] = int.tryParse(pageMatch.group(1)!) ?? 0;

@@ -486,6 +486,9 @@ class BackendApiClient {
 
     /// Filter favorites list to one folder (0–9). Used when [section] is `favorites`.
     int? favcat,
+
+    /// EH gallery index `seek=yyyy-MM-dd` date jump (native [requestGalleryPage]).
+    DateTime? seek,
   }) async {
     final params = <String, dynamic>{'section': section};
     if (page != null) params['page'] = page;
@@ -495,11 +498,17 @@ class BackendApiClient {
     if (advancedParams != null) params.addAll(advancedParams);
     if (favSort != null && favSort.isNotEmpty) params['fav_sort'] = favSort;
     if (favcat != null) params['favcat'] = favcat;
+    if (seek != null) params['seek'] = _formatEhSeekDate(seek);
     final response = await _dio.get(
       '/api/gallery/list',
       queryParameters: params,
     );
     return response.data;
+  }
+
+  static String _formatEhSeekDate(DateTime date) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${date.year}-${twoDigits(date.month)}-${twoDigits(date.day)}';
   }
 
   /// Detail includes `thumbnailImageUrls` and `galleryThumbnails` (per-page thumb metadata for sprites).

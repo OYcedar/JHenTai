@@ -78,6 +78,7 @@ class WebKoKR {
       'home.noGalleries': '갤러리를 찾을 수 없습니다',
       'home.previous': '이전',
       'home.next': '다음',
+      'home.jumpDate': '날짜로 이동',
       'home.page': '@page 페이지',
       'home.loadFailed': '로드 실패: @error',
       'home.favSortTitle': '즐겨찾기 정렬',

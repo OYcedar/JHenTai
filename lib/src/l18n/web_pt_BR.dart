@@ -85,6 +85,7 @@ class WebPtBR {
       'home.noGalleries': 'Nenhuma galeria encontrada',
       'home.previous': 'Anterior',
       'home.next': 'Próximo',
+      'home.jumpDate': 'Ir para a data',
       'home.page': 'Página @page',
       'home.loadFailed': 'Falha ao carregar: @error',
       'home.favSortTitle': 'Ordenação dos favoritos',

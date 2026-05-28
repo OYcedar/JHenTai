@@ -87,6 +87,7 @@ class WebEnUS {
       'home.noGalleries': 'No galleries found',
       'home.previous': 'Previous',
       'home.next': 'Next',
+      'home.jumpDate': 'Jump to date',
       'home.page': 'Page @page',
       'home.loadFailed': 'Failed to load: @error',
       'home.favSortTitle': 'Favorites sort',

@@ -77,6 +77,7 @@ class WebZhTW {
       'home.noGalleries': '未找到畫廊',
       'home.previous': '上一頁',
       'home.next': '下一頁',
+      'home.jumpDate': '跳轉到日期',
       'home.page': '第 @page 頁',
       'home.loadFailed': '載入失敗: @error',
       'home.favSortTitle': '收藏排序',

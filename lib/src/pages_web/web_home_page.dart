@@ -574,6 +574,16 @@ class WebHomeController extends GetxController {
     await _fetchGalleryList();
   }
 
+  Future<void> jumpToDate(DateTime date) async {
+    if (listByUrlMode.value ||
+        _sectionUsesRanklistPaging(currentSection.value)) {
+      return;
+    }
+    currentPage.value = 0;
+    _clearPaginationCursors();
+    await _fetchGalleryList(seek: date);
+  }
+
   Future<void> refresh() async {
     if (listByUrlMode.value) {
       final u = _listByUrlActiveUrl;
@@ -673,7 +683,7 @@ class WebHomeController extends GetxController {
     return params.isNotEmpty ? params : null;
   }
 
-  Future<void> _fetchGalleryList() async {
+  Future<void> _fetchGalleryList({DateTime? seek}) async {
     if (listByUrlMode.value) {
       final u = _listByUrlActiveUrl;
       if (u != null && u.isNotEmpty) {
@@ -744,6 +754,7 @@ class WebHomeController extends GetxController {
         advancedParams: advParams.isNotEmpty ? advParams : null,
         favSort: favSort,
         favcat: favcat,
+        seek: seek,
       );
 
       _pendingNextGid = null;
@@ -1240,6 +1251,9 @@ class WebHomePage extends GetView<WebHomeController> {
     return Obx(() {
       final onSubsequentPage =
           !controller.listByUrlMode.value && controller.currentPage.value > 0;
+      final canJumpToDate = !controller.listByUrlMode.value &&
+          !WebHomeController._sectionUsesRanklistPaging(
+              controller.currentSection.value);
       if (!controller.hasPrevPage.value &&
           !controller.hasNextPage.value &&
           !onSubsequentPage) {
@@ -1255,6 +1269,22 @@ class WebHomePage extends GetView<WebHomeController> {
               label: Text('home.previous'.tr),
               onPressed:
                   controller.hasPrevPage.value ? controller.prevPage : null,
+            ),
+            IconButton(
+              tooltip: 'home.jumpDate'.tr,
+              icon: const Icon(Icons.event),
+              onPressed: canJumpToDate
+                  ? () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: now,
+                        firstDate: DateTime(2007, 1, 1),
+                        lastDate: now,
+                      );
+                      if (picked != null) await controller.jumpToDate(picked);
+                    }
+                  : null,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
