@@ -422,6 +422,16 @@ class WebPtBR {
       'settings.noImageMode': 'Modo sem imagens',
       'settings.noImageModeHint':
           'Oculta capas, miniaturas e imagens do leitor neste navegador.',
+      'settings.pageCache': 'Cache de páginas',
+      'settings.clearPageCache': 'Limpar cache de páginas',
+      'settings.clearPageCacheTitle': 'Limpar cache de páginas?',
+      'settings.clearPageCacheConfirm':
+          'Isso apagará respostas de páginas EH em cache no servidor.',
+      'settings.clearPageCacheFailed':
+          'Falha ao limpar cache de páginas: @error',
+      'settings.loadPageCacheFailed':
+          'Falha ao carregar cache de páginas: @error',
+      'settings.pageCacheSummary': '@count páginas em cache · @size',
       'settings.serverLogs': 'Logs do servidor',
       'settings.clearLogsTitle': 'Limpar logs do servidor?',
       'settings.clearLogsConfirm':

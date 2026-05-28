@@ -24,6 +24,8 @@ class SettingRoutes {
     router.put('/', _updateSettings);
     router.get('/profiles', _listProfiles);
     router.put('/profile', _selectProfile);
+    router.get('/cache/page', _getPageCache);
+    router.delete('/cache/page', _clearPageCache);
     router.get('/logs', _listLogs);
     router.get('/logs/<name>', _readLog);
     router.delete('/logs', _clearLogs);
@@ -204,6 +206,38 @@ class SettingRoutes {
     }
     return Response.ok(
       jsonEncode({'success': true, 'deleted': deleted}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _getPageCache(Request request) async {
+    final row = db.raw.select('''
+      SELECT
+        COUNT(*) AS count,
+        COALESCE(SUM(LENGTH(content)), 0) AS content_bytes,
+        COALESCE(SUM(LENGTH(headers)), 0) AS header_bytes
+      FROM dio_cache
+    ''').first;
+    final contentBytes = (row['content_bytes'] as num?)?.toInt() ?? 0;
+    final headerBytes = (row['header_bytes'] as num?)?.toInt() ?? 0;
+    return Response.ok(
+      jsonEncode({
+        'count': (row['count'] as num?)?.toInt() ?? 0,
+        'size': contentBytes + headerBytes,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _clearPageCache(Request request) async {
+    final count =
+        db.raw.select('SELECT COUNT(*) AS count FROM dio_cache').first;
+    db.raw.execute('DELETE FROM dio_cache');
+    return Response.ok(
+      jsonEncode({
+        'success': true,
+        'deleted': (count['count'] as num?)?.toInt() ?? 0,
+      }),
       headers: {'Content-Type': 'application/json'},
     );
   }

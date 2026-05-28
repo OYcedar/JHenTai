@@ -419,6 +419,16 @@ class WebRuRU {
       'settings.noImageMode': 'Режим без изображений',
       'settings.noImageModeHint':
           'Скрывает обложки галерей, миниатюры и изображения читалки в этом браузере.',
+      'settings.pageCache': 'Кэш страниц',
+      'settings.clearPageCache': 'Очистить кэш страниц',
+      'settings.clearPageCacheTitle': 'Очистить кэш страниц?',
+      'settings.clearPageCacheConfirm':
+          'Будут удалены кэшированные ответы страниц EH на сервере.',
+      'settings.clearPageCacheFailed':
+          'Не удалось очистить кэш страниц: @error',
+      'settings.loadPageCacheFailed':
+          'Не удалось загрузить кэш страниц: @error',
+      'settings.pageCacheSummary': '@count страниц в кэше · @size',
       'settings.serverLogs': 'Журналы сервера',
       'settings.clearLogsTitle': 'Очистить журналы сервера?',
       'settings.clearLogsConfirm':

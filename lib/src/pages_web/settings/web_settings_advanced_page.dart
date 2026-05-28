@@ -20,11 +20,16 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
   bool logsLoading = false;
   String? logsError;
   int totalLogSize = 0;
+  bool pageCacheLoading = false;
+  String? pageCacheError;
+  int pageCacheSize = 0;
+  int pageCacheCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadLogs();
+    _loadPageCacheStats();
   }
 
   Future<void> _loadLogs() async {
@@ -80,6 +85,61 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
       Get.snackbar(
         'common.error'.tr,
         'settings.clearLogsFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  Future<void> _loadPageCacheStats() async {
+    setState(() {
+      pageCacheLoading = true;
+      pageCacheError = null;
+    });
+    try {
+      final data = await backendApiClient.getPageCacheStats();
+      pageCacheSize = (data['size'] as num?)?.toInt() ?? 0;
+      pageCacheCount = (data['count'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      pageCacheError = '$e';
+    } finally {
+      if (mounted) {
+        setState(() => pageCacheLoading = false);
+      }
+    }
+  }
+
+  Future<void> _clearPageCache() async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('settings.clearPageCacheTitle'.tr),
+        content: Text('settings.clearPageCacheConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) {
+      return;
+    }
+    try {
+      await backendApiClient.clearPageCache();
+      await _loadPageCacheStats();
+      Get.snackbar(
+        'common.success'.tr,
+        'clearSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.clearPageCacheFailed'.trParams({'error': '$e'}),
         snackPosition: SnackPosition.BOTTOM,
       );
     }
@@ -142,6 +202,8 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
               ),
             ),
             const SizedBox(height: 24),
+            _buildPageCacheSection(context),
+            const SizedBox(height: 24),
             _buildLogsSection(context),
             const SizedBox(height: 24),
             Text(
@@ -180,6 +242,58 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
           ],
         );
       }),
+    );
+  }
+
+  Widget _buildPageCacheSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'settings.pageCache'.tr,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            IconButton(
+              tooltip: 'reload'.tr,
+              onPressed: pageCacheLoading ? null : _loadPageCacheStats,
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.cached_outlined),
+            title: Text('settings.clearPageCache'.tr),
+            subtitle: pageCacheError != null
+                ? Text(
+                    'settings.loadPageCacheFailed'
+                        .trParams({'error': pageCacheError!}),
+                  )
+                : Text(
+                    'settings.pageCacheSummary'.trParams({
+                      'count': '$pageCacheCount',
+                      'size': _formatBytes(pageCacheSize),
+                    }),
+                  ),
+            trailing: pageCacheLoading
+                ? const SizedBox.square(
+                    dimension: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : IconButton(
+                    tooltip: 'settings.clearPageCache'.tr,
+                    onPressed: pageCacheCount == 0 ? null : _clearPageCache,
+                    icon: const Icon(Icons.delete_sweep_outlined),
+                  ),
+            onTap: pageCacheError == null ? null : _loadPageCacheStats,
+          ),
+        ),
+      ],
     );
   }
 

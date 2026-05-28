@@ -421,6 +421,14 @@ class WebEnUS {
       'settings.noImageMode': 'No image mode',
       'settings.noImageModeHint':
           'Hide gallery covers, thumbnails, and reader images in this browser.',
+      'settings.pageCache': 'Page cache',
+      'settings.clearPageCache': 'Clear page cache',
+      'settings.clearPageCacheTitle': 'Clear page cache?',
+      'settings.clearPageCacheConfirm':
+          'This will delete cached EH page responses on the server.',
+      'settings.clearPageCacheFailed': 'Failed to clear page cache: @error',
+      'settings.loadPageCacheFailed': 'Failed to load page cache: @error',
+      'settings.pageCacheSummary': '@count cached pages · @size',
       'settings.serverLogs': 'Server logs',
       'settings.clearLogsTitle': 'Clear server logs?',
       'settings.clearLogsConfirm':

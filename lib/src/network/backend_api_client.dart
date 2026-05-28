@@ -1143,6 +1143,15 @@ class BackendApiClient {
     await _dio.delete('/api/setting/logs');
   }
 
+  Future<Map<String, dynamic>> getPageCacheStats() async {
+    final response = await _dio.get('/api/setting/cache/page');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<void> clearPageCache() async {
+    await _dio.delete('/api/setting/cache/page');
+  }
+
   // --- Health ---
 
   Future<Map<String, dynamic>> health() async {
