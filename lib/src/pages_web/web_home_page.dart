@@ -19,6 +19,7 @@ import 'package:web/web.dart' as web;
 
 class WebHomeController extends GetxController {
   static const listModeStorageKey = 'jh_web_list_mode';
+  static const pageListModeStorageKey = 'jh_web_page_list_modes';
   static const gridColumnsStorageKey = 'jh_web_grid_columns';
   static const defaultSectionStorageKey = 'jh_web_default_section';
   static const listModes = ['grid', 'list', 'listCompact'];
@@ -89,6 +90,7 @@ class WebHomeController extends GetxController {
 
   // List mode: grid, list, listCompact
   final listMode = 'grid'.obs;
+  final pageListModes = <String, String>{}.obs;
 
   /// `null` means responsive auto columns, otherwise fixed 1-6 columns for the main gallery grid.
   final gridColumns = RxnInt(null);
@@ -131,6 +133,7 @@ class WebHomeController extends GetxController {
     if (savedMode != null && listModes.contains(savedMode)) {
       listMode.value = savedMode;
     }
+    _loadPageListModes();
     final savedColumns = int.tryParse(
         web.window.localStorage.getItem(gridColumnsStorageKey) ?? '');
     if (savedColumns != null && savedColumns >= 1 && savedColumns <= 6) {
@@ -1026,14 +1029,54 @@ class WebHomeController extends GetxController {
   }
 
   void cycleListMode() {
-    final idx = listModes.indexOf(listMode.value);
-    setListMode(listModes[(idx + 1) % listModes.length]);
+    final section = currentSection.value;
+    final current = effectiveListModeForSection(section);
+    final idx = listModes.indexOf(current);
+    setPageListMode(section, listModes[(idx + 1) % listModes.length]);
   }
 
   void setListMode(String mode) {
     if (!listModes.contains(mode)) return;
     listMode.value = mode;
     web.window.localStorage.setItem(listModeStorageKey, mode);
+  }
+
+  void setPageListMode(String section, String? mode) {
+    if (!defaultSections.contains(section)) return;
+    if (mode != null && !listModes.contains(mode)) return;
+    if (mode == null) {
+      pageListModes.remove(section);
+    } else {
+      pageListModes[section] = mode;
+    }
+    _savePageListModes();
+  }
+
+  String effectiveListModeForSection(String section) {
+    final mode = pageListModes[section];
+    return mode != null && listModes.contains(mode) ? mode : listMode.value;
+  }
+
+  void _loadPageListModes() {
+    final raw = web.window.localStorage.getItem(pageListModeStorageKey);
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      pageListModes.value = {
+        for (final entry in decoded.entries)
+          if (defaultSections.contains(entry.key) &&
+              entry.value is String &&
+              listModes.contains(entry.value))
+            entry.key: entry.value as String,
+      };
+    } catch (_) {}
+  }
+
+  void _savePageListModes() {
+    web.window.localStorage.setItem(
+      pageListModeStorageKey,
+      jsonEncode(Map<String, String>.from(pageListModes)),
+    );
   }
 
   void setGridColumns(int? count) {
@@ -1047,7 +1090,7 @@ class WebHomeController extends GetxController {
   }
 
   IconData get listModeIcon {
-    return switch (listMode.value) {
+    return switch (effectiveListModeForSection(currentSection.value)) {
       'list' => Icons.view_list,
       'listCompact' => Icons.view_headline,
       _ => Icons.grid_view,
@@ -1516,7 +1559,8 @@ class WebHomePage extends GetView<WebHomeController> {
       {bool isLeftPane = false}) {
     return LayoutBuilder(builder: (context, constraints) {
       return Obx(() {
-        final mode = controller.listMode.value;
+        final mode = controller
+            .effectiveListModeForSection(controller.currentSection.value);
         if (mode == 'list' || mode == 'listCompact') {
           return ListView.builder(
             controller: controller.scrollController,

@@ -335,6 +335,8 @@ class WebEnUS {
       'settings.ehQuotaResetFailed': 'Failed to reset image quota: @error',
       'settings.ehStatusFailed': 'Failed to load EH status: @error',
       'settings.galleryListStyle': 'Gallery list style',
+      'pageListStyle': 'Gallery list style (page)',
+      'global': 'Global',
       'settings.listModeGrid': 'Grid',
       'settings.listModeList': 'List',
       'settings.listModeCompact': 'Compact',
@@ -345,6 +347,8 @@ class WebEnUS {
           'Applies to gallery detail thumbnails and the full thumbnail page.',
       'settings.galleryListStyleHint':
           'Applies to the web home gallery list immediately and is saved in this browser.',
+      'settings.pageListStyleHint':
+          'Override the gallery list style for individual web sections. Global uses the style above.',
       'settings.networkWebSummary':
           'Proxy state is shown on the Network page. Restart the server after changing Docker environment variables.',
       'settings.proxyRouting': 'Request routing',

@@ -333,6 +333,8 @@ class WebRuRU {
           'Не удалось сбросить квоту изображений: @error',
       'settings.ehStatusFailed': 'Не удалось загрузить статус EH: @error',
       'settings.galleryListStyle': 'Вид списка галерей',
+      'pageListStyle': 'Вид списка галерей (страница)',
+      'global': 'Глобально',
       'settings.listModeGrid': 'Сетка',
       'settings.listModeList': 'Список',
       'settings.listModeCompact': 'Компактно',
@@ -343,6 +345,8 @@ class WebRuRU {
           'Применяется к миниатюрам на странице галереи и полной странице миниатюр.',
       'settings.galleryListStyleHint':
           'Применяется к списку галерей на веб-главной сразу и сохраняется в этом браузере.',
+      'settings.pageListStyleHint':
+          'Переопределяет вид списка галерей для отдельных веб-разделов. Глобально использует стиль выше.',
       'settings.networkWebSummary':
           'Состояние прокси показано на странице сети. После изменения переменных окружения Docker перезапустите сервер.',
       'settings.proxyRouting': 'Маршрутизация запросов',

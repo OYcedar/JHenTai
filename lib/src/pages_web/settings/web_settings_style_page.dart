@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
@@ -18,6 +20,7 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
   late String listMode;
   int? gridColumns;
   int? detailThumbnailColumns;
+  late Map<String, String> pageListModes;
 
   @override
   void initState() {
@@ -37,6 +40,7 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
     detailThumbnailColumns = _parseDetailThumbnailColumns(
       web.window.localStorage.getItem(detailThumbnailColumnsStorageKey),
     );
+    pageListModes = _loadPageListModes();
   }
 
   int? _parseGridColumns(String? raw) {
@@ -82,6 +86,66 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
           .setItem(detailThumbnailColumnsStorageKey, '$count');
     }
   }
+
+  Map<String, String> _loadPageListModes() {
+    final home = Get.isRegistered<WebHomeController>()
+        ? Get.find<WebHomeController>()
+        : null;
+    if (home != null) {
+      return Map<String, String>.from(home.pageListModes);
+    }
+    final raw = web.window.localStorage
+        .getItem(WebHomeController.pageListModeStorageKey);
+    if (raw == null || raw.isEmpty) {
+      return {};
+    }
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return {
+        for (final entry in decoded.entries)
+          if (WebHomeController.defaultSections.contains(entry.key) &&
+              entry.value is String &&
+              WebHomeController.listModes.contains(entry.value))
+            entry.key: entry.value as String,
+      };
+    } catch (_) {
+      return {};
+    }
+  }
+
+  void _setPageListMode(String section, String? mode) {
+    if (!WebHomeController.defaultSections.contains(section)) return;
+    if (mode != null && !WebHomeController.listModes.contains(mode)) return;
+    setState(() {
+      if (mode == null) {
+        pageListModes.remove(section);
+      } else {
+        pageListModes[section] = mode;
+      }
+    });
+    if (Get.isRegistered<WebHomeController>()) {
+      Get.find<WebHomeController>().setPageListMode(section, mode);
+    } else {
+      web.window.localStorage.setItem(
+        WebHomeController.pageListModeStorageKey,
+        jsonEncode(pageListModes),
+      );
+    }
+  }
+
+  String _sectionLabel(String value) => switch (value) {
+        'popular' => 'home.popular'.tr,
+        'ranklist' => 'home.ranklist'.tr,
+        'favorites' => 'home.favorites'.tr,
+        'watched' => 'home.watched'.tr,
+        _ => 'home.home'.tr,
+      };
+
+  String _listModeLabel(String value) => switch (value) {
+        'list' => 'settings.listModeList'.tr,
+        'listCompact' => 'settings.listModeCompact'.tr,
+        _ => 'settings.listModeGrid'.tr,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -220,6 +284,41 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
                         const SizedBox(height: 8),
                         Text(
                           'settings.galleryListStyleHint'.tr,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey),
+                        ),
+                        const Divider(height: 32),
+                        Text('pageListStyle'.tr,
+                            style: Theme.of(context).textTheme.titleSmall),
+                        const SizedBox(height: 8),
+                        for (final section in WebHomeController.defaultSections)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: DropdownButtonFormField<String?>(
+                              initialValue: pageListModes[section],
+                              decoration: InputDecoration(
+                                labelText: _sectionLabel(section),
+                                border: const OutlineInputBorder(),
+                              ),
+                              items: [
+                                DropdownMenuItem<String?>(
+                                  value: null,
+                                  child: Text('global'.tr),
+                                ),
+                                for (final mode in WebHomeController.listModes)
+                                  DropdownMenuItem<String?>(
+                                    value: mode,
+                                    child: Text(_listModeLabel(mode)),
+                                  ),
+                              ],
+                              onChanged: (mode) =>
+                                  _setPageListMode(section, mode),
+                            ),
+                          ),
+                        Text(
+                          'settings.pageListStyleHint'.tr,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

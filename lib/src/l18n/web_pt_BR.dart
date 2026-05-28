@@ -335,6 +335,8 @@ class WebPtBR {
           'Falha ao redefinir a cota de imagens: @error',
       'settings.ehStatusFailed': 'Falha ao carregar o status EH: @error',
       'settings.galleryListStyle': 'Estilo da lista de galerias',
+      'pageListStyle': 'Estilo da lista de galerias (página)',
+      'global': 'Global',
       'settings.listModeGrid': 'Grade',
       'settings.listModeList': 'Lista',
       'settings.listModeCompact': 'Compacta',
@@ -345,6 +347,8 @@ class WebPtBR {
           'Aplica às miniaturas dos detalhes da galeria e à página completa de miniaturas.',
       'settings.galleryListStyleHint':
           'Aplica imediatamente à lista de galerias da página inicial web e fica salvo neste navegador.',
+      'settings.pageListStyleHint':
+          'Substitui o estilo da lista de galerias por seção web. Global usa o estilo acima.',
       'settings.networkWebSummary':
           'O estado do proxy aparece na página Rede. Reinicie o servidor após alterar variáveis de ambiente Docker.',
       'settings.proxyRouting': 'Roteamento de requisições',

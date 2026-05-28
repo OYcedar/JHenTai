@@ -319,6 +319,8 @@ class WebKoKR {
       'settings.ehQuotaResetFailed': '이미지 할당량 초기화 실패: @error',
       'settings.ehStatusFailed': 'EH 상태 로드 실패: @error',
       'settings.galleryListStyle': '갤러리 목록 스타일',
+      'pageListStyle': '갤러리 목록 스타일(페이지)',
+      'global': '전역',
       'settings.listModeGrid': '그리드',
       'settings.listModeList': '목록',
       'settings.listModeCompact': '간단히',
@@ -327,6 +329,8 @@ class WebKoKR {
       'settings.detailThumbnailColumns': '상세 썸네일 열 수',
       'settings.detailThumbnailColumnsHint': '갤러리 상세 썸네일과 전체 썸네일 페이지에 적용됩니다.',
       'settings.galleryListStyleHint': '웹 홈 갤러리 목록에 즉시 적용되며 이 브라우저에 저장됩니다.',
+      'settings.pageListStyleHint':
+          '각 Web 섹션의 갤러리 목록 스타일을 개별로 덮어씁니다. 전역은 위 스타일을 사용합니다.',
       'settings.networkWebSummary':
           '프록시 상태는 네트워크 페이지에서 확인하세요. Docker 환경 변수를 변경한 뒤 서버를 재시작하세요.',
       'settings.proxyRouting': '요청 라우팅',
