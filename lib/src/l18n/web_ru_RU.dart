@@ -49,6 +49,7 @@ class WebRuRU {
       'showThumbnails': 'Показывать миниатюры',
       'showScrollBar': 'Показывать полосу прокрутки',
       'showStatusInfo': 'Показывать статус снизу',
+      'gestureRegionWidthRatio': 'Доля ширины области жеста меню',
       'spaceBetweenImages': 'Отступы между изображениями',
       'defaultTab': 'Вкладка по умолчанию',
 

@@ -48,6 +48,8 @@ class WebPtBR {
       'showThumbnails': 'Mostrar miniaturas',
       'showScrollBar': 'Mostrar barra de rolagem',
       'showStatusInfo': 'Mostrar status na parte inferior',
+      'gestureRegionWidthRatio':
+          'Proporção da largura da área de gesto do menu',
       'spaceBetweenImages': 'Espaçamento entre imagens',
       'defaultTab': 'Aba padrão',
 

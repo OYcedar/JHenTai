@@ -50,6 +50,7 @@ class WebEnUS {
       'showThumbnails': 'Show Thumbnails',
       'showScrollBar': 'Show Scroll Bar',
       'showStatusInfo': 'Show Status at Bottom',
+      'gestureRegionWidthRatio': 'Gesture region width ratio',
       'spaceBetweenImages': 'Space Between Images',
       'defaultTab': 'Default Tab',
 

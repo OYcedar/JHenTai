@@ -259,6 +259,7 @@ class WebReaderController extends GetxController {
   final enableDoubleTapZoom = true.obs;
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
+  final gestureRegionWidthRatio = 60.obs;
   Timer? _autoTimer;
 
   final _imagePageUrls = <String>[];
@@ -480,6 +481,12 @@ class WebReaderController extends GetxController {
           await backendApiClient.getSetting(kWebDisableTapPageTurnKey);
       if (disable != null) {
         disableTapPageTurn.value = disable == 'true';
+      }
+      final gestureRatio =
+          await backendApiClient.getSetting(kWebGestureRegionWidthRatioKey);
+      if (gestureRatio != null) {
+        gestureRegionWidthRatio.value =
+            (int.tryParse(gestureRatio) ?? 60).clamp(1, 99).toInt();
       }
       final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       final value = int.tryParse(spacing ?? '');
@@ -942,8 +949,10 @@ class WebReaderController extends GetxController {
       return;
     }
     final x = details.localPosition.dx;
-    final leftBoundary = width / 3;
-    final rightBoundary = width * 2 / 3;
+    final centerRatio = gestureRegionWidthRatio.value.clamp(1, 99) / 100;
+    final sideRatio = (1 - centerRatio) / 2;
+    final leftBoundary = width * sideRatio;
+    final rightBoundary = width * (1 - sideRatio);
     if (x >= leftBoundary && x <= rightBoundary) {
       toggleOverlay();
       return;

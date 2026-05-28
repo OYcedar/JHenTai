@@ -115,6 +115,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final enableDoubleTapZoom = true.obs;
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
+  final gestureRegionWidthRatio = 60.obs;
   final imageSpacing = 0.obs;
   final loaded = false.obs;
 
@@ -166,6 +167,12 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       final disable =
           await backendApiClient.getSetting(kWebDisableTapPageTurnKey);
       if (disable != null) disableTapPageTurn.value = disable == 'true';
+      final gestureRatio =
+          await backendApiClient.getSetting(kWebGestureRegionWidthRatioKey);
+      if (gestureRatio != null) {
+        gestureRegionWidthRatio.value =
+            (int.tryParse(gestureRatio) ?? 60).clamp(1, 99).toInt();
+      }
       final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       if (spacing != null) imageSpacing.value = int.tryParse(spacing) ?? 0;
     } catch (_) {}
@@ -234,6 +241,27 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       preloadPages.value = v.round();
                       backendApiClient
                           .putSetting(kWebPreloadPagesKey, v.round())
+                          .catchError((_) {});
+                    },
+                  )),
+              const SizedBox(height: 8),
+              Obx(() => Row(
+                    children: [
+                      Expanded(child: Text('gestureRegionWidthRatio'.tr)),
+                      Text('${gestureRegionWidthRatio.value}%'),
+                    ],
+                  )),
+              Obx(() => Slider(
+                    value: gestureRegionWidthRatio.value.toDouble(),
+                    min: 1,
+                    max: 99,
+                    divisions: 98,
+                    label: '${gestureRegionWidthRatio.value}%',
+                    onChanged: (v) {
+                      final rounded = v.round();
+                      gestureRegionWidthRatio.value = rounded;
+                      backendApiClient
+                          .putSetting(kWebGestureRegionWidthRatioKey, rounded)
                           .catchError((_) {});
                     },
                   )),

@@ -46,6 +46,7 @@ class WebKoKR {
       'showThumbnails': '썸네일 표시',
       'showScrollBar': '스크롤바 표시',
       'showStatusInfo': '하단 상태 표시',
+      'gestureRegionWidthRatio': '메뉴 제스처 영역 너비 비율',
       'spaceBetweenImages': '이미지 간격',
       'defaultTab': '기본 탭',
 

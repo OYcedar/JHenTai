@@ -46,6 +46,7 @@ class WebZhTW {
       'showThumbnails': '顯示縮圖',
       'showScrollBar': '顯示滾動條',
       'showStatusInfo': '底部顯示狀態資訊',
+      'gestureRegionWidthRatio': '選單手勢區域寬度比例',
       'spaceBetweenImages': '圖片間隔',
       'defaultTab': '啟動時預設選單',
 
