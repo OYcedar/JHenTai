@@ -404,6 +404,7 @@ class WebKoKR {
 
       // search history
       'searchHistory.clearAll': '검색 기록 삭제',
+      'searchHistory.translate': '검색 기록 번역',
 
       // comment
       'comment.placeholder': '댓글 작성...',

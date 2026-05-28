@@ -423,6 +423,7 @@ class WebRuRU {
 
       // search history
       'searchHistory.clearAll': 'Очистить историю поиска',
+      'searchHistory.translate': 'Перевести историю поиска',
 
       // comment
       'comment.placeholder': 'Напишите комментарий...',

@@ -425,6 +425,7 @@ class WebPtBR {
 
       // search history
       'searchHistory.clearAll': 'Limpar histórico de pesquisa',
+      'searchHistory.translate': 'Traduzir histórico de pesquisa',
 
       // comment
       'comment.placeholder': 'Escreva um comentário...',

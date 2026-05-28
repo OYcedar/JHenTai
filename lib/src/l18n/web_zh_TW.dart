@@ -391,6 +391,7 @@ class WebZhTW {
 
       // search history
       'searchHistory.clearAll': '清除搜尋記錄',
+      'searchHistory.translate': '翻譯搜尋記錄',
 
       // comment
       'comment.placeholder': '寫下評論...',

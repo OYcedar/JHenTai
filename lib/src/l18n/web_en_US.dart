@@ -427,6 +427,7 @@ class WebEnUS {
 
       // search history
       'searchHistory.clearAll': 'Clear search history',
+      'searchHistory.translate': 'Translate search history',
 
       // comment
       'comment.placeholder': 'Write a comment...',

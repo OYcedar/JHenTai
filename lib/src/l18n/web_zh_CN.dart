@@ -391,6 +391,7 @@ class WebZhCN {
 
       // search history
       'searchHistory.clearAll': '清除搜索记录',
+      'searchHistory.translate': '翻译搜索记录',
 
       // comment
       'comment.placeholder': '写下评论...',

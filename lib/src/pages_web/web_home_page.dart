@@ -136,6 +136,7 @@ class WebHomeController extends GetxController {
     }
     _loadAdvancedSearchFromStorage();
     _loadFavoritesListPrefs();
+    _loadSearchHistoryPrefs();
     final args = Get.arguments;
     if (args is Map<String, dynamic> && args['search'] is String) {
       final searchQuery = args['search'] as String;
@@ -374,6 +375,10 @@ class WebHomeController extends GetxController {
   final favoriteFolderNames = <String>[].obs;
 
   final searchHistory = <String>[].obs;
+  final showTranslatedSearchHistory = true.obs;
+  final searchHistoryTranslations = <String, String>{}.obs;
+  static const _showTranslatedSearchHistoryStorageKey =
+      'jh_web_show_translated_search_history';
 
   void _loadFavoritesListPrefs() {
     final sort = web.window.localStorage.getItem(_favSortStorageKey);
@@ -424,6 +429,81 @@ class WebHomeController extends GetxController {
           .map((e) => (e['keyword'] as String?) ?? '')
           .where((s) => s.isNotEmpty)
           .toList();
+      unawaited(_translateSearchHistory());
+    } catch (_) {}
+  }
+
+  void _loadSearchHistoryPrefs() {
+    final value =
+        web.window.localStorage.getItem(_showTranslatedSearchHistoryStorageKey);
+    if (value == 'false') showTranslatedSearchHistory.value = false;
+  }
+
+  void toggleSearchHistoryTranslation() {
+    showTranslatedSearchHistory.value = !showTranslatedSearchHistory.value;
+    web.window.localStorage.setItem(
+      _showTranslatedSearchHistoryStorageKey,
+      showTranslatedSearchHistory.value ? 'true' : 'false',
+    );
+    if (showTranslatedSearchHistory.value) {
+      unawaited(_translateSearchHistory());
+    }
+  }
+
+  String displaySearchHistory(String keyword) {
+    if (!showTranslatedSearchHistory.value) return keyword;
+    return searchHistoryTranslations[keyword] ?? keyword;
+  }
+
+  Future<void> _translateSearchHistory() async {
+    if (!showTranslatedSearchHistory.value || searchHistory.isEmpty) return;
+    final requests = <String, Map<String, String>>{};
+    final historyMatches = <String, List<RegExpMatch>>{};
+    final pattern = RegExp(r'(\w+):"([^"]+)\$"');
+
+    for (final keyword in searchHistory) {
+      final matches = pattern.allMatches(keyword).toList();
+      if (matches.isEmpty) continue;
+      historyMatches[keyword] = matches;
+      for (final match in matches) {
+        final namespace = match.group(1) ?? '';
+        final key = match.group(2) ?? '';
+        if (namespace.isEmpty || key.isEmpty) continue;
+        requests['$namespace:$key'] = {'namespace': namespace, 'key': key};
+      }
+    }
+    if (requests.isEmpty) {
+      searchHistoryTranslations.clear();
+      return;
+    }
+
+    try {
+      final translated = await backendApiClient.translateTags(
+        requests.values.toList(),
+      );
+      final next = <String, String>{};
+      for (final entry in historyMatches.entries) {
+        final raw = entry.key;
+        final buffer = StringBuffer();
+        var index = 0;
+        var changed = false;
+        for (final match in entry.value) {
+          buffer.write(raw.substring(index, match.start));
+          final namespace = match.group(1) ?? '';
+          final key = match.group(2) ?? '';
+          final translatedTag = translated['$namespace:$key'];
+          if (translatedTag == null || translatedTag == key) {
+            buffer.write(raw.substring(match.start, match.end));
+          } else {
+            buffer.write('｢$namespace:$translatedTag｣');
+            changed = true;
+          }
+          index = match.end;
+        }
+        buffer.write(raw.substring(index));
+        if (changed) next[raw] = buffer.toString();
+      }
+      searchHistoryTranslations.value = next;
     } catch (_) {}
   }
 
@@ -2454,12 +2534,14 @@ class _AdvancedSearchSheetState extends State<_AdvancedSearchSheet> {
 class _SearchSuggestion {
   final String text;
   final String displayText;
+  final String? subtitle;
   final bool isTag;
   final String? tagNamespace;
 
   const _SearchSuggestion(
       {required this.text,
       required this.displayText,
+      this.subtitle,
       this.isTag = false,
       this.tagNamespace});
 }
@@ -2514,12 +2596,26 @@ class _SearchFieldState extends State<_SearchField> {
 
     if (query.isEmpty) {
       for (final h in history.take(8)) {
-        suggestions.add(_SearchSuggestion(text: h, displayText: h));
+        final display = widget.controller.displaySearchHistory(h);
+        suggestions.add(_SearchSuggestion(
+          text: h,
+          displayText: display,
+          subtitle: display == h ? null : h,
+        ));
       }
     } else {
-      for (final h
-          in history.where((s) => s.toLowerCase().contains(query)).take(5)) {
-        suggestions.add(_SearchSuggestion(text: h, displayText: h));
+      final filteredHistory = history.where((s) {
+        final display = widget.controller.displaySearchHistory(s);
+        return s.toLowerCase().contains(query) ||
+            display.toLowerCase().contains(query);
+      });
+      for (final h in filteredHistory.take(5)) {
+        final display = widget.controller.displaySearchHistory(h);
+        suggestions.add(_SearchSuggestion(
+          text: h,
+          displayText: display,
+          subtitle: display == h ? null : h,
+        ));
       }
 
       final lastToken = _extractLastToken(text);
@@ -2597,10 +2693,12 @@ class _SearchFieldState extends State<_SearchField> {
                               size: 18),
                           title: Text(s.displayText,
                               maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: s.isTag
-                              ? Text(s.text,
+                          subtitle: (s.isTag || s.subtitle != null)
+                              ? Text(s.subtitle ?? s.text,
                                   style: const TextStyle(
-                                      fontSize: 11, color: Colors.grey))
+                                      fontSize: 11, color: Colors.grey),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis)
                               : null,
                           onTap: () {
                             if (s.isTag) {
@@ -2674,21 +2772,41 @@ class _SearchFieldState extends State<_SearchField> {
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,
-      child: TextField(
-        controller: widget.controller.searchController,
-        focusNode: _focusNode,
-        decoration: InputDecoration(
-          hintText: 'home.search'.tr,
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Obx(
+        () => TextField(
+          controller: widget.controller.searchController,
+          focusNode: _focusNode,
+          decoration: InputDecoration(
+            hintText: 'home.search'.tr,
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: widget.controller.searchHistory.isEmpty
+                ? null
+                : Tooltip(
+                    message: 'searchHistory.translate'.tr,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.translate,
+                        color:
+                            widget.controller.showTranslatedSearchHistory.value
+                                ? Theme.of(context).colorScheme.primary
+                                : null,
+                      ),
+                      onPressed: () {
+                        widget.controller.toggleSearchHistoryTranslation();
+                        _onTextChanged();
+                      },
+                    ),
+                  ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          onSubmitted: (value) {
+            _removeOverlay();
+            widget.controller
+                .searchOrOpenGalleryUrl(value, isLeftPane: widget.isLeftPane);
+          },
         ),
-        onSubmitted: (value) {
-          _removeOverlay();
-          widget.controller
-              .searchOrOpenGalleryUrl(value, isLeftPane: widget.isLeftPane);
-        },
       ),
     );
   }
