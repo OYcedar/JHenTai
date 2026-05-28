@@ -249,6 +249,7 @@ class WebReaderController extends GetxController {
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
   final autoModeStyle = 'turnPage'.obs;
+  final turnPageMode = 'adaptive'.obs;
   final preloadPages = 3.obs;
   final preloadPagesLocal = 3.obs;
   final showThumbnails = true.obs;
@@ -294,6 +295,7 @@ class WebReaderController extends GetxController {
 
   late PageController pageController;
   final scrollController = ScrollController();
+  final _imageItemKeys = <int, GlobalKey>{};
 
   /// Horizontal thumbnail strip at bottom (mouse drag + wheel).
   final stripScrollController = ScrollController();
@@ -428,6 +430,12 @@ class WebReaderController extends GetxController {
       final style = await backendApiClient.getSetting(kWebAutoModeStyleKey);
       if (style == 'scroll' || style == 'turnPage') {
         autoModeStyle.value = style!;
+      }
+      final turnMode = await backendApiClient.getSetting(kWebTurnPageModeKey);
+      if (turnMode == 'image' ||
+          turnMode == 'screen' ||
+          turnMode == 'adaptive') {
+        turnPageMode.value = turnMode!;
       }
     } catch (_) {}
   }
@@ -976,6 +984,10 @@ class WebReaderController extends GetxController {
 
   void nextPage() {
     final dir = readDirection.value;
+    if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
+      _toNextListPage();
+      return;
+    }
     if (dir == ReadDirection.doubleColumn) {
       final p = currentPage.value;
       final maxP = totalPages.value - 1;
@@ -991,6 +1003,10 @@ class WebReaderController extends GetxController {
 
   void prevPage() {
     final dir = readDirection.value;
+    if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
+      _toPrevListPage();
+      return;
+    }
     if (dir == ReadDirection.doubleColumn) {
       final p = currentPage.value;
       if (displayFirstPageAlone.value && p == 1) {
@@ -1155,16 +1171,12 @@ class WebReaderController extends GetxController {
           _autoTimer?.cancel();
           return;
         }
-        final target = scrollController.offset + 600;
-        if (target >= scrollController.position.maxScrollExtent) {
+        final moved = _toNextListPage();
+        if (!moved) {
           isAutoMode.value = false;
           _autoTimer?.cancel();
           return;
         }
-        scrollController.animateTo(target,
-            duration:
-                Duration(milliseconds: (autoInterval.value * 800).round()),
-            curve: Curves.linear);
       } else {
         if (currentPage.value >= totalPages.value - 1) {
           isAutoMode.value = false;
@@ -1174,6 +1186,145 @@ class WebReaderController extends GetxController {
         nextPage();
       }
     });
+  }
+
+  GlobalKey _imageItemKey(int index) =>
+      _imageItemKeys.putIfAbsent(index, GlobalKey.new);
+
+  List<int> _visibleListPageIndexes() {
+    if (!scrollController.hasClients || totalPages.value <= 0) {
+      return const [];
+    }
+    final viewport = scrollController.position.viewportDimension;
+    final indexes = <int>[];
+    for (var i = 0; i < totalPages.value; i++) {
+      final context = _imageItemKeys[i]?.currentContext;
+      final box = context?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) {
+        continue;
+      }
+      final top = box.localToGlobal(Offset.zero).dy;
+      final bottom = top + box.size.height;
+      if (bottom > 0 && top < viewport) {
+        indexes.add(i);
+      }
+    }
+    return indexes;
+  }
+
+  ({double top, double bottom})? _listPageBounds(int index) {
+    final context = _imageItemKeys[index]?.currentContext;
+    final box = context?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      return null;
+    }
+    final top = box.localToGlobal(Offset.zero).dy;
+    return (top: top, bottom: top + box.size.height);
+  }
+
+  bool _toNextListPage() {
+    switch (turnPageMode.value) {
+      case 'image':
+        return _toNextListImage();
+      case 'screen':
+        return _scrollListByViewport(1);
+      case 'adaptive':
+      default:
+        final visible = _visibleListPageIndexes();
+        if (visible.length > 1) {
+          return _toNextListImage(visible);
+        }
+        return _scrollListByViewport(1);
+    }
+  }
+
+  bool _toPrevListPage() {
+    switch (turnPageMode.value) {
+      case 'image':
+        return _toPrevListImage();
+      case 'screen':
+        return _scrollListByViewport(-1);
+      case 'adaptive':
+      default:
+        final visible = _visibleListPageIndexes();
+        if (visible.length > 1) {
+          return _toPrevListImage(visible);
+        }
+        return _scrollListByViewport(-1);
+    }
+  }
+
+  bool _toNextListImage([List<int>? visibleIndexes]) {
+    final visible = visibleIndexes ?? _visibleListPageIndexes();
+    final last = visible.isNotEmpty ? visible.last : currentPage.value;
+    var target = last + 1;
+    final bounds = _listPageBounds(last);
+    final viewport = scrollController.hasClients
+        ? scrollController.position.viewportDimension
+        : Get.height;
+    if (bounds != null && bounds.top > 0 && bounds.bottom > viewport) {
+      target = last;
+    }
+    return _scrollToListImage(target.clamp(0, totalPages.value - 1));
+  }
+
+  bool _toPrevListImage([List<int>? visibleIndexes]) {
+    final visible = visibleIndexes ?? _visibleListPageIndexes();
+    final first = visible.isNotEmpty ? visible.first : currentPage.value;
+    var target = first - 1;
+    final bounds = _listPageBounds(first);
+    if (bounds != null && bounds.top < 0) {
+      target = first;
+    }
+    return _scrollToListImage(target.clamp(0, totalPages.value - 1));
+  }
+
+  bool _scrollToListImage(int index) {
+    if (!scrollController.hasClients || totalPages.value <= 0) {
+      return false;
+    }
+    if (index < 0 || index >= totalPages.value) {
+      return false;
+    }
+    final context = _imageItemKeys[index]?.currentContext;
+    if (context == null) {
+      return _scrollListByViewport(index > currentPage.value ? 1 : -1);
+    }
+    Scrollable.ensureVisible(
+      context,
+      alignment: 0,
+      duration: enablePageTurnAnimation.value
+          ? const Duration(milliseconds: 220)
+          : const Duration(milliseconds: 1),
+      curve: Curves.easeInOut,
+    );
+    currentPage.value = index;
+    if (mode == ReaderMode.online) {
+      _preloadAround(index);
+    }
+    _scheduleSaveProgress();
+    return true;
+  }
+
+  bool _scrollListByViewport(int direction) {
+    if (!scrollController.hasClients) {
+      return false;
+    }
+    final position = scrollController.position;
+    final delta = position.viewportDimension * direction.sign;
+    final target =
+        (scrollController.offset + delta).clamp(0.0, position.maxScrollExtent);
+    if ((target - scrollController.offset).abs() < 0.5) {
+      return false;
+    }
+    scrollController.animateTo(
+      target,
+      duration: enablePageTurnAnimation.value
+          ? const Duration(milliseconds: 220)
+          : const Duration(milliseconds: 1),
+      curve: Curves.easeInOut,
+    );
+    return true;
   }
 
   Future<void> retry() => _loadGallery();
@@ -1364,6 +1515,7 @@ class _ReaderBody extends StatelessWidget {
                           (controller.cachePreloadPages + 1),
                     ),
                     itemBuilder: (context, index) => Obx(() => Padding(
+                          key: controller._imageItemKey(index),
                           padding: EdgeInsets.only(
                             bottom: index == controller.totalPages.value - 1
                                 ? 0
@@ -1414,6 +1566,7 @@ class _ReaderBody extends StatelessWidget {
                           (controller.cachePreloadPages + 1),
                     ),
                     itemBuilder: (context, index) => Obx(() => Padding(
+                          key: controller._imageItemKey(index),
                           padding: EdgeInsets.only(
                             bottom: index == controller.totalPages.value - 1
                                 ? 0

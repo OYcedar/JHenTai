@@ -107,6 +107,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final preloadPagesLocal = 3.obs;
   final autoInterval = 5.0.obs;
   final autoModeStyle = 'turnPage'.obs;
+  final turnPageMode = 'adaptive'.obs;
   final displayFirstPageAlone = false.obs;
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
@@ -141,6 +142,12 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       final autoStyle = await backendApiClient.getSetting(kWebAutoModeStyleKey);
       if (autoStyle == 'scroll' || autoStyle == 'turnPage') {
         autoModeStyle.value = autoStyle!;
+      }
+      final turnMode = await backendApiClient.getSetting(kWebTurnPageModeKey);
+      if (turnMode == 'image' ||
+          turnMode == 'screen' ||
+          turnMode == 'adaptive') {
+        turnPageMode.value = turnMode!;
       }
       final first =
           await backendApiClient.getSetting(kWebDisplayFirstPageAloneKey);
@@ -334,6 +341,38 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       autoModeStyle.value = v;
                       backendApiClient
                           .putSetting(kWebAutoModeStyleKey, v)
+                          .catchError((_) {});
+                    },
+                  )),
+              const SizedBox(height: 8),
+              Obx(() => DropdownButtonFormField<String>(
+                    initialValue: turnPageMode.value,
+                    decoration: InputDecoration(
+                      labelText: 'turnPageMode'.tr,
+                      helperText: 'turnPageModeHint'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'image',
+                        child: Text('image'.tr),
+                      ),
+                      DropdownMenuItem(
+                        value: 'screen',
+                        child: Text('screen'.tr),
+                      ),
+                      DropdownMenuItem(
+                        value: 'adaptive',
+                        child: Text('adaptive'.tr),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) {
+                        return;
+                      }
+                      turnPageMode.value = v;
+                      backendApiClient
+                          .putSetting(kWebTurnPageModeKey, v)
                           .catchError((_) {});
                     },
                   )),
