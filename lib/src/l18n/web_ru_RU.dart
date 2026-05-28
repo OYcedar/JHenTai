@@ -428,6 +428,7 @@ class WebRuRU {
       'settings.loadLogFailed': 'Не удалось загрузить журнал: @error',
       'settings.noLogs': 'Журналов пока нет',
       'settings.copyLog': 'Копировать журнал',
+      'settings.downloadLog': 'Скачать журнал',
       'settings.emptyLog': 'Этот журнал пуст',
       'settings.securityWebSummary':
           'Проверьте API-токен, сохранённый в этом браузере, подтвердите подключение или отключитесь и подключитесь заново.',

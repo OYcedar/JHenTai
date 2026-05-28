@@ -391,6 +391,7 @@ class WebZhCN {
       'settings.loadLogFailed': '加载日志失败：@error',
       'settings.noLogs': '暂无日志',
       'settings.copyLog': '复制日志',
+      'settings.downloadLog': '下载日志',
       'settings.emptyLog': '此日志为空',
       'settings.securityWebSummary':
           '查看当前浏览器保存的 API Token 状态，校验连接有效性，或断开后重新连接。',

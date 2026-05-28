@@ -391,6 +391,7 @@ class WebZhTW {
       'settings.loadLogFailed': '載入日誌失敗：@error',
       'settings.noLogs': '暫無日誌',
       'settings.copyLog': '複製日誌',
+      'settings.downloadLog': '下載日誌',
       'settings.emptyLog': '此日誌為空',
       'settings.securityWebSummary':
           '查看目前瀏覽器儲存的 API Token 狀態，校驗連線有效性，或斷開後重新連線。',

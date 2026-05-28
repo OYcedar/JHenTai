@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:js_interop';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:web/web.dart' as web;
 
 class WebSettingsAdvancedPage extends StatefulWidget {
   const WebSettingsAdvancedPage({super.key});
@@ -315,6 +317,22 @@ class _WebLogPage extends StatelessWidget {
     );
   }
 
+  void _download() {
+    if (content.isEmpty) {
+      return;
+    }
+    final blob = web.Blob([content.toJS].toJS);
+    final objectUrl = web.URL.createObjectURL(blob);
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+    anchor.href = objectUrl;
+    anchor.download = name;
+    anchor.style.display = 'none';
+    web.document.body?.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    web.URL.revokeObjectURL(objectUrl);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -325,6 +343,11 @@ class _WebLogPage extends StatelessWidget {
             tooltip: 'settings.copyLog'.tr,
             onPressed: _copy,
             icon: const Icon(Icons.copy),
+          ),
+          IconButton(
+            tooltip: 'settings.downloadLog'.tr,
+            onPressed: content.isEmpty ? null : _download,
+            icon: const Icon(Icons.download_outlined),
           ),
         ],
       ),

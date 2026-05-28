@@ -405,6 +405,7 @@ class WebKoKR {
       'settings.loadLogFailed': '로그 로드 실패: @error',
       'settings.noLogs': '로그 없음',
       'settings.copyLog': '로그 복사',
+      'settings.downloadLog': '로그 다운로드',
       'settings.emptyLog': '이 로그는 비어 있습니다',
       'settings.securityWebSummary':
           '이 브라우저에 저장된 API 토큰 상태를 확인하고 연결을 검증하거나 연결 해제 후 다시 연결합니다.',

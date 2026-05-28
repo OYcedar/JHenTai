@@ -430,6 +430,7 @@ class WebEnUS {
       'settings.loadLogFailed': 'Failed to load log: @error',
       'settings.noLogs': 'No logs yet',
       'settings.copyLog': 'Copy log',
+      'settings.downloadLog': 'Download log',
       'settings.emptyLog': 'This log is empty',
       'settings.securityWebSummary':
           'Check the API token saved in this browser, verify the connection, or disconnect and reconnect.',

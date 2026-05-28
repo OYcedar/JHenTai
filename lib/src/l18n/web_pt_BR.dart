@@ -431,6 +431,7 @@ class WebPtBR {
       'settings.loadLogFailed': 'Falha ao carregar log: @error',
       'settings.noLogs': 'Sem logs ainda',
       'settings.copyLog': 'Copiar log',
+      'settings.downloadLog': 'Baixar log',
       'settings.emptyLog': 'Este log está vazio',
       'settings.securityWebSummary':
           'Verifique o token de API salvo neste navegador, valide a conexão ou desconecte e conecte novamente.',
