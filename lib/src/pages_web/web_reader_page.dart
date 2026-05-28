@@ -248,6 +248,7 @@ class WebReaderController extends GetxController {
 
   final isAutoMode = false.obs;
   final autoInterval = 5.0.obs;
+  final autoModeStyle = 'turnPage'.obs;
   final preloadPages = 3.obs;
   final preloadPagesLocal = 3.obs;
   final showThumbnails = true.obs;
@@ -423,6 +424,10 @@ class WebReaderController extends GetxController {
       final value = double.tryParse(saved ?? '');
       if (value != null) {
         autoInterval.value = value.clamp(2.0, 15.0).toDouble();
+      }
+      final style = await backendApiClient.getSetting(kWebAutoModeStyleKey);
+      if (style == 'scroll' || style == 'turnPage') {
+        autoModeStyle.value = style!;
       }
     } catch (_) {}
   }
@@ -1054,6 +1059,9 @@ class WebReaderController extends GetxController {
     if (isAutoMode.value) {
       isAutoMode.value = false;
       _autoTimer?.cancel();
+      if (scrollController.hasClients) {
+        scrollController.jumpTo(scrollController.offset);
+      }
       return;
     }
     _showAutoIntervalDialog();
@@ -1112,22 +1120,51 @@ class WebReaderController extends GetxController {
 
   void _startAutoTimer() {
     _autoTimer?.cancel();
+    final dir = readDirection.value;
+    if ((dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) &&
+        autoModeStyle.value == 'scroll') {
+      if (!scrollController.hasClients) {
+        isAutoMode.value = false;
+        return;
+      }
+      final max = scrollController.position.maxScrollExtent;
+      if (scrollController.offset >= max) {
+        isAutoMode.value = false;
+        return;
+      }
+      final remainingPages =
+          math.max(1, totalPages.value - currentPage.value - 1);
+      final duration = Duration(
+        milliseconds: (remainingPages * autoInterval.value * 1000).round(),
+      );
+      scrollController
+          .animateTo(max, duration: duration, curve: Curves.linear)
+          .then((_) {
+        if (isAutoMode.value) {
+          isAutoMode.value = false;
+        }
+      });
+      return;
+    }
     _autoTimer = Timer.periodic(
         Duration(milliseconds: (autoInterval.value * 1000).round()), (_) {
       final dir = readDirection.value;
       if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
-        if (scrollController.hasClients) {
-          final target = scrollController.offset + 600;
-          if (target >= scrollController.position.maxScrollExtent) {
-            isAutoMode.value = false;
-            _autoTimer?.cancel();
-            return;
-          }
-          scrollController.animateTo(target,
-              duration:
-                  Duration(milliseconds: (autoInterval.value * 800).round()),
-              curve: Curves.linear);
+        if (!scrollController.hasClients) {
+          isAutoMode.value = false;
+          _autoTimer?.cancel();
+          return;
         }
+        final target = scrollController.offset + 600;
+        if (target >= scrollController.position.maxScrollExtent) {
+          isAutoMode.value = false;
+          _autoTimer?.cancel();
+          return;
+        }
+        scrollController.animateTo(target,
+            duration:
+                Duration(milliseconds: (autoInterval.value * 800).round()),
+            curve: Curves.linear);
       } else {
         if (currentPage.value >= totalPages.value - 1) {
           isAutoMode.value = false;

@@ -2,6 +2,7 @@ const kWebReadDirectionKey = 'web_read_direction';
 const kWebPreloadPagesKey = 'web_preload_pages';
 const kWebPreloadPagesLocalKey = 'web_preload_pages_local';
 const kWebAutoIntervalKey = 'web_auto_interval';
+const kWebAutoModeStyleKey = 'web_auto_mode_style';
 const kWebDisplayFirstPageAloneKey = 'web_display_first_page_alone';
 const kWebShowThumbnailsKey = 'web_show_thumbnails';
 const kWebShowScrollBarKey = 'web_show_scroll_bar';

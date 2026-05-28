@@ -106,6 +106,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final preloadPages = 3.obs;
   final preloadPagesLocal = 3.obs;
   final autoInterval = 5.0.obs;
+  final autoModeStyle = 'turnPage'.obs;
   final displayFirstPageAlone = false.obs;
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
@@ -137,6 +138,10 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       }
       final a = await backendApiClient.getSetting(kWebAutoIntervalKey);
       if (a != null) autoInterval.value = double.tryParse(a) ?? 5.0;
+      final autoStyle = await backendApiClient.getSetting(kWebAutoModeStyleKey);
+      if (autoStyle == 'scroll' || autoStyle == 'turnPage') {
+        autoModeStyle.value = autoStyle!;
+      }
       final first =
           await backendApiClient.getSetting(kWebDisplayFirstPageAloneKey);
       if (first != null) displayFirstPageAlone.value = first == 'true';
@@ -302,6 +307,33 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       autoInterval.value = v;
                       backendApiClient
                           .putSetting(kWebAutoIntervalKey, v)
+                          .catchError((_) {});
+                    },
+                  )),
+              const SizedBox(height: 8),
+              Obx(() => DropdownButtonFormField<String>(
+                    initialValue: autoModeStyle.value,
+                    decoration: InputDecoration(
+                      labelText: 'autoModeStyle'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'scroll',
+                        child: Text('scroll'.tr),
+                      ),
+                      DropdownMenuItem(
+                        value: 'turnPage',
+                        child: Text('turnPage'.tr),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) {
+                        return;
+                      }
+                      autoModeStyle.value = v;
+                      backendApiClient
+                          .putSetting(kWebAutoModeStyleKey, v)
                           .catchError((_) {});
                     },
                   )),
