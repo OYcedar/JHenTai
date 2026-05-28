@@ -490,6 +490,8 @@ class WebZhTW {
       'reader.autoStart': '自動閱讀',
       'reader.autoStop': '停止自動閱讀',
 
+      'enableBottomMenu': '啟用底部選單',
+
       'enablePageTurnAnime': '開啟翻頁動畫',
       'enableDoubleTapToScaleUp': '允許雙擊放大圖片',
       'reverseTurnPageDirection': '反轉點擊翻頁方向',

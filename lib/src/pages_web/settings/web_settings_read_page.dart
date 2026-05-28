@@ -110,6 +110,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
+  final enableBottomMenu = true.obs;
   final enablePageTurnAnimation = true.obs;
   final enableDoubleTapZoom = true.obs;
   final reverseTapPageTurn = false.obs;
@@ -144,6 +145,11 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (scrollbar != null) showScrollBar.value = scrollbar != 'false';
       final status = await backendApiClient.getSetting(kWebShowStatusInfoKey);
       if (status != null) showStatusInfo.value = status != 'false';
+      final bottomMenu =
+          await backendApiClient.getSetting(kWebEnableBottomMenuKey);
+      if (bottomMenu != null) {
+        enableBottomMenu.value = bottomMenu != 'false';
+      }
       final animation =
           await backendApiClient.getSetting(kWebEnablePageTurnAnimationKey);
       if (animation != null) {
@@ -312,6 +318,17 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       showStatusInfo.value = v;
                       backendApiClient
                           .putSetting(kWebShowStatusInfoKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('enableBottomMenu'.tr),
+                    value: enableBottomMenu.value,
+                    onChanged: (v) {
+                      enableBottomMenu.value = v;
+                      backendApiClient
+                          .putSetting(kWebEnableBottomMenuKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,

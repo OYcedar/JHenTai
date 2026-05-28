@@ -532,6 +532,8 @@ class WebEnUS {
       'reader.autoStart': 'Auto Read',
       'reader.autoStop': 'Stop Auto Read',
 
+      'enableBottomMenu': 'Enable bottom menu',
+
       'enablePageTurnAnime': 'Enable page turn animation',
       'enableDoubleTapToScaleUp': 'Enable double-tap zoom',
       'reverseTurnPageDirection': 'Reverse tap page turning direction',

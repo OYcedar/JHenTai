@@ -253,6 +253,7 @@ class WebReaderController extends GetxController {
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
+  final enableBottomMenu = true.obs;
   final imageSpacing = 0.obs;
   final enablePageTurnAnimation = true.obs;
   final enableDoubleTapZoom = true.obs;
@@ -455,6 +456,11 @@ class WebReaderController extends GetxController {
       final showStatus =
           await backendApiClient.getSetting(kWebShowStatusInfoKey);
       if (showStatus != null) showStatusInfo.value = showStatus != 'false';
+      final bottomMenu =
+          await backendApiClient.getSetting(kWebEnableBottomMenuKey);
+      if (bottomMenu != null) {
+        enableBottomMenu.value = bottomMenu != 'false';
+      }
       final animation =
           await backendApiClient.getSetting(kWebEnablePageTurnAnimationKey);
       if (animation != null) {
@@ -2030,11 +2036,15 @@ class _BottomOverlay extends StatelessWidget {
     // AnimatedPositioned must be a direct Stack child; wrapping it outside IgnorePointer broke layout.
     return Obx(() => AnimatedPositioned(
           duration: const Duration(milliseconds: 200),
-          bottom: controller.showOverlay.value ? 0 : -140,
+          bottom:
+              controller.showOverlay.value && controller.enableBottomMenu.value
+                  ? 0
+                  : -140,
           left: 0,
           right: 0,
           child: IgnorePointer(
-            ignoring: !controller.showOverlay.value,
+            ignoring: !controller.showOverlay.value ||
+                !controller.enableBottomMenu.value,
             child: Container(
               padding: EdgeInsets.only(
                 left: 16,

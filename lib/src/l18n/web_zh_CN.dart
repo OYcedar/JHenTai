@@ -494,6 +494,8 @@ class WebZhCN {
       'reader.autoStart': '自动阅读',
       'reader.autoStop': '停止自动阅读',
 
+      'enableBottomMenu': '启用底部菜单',
+
       'enablePageTurnAnime': '开启翻页动画',
       'enableDoubleTapToScaleUp': '允许双击放大图片',
       'reverseTurnPageDirection': '反转点击翻页方向',

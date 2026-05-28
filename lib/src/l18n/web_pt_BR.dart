@@ -529,6 +529,8 @@ class WebPtBR {
       'reader.autoStart': 'Leitura Automática',
       'reader.autoStop': 'Parar Leitura Automática',
 
+      'enableBottomMenu': 'Ativar menu inferior',
+
       'enablePageTurnAnime': 'Ativar animação de virar página',
       'enableDoubleTapToScaleUp': 'Ativar zoom com toque duplo',
       'reverseTurnPageDirection': 'Inverter direção ao tocar para virar página',

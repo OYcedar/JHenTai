@@ -527,6 +527,8 @@ class WebRuRU {
       'reader.autoStart': 'Автопролистывание',
       'reader.autoStop': 'Остановить автопролистывание',
 
+      'enableBottomMenu': 'Включить нижнее меню',
+
       'enablePageTurnAnime': 'Включить анимацию перелистывания',
       'enableDoubleTapToScaleUp': 'Включить увеличение двойным нажатием',
       'reverseTurnPageDirection': 'Инвертировать перелистывание касанием',
