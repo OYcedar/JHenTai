@@ -11,6 +11,7 @@ import 'package:jhentai/src/model/gallery_image_page_url.dart';
 import 'package:jhentai/src/model/gallery_url.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
@@ -579,6 +580,7 @@ class WebHomeController extends GetxController {
 
   Future<void> search(String keyword) async {
     _exitListByUrlMode();
+    _applySearchBehaviour();
     _currentSearch = keyword;
     currentSearchText.value = keyword;
     currentSection.value = 'home';
@@ -590,6 +592,38 @@ class WebHomeController extends GetxController {
       loadSearchHistory();
     }
     await _fetchGalleryList();
+  }
+
+  void _applySearchBehaviour() {
+    switch (WebPreferenceSettings.searchBehaviour) {
+      case WebSearchBehaviour.inheritAll:
+        return;
+      case WebSearchBehaviour.inheritPartially:
+        categoryFilter.value = 0;
+        filterLanguage.value = null;
+        persistAdvancedSearchSettings();
+        return;
+      case WebSearchBehaviour.none:
+        _resetAdvancedSearchSettings();
+        persistAdvancedSearchSettings();
+        return;
+    }
+  }
+
+  void _resetAdvancedSearchSettings() {
+    categoryFilter.value = 0;
+    minimumRating.value = 0;
+    searchInName.value = true;
+    searchInTags.value = true;
+    searchInDesc.value = false;
+    showExpunged.value = false;
+    onlyShowGalleriesWithTorrents.value = false;
+    pageAtLeast.value = null;
+    pageAtMost.value = null;
+    filterLanguage.value = null;
+    disableFilterForLanguage.value = false;
+    disableFilterForUploader.value = false;
+    disableFilterForTags.value = false;
   }
 
   Future<void> searchOrOpenGalleryUrl(String input,

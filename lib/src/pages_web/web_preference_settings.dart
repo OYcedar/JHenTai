@@ -1,5 +1,7 @@
 import 'package:web/web.dart' as web;
 
+enum WebSearchBehaviour { inheritAll, inheritPartially, none }
+
 class WebPreferenceSettings {
   static const showAllGalleryTitlesKey = 'jh_web_show_all_gallery_titles';
   static const showGalleryTagVoteStatusKey =
@@ -7,6 +9,7 @@ class WebPreferenceSettings {
   static const showCommentsKey = 'jh_web_show_comments';
   static const showAllCommentsKey = 'jh_web_show_all_comments';
   static const showUtcTimeKey = 'jh_web_show_utc_time';
+  static const searchBehaviourKey = 'jh_web_search_behaviour';
 
   const WebPreferenceSettings._();
 
@@ -22,6 +25,14 @@ class WebPreferenceSettings {
 
   static bool get showUtcTime => _readBool(showUtcTimeKey, false);
 
+  static WebSearchBehaviour get searchBehaviour {
+    final raw = web.window.localStorage.getItem(searchBehaviourKey);
+    return WebSearchBehaviour.values.firstWhere(
+      (value) => value.name == raw,
+      orElse: () => WebSearchBehaviour.inheritAll,
+    );
+  }
+
   static void saveShowAllGalleryTitles(bool value) =>
       _writeBool(showAllGalleryTitlesKey, value);
 
@@ -35,6 +46,10 @@ class WebPreferenceSettings {
       _writeBool(showAllCommentsKey, value);
 
   static void saveShowUtcTime(bool value) => _writeBool(showUtcTimeKey, value);
+
+  static void saveSearchBehaviour(WebSearchBehaviour value) {
+    web.window.localStorage.setItem(searchBehaviourKey, value.name);
+  }
 
   static bool _readBool(String key, bool fallback) {
     final raw = web.window.localStorage.getItem(key);

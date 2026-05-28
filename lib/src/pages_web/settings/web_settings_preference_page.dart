@@ -69,6 +69,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool showComments;
   late bool showAllComments;
   late bool showUtcTime;
+  late WebSearchBehaviour searchBehaviour;
 
   @override
   void initState() {
@@ -78,6 +79,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
     showComments = WebPreferenceSettings.showComments;
     showAllComments = WebPreferenceSettings.showAllComments;
     showUtcTime = WebPreferenceSettings.showUtcTime;
+    searchBehaviour = WebPreferenceSettings.searchBehaviour;
   }
 
   @override
@@ -141,9 +143,47 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
             WebPreferenceSettings.saveShowUtcTime(value);
           },
         ),
+        ListTile(
+          leading: const Icon(Icons.manage_search_outlined),
+          title: Text('searchBehaviour'.tr),
+          subtitle: Text(_searchBehaviourHint(searchBehaviour)),
+          trailing: DropdownButton<WebSearchBehaviour>(
+            value: searchBehaviour,
+            alignment: AlignmentDirectional.centerEnd,
+            items: [
+              DropdownMenuItem(
+                value: WebSearchBehaviour.inheritAll,
+                child: Text('inheritAll'.tr),
+              ),
+              DropdownMenuItem(
+                value: WebSearchBehaviour.inheritPartially,
+                child: Text('inheritPartially'.tr),
+              ),
+              DropdownMenuItem(
+                value: WebSearchBehaviour.none,
+                child: Text('none'.tr),
+              ),
+            ],
+            onChanged: (value) {
+              if (value == null) {
+                return;
+              }
+              setState(() => searchBehaviour = value);
+              WebPreferenceSettings.saveSearchBehaviour(value);
+            },
+          ),
+        ),
         const Divider(height: 1),
       ],
     );
+  }
+
+  String _searchBehaviourHint(WebSearchBehaviour value) {
+    return switch (value) {
+      WebSearchBehaviour.inheritAll => 'inheritAllHint'.tr,
+      WebSearchBehaviour.inheritPartially => 'inheritPartiallyHint'.tr,
+      WebSearchBehaviour.none => 'noneHint'.tr,
+    };
   }
 }
 
