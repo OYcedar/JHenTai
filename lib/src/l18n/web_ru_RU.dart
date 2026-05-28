@@ -527,6 +527,9 @@ class WebRuRU {
       'reader.autoStart': 'Автопролистывание',
       'reader.autoStop': 'Остановить автопролистывание',
 
+      'enablePageTurnAnime': 'Включить анимацию перелистывания',
+      'reverseTurnPageDirection': 'Инвертировать перелистывание касанием',
+      'disablePageTurningOnTap': 'Отключить перелистывание касанием',
       // block rules
       'blockRule.title': 'Правила блокировки',
       'blockRule.empty': 'Нет настроенных правил блокировки',

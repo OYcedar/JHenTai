@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_reader_setting_keys.dart';
 
 class WebSettingsReadPage extends GetView<WebSettingsController> {
   const WebSettingsReadPage({super.key});
@@ -109,6 +110,9 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
+  final enablePageTurnAnimation = true.obs;
+  final reverseTapPageTurn = false.obs;
+  final disableTapPageTurn = false.obs;
   final imageSpacing = 0.obs;
   final loaded = false.obs;
 
@@ -120,28 +124,37 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
 
   Future<void> _load() async {
     try {
-      final d = await backendApiClient.getSetting('web_read_direction');
+      final d = await backendApiClient.getSetting(kWebReadDirectionKey);
       if (d != null) direction.value = int.tryParse(d) ?? 0;
-      final p = await backendApiClient.getSetting('web_preload_pages');
+      final p = await backendApiClient.getSetting(kWebPreloadPagesKey);
       if (p != null) preloadPages.value = int.tryParse(p) ?? 3;
-      final local =
-          await backendApiClient.getSetting('web_preload_pages_local');
+      final local = await backendApiClient.getSetting(kWebPreloadPagesLocalKey);
       if (local != null) {
         preloadPagesLocal.value = int.tryParse(local) ?? 3;
       }
-      final a = await backendApiClient.getSetting('web_auto_interval');
+      final a = await backendApiClient.getSetting(kWebAutoIntervalKey);
       if (a != null) autoInterval.value = double.tryParse(a) ?? 5.0;
       final first =
-          await backendApiClient.getSetting('web_display_first_page_alone');
+          await backendApiClient.getSetting(kWebDisplayFirstPageAloneKey);
       if (first != null) displayFirstPageAlone.value = first == 'true';
-      final thumbs = await backendApiClient.getSetting('web_show_thumbnails');
+      final thumbs = await backendApiClient.getSetting(kWebShowThumbnailsKey);
       if (thumbs != null) showThumbnails.value = thumbs != 'false';
-      final scrollbar =
-          await backendApiClient.getSetting('web_show_scroll_bar');
+      final scrollbar = await backendApiClient.getSetting(kWebShowScrollBarKey);
       if (scrollbar != null) showScrollBar.value = scrollbar != 'false';
-      final status = await backendApiClient.getSetting('web_show_status_info');
+      final status = await backendApiClient.getSetting(kWebShowStatusInfoKey);
       if (status != null) showStatusInfo.value = status != 'false';
-      final spacing = await backendApiClient.getSetting('web_image_spacing');
+      final animation =
+          await backendApiClient.getSetting(kWebEnablePageTurnAnimationKey);
+      if (animation != null) {
+        enablePageTurnAnimation.value = animation != 'false';
+      }
+      final reverse =
+          await backendApiClient.getSetting(kWebReverseTapPageTurnKey);
+      if (reverse != null) reverseTapPageTurn.value = reverse == 'true';
+      final disable =
+          await backendApiClient.getSetting(kWebDisableTapPageTurnKey);
+      if (disable != null) disableTapPageTurn.value = disable == 'true';
+      final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       if (spacing != null) imageSpacing.value = int.tryParse(spacing) ?? 0;
     } catch (_) {}
     loaded.value = true;
@@ -186,7 +199,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                         onSelected: (_) {
                           direction.value = i;
                           backendApiClient
-                              .putSetting('web_read_direction', i)
+                              .putSetting(kWebReadDirectionKey, i)
                               .catchError((_) {});
                         },
                       ),
@@ -208,7 +221,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     onChanged: (v) {
                       preloadPages.value = v.round();
                       backendApiClient
-                          .putSetting('web_preload_pages', v.round())
+                          .putSetting(kWebPreloadPagesKey, v.round())
                           .catchError((_) {});
                     },
                   )),
@@ -228,7 +241,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     onChanged: (v) {
                       preloadPagesLocal.value = v.round();
                       backendApiClient
-                          .putSetting('web_preload_pages_local', v.round())
+                          .putSetting(kWebPreloadPagesLocalKey, v.round())
                           .catchError((_) {});
                     },
                   )),
@@ -248,7 +261,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     onChanged: (v) {
                       autoInterval.value = v;
                       backendApiClient
-                          .putSetting('web_auto_interval', v)
+                          .putSetting(kWebAutoIntervalKey, v)
                           .catchError((_) {});
                     },
                   )),
@@ -259,7 +272,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     onChanged: (v) {
                       displayFirstPageAlone.value = v;
                       backendApiClient
-                          .putSetting('web_display_first_page_alone', v)
+                          .putSetting(kWebDisplayFirstPageAloneKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,
@@ -270,7 +283,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     onChanged: (v) {
                       showThumbnails.value = v;
                       backendApiClient
-                          .putSetting('web_show_thumbnails', v)
+                          .putSetting(kWebShowThumbnailsKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,
@@ -281,7 +294,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     onChanged: (v) {
                       showScrollBar.value = v;
                       backendApiClient
-                          .putSetting('web_show_scroll_bar', v)
+                          .putSetting(kWebShowScrollBarKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,
@@ -292,7 +305,40 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                     onChanged: (v) {
                       showStatusInfo.value = v;
                       backendApiClient
-                          .putSetting('web_show_status_info', v)
+                          .putSetting(kWebShowStatusInfoKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('enablePageTurnAnime'.tr),
+                    value: enablePageTurnAnimation.value,
+                    onChanged: (v) {
+                      enablePageTurnAnimation.value = v;
+                      backendApiClient
+                          .putSetting(kWebEnablePageTurnAnimationKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('reverseTurnPageDirection'.tr),
+                    value: reverseTapPageTurn.value,
+                    onChanged: (v) {
+                      reverseTapPageTurn.value = v;
+                      backendApiClient
+                          .putSetting(kWebReverseTapPageTurnKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('disablePageTurningOnTap'.tr),
+                    value: disableTapPageTurn.value,
+                    onChanged: (v) {
+                      disableTapPageTurn.value = v;
+                      backendApiClient
+                          .putSetting(kWebDisableTapPageTurnKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,
@@ -314,7 +360,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       final rounded = v.round();
                       imageSpacing.value = rounded;
                       backendApiClient
-                          .putSetting('web_image_spacing', rounded)
+                          .putSetting(kWebImageSpacingKey, rounded)
                           .catchError((_) {});
                     },
                   )),

@@ -490,6 +490,9 @@ class WebZhTW {
       'reader.autoStart': '自動閱讀',
       'reader.autoStop': '停止自動閱讀',
 
+      'enablePageTurnAnime': '開啟翻頁動畫',
+      'reverseTurnPageDirection': '反轉點擊翻頁方向',
+      'disablePageTurningOnTap': '停用點擊翻頁手勢',
       // block rules
       'blockRule.title': '封鎖規則',
       'blockRule.empty': '沒有設定封鎖規則',

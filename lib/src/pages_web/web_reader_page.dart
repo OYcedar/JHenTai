@@ -16,6 +16,7 @@ import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
 import 'package:jhentai/src/pages_web/web_online_image_page_parse.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_reader_setting_keys.dart';
 import 'package:web/web.dart' as web;
 
 /// Same intent as UIConfig.scrollBehaviourWithoutScrollBarWithMouse: PageView /
@@ -253,6 +254,9 @@ class WebReaderController extends GetxController {
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
   final imageSpacing = 0.obs;
+  final enablePageTurnAnimation = true.obs;
+  final reverseTapPageTurn = false.obs;
+  final disableTapPageTurn = false.obs;
   Timer? _autoTimer;
 
   final _imagePageUrls = <String>[];
@@ -401,7 +405,7 @@ class WebReaderController extends GetxController {
   Future<void> _loadDisplayFirstPageAlone() async {
     try {
       final saved =
-          await backendApiClient.getSetting('web_display_first_page_alone');
+          await backendApiClient.getSetting(kWebDisplayFirstPageAloneKey);
       if (saved == 'true') {
         displayFirstPageAlone.value = true;
       } else if (saved == 'false') {
@@ -412,7 +416,7 @@ class WebReaderController extends GetxController {
 
   Future<void> _loadAutoInterval() async {
     try {
-      final saved = await backendApiClient.getSetting('web_auto_interval');
+      final saved = await backendApiClient.getSetting(kWebAutoIntervalKey);
       final value = double.tryParse(saved ?? '');
       if (value != null) {
         autoInterval.value = value.clamp(2.0, 15.0).toDouble();
@@ -422,13 +426,13 @@ class WebReaderController extends GetxController {
 
   Future<void> _loadPreloadPages() async {
     try {
-      final saved = await backendApiClient.getSetting('web_preload_pages');
+      final saved = await backendApiClient.getSetting(kWebPreloadPagesKey);
       final value = int.tryParse(saved ?? '');
       if (value != null) {
         preloadPages.value = value.clamp(0, 10).toInt();
       }
       final savedLocal =
-          await backendApiClient.getSetting('web_preload_pages_local');
+          await backendApiClient.getSetting(kWebPreloadPagesLocalKey);
       final localValue = int.tryParse(savedLocal ?? '');
       if (localValue != null) {
         preloadPagesLocal.value = localValue.clamp(0, 10).toInt();
@@ -442,15 +446,30 @@ class WebReaderController extends GetxController {
   Future<void> _loadDisplaySettings() async {
     try {
       final showThumbs =
-          await backendApiClient.getSetting('web_show_thumbnails');
+          await backendApiClient.getSetting(kWebShowThumbnailsKey);
       if (showThumbs != null) showThumbnails.value = showThumbs != 'false';
       final showScrollbar =
-          await backendApiClient.getSetting('web_show_scroll_bar');
+          await backendApiClient.getSetting(kWebShowScrollBarKey);
       if (showScrollbar != null) showScrollBar.value = showScrollbar != 'false';
       final showStatus =
-          await backendApiClient.getSetting('web_show_status_info');
+          await backendApiClient.getSetting(kWebShowStatusInfoKey);
       if (showStatus != null) showStatusInfo.value = showStatus != 'false';
-      final spacing = await backendApiClient.getSetting('web_image_spacing');
+      final animation =
+          await backendApiClient.getSetting(kWebEnablePageTurnAnimationKey);
+      if (animation != null) {
+        enablePageTurnAnimation.value = animation != 'false';
+      }
+      final reverse =
+          await backendApiClient.getSetting(kWebReverseTapPageTurnKey);
+      if (reverse != null) {
+        reverseTapPageTurn.value = reverse == 'true';
+      }
+      final disable =
+          await backendApiClient.getSetting(kWebDisableTapPageTurnKey);
+      if (disable != null) {
+        disableTapPageTurn.value = disable == 'true';
+      }
+      final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       final value = int.tryParse(spacing ?? '');
       if (value != null) imageSpacing.value = value.clamp(0, 32).toInt();
     } catch (_) {}
@@ -505,7 +524,7 @@ class WebReaderController extends GetxController {
     if (readDirection.value != ReadDirection.doubleColumn) return;
     displayFirstPageAlone.value = !displayFirstPageAlone.value;
     backendApiClient
-        .putSetting('web_display_first_page_alone', displayFirstPageAlone.value)
+        .putSetting(kWebDisplayFirstPageAloneKey, displayFirstPageAlone.value)
         .catchError((_) {});
     final screen = doubleColumnScreenIndexForImagePage(currentPage.value);
     pageController.dispose();
@@ -514,7 +533,7 @@ class WebReaderController extends GetxController {
 
   Future<void> _loadSavedDirection() async {
     try {
-      final saved = await backendApiClient.getSetting('web_read_direction');
+      final saved = await backendApiClient.getSetting(kWebReadDirectionKey);
       if (saved != null) {
         final idx = int.tryParse(saved);
         if (idx != null && idx >= 0 && idx < ReadDirection.values.length) {
@@ -889,12 +908,43 @@ class WebReaderController extends GetxController {
     if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
       return;
     }
-    if (dir == ReadDirection.doubleColumn) {
-      pageController.animateToPage(doubleColumnScreenIndexForImagePage(page),
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    final target = dir == ReadDirection.doubleColumn
+        ? doubleColumnScreenIndexForImagePage(page)
+        : page;
+    if (!enablePageTurnAnimation.value) {
+      pageController.jumpToPage(target);
+      return;
+    }
+    pageController.animateToPage(target,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+  }
+
+  void handleReaderTap(TapUpDetails details, double width) {
+    if (width <= 0) {
+      toggleOverlay();
+      return;
+    }
+    final dir = readDirection.value;
+    if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
+      toggleOverlay();
+      return;
+    }
+    final x = details.localPosition.dx;
+    final leftBoundary = width / 3;
+    final rightBoundary = width * 2 / 3;
+    if (x >= leftBoundary && x <= rightBoundary) {
+      toggleOverlay();
+      return;
+    }
+    if (disableTapPageTurn.value) {
+      return;
+    }
+    final tapLeft = x < leftBoundary;
+    final turnLeft = reverseTapPageTurn.value ? !tapLeft : tapLeft;
+    if (turnLeft) {
+      toLeft();
     } else {
-      pageController.animateToPage(page,
-          duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      toRight();
     }
   }
 
@@ -952,7 +1002,7 @@ class WebReaderController extends GetxController {
     if (prev == newDir) return;
     readDirection.value = newDir;
     backendApiClient
-        .putSetting('web_read_direction', newDir.index)
+        .putSetting(kWebReadDirectionKey, newDir.index)
         .catchError((_) {});
     if (newDir != ReadDirection.vertical && newDir != ReadDirection.fitWidth) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1031,7 +1081,7 @@ class WebReaderController extends GetxController {
   void setAutoInterval(double seconds) {
     autoInterval.value = seconds.clamp(2.0, 15.0).toDouble();
     backendApiClient
-        .putSetting('web_auto_interval', autoInterval.value)
+        .putSetting(kWebAutoIntervalKey, autoInterval.value)
         .catchError((_) {});
     if (isAutoMode.value) {
       _autoTimer?.cancel();
@@ -1160,20 +1210,24 @@ class _ReaderBody extends StatelessWidget {
       },
       child: Stack(
         children: [
-          GestureDetector(
-            behavior: HitTestBehavior.deferToChild,
-            onTap: controller.toggleOverlay,
-            child: Obx(() {
-              final dir = controller.readDirection.value;
-              // Rebuild double-column [PageView] when [displayFirstPageAlone] toggles.
-              controller.displayFirstPageAlone.value;
-              return switch (dir) {
-                ReadDirection.vertical => _buildVerticalReader(context),
-                ReadDirection.fitWidth => _buildFitWidthReader(context),
-                ReadDirection.doubleColumn => _buildDoubleColumnReader(context),
-                _ => _buildPageReader(context),
-              };
-            }),
+          LayoutBuilder(
+            builder: (context, constraints) => GestureDetector(
+              behavior: HitTestBehavior.deferToChild,
+              onTapUp: (details) =>
+                  controller.handleReaderTap(details, constraints.maxWidth),
+              child: Obx(() {
+                final dir = controller.readDirection.value;
+                // Rebuild double-column [PageView] when [displayFirstPageAlone] toggles.
+                controller.displayFirstPageAlone.value;
+                return switch (dir) {
+                  ReadDirection.vertical => _buildVerticalReader(context),
+                  ReadDirection.fitWidth => _buildFitWidthReader(context),
+                  ReadDirection.doubleColumn =>
+                    _buildDoubleColumnReader(context),
+                  _ => _buildPageReader(context),
+                };
+              }),
+            ),
           ),
           _TopOverlay(controller: controller),
           _BottomOverlay(controller: controller),

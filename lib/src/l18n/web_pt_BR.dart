@@ -529,6 +529,9 @@ class WebPtBR {
       'reader.autoStart': 'Leitura Automática',
       'reader.autoStop': 'Parar Leitura Automática',
 
+      'enablePageTurnAnime': 'Ativar animação de virar página',
+      'reverseTurnPageDirection': 'Inverter direção ao tocar para virar página',
+      'disablePageTurningOnTap': 'Desativar toque para virar página',
       // block rules
       'blockRule.title': 'Regras de Bloqueio',
       'blockRule.empty': 'Nenhuma regra de bloqueio configurada',

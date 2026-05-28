@@ -508,6 +508,9 @@ class WebKoKR {
       'reader.autoStart': '자동 넘기기',
       'reader.autoStop': '자동 넘기기 중지',
 
+      'enablePageTurnAnime': '페이지 넘김 애니메이션 사용',
+      'reverseTurnPageDirection': '탭 페이지 넘김 방향 반전',
+      'disablePageTurningOnTap': '탭으로 페이지 넘김 끄기',
       // block rules
       'blockRule.title': '차단 규칙',
       'blockRule.empty': '차단 규칙이 없습니다',

@@ -494,6 +494,9 @@ class WebZhCN {
       'reader.autoStart': '自动阅读',
       'reader.autoStop': '停止自动阅读',
 
+      'enablePageTurnAnime': '开启翻页动画',
+      'reverseTurnPageDirection': '反转点击翻页方向',
+      'disablePageTurningOnTap': '禁用点击翻页手势',
       // block rules
       'blockRule.title': '屏蔽规则',
       'blockRule.empty': '没有配置屏蔽规则',
