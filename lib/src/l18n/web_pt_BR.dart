@@ -35,6 +35,9 @@ class WebPtBR {
           'Por padrão, apenas uma galeria por prioridade é baixada por vez.',
       'restoreDownloadTasks': 'Restaurar tarefas de download',
       'restoreDownloadTasksHint': 'Restaurar tarefas de download por metadados',
+      'restoreTasksAutomatically': 'Restaurar tarefas automaticamente',
+      'restoreTasksAutomaticallyHint':
+          'Restaura tarefas pelos metadados de download ao iniciar o servidor',
       'restoredGalleryCount': 'Galerias restauradas',
       'restoredArchiveCount': 'Arquivos restaurados',
       'reDownload': 'Baixar novamente',

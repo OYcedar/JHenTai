@@ -34,6 +34,8 @@ class WebKoKR {
           '기본적으로 각 우선순위마다 갤러리 하나만 동시에 다운로드합니다.',
       'restoreDownloadTasks': '다운로드 작업 복원',
       'restoreDownloadTasksHint': '메타데이터로 다운로드 작업 복원',
+      'restoreTasksAutomatically': '작업 자동 복원',
+      'restoreTasksAutomaticallyHint': '서버 시작 시 다운로드 메타데이터에서 작업을 복원합니다',
       'restoredGalleryCount': '복원된 갤러리',
       'restoredArchiveCount': '복원된 아카이브',
       'reDownload': '다시 다운로드',

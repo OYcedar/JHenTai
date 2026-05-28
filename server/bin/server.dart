@@ -71,6 +71,19 @@ Future<void> main(List<String> args) async {
       ArchiveDownloadService(ehClient, config, eventBus);
   await archiveDownloadService.init();
 
+  if (_restoreTasksAutomaticallyEnabled()) {
+    try {
+      final galleryRestored =
+          await galleryDownloadService.restoreDownloadsFromMetadata();
+      final archiveRestored =
+          await archiveDownloadService.restoreDownloadsFromMetadata();
+      log.info(
+          'Auto-restored download tasks: gallery=$galleryRestored, archive=$archiveRestored');
+    } catch (e, s) {
+      log.error('Auto-restore download tasks failed', e, s);
+    }
+  }
+
   final localGalleryService = LocalGalleryService(config);
   await localGalleryService.init();
 
@@ -179,3 +192,10 @@ const _corsHeaders = {
   'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization',
   'Access-Control-Max-Age': '86400',
 };
+
+bool _restoreTasksAutomaticallyEnabled() {
+  final raw = db.readConfig('webRestoreTasksAutomatically');
+  if (raw == null || raw.trim().isEmpty) return false;
+  final normalized = raw.trim().toLowerCase();
+  return normalized == 'true' || normalized == '1' || normalized == 'yes';
+}

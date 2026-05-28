@@ -37,6 +37,9 @@ class WebEnUS {
           'By default, only one gallery per priority is downloaded at a time.',
       'restoreDownloadTasks': 'Restore download tasks',
       'restoreDownloadTasksHint': 'Restore download tasks from metadata',
+      'restoreTasksAutomatically': 'Restore tasks automatically',
+      'restoreTasksAutomaticallyHint':
+          'Restore tasks from download metadata when the server starts',
       'restoredGalleryCount': 'Restored galleries',
       'restoredArchiveCount': 'Restored archives',
       'reDownload': 'Re-Download',

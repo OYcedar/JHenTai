@@ -1052,6 +1052,7 @@ class BackendApiClient {
   // --- Settings ---
 
   static const webUseBuiltInBlockedUsersKey = 'webUseBuiltInBlockedUsers';
+  static const webRestoreTasksAutomaticallyKey = 'webRestoreTasksAutomatically';
 
   Future<Map<String, dynamic>> getSettings() async {
     final response = await _dio.get('/api/setting/');
@@ -1109,6 +1110,19 @@ class BackendApiClient {
 
   Future<void> setUseBuiltInBlockedUsers(bool value) async {
     await putSetting(webUseBuiltInBlockedUsersKey, value);
+  }
+
+  Future<bool> getRestoreTasksAutomatically() async {
+    final raw = await getSetting(webRestoreTasksAutomaticallyKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return false;
+    }
+    final normalized = raw.trim().toLowerCase();
+    return normalized == 'true' || normalized == '1' || normalized == 'yes';
+  }
+
+  Future<void> setRestoreTasksAutomatically(bool value) async {
+    await putSetting(webRestoreTasksAutomaticallyKey, value);
   }
 
   Future<Map<String, dynamic>> listServerLogs() async {

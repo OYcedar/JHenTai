@@ -27,6 +27,8 @@ class _WebSettingsDownloadMenuPageState
   bool galleryDownloadOriginalImage = false;
   final archiveGroupController = TextEditingController();
   final archivePriorityController = TextEditingController();
+  bool restoreTasksAutomatically = false;
+  bool isLoadingRestoreTasksAutomatically = true;
   bool restoreRunning = false;
 
   @override
@@ -38,6 +40,7 @@ class _WebSettingsDownloadMenuPageState
         _readStorage(_galleryOriginalKey, 'false') == 'true';
     archiveGroupController.text = _readStorage(_archiveGroupKey, 'default');
     archivePriorityController.text = _readStorage(_archivePriorityKey, '0');
+    _loadRestoreTasksAutomatically();
   }
 
   @override
@@ -72,6 +75,22 @@ class _WebSettingsDownloadMenuPageState
       return a.compareTo(b);
     });
     return list;
+  }
+
+  Future<void> _loadRestoreTasksAutomatically() async {
+    try {
+      final value = await backendApiClient.getRestoreTasksAutomatically();
+      if (!mounted) {
+        return;
+      }
+      setState(() => restoreTasksAutomatically = value);
+    } catch (_) {
+      // Keep the server default: disabled.
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingRestoreTasksAutomatically = false);
+      }
+    }
   }
 
   void _saveDefaults() {
@@ -228,6 +247,34 @@ class _WebSettingsDownloadMenuPageState
                     )
                   : const Icon(Icons.restore_outlined),
               label: Text('restoreDownloadTasks'.tr),
+            ),
+            const SizedBox(height: 12),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.settings_backup_restore_outlined),
+              title: Text('restoreTasksAutomatically'.tr),
+              subtitle: Text('restoreTasksAutomaticallyHint'.tr),
+              value: restoreTasksAutomatically,
+              onChanged: isLoadingRestoreTasksAutomatically
+                  ? null
+                  : (value) async {
+                      setState(() => restoreTasksAutomatically = value);
+                      try {
+                        await backendApiClient
+                            .setRestoreTasksAutomatically(value);
+                      } catch (e) {
+                        if (!mounted) {
+                          return;
+                        }
+                        setState(() => restoreTasksAutomatically = !value);
+                        Get.snackbar(
+                          'common.error'.tr,
+                          '${'common.failed'.tr}: $e',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Colors.red.withValues(alpha: 0.7),
+                        );
+                      }
+                    },
             ),
           ],
         );

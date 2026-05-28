@@ -34,6 +34,8 @@ class WebZhCN {
           '默认情况下逐优先级下载画廊，且每个优先级下只会同时下载一个画廊',
       'restoreDownloadTasks': '恢复下载任务',
       'restoreDownloadTasksHint': '通过下载元数据来恢复下载记录',
+      'restoreTasksAutomatically': '自动恢复下载任务',
+      'restoreTasksAutomaticallyHint': '服务端启动时通过下载元数据自动恢复任务',
       'restoredGalleryCount': '已恢复画廊',
       'restoredArchiveCount': '已恢复归档',
       'reDownload': '重新下载',

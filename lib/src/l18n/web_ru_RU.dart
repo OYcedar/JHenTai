@@ -36,6 +36,9 @@ class WebRuRU {
           'По умолчанию одновременно скачивается только одна галерея каждого приоритета.',
       'restoreDownloadTasks': 'Восстановить задачи загрузки',
       'restoreDownloadTasksHint': 'Восстановить задачи загрузки по метаданным',
+      'restoreTasksAutomatically': 'Восстанавливать задачи автоматически',
+      'restoreTasksAutomaticallyHint':
+          'Восстанавливать задачи из метаданных загрузок при запуске сервера',
       'restoredGalleryCount': 'Восстановлено галерей',
       'restoredArchiveCount': 'Восстановлено архивов',
       'reDownload': 'Скачать снова',

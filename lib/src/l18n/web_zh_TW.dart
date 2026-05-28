@@ -34,6 +34,8 @@ class WebZhTW {
           '預設情況下逐優先級下載畫廊，且每個優先級下只會同時下載一個畫廊',
       'restoreDownloadTasks': '復原下載任務',
       'restoreDownloadTasksHint': '透過下載中繼資料來復原下載記錄',
+      'restoreTasksAutomatically': '自動復原下載任務',
+      'restoreTasksAutomaticallyHint': '伺服器啟動時透過下載中繼資料自動復原任務',
       'restoredGalleryCount': '已復原畫廊',
       'restoredArchiveCount': '已復原封存',
       'reDownload': '重新下載',
