@@ -56,16 +56,21 @@ class AppRouter {
     router.mount('/api/proxy/', ProxyRoutes(ehClient).router.call);
     router.mount('/api/auth/', AuthRoutes(ehClient).router.call);
     router.mount('/api/gallery/', GalleryRoutes(ehClient).router.call);
-    router.mount('/api/download/', DownloadRoutes(galleryDownloadService, archiveDownloadService, config).router.call);
+    router.mount(
+        '/api/download/',
+        DownloadRoutes(galleryDownloadService, archiveDownloadService, config)
+            .router
+            .call);
     router.mount('/api/local/', LocalRoutes(localGalleryService).router.call);
     router.mount('/api/image/', ImageRoutes(config).router.call);
-    router.mount('/api/setting/', SettingRoutes(config).router.call);
+    router.mount('/api/setting/', SettingRoutes(config, ehClient).router.call);
     router.mount('/api/favorite/', FavoriteRoutes(ehClient).router.call);
     router.mount('/api/rating/', RatingRoutes(ehClient).router.call);
     router.mount('/api/history/', HistoryRoutes().router.call);
     router.mount('/api/search-history/', SearchHistoryRoutes().router.call);
     router.mount('/api/comment/', CommentRoutes(ehClient).router.call);
-    router.mount('/api/tag/', TagRoutes(tagTranslationService, ehClient).router.call);
+    router.mount(
+        '/api/tag/', TagRoutes(tagTranslationService, ehClient).router.call);
     router.mount('/api/usertags/', UsertagRoutes(ehClient).router.call);
     router.mount('/api/quick-search/', QuickSearchRoutes().router.call);
     router.mount('/api/block-rule/', BlockRuleRoutes().router.call);

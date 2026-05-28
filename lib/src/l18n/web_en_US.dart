@@ -307,6 +307,14 @@ class WebEnUS {
       'settings.ehSiteSetting': 'Site settings',
       'settings.ehSiteSettingHint':
           'Open the E-Hentai / ExHentai settings page in a new tab',
+      'settings.ehProfile': 'Profile settings',
+      'settings.ehSelectedProfile': 'Selected profile',
+      'settings.ehProfileHint':
+          'Switches the active site profile through the sp cookie, matching the app.',
+      'settings.ehProfileEmpty': 'No profiles found',
+      'settings.ehProfileSaved': 'Profile switched',
+      'settings.ehProfileSaveFailed': 'Failed to switch profile: @error',
+      'settings.ehProfileLoadFailed': 'Failed to load profiles: @error',
       'settings.ehProfileAndQuota': 'Profile, quota, and assets',
       'settings.ehProfileAndQuotaHint':
           'These values still depend on site-page parsing. You can view them from the site settings page for now.',

@@ -304,6 +304,14 @@ class WebRuRU {
       'settings.ehSiteSetting': 'Настройки сайта',
       'settings.ehSiteSettingHint':
           'Открыть страницу настроек E-Hentai / ExHentai в новой вкладке',
+      'settings.ehProfile': 'Profile settings',
+      'settings.ehSelectedProfile': 'Selected profile',
+      'settings.ehProfileHint':
+          'Switches the active site profile through the sp cookie, matching the app.',
+      'settings.ehProfileEmpty': 'No profiles found',
+      'settings.ehProfileSaved': 'Profile switched',
+      'settings.ehProfileSaveFailed': 'Failed to switch profile: @error',
+      'settings.ehProfileLoadFailed': 'Failed to load profiles: @error',
       'settings.ehProfileAndQuota': 'Профиль, квота и активы',
       'settings.ehProfileAndQuotaHint':
           'Эти значения всё ещё зависят от разбора страниц сайта. Пока их можно посмотреть в настройках сайта.',

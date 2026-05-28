@@ -293,6 +293,14 @@ class WebKoKR {
       'settings.ehMyTagsHint': '온라인 관심 및 숨김 태그 관리',
       'settings.ehSiteSetting': '사이트 설정',
       'settings.ehSiteSettingHint': 'E-Hentai / ExHentai 설정 페이지를 새 탭에서 엽니다',
+      'settings.ehProfile': 'Profile settings',
+      'settings.ehSelectedProfile': 'Selected profile',
+      'settings.ehProfileHint':
+          'Switches the active site profile through the sp cookie, matching the app.',
+      'settings.ehProfileEmpty': 'No profiles found',
+      'settings.ehProfileSaved': 'Profile switched',
+      'settings.ehProfileSaveFailed': 'Failed to switch profile: @error',
+      'settings.ehProfileLoadFailed': 'Failed to load profiles: @error',
       'settings.ehProfileAndQuota': '프로필, 할당량 및 자산',
       'settings.ehProfileAndQuotaHint':
           '이 값들은 아직 사이트 페이지 파싱에 의존합니다. 지금은 사이트 설정 페이지에서 확인하세요.',

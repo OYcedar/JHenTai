@@ -30,6 +30,8 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
                   _siteCard(context),
                   const SizedBox(height: 12),
                   _linkCard(context),
+                  const SizedBox(height: 12),
+                  const _EhProfileCard(),
                 ],
               ),
             ),
@@ -61,7 +63,9 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
             const SizedBox(height: 8),
             Obx(() {
               final status = controller.cookieStatus.value;
-              if (status.isEmpty) return const SizedBox.shrink();
+              if (status.isEmpty) {
+                return const SizedBox.shrink();
+              }
               final good = status.contains('igneous') ||
                   status == 'settings.cookieStatusFull'.tr;
               return Row(
@@ -119,6 +123,148 @@ class WebSettingsEhPage extends GetView<WebSettingsController> {
   }
 }
 
+class _EhProfileCard extends StatefulWidget {
+  const _EhProfileCard();
+
+  @override
+  State<_EhProfileCard> createState() => _EhProfileCardState();
+}
+
+class _EhProfileCardState extends State<_EhProfileCard> {
+  bool _loading = true;
+  bool _saving = false;
+  String _error = '';
+  List<Map<String, dynamic>> _profiles = [];
+
+  int? get _selectedProfile {
+    for (final profile in _profiles) {
+      if (profile['selected'] == true) {
+        return (profile['number'] as num?)?.toInt();
+      }
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    if (_loading && _profiles.isNotEmpty) {
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
+    try {
+      _profiles = await backendApiClient.listProfiles();
+    } catch (e) {
+      _error = '$e';
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _select(int profile) async {
+    setState(() => _saving = true);
+    try {
+      await backendApiClient.selectProfile(profile);
+      setState(() {
+        for (final item in _profiles) {
+          item['selected'] = (item['number'] as num?)?.toInt() == profile;
+        }
+      });
+      Get.snackbar('common.success'.tr, 'settings.ehProfileSaved'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.ehProfileSaveFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = _selectedProfile;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'settings.ehProfile'.tr,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'common.refresh'.tr,
+                  icon: const Icon(Icons.refresh),
+                  onPressed: _loading || _saving ? null : _load,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_loading)
+              const LinearProgressIndicator()
+            else if (_error.isNotEmpty)
+              Text(
+                'settings.ehProfileLoadFailed'.trParams({'error': _error}),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              )
+            else if (_profiles.isEmpty)
+              Text('settings.ehProfileEmpty'.tr)
+            else
+              DropdownButtonFormField<int>(
+                initialValue: selected,
+                decoration: InputDecoration(
+                  labelText: 'settings.ehSelectedProfile'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+                items: _profiles
+                    .map((profile) => DropdownMenuItem<int>(
+                          value: (profile['number'] as num?)?.toInt(),
+                          child: Text(profile['name']?.toString() ?? ''),
+                        ))
+                    .toList(),
+                onChanged: _saving
+                    ? null
+                    : (value) {
+                        if (value == null || value == selected) {
+                          return;
+                        }
+                        _select(value);
+                      },
+              ),
+            const SizedBox(height: 8),
+            Text(
+              'settings.ehProfileHint'.tr,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EhStatusTile extends StatefulWidget {
   final WebSettingsController controller;
 
@@ -141,7 +287,9 @@ class _EhStatusTileState extends State<_EhStatusTile> {
   }
 
   Future<void> _load() async {
-    if (_loading) return;
+    if (_loading) {
+      return;
+    }
     setState(() {
       _loading = true;
       _error = '';
@@ -151,12 +299,16 @@ class _EhStatusTileState extends State<_EhStatusTile> {
     } catch (e) {
       _error = '$e';
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   Future<void> _resetLimit() async {
-    if (_resetting) return;
+    if (_resetting) {
+      return;
+    }
     setState(() => _resetting = true);
     try {
       await backendApiClient.resetImageLimit();
@@ -171,7 +323,9 @@ class _EhStatusTileState extends State<_EhStatusTile> {
         backgroundColor: Colors.red.withValues(alpha: 0.7),
       );
     } finally {
-      if (mounted) setState(() => _resetting = false);
+      if (mounted) {
+        setState(() => _resetting = false);
+      }
     }
   }
 

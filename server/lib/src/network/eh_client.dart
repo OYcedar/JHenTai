@@ -1016,6 +1016,13 @@ class EHClient {
 
   String get myTagsUrl => '$baseUrl/mytags';
 
+  String get userConfigUrl => '$baseUrl/uconfig.php';
+
+  Future<String> fetchUserConfigHtml() async {
+    final response = await _dio.get<String>(userConfigUrl);
+    return response.data ?? '';
+  }
+
   Future<String> fetchStatsPageHtml(int gid, String token) async {
     final response = await _dio.get<String>(
       statsPageUrl,

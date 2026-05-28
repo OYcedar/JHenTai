@@ -306,6 +306,14 @@ class WebPtBR {
       'settings.ehSiteSetting': 'Configurações do site',
       'settings.ehSiteSettingHint':
           'Abrir a página de configurações E-Hentai / ExHentai em uma nova aba',
+      'settings.ehProfile': 'Profile settings',
+      'settings.ehSelectedProfile': 'Selected profile',
+      'settings.ehProfileHint':
+          'Switches the active site profile through the sp cookie, matching the app.',
+      'settings.ehProfileEmpty': 'No profiles found',
+      'settings.ehProfileSaved': 'Profile switched',
+      'settings.ehProfileSaveFailed': 'Failed to switch profile: @error',
+      'settings.ehProfileLoadFailed': 'Failed to load profiles: @error',
       'settings.ehProfileAndQuota': 'Perfil, cota e recursos',
       'settings.ehProfileAndQuotaHint':
           'Esses valores ainda dependem da leitura das páginas do site. Por enquanto, veja-os nas configurações do site.',

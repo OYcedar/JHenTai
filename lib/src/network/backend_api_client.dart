@@ -1033,6 +1033,22 @@ class BackendApiClient {
     return response.data;
   }
 
+  Future<List<Map<String, dynamic>>> listProfiles() async {
+    final response = await _dio.get('/api/setting/profiles');
+    final data = response.data;
+    if (data is Map && data['profiles'] is List) {
+      return (data['profiles'] as List)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<void> selectProfile(int profile) async {
+    await _dio.put('/api/setting/profile', data: {'profile': profile});
+  }
+
   Future<void> updateSettings(Map<String, dynamic> settings) async {
     await _dio.put('/api/setting/', data: settings);
   }

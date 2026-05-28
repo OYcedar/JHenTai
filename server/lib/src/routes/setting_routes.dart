@@ -7,18 +7,23 @@ import 'package:path/path.dart' as p;
 
 import '../config/server_config.dart';
 import '../core/database.dart';
+import '../network/eh_client.dart';
+import '../utils/site_setting_page_parser.dart';
 
 class SettingRoutes {
   final ServerConfig _config;
+  final EHClient _client;
   static const _reservedKeys = {'api_token', 'eh_cookies'};
 
-  SettingRoutes(this._config);
+  SettingRoutes(this._config, this._client);
 
   Router get router {
     final router = Router();
 
     router.get('/', _getSettings);
     router.put('/', _updateSettings);
+    router.get('/profiles', _listProfiles);
+    router.put('/profile', _selectProfile);
     router.get('/logs', _listLogs);
     router.get('/logs/<name>', _readLog);
     router.delete('/logs', _clearLogs);
@@ -27,6 +32,39 @@ class SettingRoutes {
     router.delete('/<key>', _deleteSetting);
 
     return router;
+  }
+
+  Future<Response> _listProfiles(Request request) async {
+    try {
+      final html = await _client.fetchUserConfigHtml();
+      return Response.ok(
+        jsonEncode(parseSiteSettingProfiles(html)),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to load profiles: $e'}),
+      );
+    }
+  }
+
+  Future<Response> _selectProfile(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON'}));
+    }
+    final profile = (body['profile'] as num?)?.toInt();
+    if (profile == null) {
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Missing profile'}));
+    }
+    await _client.cookieManager.storeCookies([Cookie('sp', '$profile')]);
+    return Response.ok(
+      jsonEncode({'success': true}),
+      headers: {'Content-Type': 'application/json'},
+    );
   }
 
   Directory get _logDir => Directory(_config.logDir);
