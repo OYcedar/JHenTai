@@ -71,10 +71,15 @@ class WebHomeController extends GetxController {
   final searchInTags = true.obs;
   final searchInDesc = false.obs;
   final showExpunged = false.obs;
+  final onlyShowGalleriesWithTorrents = false.obs;
+  final pageAtLeast = RxnInt();
+  final pageAtMost = RxnInt();
 
   /// EH `language:"..."` tag keys (same as native [SearchConfig.language]), excluding `japanese` from picker.
   final filterLanguage = Rxn<String>();
   final disableFilterForLanguage = false.obs;
+  final disableFilterForUploader = false.obs;
+  final disableFilterForTags = false.obs;
 
   static final List<String> searchLanguageKeys = LocaleConsts
       .language2Abbreviation.keys
@@ -166,10 +171,17 @@ class WebHomeController extends GetxController {
       searchInTags.value = m['searchInTags'] as bool? ?? true;
       searchInDesc.value = m['searchInDesc'] as bool? ?? false;
       showExpunged.value = m['showExpunged'] as bool? ?? false;
+      onlyShowGalleriesWithTorrents.value =
+          m['onlyShowGalleriesWithTorrents'] as bool? ?? false;
+      pageAtLeast.value = (m['pageAtLeast'] as num?)?.toInt();
+      pageAtMost.value = (m['pageAtMost'] as num?)?.toInt();
       final lang = m['filterLanguage'] as String?;
       filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
       disableFilterForLanguage.value =
           m['disableFilterForLanguage'] as bool? ?? false;
+      disableFilterForUploader.value =
+          m['disableFilterForUploader'] as bool? ?? false;
+      disableFilterForTags.value = m['disableFilterForTags'] as bool? ?? false;
     } catch (_) {}
   }
 
@@ -184,8 +196,13 @@ class WebHomeController extends GetxController {
         'searchInTags': searchInTags.value,
         'searchInDesc': searchInDesc.value,
         'showExpunged': showExpunged.value,
+        'onlyShowGalleriesWithTorrents': onlyShowGalleriesWithTorrents.value,
+        'pageAtLeast': pageAtLeast.value,
+        'pageAtMost': pageAtMost.value,
         'filterLanguage': filterLanguage.value,
         'disableFilterForLanguage': disableFilterForLanguage.value,
+        'disableFilterForUploader': disableFilterForUploader.value,
+        'disableFilterForTags': disableFilterForTags.value,
       }),
     );
   }
@@ -618,16 +635,36 @@ class WebHomeController extends GetxController {
       params['f_srdd'] = minimumRating.value.toString();
       hasAdvanced = true;
     }
+    if (onlyShowGalleriesWithTorrents.value) {
+      params['f_sto'] = 'on';
+      hasAdvanced = true;
+    }
+    final minPages = pageAtLeast.value;
+    final maxPages = pageAtMost.value;
+    if (minPages != null && minPages > 0) {
+      params['f_spf'] = minPages.toString();
+      hasAdvanced = true;
+    }
+    if (maxPages != null &&
+        maxPages > 0 &&
+        (minPages == null || maxPages >= minPages)) {
+      params['f_spt'] = maxPages.toString();
+      hasAdvanced = true;
+    }
     if (hasAdvanced ||
         !searchInName.value ||
         !searchInTags.value ||
         searchInDesc.value ||
-        showExpunged.value) {
+        showExpunged.value ||
+        disableFilterForUploader.value ||
+        disableFilterForTags.value) {
       params['advsearch'] = '1';
       if (searchInName.value) params['f_sname'] = 'on';
       if (searchInTags.value) params['f_stags'] = 'on';
       if (searchInDesc.value) params['f_sdesc'] = 'on';
       if (showExpunged.value) params['f_sh'] = 'on';
+      if (disableFilterForUploader.value) params['f_sfu'] = 'on';
+      if (disableFilterForTags.value) params['f_sft'] = 'on';
     }
     if (disableFilterForLanguage.value) {
       params['f_sfl'] = 'on';
@@ -845,8 +882,13 @@ class WebHomeController extends GetxController {
       'searchInTags': searchInTags.value,
       'searchInDesc': searchInDesc.value,
       'showExpunged': showExpunged.value,
+      'onlyShowGalleriesWithTorrents': onlyShowGalleriesWithTorrents.value,
+      'pageAtLeast': pageAtLeast.value,
+      'pageAtMost': pageAtMost.value,
       'filterLanguage': filterLanguage.value,
       'disableFilterForLanguage': disableFilterForLanguage.value,
+      'disableFilterForUploader': disableFilterForUploader.value,
+      'disableFilterForTags': disableFilterForTags.value,
     });
     await backendApiClient.saveQuickSearch(name, config);
     loadQuickSearches();
@@ -867,10 +909,18 @@ class WebHomeController extends GetxController {
       searchInTags.value = config['searchInTags'] as bool? ?? true;
       searchInDesc.value = config['searchInDesc'] as bool? ?? false;
       showExpunged.value = config['showExpunged'] as bool? ?? false;
+      onlyShowGalleriesWithTorrents.value =
+          config['onlyShowGalleriesWithTorrents'] as bool? ?? false;
+      pageAtLeast.value = (config['pageAtLeast'] as num?)?.toInt();
+      pageAtMost.value = (config['pageAtMost'] as num?)?.toInt();
       final lang = config['filterLanguage'] as String?;
       filterLanguage.value = (lang != null && lang.isNotEmpty) ? lang : null;
       disableFilterForLanguage.value =
           config['disableFilterForLanguage'] as bool? ?? false;
+      disableFilterForUploader.value =
+          config['disableFilterForUploader'] as bool? ?? false;
+      disableFilterForTags.value =
+          config['disableFilterForTags'] as bool? ?? false;
       currentPage.value = 0;
       _clearPaginationCursors();
       currentSection.value = 'home';
@@ -2032,9 +2082,68 @@ class _HomeDrawer extends StatelessWidget {
   }
 }
 
-class _AdvancedSearchSheet extends StatelessWidget {
+class _AdvancedSearchSheet extends StatefulWidget {
   final WebHomeController controller;
   const _AdvancedSearchSheet({required this.controller});
+
+  @override
+  State<_AdvancedSearchSheet> createState() => _AdvancedSearchSheetState();
+}
+
+class _AdvancedSearchSheetState extends State<_AdvancedSearchSheet> {
+  late final TextEditingController _pageAtLeastCtrl;
+  late final TextEditingController _pageAtMostCtrl;
+
+  WebHomeController get controller => widget.controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageAtLeastCtrl = TextEditingController(
+      text: controller.pageAtLeast.value?.toString() ?? '',
+    );
+    _pageAtMostCtrl = TextEditingController(
+      text: controller.pageAtMost.value?.toString() ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageAtLeastCtrl.dispose();
+    _pageAtMostCtrl.dispose();
+    super.dispose();
+  }
+
+  void _setPageAtLeast(String value) {
+    final n = int.tryParse(value.trim());
+    controller.pageAtLeast.value = n != null && n > 0 ? n : null;
+    controller.persistAdvancedSearchSettings();
+  }
+
+  void _setPageAtMost(String value) {
+    final n = int.tryParse(value.trim());
+    controller.pageAtMost.value = n != null && n > 0 ? n : null;
+    controller.persistAdvancedSearchSettings();
+  }
+
+  void _resetFilters() {
+    controller.categoryFilter.value = 0;
+    controller.minimumRating.value = 0;
+    controller.searchInName.value = true;
+    controller.searchInTags.value = true;
+    controller.searchInDesc.value = false;
+    controller.showExpunged.value = false;
+    controller.onlyShowGalleriesWithTorrents.value = false;
+    controller.pageAtLeast.value = null;
+    controller.pageAtMost.value = null;
+    _pageAtLeastCtrl.clear();
+    _pageAtMostCtrl.clear();
+    controller.filterLanguage.value = null;
+    controller.disableFilterForLanguage.value = false;
+    controller.disableFilterForUploader.value = false;
+    controller.disableFilterForTags.value = false;
+    controller.persistAdvancedSearchSettings();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2128,6 +2237,24 @@ class _AdvancedSearchSheet extends StatelessWidget {
                     },
                     contentPadding: EdgeInsets.zero,
                   )),
+              Obx(() => SwitchListTile(
+                    title: Text('home.disableFilterForUploader'.tr),
+                    value: controller.disableFilterForUploader.value,
+                    onChanged: (v) {
+                      controller.disableFilterForUploader.value = v;
+                      controller.persistAdvancedSearchSettings();
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('home.disableFilterForTags'.tr),
+                    value: controller.disableFilterForTags.value,
+                    onChanged: (v) {
+                      controller.disableFilterForTags.value = v;
+                      controller.persistAdvancedSearchSettings();
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
               const SizedBox(height: 20),
               Text('home.minimumRating'.tr,
                   style: Theme.of(context).textTheme.titleMedium),
@@ -2160,6 +2287,39 @@ class _AdvancedSearchSheet extends StatelessWidget {
                       ),
                     ],
                   )),
+              const SizedBox(height: 16),
+              Text('home.pageRange'.tr,
+                  style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _pageAtLeastCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'home.pageAtLeast'.tr,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: _setPageAtLeast,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _pageAtMostCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'home.pageAtMost'.tr,
+                        border: const OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onChanged: _setPageAtMost,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               Text('home.searchIn'.tr,
                   style: Theme.of(context).textTheme.titleMedium),
@@ -2202,6 +2362,16 @@ class _AdvancedSearchSheet extends StatelessWidget {
                         },
                         dense: true,
                       ),
+                      CheckboxListTile(
+                        title: Text('home.onlyShowGalleriesWithTorrents'.tr),
+                        value: controller.onlyShowGalleriesWithTorrents.value,
+                        onChanged: (v) {
+                          controller.onlyShowGalleriesWithTorrents.value =
+                              v ?? false;
+                          controller.persistAdvancedSearchSettings();
+                        },
+                        dense: true,
+                      ),
                     ],
                   )),
               const SizedBox(height: 16),
@@ -2209,17 +2379,7 @@ class _AdvancedSearchSheet extends StatelessWidget {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        controller.categoryFilter.value = 0;
-                        controller.minimumRating.value = 0;
-                        controller.searchInName.value = true;
-                        controller.searchInTags.value = true;
-                        controller.searchInDesc.value = false;
-                        controller.showExpunged.value = false;
-                        controller.filterLanguage.value = null;
-                        controller.disableFilterForLanguage.value = false;
-                        controller.persistAdvancedSearchSettings();
-                      },
+                      onPressed: _resetFilters,
                       child: Text('common.reset'.tr),
                     ),
                   ),

@@ -71,8 +71,13 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
       'searchInTags': true,
       'searchInDesc': false,
       'showExpunged': false,
+      'onlyShowGalleriesWithTorrents': false,
+      'pageAtLeast': null,
+      'pageAtMost': null,
       'filterLanguage': null,
       'disableFilterForLanguage': false,
+      'disableFilterForUploader': false,
+      'disableFilterForTags': false,
     });
     try {
       final nextOrder = _items.length;
@@ -105,8 +110,13 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
       'searchInTags': true,
       'searchInDesc': false,
       'showExpunged': false,
+      'onlyShowGalleriesWithTorrents': false,
+      'pageAtLeast': null,
+      'pageAtMost': null,
       'filterLanguage': null,
       'disableFilterForLanguage': false,
+      'disableFilterForUploader': false,
+      'disableFilterForTags': false,
     };
   }
 

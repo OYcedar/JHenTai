@@ -542,8 +542,13 @@ class GalleryRoutes {
         'advsearch',
         'f_srdd',
         'f_sr',
+        'f_sto',
+        'f_spf',
+        'f_spt',
         // Align with native [SearchConfig]: disable language filter on index search.
         'f_sfl',
+        'f_sfu',
+        'f_sft',
       ]) {
         final val = request.url.queryParameters[key];
         if (val != null && val.isNotEmpty) queryParams[key] = val;
