@@ -2719,6 +2719,7 @@ class _CommentCard extends StatelessWidget {
             _LinkedCommentBody(
               body: body,
               maxLines: compact ? 4 : 100,
+              showImages: !compact,
             ),
           ],
         ),
@@ -2750,17 +2751,20 @@ class _CommentCard extends StatelessWidget {
 class _CommentTextRun {
   final String text;
   final String? url;
+  final bool image;
 
-  const _CommentTextRun(this.text, {this.url});
+  const _CommentTextRun(this.text, {this.url, this.image = false});
 }
 
 class _LinkedCommentBody extends StatefulWidget {
   final String body;
   final int maxLines;
+  final bool showImages;
 
   const _LinkedCommentBody({
     required this.body,
     required this.maxLines,
+    this.showImages = false,
   });
 
   @override
@@ -2795,8 +2799,37 @@ class _LinkedCommentBodyState extends State<_LinkedCommentBody> {
 
     final spans = <InlineSpan>[];
     for (final run in _parseCommentRuns(widget.body)) {
-      if (run.text.isEmpty) continue;
+      if (run.text.isEmpty && !run.image) continue;
       final url = run.url;
+      if (run.image && widget.showImages && url != null && url.isNotEmpty) {
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: ConstrainedBox(
+                constraints:
+                    const BoxConstraints(maxWidth: 360, maxHeight: 260),
+                child: WebProxiedImage(
+                  sourceUrl: url,
+                  fit: BoxFit.contain,
+                  readerErrorChild: Container(
+                    width: 160,
+                    height: 90,
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ));
+        spans.add(const TextSpan(text: '\n'));
+        continue;
+      }
       if (url == null || url.isEmpty) {
         spans.add(TextSpan(text: run.text, style: style));
         continue;
@@ -2853,7 +2886,9 @@ List<_CommentTextRun> _parseCommentRuns(String body) {
     }
     if (tag == 'img') {
       final src = node.attributes['src'] ?? '';
-      addText('[${'image'.tr}]', url: src);
+      if (src.isEmpty) return;
+      runs.add(_CommentTextRun('[${'image'.tr}]',
+          url: _normalizeCommentUrl(src), image: true));
       return;
     }
     for (final child in node.nodes) {
