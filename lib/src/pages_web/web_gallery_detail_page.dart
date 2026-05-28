@@ -12,6 +12,7 @@ import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:web/web.dart' as web;
@@ -1141,8 +1142,10 @@ class WebGalleryDetailPage extends StatelessWidget {
                 _buildActionButtons(context),
                 const SizedBox(height: 24),
                 _buildTags(context),
-                const SizedBox(height: 24),
-                _buildComments(context),
+                if (WebPreferenceSettings.showComments) ...[
+                  const SizedBox(height: 24),
+                  _buildComments(context),
+                ],
                 const SizedBox(height: 24),
                 _buildThumbnails(context),
               ],
@@ -1251,15 +1254,20 @@ class WebGalleryDetailPage extends StatelessWidget {
                 .textTheme
                 .titleLarge
                 ?.copyWith(fontWeight: FontWeight.bold))),
-        if (controller.titleJpn.isNotEmpty)
-          Obx(() => Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(controller.titleJpn.value,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: Colors.grey)),
-              )),
+        Obx(() {
+          final titleJpn = controller.titleJpn.value.trim();
+          if (!WebPreferenceSettings.showAllGalleryTitles || titleJpn.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(titleJpn,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyLarge
+                    ?.copyWith(color: Colors.grey)),
+          );
+        }),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -1843,6 +1851,7 @@ class WebGalleryDetailPage extends StatelessWidget {
       final accountWatchedBg = Get.find<WebWatchedTagStylesController>()
           .backgroundArgbByTagKey
           .value;
+      final showVoteStatus = WebPreferenceSettings.showGalleryTagVoteStatus;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1894,8 +1903,9 @@ class WebGalleryDetailPage extends StatelessWidget {
                         final html =
                             controller.tagHtmlStyleArgb(entry.key, tag);
                         final rich = controller.tagRichMeta(entry.key, tag);
-                        final voteStatus =
-                            rich?['voteStatus'] as String? ?? 'none';
+                        final voteStatus = showVoteStatus
+                            ? (rich?['voteStatus'] as String? ?? 'none')
+                            : 'none';
                         final htmlBg = html?.backgroundArgb;
                         final htmlFg = html?.colorArgb;
                         final watchedBgArgb =
@@ -2261,6 +2271,7 @@ class WebGalleryDetailPage extends StatelessWidget {
     return Obx(() {
       final disableCommentVotes =
           controller.comments.any((comment) => comment['fromMe'] == true);
+      final showAllInline = WebPreferenceSettings.showAllComments;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2275,7 +2286,7 @@ class WebGalleryDetailPage extends StatelessWidget {
                         .titleMedium
                         ?.copyWith(fontWeight: FontWeight.bold)),
               ),
-              if (controller.comments.isNotEmpty)
+              if (controller.comments.isNotEmpty && !showAllInline)
                 TextButton(
                   onPressed: () => _showAllComments(context),
                   child: Text('detail.allComments'.tr),
@@ -2291,6 +2302,23 @@ class WebGalleryDetailPage extends StatelessWidget {
               child: Center(
                   child: Text('comment.placeholder'.tr,
                       style: const TextStyle(color: Colors.grey))),
+            )
+          else if (showAllInline)
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: controller.comments.length,
+              itemBuilder: (ctx, i) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _CommentCard(
+                  comment: controller.comments[i],
+                  onVote: (id, vote) => controller.voteComment(id, vote),
+                  disableVoting: disableCommentVotes,
+                  onBlockUser: (comment) =>
+                      _confirmBlockCommentUser(context, comment),
+                  onEdit: (comment) => _showEditCommentDialog(context, comment),
+                ),
+              ),
             )
           else
             SizedBox(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsPreferencePage extends StatelessWidget {
@@ -21,6 +22,7 @@ class WebSettingsPreferencePage extends StatelessWidget {
             onTap: () => Get.to(() => const _WebLanguageSubPage()),
           ),
           const _WebDefaultSectionTile(),
+          const _WebGalleryDisplaySection(),
           ListTile(
             leading: const Icon(Icons.translate),
             title: Text('tagTranslation.title'.tr),
@@ -49,6 +51,87 @@ class WebSettingsPreferencePage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WebGalleryDisplaySection extends StatefulWidget {
+  const _WebGalleryDisplaySection();
+
+  @override
+  State<_WebGalleryDisplaySection> createState() =>
+      _WebGalleryDisplaySectionState();
+}
+
+class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
+  late bool showAllGalleryTitles;
+  late bool showGalleryTagVoteStatus;
+  late bool showComments;
+  late bool showAllComments;
+
+  @override
+  void initState() {
+    super.initState();
+    showAllGalleryTitles = WebPreferenceSettings.showAllGalleryTitles;
+    showGalleryTagVoteStatus = WebPreferenceSettings.showGalleryTagVoteStatus;
+    showComments = WebPreferenceSettings.showComments;
+    showAllComments = WebPreferenceSettings.showAllComments;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: const Icon(Icons.title),
+          title: Text('showAllGalleryTitles'.tr),
+          subtitle: Text('showAllGalleryTitlesHint'.tr),
+          value: showAllGalleryTitles,
+          onChanged: (value) {
+            setState(() => showAllGalleryTitles = value);
+            WebPreferenceSettings.saveShowAllGalleryTitles(value);
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.how_to_vote_outlined),
+          title: Text('showGalleryTagVoteStatus'.tr),
+          subtitle: Text('showGalleryTagVoteStatusHint'.tr),
+          value: showGalleryTagVoteStatus,
+          onChanged: (value) {
+            setState(() => showGalleryTagVoteStatus = value);
+            WebPreferenceSettings.saveShowGalleryTagVoteStatus(value);
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.comment_outlined),
+          title: Text('showComments'.tr),
+          value: showComments,
+          onChanged: (value) {
+            setState(() {
+              showComments = value;
+              if (!value) {
+                showAllComments = false;
+              }
+            });
+            WebPreferenceSettings.saveShowComments(value);
+            if (!value) {
+              WebPreferenceSettings.saveShowAllComments(false);
+            }
+          },
+        ),
+        if (showComments)
+          SwitchListTile(
+            secondary: const Icon(Icons.forum_outlined),
+            title: Text('showAllComments'.tr),
+            subtitle: Text('showAllCommentsHint'.tr),
+            value: showAllComments,
+            onChanged: (value) {
+              setState(() => showAllComments = value);
+              WebPreferenceSettings.saveShowAllComments(value);
+            },
+          ),
+        const Divider(height: 1),
+      ],
     );
   }
 }
