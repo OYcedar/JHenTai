@@ -419,6 +419,11 @@ class WebPtBR {
           'Ative o modo sem imagens, revise caminhos Docker e gerencie logs do servidor.',
       'settings.advancedWebIntro':
           'Controle o carregamento de imagens, logs do servidor e caminhos Docker desta instância web.',
+      'settings.exportData': 'Exportar dados',
+      'settings.exportDataHint':
+          'Baixe configurações, regras de bloqueio, histórico, histórico de busca e buscas rápidas como JSON. Tokens e cookies são excluídos.',
+      'settings.exportDataSuccess': 'Exportação de dados baixada',
+      'settings.exportDataFailed': 'Falha ao exportar dados: @error',
       'settings.noImageMode': 'Modo sem imagens',
       'settings.noImageModeHint':
           'Oculta capas, miniaturas e imagens do leitor neste navegador.',

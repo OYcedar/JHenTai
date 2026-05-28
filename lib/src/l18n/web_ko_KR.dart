@@ -395,6 +395,11 @@ class WebKoKR {
       'settings.advancedWebSummary': '이미지 없음 모드를 켜고 Docker 경로와 서버 로그를 관리합니다.',
       'settings.advancedWebIntro':
           '이 웹 인스턴스의 이미지 로드, 서버 로그, Docker 경로 정보를 관리합니다.',
+      'settings.exportData': '데이터 내보내기',
+      'settings.exportDataHint':
+          '설정, 차단 규칙, 열람 기록, 검색 기록, 빠른 검색을 JSON으로 다운로드합니다. 토큰과 쿠키는 제외됩니다.',
+      'settings.exportDataSuccess': '데이터 내보내기를 다운로드했습니다',
+      'settings.exportDataFailed': '데이터 내보내기 실패: @error',
       'settings.noImageMode': '이미지 없음 모드',
       'settings.noImageModeHint': '이 브라우저에서 갤러리 표지, 썸네일, 리더 이미지를 숨깁니다.',
       'settings.pageCache': '페이지 캐시',

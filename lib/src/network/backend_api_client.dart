@@ -1160,6 +1160,11 @@ class BackendApiClient {
     await _dio.delete('/api/setting/cache/page');
   }
 
+  Future<Map<String, dynamic>> exportUserData() async {
+    final response = await _dio.get('/api/setting/export');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   // --- Health ---
 
   Future<Map<String, dynamic>> health() async {

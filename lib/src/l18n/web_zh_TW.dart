@@ -381,6 +381,11 @@ class WebZhTW {
       'settings.performanceSaved': '效能設定已儲存',
       'settings.advancedWebSummary': '啟用無圖模式，檢視 Docker 路徑資訊並管理伺服器日誌。',
       'settings.advancedWebIntro': '管理目前 Web 實例的圖片載入、伺服器日誌與 Docker 路徑資訊。',
+      'settings.exportData': '匯出資料',
+      'settings.exportDataHint':
+          '將設定、屏蔽規則、瀏覽歷史、搜尋歷史和快速搜尋匯出為 JSON，不包含 Token 和 Cookie。',
+      'settings.exportDataSuccess': '資料匯出已下載',
+      'settings.exportDataFailed': '匯出資料失敗：@error',
       'settings.noImageMode': '無圖模式',
       'settings.noImageModeHint': '在目前瀏覽器隱藏畫廊封面、縮圖和閱讀器圖片。',
       'settings.pageCache': '頁面快取',

@@ -381,6 +381,11 @@ class WebZhCN {
       'settings.performanceSaved': '性能设置已保存',
       'settings.advancedWebSummary': '开启无图模式，查看 Docker 路径信息并管理服务器日志。',
       'settings.advancedWebIntro': '管理当前 Web 实例的图片加载、服务器日志与 Docker 路径信息。',
+      'settings.exportData': '导出数据',
+      'settings.exportDataHint':
+          '将设置、屏蔽规则、浏览历史、搜索历史和快速搜索导出为 JSON，不包含 Token 和 Cookie。',
+      'settings.exportDataSuccess': '数据导出已下载',
+      'settings.exportDataFailed': '导出数据失败：@error',
       'settings.noImageMode': '无图模式',
       'settings.noImageModeHint': '在当前浏览器隐藏画廊封面、缩略图和阅读器图片。',
       'settings.pageCache': '页面缓存',

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:path/path.dart' as p;
+import 'package:sqlite3/sqlite3.dart';
 
 import '../config/server_config.dart';
 import '../core/database.dart';
@@ -24,6 +25,7 @@ class SettingRoutes {
     router.put('/', _updateSettings);
     router.get('/profiles', _listProfiles);
     router.put('/profile', _selectProfile);
+    router.get('/export', _exportData);
     router.get('/cache/page', _getPageCache);
     router.delete('/cache/page', _clearPageCache);
     router.get('/logs', _listLogs);
@@ -242,6 +244,61 @@ class SettingRoutes {
     );
   }
 
+  Future<Response> _exportData(Request request) async {
+    List<Map<String, dynamic>> rows(String sql) =>
+        db.raw.select(sql).map(_rowToMap).toList();
+
+    final configRows = db.raw
+        .select(
+          '''
+          SELECT key, sub_key, value, utime
+          FROM config
+          WHERE key NOT IN (${List.filled(_reservedKeys.length, '?').join(',')})
+          ORDER BY key ASC, sub_key ASC
+        ''',
+          _reservedKeys.toList(),
+        )
+        .map(_rowToMap)
+        .toList();
+
+    final data = {
+      'format': 'jhentai-web-export-v1',
+      'exportedAt': DateTime.now().toUtc().toIso8601String(),
+      'sections': {
+        'config': configRows,
+        'blockRules': rows('SELECT * FROM block_rule ORDER BY id ASC'),
+        'history': rows('SELECT * FROM history ORDER BY visit_time DESC'),
+        'searchHistory':
+            rows('SELECT * FROM search_history ORDER BY last_used DESC'),
+        'quickSearch':
+            rows('SELECT * FROM quick_search ORDER BY sort_order ASC'),
+      },
+      'counts': {
+        'config': configRows.length,
+        'blockRules': db.raw
+            .select('SELECT COUNT(*) AS count FROM block_rule')
+            .first['count'],
+        'history': db.raw
+            .select('SELECT COUNT(*) AS count FROM history')
+            .first['count'],
+        'searchHistory': db.raw
+            .select('SELECT COUNT(*) AS count FROM search_history')
+            .first['count'],
+        'quickSearch': db.raw
+            .select('SELECT COUNT(*) AS count FROM quick_search')
+            .first['count'],
+      },
+    };
+
+    return Response.ok(
+      const JsonEncoder.withIndent('  ').convert(data),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="jhentai-web-export.json"',
+      },
+    );
+  }
+
   Future<Response> _getSettings(Request request) async {
     final settingKeys = [
       'EHSetting',
@@ -362,5 +419,13 @@ class SettingRoutes {
       jsonEncode({'success': true}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Map<String, dynamic> _rowToMap(Row row) {
+    final map = <String, dynamic>{};
+    for (final key in row.keys) {
+      map[key] = row[key];
+    }
+    return map;
   }
 }

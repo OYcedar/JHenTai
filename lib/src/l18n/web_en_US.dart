@@ -418,6 +418,11 @@ class WebEnUS {
           'Enable no-image mode, review Docker paths, and manage server logs.',
       'settings.advancedWebIntro':
           'Control image loading, server logs, and Docker path information for this web instance.',
+      'settings.exportData': 'Export data',
+      'settings.exportDataHint':
+          'Download settings, block rules, history, search history, and quick searches as JSON. Tokens and cookies are excluded.',
+      'settings.exportDataSuccess': 'Data export downloaded',
+      'settings.exportDataFailed': 'Failed to export data: @error',
       'settings.noImageMode': 'No image mode',
       'settings.noImageModeHint':
           'Hide gallery covers, thumbnails, and reader images in this browser.',

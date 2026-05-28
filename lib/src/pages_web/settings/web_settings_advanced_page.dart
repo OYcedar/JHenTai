@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:js_interop';
@@ -24,6 +25,7 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
   String? pageCacheError;
   int pageCacheSize = 0;
   int pageCacheCount = 0;
+  bool exportingData = false;
 
   @override
   void initState() {
@@ -145,6 +147,34 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
     }
   }
 
+  Future<void> _exportData() async {
+    setState(() => exportingData = true);
+    try {
+      final data = await backendApiClient.exportUserData();
+      final json = const JsonEncoder.withIndent('  ').convert(data);
+      final now = DateTime.now().toLocal();
+      String two(int n) => n.toString().padLeft(2, '0');
+      final fileName = 'jhentai-web-export-${now.year}${two(now.month)}'
+          '${two(now.day)}-${two(now.hour)}${two(now.minute)}${two(now.second)}.json';
+      _downloadTextFile(fileName, json, mimeType: 'application/json');
+      Get.snackbar(
+        'common.success'.tr,
+        'settings.exportDataSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.exportDataFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => exportingData = false);
+      }
+    }
+  }
+
   Future<void> _openLog(Map<String, dynamic> item) async {
     final name = item['name']?.toString() ?? '';
     if (name.isEmpty) {
@@ -199,6 +229,21 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
                 subtitle: Text('settings.noImageModeHint'.tr),
                 value: controller.noImageMode.value,
                 onChanged: controller.setNoImageMode,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.file_download_outlined),
+                title: Text('settings.exportData'.tr),
+                subtitle: Text('settings.exportDataHint'.tr),
+                trailing: exportingData
+                    ? const SizedBox.square(
+                        dimension: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_outlined),
+                onTap: exportingData ? null : _exportData,
               ),
             ),
             const SizedBox(height: 24),
@@ -416,6 +461,24 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
   }
 }
 
+void _downloadTextFile(
+  String name,
+  String content, {
+  String mimeType = 'text/plain',
+}) {
+  final blob =
+      web.Blob([content.toJS].toJS, web.BlobPropertyBag(type: mimeType));
+  final objectUrl = web.URL.createObjectURL(blob);
+  final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+  anchor.href = objectUrl;
+  anchor.download = name;
+  anchor.style.display = 'none';
+  web.document.body?.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  web.URL.revokeObjectURL(objectUrl);
+}
+
 class _WebLogPage extends StatelessWidget {
   const _WebLogPage({required this.name, required this.content});
 
@@ -435,16 +498,7 @@ class _WebLogPage extends StatelessWidget {
     if (content.isEmpty) {
       return;
     }
-    final blob = web.Blob([content.toJS].toJS);
-    final objectUrl = web.URL.createObjectURL(blob);
-    final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
-    anchor.href = objectUrl;
-    anchor.download = name;
-    anchor.style.display = 'none';
-    web.document.body?.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    web.URL.revokeObjectURL(objectUrl);
+    _downloadTextFile(name, content);
   }
 
   @override
