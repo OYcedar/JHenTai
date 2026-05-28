@@ -617,8 +617,12 @@ class WebZhCN {
       'usertags.tagHint': '格式 namespace:key',
       'usertags.watch': '关注',
       'usertags.hidden': '隐藏',
+      'usertags.none': '未标记',
+      'usertags.weight': '权重',
+      'usertags.editTitle': '编辑标签',
       'usertags.delete': '删除',
       'usertags.added': '已添加',
+      'usertags.updated': '已更新',
       'usertags.deleted': '已删除',
       'usertags.currentList': '已配置标签',
 

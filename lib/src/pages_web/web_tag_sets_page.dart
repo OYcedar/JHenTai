@@ -57,7 +57,9 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
 
   Future<void> _add() async {
     final t = _tagCtrl.text.trim();
-    if (t.isEmpty) return;
+    if (t.isEmpty) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       await backendApiClient.addUsertag(
@@ -67,30 +69,170 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
         hidden: _hidden,
       );
       _tagCtrl.clear();
-      Get.snackbar('common.success'.tr, 'usertags.added'.tr, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('common.success'.tr, 'usertags.added'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       unawaited(Get.find<WebWatchedTagStylesController>().refresh());
       await _load();
     } catch (e) {
-      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM,
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withValues(alpha: 0.7));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
   Future<void> _delete(int watchedTagId) async {
     setState(() => _busy = true);
     try {
-      await backendApiClient.deleteUsertag(watchedTagId: watchedTagId, tagSetNo: _tagSetNo);
-      Get.snackbar('common.success'.tr, 'usertags.deleted'.tr, snackPosition: SnackPosition.BOTTOM);
+      await backendApiClient.deleteUsertag(
+          watchedTagId: watchedTagId, tagSetNo: _tagSetNo);
+      Get.snackbar('common.success'.tr, 'usertags.deleted'.tr,
+          snackPosition: SnackPosition.BOTTOM);
       unawaited(Get.find<WebWatchedTagStylesController>().refresh());
       await _load();
     } catch (e) {
-      Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM,
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.withValues(alpha: 0.7));
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
+  }
+
+  Future<void> _updateTag({
+    required int tagId,
+    required String apikey,
+    required String status,
+    required int weight,
+    required String tagColor,
+  }) async {
+    setState(() => _busy = true);
+    try {
+      await backendApiClient.updateUsertag(
+        tagId: tagId,
+        apikey: apikey,
+        watch: status == 'watch',
+        hidden: status == 'hidden',
+        weight: weight,
+        tagColor: tagColor,
+      );
+      Get.snackbar('common.success'.tr, 'usertags.updated'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+      await _load();
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  void _searchTag(String label) {
+    if (label.trim().isEmpty) {
+      return;
+    }
+    Get.offAllNamed('/web/home', arguments: {'search': label});
+  }
+
+  Future<void> _showEditDialog(Map<String, dynamic> tag) async {
+    final apikey = _data?['apikey']?.toString() ?? '';
+    final id = (tag['tagId'] as num?)?.toInt() ?? 0;
+    if (apikey.isEmpty || id == 0) {
+      Get.snackbar('common.error'.tr, 'common.unknown'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    final weightCtrl = TextEditingController(
+      text: ((tag['weight'] as num?)?.toInt() ?? 10).toString(),
+    );
+    final initialStatus = tag['hidden'] == true
+        ? 'hidden'
+        : tag['watched'] == true
+            ? 'watch'
+            : 'none';
+    var status = initialStatus;
+    final tagColor = tag['tagColor']?.toString() ?? '';
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('usertags.editTitle'.tr),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SegmentedButton<String>(
+                    segments: [
+                      ButtonSegment(
+                        value: 'watch',
+                        icon: const Icon(Icons.favorite_outline),
+                        label: Text('usertags.watch'.tr),
+                      ),
+                      ButtonSegment(
+                        value: 'hidden',
+                        icon: const Icon(Icons.visibility_off_outlined),
+                        label: Text('usertags.hidden'.tr),
+                      ),
+                      ButtonSegment(
+                        value: 'none',
+                        icon: const Icon(Icons.remove_circle_outline),
+                        label: Text('usertags.none'.tr),
+                      ),
+                    ],
+                    selected: {status},
+                    onSelectionChanged: (values) {
+                      setDialogState(() => status = values.first);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: weightCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'usertags.weight'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.save'.tr),
+          ),
+        ],
+      ),
+    );
+    final rawWeight = weightCtrl.text.trim();
+    weightCtrl.dispose();
+    if (result != true) {
+      return;
+    }
+    final weight = int.tryParse(rawWeight) ?? 10;
+    await _updateTag(
+      tagId: id,
+      apikey: apikey,
+      status: status,
+      weight: weight.clamp(-99, 99).toInt(),
+      tagColor: tagColor,
+    );
   }
 
   @override
@@ -99,28 +241,33 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
       appBar: AppBar(
         title: Text('usertags.title'.tr),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _busy ? null : _load),
+          IconButton(
+              icon: const Icon(Icons.refresh), onPressed: _busy ? null : _load),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!)))
+              ? Center(
+                  child: Padding(
+                      padding: const EdgeInsets.all(24), child: Text(_error!)))
               : _buildBody(context),
     );
   }
 
   Widget _buildBody(BuildContext context) {
     final tags = (_data!['tags'] as List?)?.cast<Map<String, dynamic>>() ?? [];
-    final sets = (_data!['tagSets'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final sets =
+        (_data!['tagSets'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         if (sets.length > 1)
           DropdownButtonFormField<int>(
-            value: _tagSetNo,
-            decoration: InputDecoration(labelText: 'Tag set', border: const OutlineInputBorder()),
+            initialValue: _tagSetNo,
+            decoration: const InputDecoration(
+                labelText: 'Tag set', border: OutlineInputBorder()),
             items: sets
                 .map((s) => DropdownMenuItem<int>(
                       value: (s['number'] as num?)?.toInt() ?? 1,
@@ -130,7 +277,9 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
             onChanged: _busy
                 ? null
                 : (v) {
-                    if (v == null) return;
+                    if (v == null) {
+                      return;
+                    }
                     setState(() => _tagSetNo = v);
                     _load();
                   },
@@ -161,14 +310,17 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
               onSelected: _busy ? null : (v) => setState(() => _hidden = v),
             ),
             const Spacer(),
-            FilledButton(onPressed: _busy ? null : _add, child: Text('usertags.add'.tr)),
+            FilledButton(
+                onPressed: _busy ? null : _add, child: Text('usertags.add'.tr)),
           ],
         ),
         const SizedBox(height: 24),
-        Text('usertags.currentList'.tr, style: Theme.of(context).textTheme.titleMedium),
+        Text('usertags.currentList'.tr,
+            style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         if (tags.isEmpty)
-          Text('common.unknown'.tr, style: TextStyle(color: Theme.of(context).colorScheme.outline))
+          Text('common.unknown'.tr,
+              style: TextStyle(color: Theme.of(context).colorScheme.outline))
         else
           ...tags.map((t) {
             final id = (t['tagId'] as num?)?.toInt() ?? 0;
@@ -177,18 +329,47 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
             final label = key.isNotEmpty ? '$ns:$key' : ns;
             final w = t['watched'] == true;
             final h = t['hidden'] == true;
+            final weight = (t['weight'] as num?)?.toInt() ?? 10;
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text(label, style: const TextStyle(fontFamily: 'monospace', fontSize: 13)),
+                onTap: _busy ? null : () => _showEditDialog(t),
+                title: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                ),
                 subtitle: Text(
-                  [if (w) 'usertags.watch'.tr, if (h) 'usertags.hidden'.tr].join(' · '),
+                  [
+                    if (w) 'usertags.watch'.tr,
+                    if (h) 'usertags.hidden'.tr,
+                    '${'usertags.weight'.tr}: $weight',
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontSize: 12),
                 ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  tooltip: 'usertags.delete'.tr,
-                  onPressed: _busy || id == 0 ? null : () => _delete(id),
+                trailing: Wrap(
+                  spacing: 4,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.search),
+                      tooltip: 'tagVote.search'.tr,
+                      onPressed: _busy ? null : () => _searchTag(label),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: 'usertags.editTitle'.tr,
+                      onPressed:
+                          _busy || id == 0 ? null : () => _showEditDialog(t),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      tooltip: 'usertags.delete'.tr,
+                      onPressed: _busy || id == 0 ? null : () => _delete(id),
+                    ),
+                  ],
                 ),
               ),
             );

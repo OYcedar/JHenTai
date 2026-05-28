@@ -610,8 +610,12 @@ class WebZhTW {
       'usertags.tagHint': '格式 namespace:key',
       'usertags.watch': '關注',
       'usertags.hidden': '隱藏',
+      'usertags.none': '未標記',
+      'usertags.weight': '權重',
+      'usertags.editTitle': '編輯標籤',
       'usertags.delete': '刪除',
       'usertags.added': '已新增',
+      'usertags.updated': '已更新',
       'usertags.deleted': '已刪除',
       'usertags.currentList': '已設定標籤',
 

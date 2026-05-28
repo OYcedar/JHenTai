@@ -969,6 +969,41 @@ class EHClient {
     }
   }
 
+  Future<Map<String, dynamic>> updateUsertag({
+    required int apiuid,
+    required String apikey,
+    required int tagId,
+    required String tagColor,
+    required int tagWeight,
+    required bool watch,
+    required bool hidden,
+  }) async {
+    try {
+      final response = await _dio.post(
+        apiUrl,
+        options: Options(contentType: Headers.jsonContentType),
+        data: {
+          'method': 'setusertag',
+          'apiuid': apiuid,
+          'apikey': apikey,
+          'tagcolor': tagColor,
+          'taghide': hidden ? 1 : 0,
+          'tagwatch': watch ? 1 : 0,
+          'tagid': tagId,
+          'tagweight': tagWeight.toString(),
+        },
+      );
+      return response.data is Map
+          ? Map<String, dynamic>.from(response.data)
+          : {'success': true};
+    } on DioException catch (e) {
+      return {
+        'success': false,
+        'message': e.message ?? 'Failed to update usertag',
+      };
+    }
+  }
+
   // --- Stats / image lookup / my tags (Web parity with native) ---
 
   String get statsPageUrl => _site == 'EX'

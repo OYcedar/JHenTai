@@ -16,16 +16,28 @@ class UsertagRoutes {
     final r = Router();
     r.get('/list', _list);
     r.post('/add', _add);
+    r.post('/update', _update);
     r.post('/delete', _delete);
     return r;
   }
 
+  int? _apiuidFromCookies() {
+    for (final cookie in _client.cookieManager.cookies) {
+      if (cookie.name == 'ipb_member_id') {
+        return int.tryParse(cookie.value);
+      }
+    }
+    return null;
+  }
+
   Future<Response> _list(Request request) async {
-    final tagset = int.tryParse(request.url.queryParameters['tagset'] ?? '1') ?? 1;
+    final tagset =
+        int.tryParse(request.url.queryParameters['tagset'] ?? '1') ?? 1;
     try {
       final html = await _client.fetchMyTagsHtml(tagset);
       final data = parseMyTagsPage(html);
-      return Response.ok(jsonEncode(data), headers: {'Content-Type': 'application/json'});
+      return Response.ok(jsonEncode(data),
+          headers: {'Content-Type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'Failed to load my tags: $e'}),
@@ -66,7 +78,8 @@ class UsertagRoutes {
       } on DioException catch (e) {
         if (e.response?.statusCode != 302) rethrow;
       }
-      return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+      return Response.ok(jsonEncode({'success': true}),
+          headers: {'Content-Type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'Failed to add tag: $e'}),
@@ -84,7 +97,8 @@ class UsertagRoutes {
     final tagSetNo = (body['tagSetNo'] as num?)?.toInt() ?? 1;
     final watchedTagId = (body['watchedTagId'] as num?)?.toInt();
     if (watchedTagId == null) {
-      return Response.badRequest(body: jsonEncode({'error': 'Missing watchedTagId'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Missing watchedTagId'}));
     }
 
     final data = <String, dynamic>{
@@ -102,11 +116,49 @@ class UsertagRoutes {
       } on DioException catch (e) {
         if (e.response?.statusCode != 302) rethrow;
       }
-      return Response.ok(jsonEncode({'success': true}), headers: {'Content-Type': 'application/json'});
+      return Response.ok(jsonEncode({'success': true}),
+          headers: {'Content-Type': 'application/json'});
     } catch (e) {
       return Response.internalServerError(
         body: jsonEncode({'error': 'Failed to delete tag: $e'}),
       );
     }
+  }
+
+  Future<Response> _update(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON'}));
+    }
+    final apiuid = _apiuidFromCookies();
+    final apikey = body['apikey'] as String?;
+    final tagId = (body['tagId'] as num?)?.toInt();
+    final weight = (body['weight'] as num?)?.toInt() ?? 10;
+    final watch = body['watch'] as bool? ?? false;
+    final hidden = body['hidden'] as bool? ?? false;
+    final tagColor = body['tagColor'] as String? ?? '';
+    if (apiuid == null || apikey == null || apikey.isEmpty || tagId == null) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Missing apiuid, apikey, or tagId'}),
+      );
+    }
+
+    final result = await _client.updateUsertag(
+      apiuid: apiuid,
+      apikey: apikey,
+      tagId: tagId,
+      tagColor: tagColor,
+      tagWeight: weight,
+      watch: watch,
+      hidden: hidden,
+    );
+    final success = result['success'] != false && result['error'] == null;
+    return Response(
+      success ? 200 : 500,
+      body: jsonEncode(result),
+      headers: {'Content-Type': 'application/json'},
+    );
   }
 }

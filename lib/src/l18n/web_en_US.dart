@@ -651,8 +651,12 @@ class WebEnUS {
       'usertags.tagHint': 'Format namespace:key',
       'usertags.watch': 'Watch',
       'usertags.hidden': 'Hidden',
+      'usertags.none': 'None',
+      'usertags.weight': 'Weight',
+      'usertags.editTitle': 'Edit tag',
       'usertags.delete': 'Delete',
       'usertags.added': 'Added',
+      'usertags.updated': 'Updated',
       'usertags.deleted': 'Deleted',
       'usertags.currentList': 'Configured tags',
 
