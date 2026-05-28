@@ -190,6 +190,8 @@ class SettingRoutes {
       'extraScanPaths': _config.extraScanPaths,
       'maxConcurrentGalleryDownloads': _config.maxConcurrentGalleryDownloads,
       'maxConcurrentArchiveDownloads': _config.maxConcurrentArchiveDownloads,
+      'downloadAllGalleriesOfSamePriority':
+          _config.downloadAllGalleriesOfSamePriority,
     };
     settings['network'] = _networkRuntime();
 

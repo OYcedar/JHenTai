@@ -25,6 +25,9 @@ class WebZhCN {
       'originalImage': '原图',
       'downloadOriginalImage': '下载原图',
       'downloadOriginalImageByDefault': '默认选中下载原图',
+      'downloadAllGallerysOfSamePriority': '同一优先级下同时下载所有画廊',
+      'downloadAllGallerysOfSamePriorityHint':
+          '默认情况下逐优先级下载画廊，且每个优先级下只会同时下载一个画廊',
       'restoreDownloadTasks': '恢复下载任务',
       'restoreDownloadTasksHint': '通过下载元数据来恢复下载记录',
       'restoredGalleryCount': '已恢复画廊',

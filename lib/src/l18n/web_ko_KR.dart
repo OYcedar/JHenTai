@@ -25,6 +25,9 @@ class WebKoKR {
       'originalImage': '원본',
       'downloadOriginalImage': '원본 이미지 다운로드',
       'downloadOriginalImageByDefault': '기본값으로 원본 이미지 선택',
+      'downloadAllGallerysOfSamePriority': '같은 우선순위의 모든 갤러리 다운로드',
+      'downloadAllGallerysOfSamePriorityHint':
+          '기본적으로 각 우선순위마다 갤러리 하나만 동시에 다운로드합니다.',
       'restoreDownloadTasks': '다운로드 작업 복원',
       'restoreDownloadTasksHint': '메타데이터로 다운로드 작업 복원',
       'restoredGalleryCount': '복원된 갤러리',

@@ -198,6 +198,12 @@ class _WebSettingsDownloadMenuPageState
                       'settings.archiveConcurrency'.tr,
                       '${info['maxConcurrentArchiveDownloads'] ?? '-'}',
                     ),
+                    _infoRow(
+                      'downloadAllGallerysOfSamePriority'.tr,
+                      info['downloadAllGalleriesOfSamePriority'] == true
+                          ? 'settings.enabled'.tr
+                          : 'settings.disabled'.tr,
+                    ),
                     const SizedBox(height: 8),
                     Text('settings.downloadRuntimeHint'.tr,
                         style: Theme.of(context).textTheme.bodySmall),

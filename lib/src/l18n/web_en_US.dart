@@ -27,6 +27,10 @@ class WebEnUS {
       'originalImage': 'Original',
       'downloadOriginalImage': 'Download original image',
       'downloadOriginalImageByDefault': 'Choose original image by default',
+      'downloadAllGallerysOfSamePriority':
+          'Download all galleries of the same priority',
+      'downloadAllGallerysOfSamePriorityHint':
+          'By default, only one gallery per priority is downloaded at a time.',
       'restoreDownloadTasks': 'Restore download tasks',
       'restoreDownloadTasksHint': 'Restore download tasks from metadata',
       'restoredGalleryCount': 'Restored galleries',

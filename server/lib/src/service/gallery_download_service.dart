@@ -448,10 +448,17 @@ class GalleryDownloadService {
   }
 
   GalleryDownloadTask? _nextQueuedTask() {
+    final activePriorities = _config.downloadAllGalleriesOfSamePriority
+        ? const <int>{}
+        : _activeDownloads
+            .map((gid) => _tasks[gid]?.priority)
+            .whereType<int>()
+            .toSet();
     final candidates = _tasks.values
         .where((t) =>
             t.status == GalleryDownloadStatus.downloading &&
-            !_activeDownloads.contains(t.gid))
+            !_activeDownloads.contains(t.gid) &&
+            !activePriorities.contains(t.priority))
         .toList();
     if (candidates.isEmpty) return null;
     candidates.sort((a, b) {

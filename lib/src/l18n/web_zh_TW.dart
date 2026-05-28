@@ -25,6 +25,9 @@ class WebZhTW {
       'originalImage': '原圖',
       'downloadOriginalImage': '下載原圖',
       'downloadOriginalImageByDefault': '預設選中下載原圖',
+      'downloadAllGallerysOfSamePriority': '同一優先級下同時下載所有畫廊',
+      'downloadAllGallerysOfSamePriorityHint':
+          '預設情況下逐優先級下載畫廊，且每個優先級下只會同時下載一個畫廊',
       'restoreDownloadTasks': '復原下載任務',
       'restoreDownloadTasksHint': '透過下載中繼資料來復原下載記錄',
       'restoredGalleryCount': '已復原畫廊',

@@ -25,6 +25,10 @@ class WebPtBR {
       'originalImage': 'Original',
       'downloadOriginalImage': 'Baixar imagem original',
       'downloadOriginalImageByDefault': 'Escolher imagem original por padrão',
+      'downloadAllGallerysOfSamePriority':
+          'Baixar todas as galerias da mesma prioridade',
+      'downloadAllGallerysOfSamePriorityHint':
+          'Por padrão, apenas uma galeria por prioridade é baixada por vez.',
       'restoreDownloadTasks': 'Restaurar tarefas de download',
       'restoreDownloadTasksHint': 'Restaurar tarefas de download por metadados',
       'restoredGalleryCount': 'Galerias restauradas',

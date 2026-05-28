@@ -26,6 +26,10 @@ class WebRuRU {
       'downloadOriginalImage': 'Скачать оригинальное изображение',
       'downloadOriginalImageByDefault':
           'Выбирать оригинальное изображение по умолчанию',
+      'downloadAllGallerysOfSamePriority':
+          'Скачивать все галереи одного приоритета',
+      'downloadAllGallerysOfSamePriorityHint':
+          'По умолчанию одновременно скачивается только одна галерея каждого приоритета.',
       'restoreDownloadTasks': 'Восстановить задачи загрузки',
       'restoreDownloadTasksHint': 'Восстановить задачи загрузки по метаданным',
       'restoredGalleryCount': 'Восстановлено галерей',
