@@ -1,9 +1,107 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart' hide Response;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../core/database.dart';
+import '../core/log.dart';
+
+const webUseBuiltInBlockedUsersKey = 'webUseBuiltInBlockedUsers';
+const _builtInBlockedUsersCacheKey = 'webBuiltInBlockedUsersCache';
+const _builtInBlockedUsersUrl =
+    'https://raw.githubusercontent.com/jiangtian616/JHenTai/refs/heads/master/built_in_blocked_user.json';
+
+List<Map<String, dynamic>> _builtInBlockedUsers = [];
+DateTime? _builtInBlockedUsersLoadedAt;
+
+bool useBuiltInBlockedUsers() {
+  final raw = db.readConfig(webUseBuiltInBlockedUsersKey);
+  if (raw == null || raw.trim().isEmpty) return true;
+  final normalized = raw.trim().toLowerCase();
+  return normalized != 'false' && normalized != '0' && normalized != 'no';
+}
+
+Future<List<Map<String, dynamic>>> builtInBlockedUserRules() async {
+  if (!useBuiltInBlockedUsers()) return [];
+  final users = await _loadBuiltInBlockedUsers();
+  return [
+    for (final user in users) ...[
+      {
+        'target': 'comment',
+        'attribute': 'userId',
+        'pattern': 'equal',
+        'expression': (user['userId'] ?? '').toString(),
+      },
+      {
+        'target': 'comment',
+        'attribute': 'userName',
+        'pattern': 'equal',
+        'expression': (user['name'] ?? '').toString(),
+      },
+    ],
+  ];
+}
+
+Future<List<Map<String, dynamic>>> _loadBuiltInBlockedUsers() async {
+  final loadedAt = _builtInBlockedUsersLoadedAt;
+  if (loadedAt != null &&
+      DateTime.now().difference(loadedAt) < const Duration(hours: 24)) {
+    return _builtInBlockedUsers;
+  }
+
+  final cached = _readCachedBuiltInBlockedUsers();
+  if (cached.isNotEmpty) {
+    _builtInBlockedUsers = cached;
+    _builtInBlockedUsersLoadedAt ??= DateTime.now();
+  }
+
+  try {
+    final response = await Dio(BaseOptions(
+      connectTimeout: const Duration(seconds: 20),
+      receiveTimeout: const Duration(seconds: 60),
+    )).get<Map<String, dynamic>>(_builtInBlockedUsersUrl);
+    final root = response.data;
+    final rawUsers = root?['blockedUsers'];
+    if (rawUsers is! List) return _builtInBlockedUsers;
+    final users = rawUsers
+        .whereType<Map>()
+        .map((item) => {
+              'userId': item['userId'],
+              'name': item['name']?.toString() ?? '',
+            })
+        .where((item) =>
+            item['userId'] != null && (item['name'] as String).isNotEmpty)
+        .toList();
+    if (users.isEmpty) return _builtInBlockedUsers;
+    _builtInBlockedUsers = users;
+    _builtInBlockedUsersLoadedAt = DateTime.now();
+    db.writeConfig(_builtInBlockedUsersCacheKey, jsonEncode(users));
+  } catch (e) {
+    log.warning('Failed to refresh built-in blocked users: $e');
+  }
+  return _builtInBlockedUsers;
+}
+
+List<Map<String, dynamic>> _readCachedBuiltInBlockedUsers() {
+  final raw = db.readConfig(_builtInBlockedUsersCacheKey);
+  if (raw == null || raw.isEmpty) return const [];
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) return const [];
+    return decoded
+        .whereType<Map>()
+        .map((item) => {
+              'userId': item['userId'],
+              'name': item['name']?.toString() ?? '',
+            })
+        .where((item) =>
+            item['userId'] != null && (item['name'] as String).isNotEmpty)
+        .toList();
+  } catch (_) {
+    return const [];
+  }
+}
 
 class BlockRuleRoutes {
   Router get router {
@@ -144,6 +242,7 @@ bool matchesCommentBlockRule(
     'comment' ||
     'body' =>
       (comment['body'] as String? ?? '').replaceAll(RegExp(r'<[^>]+>'), ' '),
+    'score' => (comment['score'] ?? '').toString(),
     _ => '',
   };
 

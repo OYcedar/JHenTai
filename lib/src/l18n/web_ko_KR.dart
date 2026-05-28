@@ -501,6 +501,8 @@ class WebKoKR {
       'blockRule.add': '규칙 추가',
       'blockRule.edit': '규칙 편집',
       'blockRule.manage': '차단 규칙 관리',
+      'useBuiltInBlockedUsers': '내장 사용자 차단 목록 사용',
+      'useBuiltInBlockedUsersHint': '내장 차단 목록에 있는 사용자의 갤러리 댓글을 필터링합니다',
       'blockRule.ruleCount': '@count개 규칙',
       'blockRule.ungrouped': '그룹 없음',
       'blockRule.deleteGroup': '그룹 삭제',

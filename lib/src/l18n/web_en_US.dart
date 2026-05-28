@@ -521,6 +521,9 @@ class WebEnUS {
       'blockRule.add': 'Add Rule',
       'blockRule.edit': 'Edit Rule',
       'blockRule.manage': 'Manage Block Rules',
+      'useBuiltInBlockedUsers': 'Enable Built-in User Blocklist',
+      'useBuiltInBlockedUsersHint':
+          'Filter out gallery comments from users on the built-in blocklist',
       'blockRule.ruleCount': '@count rules',
       'blockRule.ungrouped': 'Ungrouped',
       'blockRule.deleteGroup': 'Delete Group',

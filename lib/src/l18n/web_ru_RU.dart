@@ -516,6 +516,10 @@ class WebRuRU {
       'blockRule.add': 'Добавить правило',
       'blockRule.edit': 'Редактировать правило',
       'blockRule.manage': 'Управление правилами блокировки',
+      'useBuiltInBlockedUsers':
+          'Включить встроенный список заблокированных пользователей',
+      'useBuiltInBlockedUsersHint':
+          'Фильтровать комментарии пользователей из встроенного списка',
       'blockRule.ruleCount': '@count правил',
       'blockRule.ungrouped': 'Без группы',
       'blockRule.deleteGroup': 'Удалить группу',

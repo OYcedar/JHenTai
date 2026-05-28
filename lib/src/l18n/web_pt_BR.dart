@@ -518,6 +518,9 @@ class WebPtBR {
       'blockRule.add': 'Adicionar Regra',
       'blockRule.edit': 'Editar Regra',
       'blockRule.manage': 'Gerenciar Regras de Bloqueio',
+      'useBuiltInBlockedUsers': 'Ativar lista interna de usuários bloqueados',
+      'useBuiltInBlockedUsersHint':
+          'Filtra comentários de usuários presentes na lista interna',
       'blockRule.ruleCount': '@count regras',
       'blockRule.ungrouped': 'Sem grupo',
       'blockRule.deleteGroup': 'Excluir Grupo',

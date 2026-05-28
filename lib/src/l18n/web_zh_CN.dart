@@ -488,6 +488,8 @@ class WebZhCN {
       'blockRule.add': '添加规则',
       'blockRule.edit': '编辑规则',
       'blockRule.manage': '管理屏蔽规则',
+      'useBuiltInBlockedUsers': '使用内置用户屏蔽名单',
+      'useBuiltInBlockedUsersHint': '过滤掉内置名单中的用户评论',
       'blockRule.ruleCount': '@count 条规则',
       'blockRule.ungrouped': '未分组',
       'blockRule.deleteGroup': '删除分组',

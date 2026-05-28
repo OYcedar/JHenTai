@@ -1051,6 +1051,8 @@ class BackendApiClient {
 
   // --- Settings ---
 
+  static const webUseBuiltInBlockedUsersKey = 'webUseBuiltInBlockedUsers';
+
   Future<Map<String, dynamic>> getSettings() async {
     final response = await _dio.get('/api/setting/');
     return response.data;
@@ -1094,6 +1096,19 @@ class BackendApiClient {
       data: jsonEncode({'value': value}),
       options: Options(headers: {'Content-Type': 'application/json'}),
     );
+  }
+
+  Future<bool> getUseBuiltInBlockedUsers() async {
+    final raw = await getSetting(webUseBuiltInBlockedUsersKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return true;
+    }
+    final normalized = raw.trim().toLowerCase();
+    return normalized != 'false' && normalized != '0' && normalized != 'no';
+  }
+
+  Future<void> setUseBuiltInBlockedUsers(bool value) async {
+    await putSetting(webUseBuiltInBlockedUsersKey, value);
   }
 
   Future<Map<String, dynamic>> listServerLogs() async {

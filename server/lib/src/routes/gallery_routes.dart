@@ -632,7 +632,10 @@ class GalleryRoutes {
       final comments = detail.comments
           .map((comment) => Map<String, dynamic>.from(comment))
           .toList();
-      final blockRules = db.selectAllBlockRules();
+      final blockRules = [
+        ...db.selectAllBlockRules(),
+        ...await builtInBlockedUserRules(),
+      ];
       if (blockRules.isNotEmpty) {
         comments.removeWhere((comment) =>
             blockRules.any((rule) => matchesCommentBlockRule(rule, comment)));

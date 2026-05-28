@@ -72,6 +72,8 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool preloadGalleryCover;
   late bool showDawnInfo;
   late bool showHvInfo;
+  bool useBuiltInBlockedUsers = true;
+  bool isLoadingBuiltInBlockedUsers = true;
   late WebSearchBehaviour searchBehaviour;
   late WebScrollToTopButtonMode scrollToTopButtonMode;
 
@@ -88,6 +90,23 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
     showHvInfo = WebPreferenceSettings.showHvInfo;
     searchBehaviour = WebPreferenceSettings.searchBehaviour;
     scrollToTopButtonMode = WebPreferenceSettings.scrollToTopButtonMode;
+    _loadBuiltInBlockedUsers();
+  }
+
+  Future<void> _loadBuiltInBlockedUsers() async {
+    try {
+      final value = await backendApiClient.getUseBuiltInBlockedUsers();
+      if (!mounted) {
+        return;
+      }
+      setState(() => useBuiltInBlockedUsers = value);
+    } catch (_) {
+      // Keep the server default: enabled.
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingBuiltInBlockedUsers = false);
+      }
+    }
   }
 
   @override
@@ -208,6 +227,30 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
               WebPreferenceSettings.saveSearchBehaviour(value);
             },
           ),
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.verified_user_outlined),
+          title: Text('useBuiltInBlockedUsers'.tr),
+          subtitle: Text('useBuiltInBlockedUsersHint'.tr),
+          value: useBuiltInBlockedUsers,
+          onChanged: isLoadingBuiltInBlockedUsers
+              ? null
+              : (value) async {
+                  setState(() => useBuiltInBlockedUsers = value);
+                  try {
+                    await backendApiClient.setUseBuiltInBlockedUsers(value);
+                  } catch (e) {
+                    if (!mounted) {
+                      return;
+                    }
+                    setState(() => useBuiltInBlockedUsers = !value);
+                    Get.snackbar(
+                      'common.error'.tr,
+                      '${'common.failed'.tr}: $e',
+                      snackPosition: SnackPosition.BOTTOM,
+                    );
+                  }
+                },
         ),
         ListTile(
           leading: const Icon(Icons.vertical_align_top),

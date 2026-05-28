@@ -484,6 +484,8 @@ class WebZhTW {
       'blockRule.add': '新增規則',
       'blockRule.edit': '編輯規則',
       'blockRule.manage': '管理封鎖規則',
+      'useBuiltInBlockedUsers': '使用內建使用者封鎖名單',
+      'useBuiltInBlockedUsersHint': '過濾掉內建名單中的使用者評論',
       'blockRule.ruleCount': '@count 條規則',
       'blockRule.ungrouped': '未分組',
       'blockRule.deleteGroup': '刪除分組',
