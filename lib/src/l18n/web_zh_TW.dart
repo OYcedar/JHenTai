@@ -598,6 +598,8 @@ class WebZhTW {
       'whenScrollDown': '向下捲動時',
       'never': '從不',
       'always': '總是',
+      'preloadGalleryCover': '預先載入畫廊封面',
+      'preloadGalleryCoverHint': '預先載入還未顯示在頁面上的畫廊封面',
 
       // home enhancements
       'home.scrollToTop': '回到頂部',

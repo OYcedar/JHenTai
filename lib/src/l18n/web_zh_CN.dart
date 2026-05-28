@@ -603,6 +603,8 @@ class WebZhCN {
       'whenScrollDown': '向下滚动时',
       'never': '从不',
       'always': '总是',
+      'preloadGalleryCover': '预载画廊封面',
+      'preloadGalleryCoverHint': '预先加载还未显示在页面上的画廊封面',
 
       // home enhancements
       'home.scrollToTop': '回到顶部',

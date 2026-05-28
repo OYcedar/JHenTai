@@ -346,6 +346,7 @@ class WebHomeController extends GetxController {
   String? _listByUrlActiveUrl;
   String? _listByUrlNextUrl;
   String? _listByUrlPrevUrl;
+  final _prefetchedCoverUrls = <String>{};
 
   void _exitListByUrlMode() {
     listByUrlMode.value = false;
@@ -415,6 +416,7 @@ class WebHomeController extends GetxController {
       final result = await backendApiClient.fetchGalleryListByUrl(url);
       final galleryList = (result['galleries'] as List?) ?? [];
       galleries.value = galleryList.cast<Map<String, dynamic>>();
+      unawaited(_preloadGalleryCovers(galleries));
       unawaited(_fetchGalleryListTagTranslations());
       _listByUrlActiveUrl = url;
       _listByUrlNextUrl = result['nextUrl'] as String?;
@@ -945,6 +947,7 @@ class WebHomeController extends GetxController {
         return;
       }
       galleries.value = galleryList.cast<Map<String, dynamic>>();
+      unawaited(_preloadGalleryCovers(galleries));
       unawaited(_fetchGalleryListTagTranslations());
 
       _lastNextGid = _gidFromJson(result['nextGid']);
@@ -1135,6 +1138,7 @@ class WebHomeController extends GetxController {
           .cast<Map<String, dynamic>>()
           .take(10)
           .toList();
+      unawaited(_preloadGalleryCovers(dashboardRanklist));
     } catch (_) {}
     try {
       final popularResult =
@@ -1143,8 +1147,34 @@ class WebHomeController extends GetxController {
           .cast<Map<String, dynamic>>()
           .take(10)
           .toList();
+      unawaited(_preloadGalleryCovers(dashboardPopular));
     } catch (_) {}
     isDashboardLoading.value = false;
+  }
+
+  Future<void> _preloadGalleryCovers(
+    Iterable<Map<String, dynamic>> galleryList,
+  ) async {
+    if (!WebPreferenceSettings.preloadGalleryCover) return;
+    final urls = <String>[];
+    for (final gallery in galleryList) {
+      final coverUrl = gallery['coverUrl'] as String? ?? '';
+      if (coverUrl.isEmpty || !_prefetchedCoverUrls.add(coverUrl)) {
+        continue;
+      }
+      urls.add(coverUrl);
+    }
+    const batchSize = 6;
+    for (var i = 0; i < urls.length; i += batchSize) {
+      final end = math.min(i + batchSize, urls.length);
+      await Future.wait(
+        urls.sublist(i, end).map(
+              (url) => backendApiClient.prefetchProxiedImage(url).catchError(
+                    (_) {},
+                  ),
+            ),
+      );
+    }
   }
 }
 

@@ -225,6 +225,22 @@ class BackendApiClient {
     }
   }
 
+  Future<void> prefetchProxiedImage(String imageUrl) async {
+    if (imageUrl.isEmpty) return;
+    if (shouldProxyImageUsePost(imageUrl)) {
+      await fetchProxiedImageBytes(imageUrl);
+      return;
+    }
+    await _dio.get<List<int>>(
+      '/api/proxy/image',
+      queryParameters: {
+        'url': imageUrl,
+        if (_token != null && _token!.isNotEmpty) 'token': _token,
+      },
+      options: Options(responseType: ResponseType.bytes),
+    );
+  }
+
   // --- Auth ---
 
   Future<Map<String, dynamic>> login(String userName, String passWord) async {

@@ -16,6 +16,7 @@ class WebPreferenceSettings {
   static const enableDefaultTagSetKey = 'jh_web_enable_default_tag_set';
   static const defaultTagSetNoKey = 'jh_web_default_tag_set_no';
   static const scrollToTopButtonModeKey = 'jh_web_scroll_to_top_button_mode';
+  static const preloadGalleryCoverKey = 'jh_web_preload_gallery_cover';
 
   const WebPreferenceSettings._();
 
@@ -30,6 +31,9 @@ class WebPreferenceSettings {
   static bool get showAllComments => _readBool(showAllCommentsKey, false);
 
   static bool get showUtcTime => _readBool(showUtcTimeKey, false);
+
+  static bool get preloadGalleryCover =>
+      _readBool(preloadGalleryCoverKey, false);
 
   static bool get enableDefaultFavorite =>
       _readBool(enableDefaultFavoriteKey, false);
@@ -72,6 +76,9 @@ class WebPreferenceSettings {
       _writeBool(showAllCommentsKey, value);
 
   static void saveShowUtcTime(bool value) => _writeBool(showUtcTimeKey, value);
+
+  static void savePreloadGalleryCover(bool value) =>
+      _writeBool(preloadGalleryCoverKey, value);
 
   static void saveEnableDefaultFavorite(bool value) =>
       _writeBool(enableDefaultFavoriteKey, value);

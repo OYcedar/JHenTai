@@ -69,6 +69,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool showComments;
   late bool showAllComments;
   late bool showUtcTime;
+  late bool preloadGalleryCover;
   late WebSearchBehaviour searchBehaviour;
   late WebScrollToTopButtonMode scrollToTopButtonMode;
 
@@ -80,6 +81,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
     showComments = WebPreferenceSettings.showComments;
     showAllComments = WebPreferenceSettings.showAllComments;
     showUtcTime = WebPreferenceSettings.showUtcTime;
+    preloadGalleryCover = WebPreferenceSettings.preloadGalleryCover;
     searchBehaviour = WebPreferenceSettings.searchBehaviour;
     scrollToTopButtonMode = WebPreferenceSettings.scrollToTopButtonMode;
   }
@@ -143,6 +145,16 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
           onChanged: (value) {
             setState(() => showUtcTime = value);
             WebPreferenceSettings.saveShowUtcTime(value);
+          },
+        ),
+        SwitchListTile(
+          secondary: const Icon(Icons.image_search_outlined),
+          title: Text('preloadGalleryCover'.tr),
+          subtitle: Text('preloadGalleryCoverHint'.tr),
+          value: preloadGalleryCover,
+          onChanged: (value) {
+            setState(() => preloadGalleryCover = value);
+            WebPreferenceSettings.savePreloadGalleryCover(value);
           },
         ),
         ListTile(

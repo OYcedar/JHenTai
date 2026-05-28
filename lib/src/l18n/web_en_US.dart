@@ -640,6 +640,9 @@ class WebEnUS {
       'whenScrollDown': 'When scrolling down',
       'never': 'Never',
       'always': 'Always',
+      'preloadGalleryCover': 'Preload gallery cover',
+      'preloadGalleryCoverHint':
+          'Preload covers for galleries that are not displayed yet',
 
       // home enhancements
       'home.scrollToTop': 'Scroll to Top',
