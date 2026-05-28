@@ -401,6 +401,7 @@ class WebKoKR {
       'history.clearTitle': '방문 기록 삭제',
       'history.clearConfirm': '모든 방문 기록을 삭제하시겠습니까?',
       'history.loadFailed': '방문 기록 로드 실패: @error',
+      'history.loadMore': '더 불러오기',
 
       // search history
       'searchHistory.clearAll': '검색 기록 삭제',

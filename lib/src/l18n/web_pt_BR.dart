@@ -422,6 +422,7 @@ class WebPtBR {
       'history.clearTitle': 'Limpar Histórico',
       'history.clearConfirm': 'Tem certeza que deseja limpar todo o histórico?',
       'history.loadFailed': 'Falha ao carregar histórico: @error',
+      'history.loadMore': 'Carregar mais',
 
       // search history
       'searchHistory.clearAll': 'Limpar histórico de pesquisa',

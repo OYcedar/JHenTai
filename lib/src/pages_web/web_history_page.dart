@@ -4,8 +4,12 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 
 class WebHistoryController extends GetxController {
+  static const pageSize = 100;
+
   final items = <Map<String, dynamic>>[].obs;
   final isLoading = false.obs;
+  final isLoadingMore = false.obs;
+  final hasMore = false.obs;
   final errorMessage = ''.obs;
 
   @override
@@ -18,12 +22,38 @@ class WebHistoryController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     try {
-      final result = await backendApiClient.fetchHistory(limit: 100);
-      items.value = ((result['items'] as List?) ?? []).cast<Map<String, dynamic>>();
+      final result = await backendApiClient.fetchHistory(limit: pageSize);
+      final nextItems =
+          ((result['items'] as List?) ?? []).cast<Map<String, dynamic>>();
+      items.value = nextItems;
+      hasMore.value = nextItems.length >= pageSize;
     } catch (e) {
       errorMessage.value = 'history.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (isLoadingMore.value || !hasMore.value) return;
+    isLoadingMore.value = true;
+    try {
+      final result = await backendApiClient.fetchHistory(
+        limit: pageSize,
+        offset: items.length,
+      );
+      final nextItems =
+          ((result['items'] as List?) ?? []).cast<Map<String, dynamic>>();
+      items.addAll(nextItems);
+      hasMore.value = nextItems.length >= pageSize;
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'history.loadFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isLoadingMore.value = false;
     }
   }
 
@@ -35,6 +65,7 @@ class WebHistoryController extends GetxController {
   Future<void> clearAll() async {
     await backendApiClient.clearHistory();
     items.clear();
+    hasMore.value = false;
   }
 }
 
@@ -83,7 +114,8 @@ class WebHistoryPage extends GetView<WebHistoryController> {
               children: [
                 const Icon(Icons.history, size: 64, color: Colors.grey),
                 const SizedBox(height: 16),
-                Text('history.empty'.tr, style: Theme.of(context).textTheme.bodyLarge),
+                Text('history.empty'.tr,
+                    style: Theme.of(context).textTheme.bodyLarge),
               ],
             ),
           );
@@ -100,7 +132,9 @@ class WebHistoryPage extends GetView<WebHistoryController> {
         title: Text('history.clearTitle'.tr),
         content: Text('history.clearConfirm'.tr),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr)),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -116,10 +150,32 @@ class WebHistoryPage extends GetView<WebHistoryController> {
   Widget _buildList(BuildContext context) {
     return ListView.builder(
       padding: const EdgeInsets.all(12),
-      itemCount: controller.items.length,
+      itemCount: controller.items.length + (controller.hasMore.value ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= controller.items.length) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: Obx(
+                () => OutlinedButton.icon(
+                  icon: controller.isLoadingMore.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.expand_more),
+                  onPressed: controller.isLoadingMore.value
+                      ? null
+                      : controller.loadMore,
+                  label: Text('history.loadMore'.tr),
+                ),
+              ),
+            ),
+          );
+        }
         final item = controller.items[index];
-        final gid = item['gid'] as int;
+        final gid = (item['gid'] as num?)?.toInt() ?? 0;
         final token = item['token'] as String? ?? '';
         final title = item['title'] as String? ?? '';
         final coverUrl = item['cover_url'] as String? ?? '';
@@ -138,7 +194,8 @@ class WebHistoryPage extends GetView<WebHistoryController> {
                       sourceUrl: coverUrl,
                       fit: BoxFit.cover,
                       errorIconSize: 24,
-                      readerErrorChild: const Icon(Icons.broken_image, color: Colors.grey),
+                      readerErrorChild:
+                          const Icon(Icons.broken_image, color: Colors.grey),
                     )
                   : const Icon(Icons.photo_library, color: Colors.grey),
             ),

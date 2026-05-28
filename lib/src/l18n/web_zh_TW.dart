@@ -388,6 +388,7 @@ class WebZhTW {
       'history.clearTitle': '清除瀏覽記錄',
       'history.clearConfirm': '確定要清除所有瀏覽記錄嗎？',
       'history.loadFailed': '載入瀏覽記錄失敗: @error',
+      'history.loadMore': '載入更多',
 
       // search history
       'searchHistory.clearAll': '清除搜尋記錄',

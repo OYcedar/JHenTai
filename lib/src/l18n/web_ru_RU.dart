@@ -420,6 +420,7 @@ class WebRuRU {
       'history.clearTitle': 'Очистить историю',
       'history.clearConfirm': 'Вы уверены, что хотите очистить всю историю?',
       'history.loadFailed': 'Ошибка загрузки истории: @error',
+      'history.loadMore': 'Загрузить ещё',
 
       // search history
       'searchHistory.clearAll': 'Очистить историю поиска',

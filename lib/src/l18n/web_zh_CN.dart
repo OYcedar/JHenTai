@@ -388,6 +388,7 @@ class WebZhCN {
       'history.clearTitle': '清空浏览记录',
       'history.clearConfirm': '确定要清空所有浏览记录吗？',
       'history.loadFailed': '加载浏览记录失败: @error',
+      'history.loadMore': '加载更多',
 
       // search history
       'searchHistory.clearAll': '清除搜索记录',
