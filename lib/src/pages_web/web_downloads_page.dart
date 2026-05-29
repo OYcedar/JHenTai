@@ -9,6 +9,8 @@ import 'package:web/web.dart' as web;
 
 enum WebDownloadSort { priorityDesc, timeDesc, title, status }
 
+enum WebDownloadSearchMode { simple, regex }
+
 class WebDownloadsController extends GetxController
     with GetSingleTickerProviderStateMixin {
   late TabController tabController;
@@ -22,8 +24,10 @@ class WebDownloadsController extends GetxController
   static const _kArchiveGroupsExpanded =
       'jh_web_downloads_archive_groups_expanded';
   static const _kViewMode = 'jh_web_downloads_view_mode';
+  static const _kSearchMode = 'jh_web_downloads_search_mode';
 
   final searchQuery = ''.obs;
+  final searchMode = WebDownloadSearchMode.simple.obs;
   final selectedCategoryFilter = Rxn<String>();
   final gallerySort = WebDownloadSort.priorityDesc.obs;
   final archiveSort = WebDownloadSort.priorityDesc.obs;
@@ -98,6 +102,21 @@ class WebDownloadsController extends GetxController
     }
   }
 
+  void _loadSearchModeFromStorage() {
+    final saved = web.window.localStorage.getItem(_kSearchMode);
+    if (saved == 'regex') {
+      searchMode.value = WebDownloadSearchMode.regex;
+    }
+  }
+
+  void setSearchMode(WebDownloadSearchMode mode) {
+    searchMode.value = mode;
+    web.window.localStorage.setItem(
+      _kSearchMode,
+      mode == WebDownloadSearchMode.regex ? 'regex' : 'simple',
+    );
+  }
+
   void toggleViewMode() {
     final next = viewMode.value == 'grid' ? 'list' : 'grid';
     viewMode.value = next;
@@ -158,14 +177,7 @@ class WebDownloadsController extends GetxController
     }
     final q = searchQuery.value.toLowerCase();
     if (q.isNotEmpty) {
-      list = list.where((t) {
-        final title = (t['title'] as String? ?? '').toLowerCase();
-        final uploader = (t['uploader'] as String? ?? '').toLowerCase();
-        final category = (t['category'] as String? ?? '').toLowerCase();
-        return title.contains(q) ||
-            uploader.contains(q) ||
-            category.contains(q);
-      }).toList();
+      list = list.where((t) => _matchesSearch(t, q)).toList();
     }
     return list;
   }
@@ -236,16 +248,40 @@ class WebDownloadsController extends GetxController
     }
     final q = searchQuery.value.toLowerCase();
     if (q.isNotEmpty) {
-      list = list.where((t) {
-        final title = (t['title'] as String? ?? '').toLowerCase();
-        final uploader = (t['uploader'] as String? ?? '').toLowerCase();
-        final category = (t['category'] as String? ?? '').toLowerCase();
-        return title.contains(q) ||
-            uploader.contains(q) ||
-            category.contains(q);
-      }).toList();
+      list = list.where((t) => _matchesSearch(t, q)).toList();
     }
     return list;
+  }
+
+  bool _matchesSearch(Map<String, dynamic> task, String query) {
+    final haystack = _taskSearchText(task);
+    if (searchMode.value == WebDownloadSearchMode.regex) {
+      try {
+        return RegExp(query, caseSensitive: false).hasMatch(haystack);
+      } catch (_) {
+        return false;
+      }
+    }
+    return haystack.toLowerCase().contains(query);
+  }
+
+  String _taskSearchText(Map<String, dynamic> task) {
+    final values = <String>[
+      task['gid']?.toString() ?? '',
+      task['token']?.toString() ?? '',
+      task['title']?.toString() ?? '',
+      task['category']?.toString() ?? '',
+      task['uploader']?.toString() ?? '',
+      task['group']?.toString() ?? '',
+      task['group_name']?.toString() ?? '',
+      task['galleryUrl']?.toString() ?? '',
+      task['gallery_url']?.toString() ?? '',
+      task['archivePageUrl']?.toString() ?? '',
+      task['downloadPageUrl']?.toString() ?? '',
+      task['downloadUrl']?.toString() ?? '',
+      task['size']?.toString() ?? '',
+    ];
+    return values.where((v) => v.isNotEmpty).join('\n');
   }
 
   List<Map<String, dynamic>> get sortedFilteredArchiveTasks {
@@ -297,6 +333,7 @@ class WebDownloadsController extends GetxController
     tabController = TabController(length: 2, vsync: this);
     _loadExpandedFromStorage();
     _loadViewModeFromStorage();
+    _loadSearchModeFromStorage();
     tabController.addListener(_syncCategoryFilterWithTab);
   }
 
@@ -846,7 +883,23 @@ class _DownloadFilterBar extends StatelessWidget {
                         child: TextField(
                           decoration: InputDecoration(
                             hintText: 'downloads.search'.tr,
-                            prefixIcon: const Icon(Icons.search, size: 20),
+                            prefixIcon: TextButton.icon(
+                              onPressed: () => controller.setSearchMode(
+                                controller.searchMode.value ==
+                                        WebDownloadSearchMode.simple
+                                    ? WebDownloadSearchMode.regex
+                                    : WebDownloadSearchMode.simple,
+                              ),
+                              icon: const Icon(Icons.search, size: 18),
+                              label: Text(
+                                controller.searchMode.value ==
+                                        WebDownloadSearchMode.regex
+                                    ? 'regexSearch'.tr
+                                    : 'simpleSearch'.tr,
+                              ),
+                            ),
+                            prefixIconConstraints:
+                                const BoxConstraints(minWidth: 112),
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 8),

@@ -571,6 +571,8 @@ class WebZhCN {
       'blockRule.commentUserBlocked': '评论用户 "@user" 已被屏蔽',
 
       // download enhancements
+      'simpleSearch': '简单',
+      'regexSearch': '正则',
       'downloads.search': '搜索下载...',
       'downloads.allGroups': '所有分组',
       'downloads.group': '分组',

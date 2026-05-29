@@ -614,6 +614,8 @@ class WebRuRU {
       'blockRule.commentUserBlocked': 'Автор комментария "@user" заблокирован',
 
       // download enhancements
+      'simpleSearch': 'Простой',
+      'regexSearch': 'Regex',
       'downloads.search': 'Поиск загрузок...',
       'downloads.allGroups': 'Все группы',
       'downloads.group': 'Группа',

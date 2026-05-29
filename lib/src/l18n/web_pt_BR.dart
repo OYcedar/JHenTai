@@ -616,6 +616,8 @@ class WebPtBR {
           'Usuário do comentário "@user" foi bloqueado',
 
       // download enhancements
+      'simpleSearch': 'Simples',
+      'regexSearch': 'Regex',
       'downloads.search': 'Pesquisar downloads...',
       'downloads.allGroups': 'Todos os Grupos',
       'downloads.group': 'Grupo',

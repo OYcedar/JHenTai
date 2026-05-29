@@ -614,6 +614,8 @@ class WebEnUS {
       'blockRule.commentUserBlocked': 'Comment user "@user" has been blocked',
 
       // download enhancements
+      'simpleSearch': 'Simple',
+      'regexSearch': 'Regex',
       'downloads.search': 'Search downloads...',
       'downloads.allGroups': 'All Groups',
       'downloads.group': 'Group',

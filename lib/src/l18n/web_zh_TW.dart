@@ -567,6 +567,8 @@ class WebZhTW {
       'blockRule.commentUserBlocked': '評論使用者 "@user" 已被封鎖',
 
       // download enhancements
+      'simpleSearch': '簡單',
+      'regexSearch': '正則',
       'downloads.search': '搜尋下載...',
       'downloads.allGroups': '所有分組',
       'downloads.group': '分組',

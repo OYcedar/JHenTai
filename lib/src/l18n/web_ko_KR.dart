@@ -586,6 +586,8 @@ class WebKoKR {
       'blockRule.commentUserBlocked': '댓글 사용자 "@user"가 차단되었습니다',
 
       // download enhancements
+      'simpleSearch': '간단',
+      'regexSearch': '정규식',
       'downloads.search': '다운로드 검색...',
       'downloads.allGroups': '모든 그룹',
       'downloads.group': '그룹',
