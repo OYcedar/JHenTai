@@ -1315,6 +1315,57 @@ class WebHomeController extends GetxController {
     loadQuickSearches();
   }
 
+  Future<void> updateQuickSearch(
+    Map<String, dynamic> item, {
+    required String name,
+    required String keyword,
+  }) async {
+    final oldName = item['name']?.toString() ?? '';
+    final nextName = name.trim();
+    if (nextName.isEmpty) {
+      return;
+    }
+    final rawConfig = item['config']?.toString() ?? '{}';
+    final config = decodeQuickSearchConfig(rawConfig);
+    config['keyword'] = keyword.trim();
+    final sortOrder =
+        (item['sort_order'] as num?)?.toInt() ?? quickSearches.indexOf(item);
+    await backendApiClient.saveQuickSearch(
+      nextName,
+      jsonEncode(config),
+      sortOrder: sortOrder,
+    );
+    if (oldName.isNotEmpty && oldName != nextName) {
+      await backendApiClient.deleteQuickSearch(oldName);
+    }
+    loadQuickSearches();
+  }
+
+  Map<String, dynamic> decodeQuickSearchConfig(String rawConfig) {
+    try {
+      final decoded = jsonDecode(rawConfig);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (_) {}
+    return {
+      'keyword': '',
+      'categoryFilter': 0,
+      'minimumRating': 0,
+      'searchInName': true,
+      'searchInTags': true,
+      'searchInDesc': false,
+      'showExpunged': false,
+      'onlyShowGalleriesWithTorrents': false,
+      'pageAtLeast': null,
+      'pageAtMost': null,
+      'filterLanguage': null,
+      'disableFilterForLanguage': false,
+      'disableFilterForUploader': false,
+      'disableFilterForTags': false,
+    };
+  }
+
   Future<void> _loadDashboardPreviews({bool force = false}) async {
     if (WebPreferenceSettings.simpleDashboardMode) {
       dashboardRanklist.clear();
@@ -2076,9 +2127,23 @@ class _SinglePaneHome extends StatelessWidget {
                             Navigator.pop(ctx);
                             controller.applyQuickSearch(item);
                           },
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline, size: 18),
-                            onPressed: () => controller.deleteQuickSearch(name),
+                          trailing: Wrap(
+                            spacing: 2,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                tooltip: 'quickSearch.editTitle'.tr,
+                                onPressed: () =>
+                                    _showEditQuickSearchDialog(ctx, item),
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete_outline, size: 18),
+                                tooltip: 'common.delete'.tr,
+                                onPressed: () =>
+                                    controller.deleteQuickSearch(name),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -2101,6 +2166,62 @@ class _SinglePaneHome extends StatelessWidget {
           ],
         );
       }),
+    );
+  }
+
+  void _showEditQuickSearchDialog(
+      BuildContext parentCtx, Map<String, dynamic> item) {
+    final oldName = item['name']?.toString() ?? '';
+    final config =
+        controller.decodeQuickSearchConfig(item['config']?.toString() ?? '{}');
+    final nameController = TextEditingController(text: oldName);
+    final keywordController =
+        TextEditingController(text: config['keyword']?.toString() ?? '');
+    showDialog(
+      context: parentCtx,
+      builder: (ctx) => AlertDialog(
+        title: Text('quickSearch.editTitle'.tr),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.nameLabel'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: keywordController,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.keywordLabel'.tr,
+                  hintText: 'quickSearch.keywordHint'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () async {
+              await controller.updateQuickSearch(
+                item,
+                name: nameController.text,
+                keyword: keywordController.text,
+              );
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: Text('common.save'.tr),
+          ),
+        ],
+      ),
     );
   }
 
