@@ -592,6 +592,7 @@ class WebZhTW {
 
       // responsive layout
       'home.selectGallery': '選擇一個畫廊查看詳情',
+      'home.selectGalleryHint': '畫廊詳情會顯示在這個面板中。',
 
       // gallery detail extras
       'detail.parentGallery': '父畫廊',

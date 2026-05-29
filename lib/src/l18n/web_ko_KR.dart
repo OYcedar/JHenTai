@@ -611,6 +611,7 @@ class WebKoKR {
 
       // responsive layout
       'home.selectGallery': '세부 정보를 보려면 갤러리를 선택하세요',
+      'home.selectGalleryHint': '갤러리 상세 정보가 이 패널에 표시됩니다.',
 
       // gallery detail extras
       'detail.parentGallery': '상위 갤러리',

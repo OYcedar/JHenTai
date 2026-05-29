@@ -642,6 +642,8 @@ class WebPtBR {
 
       // responsive layout
       'home.selectGallery': 'Selecione uma galeria para ver detalhes',
+      'home.selectGalleryHint':
+          'Os detalhes da galeria aparecerão neste painel.',
 
       // gallery detail extras
       'detail.parentGallery': 'Galeria Pai',

@@ -640,6 +640,7 @@ class WebRuRU {
 
       // responsive layout
       'home.selectGallery': 'Выберите галерею для просмотра деталей',
+      'home.selectGalleryHint': 'Детали галереи появятся в этой панели.',
 
       // gallery detail extras
       'detail.parentGallery': 'Родительская галерея',

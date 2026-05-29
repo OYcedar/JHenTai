@@ -596,6 +596,7 @@ class WebZhCN {
 
       // responsive layout
       'home.selectGallery': '选择一个画廊查看详情',
+      'home.selectGalleryHint': '画廊详情会显示在这个面板中。',
 
       // gallery detail extras
       'detail.parentGallery': '父画廊',

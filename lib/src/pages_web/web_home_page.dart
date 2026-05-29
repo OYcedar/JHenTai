@@ -2290,19 +2290,7 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
             child: Obx(() {
               final sel = layoutCtrl.selectedGallery.value;
               if (sel == null) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.touch_app,
-                          size: 64, color: Colors.grey.shade400),
-                      const SizedBox(height: 16),
-                      Text('home.selectGallery'.tr,
-                          style: TextStyle(
-                              fontSize: 16, color: Colors.grey.shade500)),
-                    ],
-                  ),
-                );
+                return const _TwoPaneEmptyDetailPanel();
               }
               return _EmbeddedDetailPanel(
                 key: ValueKey('detail_${sel.gid}_${sel.token}'),
@@ -2312,6 +2300,204 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
             }),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TwoPaneEmptyDetailPanel extends StatelessWidget {
+  const _TwoPaneEmptyDetailPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          left: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+          ),
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.touch_app,
+                    size: 34,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'home.selectGallery'.tr,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'home.selectGalleryHint'.tr,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                const _TwoPaneDetailSkeleton(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TwoPaneDetailSkeleton extends StatelessWidget {
+  const _TwoPaneDetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final base = colorScheme.surfaceContainerHighest.withValues(alpha: 0.7);
+    final line = colorScheme.outlineVariant.withValues(alpha: 0.55);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        final cover = Container(
+          width: compact ? 120 : 142,
+          height: compact ? 164 : 196,
+          decoration: BoxDecoration(
+            color: base,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: line),
+          ),
+          child: Icon(
+            Icons.photo_library_outlined,
+            size: 40,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+          ),
+        );
+        final meta = Column(
+          crossAxisAlignment:
+              compact ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+          children: [
+            _SkeletonLine(width: compact ? 220 : 260, height: 18),
+            const SizedBox(height: 12),
+            _SkeletonLine(width: compact ? 180 : 210),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: compact ? WrapAlignment.center : WrapAlignment.start,
+              children: const [
+                _SkeletonChip(width: 72),
+                _SkeletonChip(width: 96),
+                _SkeletonChip(width: 64),
+              ],
+            ),
+            const SizedBox(height: 22),
+            _SkeletonLine(width: compact ? 240 : 320),
+            const SizedBox(height: 8),
+            _SkeletonLine(width: compact ? 200 : 280),
+            const SizedBox(height: 8),
+            _SkeletonLine(width: compact ? 150 : 190),
+          ],
+        );
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: line),
+          ),
+          child: compact
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    cover,
+                    const SizedBox(height: 18),
+                    meta,
+                  ],
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    cover,
+                    const SizedBox(width: 22),
+                    Expanded(child: meta),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _SkeletonLine extends StatelessWidget {
+  final double width;
+  final double height;
+
+  const _SkeletonLine({required this.width, this.height = 12});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .outlineVariant
+            .withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+}
+
+class _SkeletonChip extends StatelessWidget {
+  final double width;
+
+  const _SkeletonChip({required this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 26,
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .surfaceContainerHighest
+            .withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context)
+              .colorScheme
+              .outlineVariant
+              .withValues(alpha: 0.5),
+        ),
       ),
     );
   }

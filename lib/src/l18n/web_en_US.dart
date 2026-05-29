@@ -639,6 +639,7 @@ class WebEnUS {
 
       // responsive layout
       'home.selectGallery': 'Select a gallery to view details',
+      'home.selectGalleryHint': 'Gallery details will appear in this pane.',
 
       // gallery detail extras
       'detail.parentGallery': 'Parent Gallery',
