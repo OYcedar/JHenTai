@@ -551,6 +551,7 @@ class WebEnUS {
       'comment.postFailed': 'Failed to post comment: @error',
       'comment.voteFailed': 'Failed to vote: @error',
       'comment.scoreDetails': 'Score Details',
+      'lastEditedOn': 'Last edited on',
       'comment.update': 'Update Comment',
       'comment.updated': 'Comment Updated',
       'comment.updatedMsg': 'Your comment has been updated',

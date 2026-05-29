@@ -550,6 +550,7 @@ class WebRuRU {
       'comment.postFailed': 'Ошибка публикации: @error',
       'comment.voteFailed': 'Ошибка голосования: @error',
       'comment.scoreDetails': 'Детали оценки',
+      'lastEditedOn': 'Последнее редактирование',
       'comment.update': 'Обновить комментарий',
       'comment.updated': 'Комментарий обновлён',
       'comment.updatedMsg': 'Ваш комментарий обновлён',

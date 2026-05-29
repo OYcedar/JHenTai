@@ -501,6 +501,7 @@ class WebZhCN {
       'comment.postFailed': '发送评论失败: @error',
       'comment.voteFailed': '投票失败: @error',
       'comment.scoreDetails': '评分明细',
+      'lastEditedOn': '最后修改于',
       'comment.update': '更新评论',
       'comment.updated': '评论已更新',
       'comment.updatedMsg': '你的评论已更新',

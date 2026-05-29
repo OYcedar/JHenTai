@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:html/dom.dart';
 import 'package:html/parser.dart' as html_parser;
+import 'package:intl/intl.dart';
 
 import '../core/log.dart';
 import '../utils/eh_tag_style_parse.dart';
@@ -41,6 +42,17 @@ bool _ehGalleryHtmlLooksBlocked(String body) {
   if (lower.contains('sadpanda')) return true;
   if (body.length < 280) return true;
   return false;
+}
+
+String? _parseEhCommentTime(String? value) {
+  final text = value?.trim();
+  if (text == null || text.isEmpty) return null;
+  try {
+    final parsed = DateFormat('dd MMMM yyyy, HH:mm', 'en_US').parse(text);
+    return DateFormat('yyyy-MM-dd HH:mm').format(parsed);
+  } catch (_) {
+    return text;
+  }
 }
 
 /// Prefer IPv4 for H@H hosts. Installed on [_dioHath] **only** when `JH_HATH_PREFER_IPV4` is true (default off).
@@ -1335,6 +1347,8 @@ class EHClient {
               ?.group(1);
       final dateMatch = RegExp(r'Posted on (.+?) by').firstMatch(header);
       final date = dateMatch?.group(1) ?? '';
+      final lastEditTime =
+          _parseEhCommentTime(c.querySelector('.c8 strong')?.text);
       final scoreEl = c.querySelector('.c5 span');
       final score = scoreEl?.text ?? '';
       final scoreDetails = c
@@ -1363,6 +1377,7 @@ class EHClient {
         'authorUrl': authorUrl,
         'userId': userId,
         'date': date,
+        'lastEditTime': lastEditTime,
         'score': score,
         'scoreDetails': scoreDetails ?? [],
         'fromMe': fromMe,

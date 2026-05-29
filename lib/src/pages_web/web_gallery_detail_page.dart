@@ -2997,6 +2997,8 @@ class _CommentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final author = comment['author'] as String? ?? 'detail.anonymous'.tr;
     final date = _webPreferredTime(comment['date'] as String? ?? '');
+    final lastEditTime =
+        _webPreferredTime(comment['lastEditTime'] as String? ?? '');
     final score = comment['score'] as String? ?? '';
     final scoreDetails = (comment['scoreDetails'] as List?)
             ?.map((item) => item.toString())
@@ -3127,6 +3129,17 @@ class _CommentCard extends StatelessWidget {
                         .textTheme
                         .bodySmall
                         ?.copyWith(color: Colors.grey)),
+              ),
+            if (lastEditTime.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '${'lastEditedOn'.tr}: $lastEditTime',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.grey),
+                ),
               ),
             const SizedBox(height: 4),
             _LinkedCommentBody(

@@ -518,6 +518,7 @@ class WebKoKR {
       'comment.postFailed': '댓글 게시 실패: @error',
       'comment.voteFailed': '투표 실패: @error',
       'comment.scoreDetails': '점수 상세',
+      'lastEditedOn': '최근 수정일',
       'comment.update': '댓글 수정',
       'comment.updated': '댓글이 수정되었습니다',
       'comment.updatedMsg': '댓글이 업데이트되었습니다',

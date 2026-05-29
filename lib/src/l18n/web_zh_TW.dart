@@ -501,6 +501,7 @@ class WebZhTW {
       'comment.postFailed': '傳送評論失敗: @error',
       'comment.voteFailed': '投票失敗: @error',
       'comment.scoreDetails': '評分明細',
+      'lastEditedOn': '最後修改於',
       'comment.update': '更新評論',
       'comment.updated': '評論已更新',
       'comment.updatedMsg': '你的評論已更新',

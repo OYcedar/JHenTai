@@ -555,6 +555,7 @@ class WebPtBR {
       'comment.postFailed': 'Falha ao publicar comentário: @error',
       'comment.voteFailed': 'Falha ao votar: @error',
       'comment.scoreDetails': 'Detalhes da Pontuação',
+      'lastEditedOn': 'Última edição em',
       'comment.update': 'Atualizar Comentário',
       'comment.updated': 'Comentário Atualizado',
       'comment.updatedMsg': 'Seu comentário foi atualizado',
