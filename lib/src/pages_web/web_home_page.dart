@@ -18,6 +18,7 @@ import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_wheel_speed_controller.dart';
+import 'package:jhentai/src/utils/date_util.dart';
 import 'package:web/web.dart' as web;
 
 String _webHomeUploaderSearchQuery(String uploader) {
@@ -37,6 +38,31 @@ int _galleryInt(Map<String, dynamic> gallery, String key) =>
 
 String _galleryString(Map<String, dynamic> gallery, String key) =>
     gallery[key]?.toString() ?? '';
+
+String _galleryPublishTime(Map<String, dynamic> gallery) {
+  final raw = (gallery['publishDate'] ??
+          gallery['publishTime'] ??
+          gallery['posted'] ??
+          gallery['postedTime'])
+      ?.toString()
+      .trim();
+  if (raw == null || raw.isEmpty) {
+    return '';
+  }
+  if (WebPreferenceSettings.showUtcTime) {
+    return raw;
+  }
+  try {
+    return DateUtil.transformUtc2LocalTimeString(raw);
+  } catch (_) {
+    return raw;
+  }
+}
+
+bool _galleryIsExpunged(Map<String, dynamic> gallery) {
+  final raw = gallery['isExpunged'] ?? gallery['expunged'];
+  return raw == true || raw?.toString().toLowerCase() == 'true';
+}
 
 String _galleryLanguageAbbreviation(Map<String, dynamic> gallery) {
   var language = _galleryString(gallery, 'language').trim().toLowerCase();
@@ -2322,6 +2348,8 @@ class _DashboardGalleryCard extends StatelessWidget {
     final token = gallery['token'];
     final coverUrl = gallery['coverUrl'] as String? ?? '';
     final language = _galleryLanguageAbbreviation(gallery);
+    final publishTime = _galleryPublishTime(gallery);
+    final isExpunged = _galleryIsExpunged(gallery);
     return SizedBox(
       width: width,
       child: Card(
@@ -2401,11 +2429,30 @@ class _DashboardGalleryCard extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.all(6),
-                child: Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: publishTime.isEmpty ? 2 : 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            decoration:
+                                isExpunged ? TextDecoration.lineThrough : null,
+                          ),
+                    ),
+                    if (publishTime.isNotEmpty)
+                      Text(
+                        publishTime,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                              fontSize: 10,
+                            ),
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -4236,6 +4283,8 @@ class _GalleryListTile extends StatelessWidget {
     final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
     final tags = gallery['tags'] as Map<String, dynamic>?;
     final language = _galleryLanguageAbbreviation(gallery);
+    final publishTime = _galleryPublishTime(gallery);
+    final isExpunged = _galleryIsExpunged(gallery);
 
     return GestureDetector(
       onLongPressStart: (details) => _showWebHomeGalleryMenu(
@@ -4274,10 +4323,13 @@ class _GalleryListTile extends StatelessWidget {
                       Text(title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w500)),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                    decoration: isExpunged
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                  )),
                       const SizedBox(height: 4),
                       Wrap(
                         spacing: 6,
@@ -4353,6 +4405,18 @@ class _GalleryListTile extends StatelessWidget {
                             pageCount: pageCount,
                           ),
                           _WebHomeFavoriteBadge(gallery: gallery),
+                          if (publishTime.isNotEmpty)
+                            Text(publishTime,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color:
+                                          Theme.of(context).colorScheme.outline,
+                                      decoration: isExpunged
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    )),
                         ],
                       ),
                       Obx(() {
@@ -4427,6 +4491,8 @@ class _GalleryCard extends StatelessWidget {
     final tags = gallery['tags'] as Map<String, dynamic>?;
     final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
     final language = _galleryLanguageAbbreviation(gallery);
+    final publishTime = _galleryPublishTime(gallery);
+    final isExpunged = _galleryIsExpunged(gallery);
 
     return GestureDetector(
       onLongPressStart: (details) => _showWebHomeGalleryMenu(
@@ -4513,11 +4579,29 @@ class _GalleryCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
                 child: Text(
                   title,
-                  maxLines: 2,
+                  maxLines: publishTime.isEmpty ? 2 : 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        decoration:
+                            isExpunged ? TextDecoration.lineThrough : null,
+                      ),
                 ),
               ),
+              if (publishTime.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+                  child: Text(
+                    publishTime,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.outline,
+                          fontSize: 11,
+                          decoration:
+                              isExpunged ? TextDecoration.lineThrough : null,
+                        ),
+                  ),
+                ),
               if (language.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),

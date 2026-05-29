@@ -1272,7 +1272,60 @@ class GalleryRoutes {
       extra.addAll(favorite);
     }
 
+    final publishDate = _parseGalleryRowPublishDate(element);
+    if (publishDate.isNotEmpty) {
+      extra['publishDate'] = publishDate;
+    }
+
+    if (_isGalleryRowExpunged(element)) {
+      extra['isExpunged'] = true;
+    }
+
     return extra;
+  }
+
+  String _parseGalleryRowPublishDate(Element element) {
+    for (final selector in const [
+      '.gl2c',
+      '.gl3c',
+      '.gl4c',
+      '.gl5c',
+      '.gl2e',
+      '.gl3e',
+      '.gl4e',
+      '.gl5e',
+    ]) {
+      final text = element.querySelector(selector)?.text.trim() ?? '';
+      final value = _firstGalleryListDate(text);
+      if (value.isNotEmpty) {
+        return value;
+      }
+    }
+    return _firstGalleryListDate(element.text);
+  }
+
+  String _firstGalleryListDate(String text) {
+    final match = RegExp(
+      r'\b\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?\b',
+    ).firstMatch(text);
+    return match?.group(0)?.replaceFirst('T', ' ') ?? '';
+  }
+
+  bool _isGalleryRowExpunged(Element element) {
+    final title = element.querySelector('.glink');
+    final titleClass = title?.className.toLowerCase() ?? '';
+    final titleStyle = title?.attributes['style']?.toLowerCase() ?? '';
+    if (titleClass.contains('expung') ||
+        titleClass.contains('deleted') ||
+        titleStyle.contains('line-through')) {
+      return true;
+    }
+
+    final rowClass = element.className.toLowerCase();
+    final rowStyle = element.attributes['style']?.toLowerCase() ?? '';
+    return rowClass.contains('expung') ||
+        rowClass.contains('deleted') ||
+        rowStyle.contains('line-through');
   }
 
   Map<String, dynamic>? _parseGalleryRowFavorite(Element element) {
