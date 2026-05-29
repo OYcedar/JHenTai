@@ -753,6 +753,15 @@ class WebGalleryDetailPage extends StatelessWidget {
                       title: Text('detail.jumpToPage'.tr),
                       dense: true,
                       contentPadding: EdgeInsets.zero)),
+              if (controller.apiuid != null && controller.apikey != null)
+                PopupMenuItem(
+                    value: 'addTag',
+                    child: ListTile(
+                        leading:
+                            const Icon(Icons.bookmark_add_outlined, size: 20),
+                        title: Text('tagVote.addTag'.tr),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
               if (controller.parentUrl.value != null ||
                   controller.childVersions.isNotEmpty)
                 PopupMenuItem(
@@ -1117,6 +1126,9 @@ class WebGalleryDetailPage extends StatelessWidget {
         break;
       case 'jumpToPage':
         _showJumpToPageDialog(context);
+        break;
+      case 'addTag':
+        _showAddTagDialog(context);
         break;
       case 'versionHistory':
         _showVersionHistoryDialog(context);
