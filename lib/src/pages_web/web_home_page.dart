@@ -2834,11 +2834,11 @@ class _SearchFieldState extends State<_SearchField> {
         ));
       }
 
-      final lastToken = _extractLastToken(text);
-      if (lastToken.length >= 2) {
+      final completionQuery = _extractCompletionQuery(text);
+      if (completionQuery.text.length >= 2) {
         try {
           final tagResults =
-              await backendApiClient.searchTags(lastToken, limit: 8);
+              await backendApiClient.searchTags(completionQuery.text, limit: 8);
           for (final tag in tagResults) {
             final ns = tag['namespace']?.toString() ?? '';
             final key = tag['key']?.toString() ?? '';
@@ -2864,19 +2864,28 @@ class _SearchFieldState extends State<_SearchField> {
     }
   }
 
-  String _extractLastToken(String text) {
-    final trimmed = text.trimRight();
-    final lastSpace = trimmed.lastIndexOf(' ');
-    return lastSpace >= 0 ? trimmed.substring(lastSpace + 1) : trimmed;
+  ({int start, String text}) _extractCompletionQuery(String text) {
+    final end = text.trimRight().length;
+    var inQuote = false;
+    var start = 0;
+    for (var i = 0; i < end; i++) {
+      final char = text[i];
+      if (char == '"') {
+        inQuote = !inQuote;
+      } else if (!inQuote && char.trim().isEmpty) {
+        start = i + 1;
+      }
+    }
+    while (start < end && text[start].trim().isEmpty) {
+      start++;
+    }
+    return (start: start, text: text.substring(start, end));
   }
 
-  String _replaceLastToken(String text, String replacement) {
-    final trimmed = text.trimRight();
-    final lastSpace = trimmed.lastIndexOf(' ');
-    if (lastSpace >= 0) {
-      return '${trimmed.substring(0, lastSpace + 1)}$replacement ';
-    }
-    return '$replacement ';
+  String _replaceCompletionQuery(String text, String replacement) {
+    final query = _extractCompletionQuery(text);
+    final end = text.trimRight().length;
+    return '${text.substring(0, query.start)}$replacement ${text.substring(end)}';
   }
 
   void _showOverlay() {
@@ -2919,7 +2928,7 @@ class _SearchFieldState extends State<_SearchField> {
                           onTap: () {
                             if (s.isTag) {
                               widget.controller.searchController.text =
-                                  _replaceLastToken(
+                                  _replaceCompletionQuery(
                                       widget.controller.searchController.text,
                                       s.text);
                               widget.controller.searchController.selection =

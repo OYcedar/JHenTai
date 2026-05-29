@@ -502,16 +502,186 @@ class ServerDatabase {
     return results;
   }
 
+  static const Map<String, String> _namespaceAliases = {
+    'rows': 'rows',
+    '分类': 'rows',
+    'language': 'language',
+    'l': 'language',
+    '语言': 'language',
+    'artist': 'artist',
+    'a': 'artist',
+    '作者': 'artist',
+    'character': 'character',
+    'c': 'character',
+    '角色': 'character',
+    'female': 'female',
+    'f': 'female',
+    '女性': 'female',
+    'male': 'male',
+    'm': 'male',
+    '男性': 'male',
+    'parody': 'parody',
+    'p': 'parody',
+    '原作': 'parody',
+    'group': 'group',
+    'g': 'group',
+    '团队': 'group',
+    'mixed': 'mixed',
+    'x': 'mixed',
+    '混合': 'mixed',
+    'cosplayer': 'cosplayer',
+    'cos': 'cosplayer',
+    '角色扮演者': 'cosplayer',
+    'reclass': 'reclass',
+    'r': 'reclass',
+    '重新分类': 'reclass',
+    'temp': 'temp',
+    '临时': 'temp',
+    'other': 'other',
+    'o': 'other',
+    '其他': 'other',
+    'location': 'location',
+    'loc': 'location',
+    '地点': 'location',
+  };
+
+  static const Map<String, double> _namespaceScores = {
+    'other': 10,
+    'female': 9,
+    'male': 8.5,
+    'mixed': 8,
+    'parody': 3.3,
+    'character': 2.8,
+    'artist': 2.5,
+    'cosplayer': 2.4,
+    'group': 2.2,
+    'language': 2,
+    'location': 1.5,
+    'reclass': 1,
+    'temp': 0.1,
+    'rows': 0,
+  };
+
   List<Map<String, dynamic>> searchTagTranslations(String query,
       {int limit = 20}) {
-    final like = '%$query%';
+    final searchList = _parseTagSearchQuery(query);
+    if (searchList.isEmpty) {
+      return [];
+    }
+
+    final results = <String, Map<String, dynamic>>{};
+    for (var i = 0; i < searchList.length && results.length < limit; i++) {
+      final suffix = searchList.sublist(i);
+      final merged = suffix
+          .map((e) => e.namespace == null ? e.key : '${e.namespace}:${e.key}')
+          .join(' ');
+      final colonIndex = merged.indexOf(':');
+      final rawNamespace =
+          colonIndex == -1 ? null : merged.substring(0, colonIndex);
+      final namespace = _normalizeNamespace(rawNamespace);
+      final key = colonIndex == -1 ? merged : merged.substring(colonIndex + 1);
+      final trimmedKey = key.trim().toLowerCase();
+      if (trimmedKey.isEmpty ||
+          (trimmedKey.length <= 1 && RegExp(r'^\w+$').hasMatch(trimmedKey))) {
+        continue;
+      }
+
+      final candidates = _selectTagTranslationCandidates(
+        namespace: namespace,
+        key: trimmedKey,
+        limit: limit * 8,
+      );
+      candidates.sort((a, b) => _scoreTagTranslation(b, trimmedKey)
+          .compareTo(_scoreTagTranslation(a, trimmedKey)));
+
+      for (final row in candidates) {
+        final id = '${row['namespace']}:${row['key']}';
+        results.putIfAbsent(id, () => row);
+        if (results.length >= limit) {
+          break;
+        }
+      }
+    }
+
+    return results.values.take(limit).toList();
+  }
+
+  List<({String? namespace, String key})> _parseTagSearchQuery(String query) {
+    final matches = RegExp(
+      r'[-~]?(\S+?):"([^"]+)"?|[-~]?"([^"]+)"?|[-~]?(\S+?):(\S+)|[-~]?(\S+)',
+    ).allMatches(query.toLowerCase());
+    return matches
+        .map((match) => (
+              namespace: match.group(1) ?? match.group(4),
+              key: match.group(2) ??
+                  match.group(3) ??
+                  match.group(5) ??
+                  match.group(0) ??
+                  '',
+            ))
+        .where((item) => item.key.trim().isNotEmpty)
+        .toList();
+  }
+
+  String? _normalizeNamespace(String? namespace) {
+    if (namespace == null || namespace.isEmpty) {
+      return null;
+    }
+    return _namespaceAliases[namespace.toLowerCase()];
+  }
+
+  List<Map<String, dynamic>> _selectTagTranslationCandidates({
+    required String? namespace,
+    required String key,
+    required int limit,
+  }) {
+    final like = '%$key%';
+    final params = <Object>[like, like, like, like];
+    var where =
+        '(key LIKE ? OR tag_name LIKE ? OR full_tag_name LIKE ? OR intro LIKE ?)';
+    if (namespace != null) {
+      where = 'namespace = ? AND $where';
+      params.insert(0, namespace);
+    }
+    params.add(limit);
     return _db
         .select(
-          'SELECT * FROM tag_translation WHERE tag_name LIKE ? OR key LIKE ? LIMIT ?',
-          [like, like, limit],
+          'SELECT * FROM tag_translation WHERE $where LIMIT ?',
+          params,
         )
         .map(_rowToMap)
         .toList();
+  }
+
+  double _scoreTagTranslation(Map<String, dynamic> row, String key) {
+    final namespace = row['namespace']?.toString() ?? '';
+    final namespaceScore = _namespaceScores[namespace] ?? 1;
+    final rawKey = row['key']?.toString().toLowerCase() ?? '';
+    final tagName = row['tag_name']?.toString().toLowerCase() ?? '';
+    final intro = row['intro']?.toString().toLowerCase() ?? '';
+    var score = 0.0;
+
+    final keyIndex = rawKey.indexOf(key);
+    if (keyIndex != -1 && rawKey.isNotEmpty) {
+      score += namespaceScore *
+          (key.length + 1) /
+          rawKey.length *
+          (keyIndex == 0 ? 2 : 1);
+    }
+
+    final tagNameIndex = tagName.indexOf(key);
+    if (tagNameIndex != -1 && tagName.isNotEmpty) {
+      score += namespaceScore *
+          (key.length + 1) /
+          tagName.length *
+          (tagNameIndex == 0 ? 2 : 1);
+    }
+
+    if (intro.contains(key) && intro.isNotEmpty) {
+      score += namespaceScore * (key.length + 1) / intro.length * 0.5;
+    }
+
+    return score;
   }
 
   int tagTranslationCount() {
