@@ -527,9 +527,15 @@ class _WebTagTranslationSubPage extends StatefulWidget {
 }
 
 class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
+  static const _orderOptimizationKey =
+      'web_tag_search_order_optimization_enabled';
+
   final tagStatus = <String, dynamic>{}.obs;
+  final orderStatus = <String, dynamic>{}.obs;
   final isRefreshing = false.obs;
+  final isOrderRefreshing = false.obs;
   late bool showR18GImageDirectly;
+  bool enableOrderOptimization = false;
 
   @override
   void initState() {
@@ -541,6 +547,16 @@ class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
   Future<void> _load() async {
     try {
       tagStatus.value = await backendApiClient.getTagTranslationStatus();
+    } catch (_) {}
+    try {
+      orderStatus.value = await backendApiClient.getTagSearchOrderStatus();
+    } catch (_) {}
+    try {
+      final raw = await backendApiClient.getSetting(_orderOptimizationKey);
+      if (!mounted) {
+        return;
+      }
+      setState(() => enableOrderOptimization = raw == 'true');
     } catch (_) {}
   }
 
@@ -599,6 +615,84 @@ class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
                     WebPreferenceSettings.saveShowR18GImageDirectly(value);
                   },
                 ),
+                const Divider(height: 24),
+                Row(
+                  children: [
+                    Icon(
+                      orderStatus['loaded'] == true
+                          ? Icons.check_circle
+                          : Icons.info_outline,
+                      color: orderStatus['loaded'] == true
+                          ? Colors.green
+                          : Colors.orange,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        orderStatus['loaded'] == true
+                            ? 'tagSearchOrder.loaded'.trParams({
+                                'count': '${orderStatus['count'] ?? 0}',
+                              })
+                            : 'tagSearchOrder.notLoaded'.tr,
+                      ),
+                    ),
+                  ],
+                ),
+                if (orderStatus['version'] != null &&
+                    (orderStatus['version'] as String).isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 28),
+                    child: Text(
+                      'tagSearchOrder.version'.trParams(
+                        {'version': orderStatus['version']?.toString() ?? ''},
+                      ),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(color: Colors.grey),
+                    ),
+                  ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.sort_by_alpha),
+                  title: Text('zhTagSearchOrderOptimization'.tr),
+                  subtitle: Text('zhTagSearchOrderOptimizationHint'.tr),
+                  value: enableOrderOptimization,
+                  onChanged: (value) async {
+                    setState(() => enableOrderOptimization = value);
+                    try {
+                      await backendApiClient.putSetting(
+                        _orderOptimizationKey,
+                        value,
+                      );
+                      if (value && orderStatus['loaded'] != true) {
+                        await _refreshTagSearchOrder();
+                      }
+                    } catch (e) {
+                      if (!mounted) {
+                        return;
+                      }
+                      setState(() => enableOrderOptimization = !value);
+                      Get.snackbar(
+                        'common.error'.tr,
+                        '${'common.failed'.tr}: $e',
+                        snackPosition: SnackPosition.BOTTOM,
+                      );
+                    }
+                  },
+                ),
+                FilledButton.tonalIcon(
+                  icon: isOrderRefreshing.value
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.update),
+                  label: Text('tagSearchOrder.refresh'.tr),
+                  onPressed:
+                      isOrderRefreshing.value ? null : _refreshTagSearchOrder,
+                ),
                 const SizedBox(height: 8),
                 FilledButton.tonalIcon(
                   icon: isRefreshing.value
@@ -644,5 +738,36 @@ class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
             ),
           )),
     );
+  }
+
+  Future<void> _refreshTagSearchOrder() async {
+    isOrderRefreshing.value = true;
+    try {
+      final result = await backendApiClient.refreshTagSearchOrder();
+      if (result['success'] == true) {
+        Get.snackbar(
+          'common.success'.tr,
+          'tagSearchOrder.refreshSuccess'.trParams(
+            {'count': '${result['count'] ?? 0}'},
+          ),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'common.error'.tr,
+          result['message']?.toString() ?? 'common.failed'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      await _load();
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'tagSearchOrder.refreshFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isOrderRefreshing.value = false;
+    }
   }
 }

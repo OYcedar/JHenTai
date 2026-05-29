@@ -18,6 +18,8 @@ class TagRoutes {
 
     router.post('/refresh', _refresh);
     router.get('/status', _status);
+    router.post('/order-refresh', _orderRefresh);
+    router.get('/order-status', _orderStatus);
     router.get('/translate', _translate);
     router.post('/batch', _batch);
     router.get('/search', _search);
@@ -38,6 +40,21 @@ class TagRoutes {
   Future<Response> _status(Request request) async {
     return Response.ok(
       jsonEncode(_service.getStatus()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _orderRefresh(Request request) async {
+    final result = await _service.refreshTagCounts();
+    return Response.ok(
+      jsonEncode(result),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _orderStatus(Request request) async {
+    return Response.ok(
+      jsonEncode(_service.getTagCountStatus()),
       headers: {'Content-Type': 'application/json'},
     );
   }
@@ -98,7 +115,13 @@ class TagRoutes {
       return Response.ok(jsonEncode({'results': []}),
           headers: {'Content-Type': 'application/json'});
     }
-    final results = db.searchTagTranslations(query, limit: limit);
+    final useFrequency =
+        db.readConfig('web_tag_search_order_optimization_enabled') == 'true';
+    final results = db.searchTagTranslations(
+      query,
+      limit: limit,
+      useFrequency: useFrequency,
+    );
     final ehClient = _ehClient;
     if (results.length < limit && ehClient != null) {
       final onlineLimit = limit - results.length;

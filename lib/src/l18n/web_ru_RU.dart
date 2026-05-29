@@ -615,6 +615,16 @@ class WebRuRU {
       'tagTranslation.refresh': 'Обновить базу тегов',
       'tagTranslation.refreshSuccess': '@count тегов обновлено',
       'tagTranslation.refreshFailed': 'Ошибка обновления: @error',
+      'zhTagSearchOrderOptimization':
+          'Правило сортировки автодополнения китайских тегов',
+      'zhTagSearchOrderOptimizationHint':
+          'Интеллектуальная сортировка по умолчанию, по частоте, если включено',
+      'tagSearchOrder.loaded': '@count строк частоты тегов загружено',
+      'tagSearchOrder.notLoaded': 'Данные частоты тегов не загружены',
+      'tagSearchOrder.version': 'Версия: @version',
+      'tagSearchOrder.refresh': 'Обновить данные частоты тегов',
+      'tagSearchOrder.refreshSuccess': '@count строк частоты тегов обновлено',
+      'tagSearchOrder.refreshFailed': 'Ошибка обновления: @error',
 
       // list mode
       'listMode.toggle': 'Переключить режим отображения',

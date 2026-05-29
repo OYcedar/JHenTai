@@ -583,6 +583,16 @@ class WebKoKR {
       'tagTranslation.refresh': '태그 데이터베이스 새로고침',
       'tagTranslation.refreshSuccess': '@count개 태그 업데이트됨',
       'tagTranslation.refreshFailed': '새로고침 실패: @error',
+      'zhTagSearchOrderOptimization':
+          'Chinese Tag Auto-Completion Ordering Rule',
+      'zhTagSearchOrderOptimizationHint':
+          'Intelligent sorting by default and sort by frequency if enabled',
+      'tagSearchOrder.loaded': '@count개 태그 빈도 행 로드됨',
+      'tagSearchOrder.notLoaded': '태그 빈도 데이터가 로드되지 않음',
+      'tagSearchOrder.version': '버전: @version',
+      'tagSearchOrder.refresh': '태그 빈도 데이터 새로고침',
+      'tagSearchOrder.refreshSuccess': '@count개 태그 빈도 행 업데이트됨',
+      'tagSearchOrder.refreshFailed': '새로고침 실패: @error',
 
       // list mode
       'listMode.toggle': '보기 모드 전환',

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:sqlite3/sqlite3.dart';
 
 import 'log.dart';
@@ -165,6 +167,13 @@ class ServerDatabase {
     ''');
     _db.execute(
         'CREATE INDEX IF NOT EXISTS idx_tag_name ON tag_translation(tag_name)');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS tag_count (
+        namespace_key TEXT PRIMARY KEY,
+        count INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
 
     _db.execute('''
       CREATE TABLE IF NOT EXISTS quick_search (
@@ -563,6 +572,32 @@ class ServerDatabase {
     return results;
   }
 
+  void clearTagCounts() {
+    _db.execute('DELETE FROM tag_count');
+  }
+
+  void batchInsertTagCounts(List<List<Object>> rows) {
+    _db.execute('BEGIN TRANSACTION');
+    try {
+      final stmt = _db.prepare(
+        'INSERT OR REPLACE INTO tag_count (namespace_key, count) VALUES (?, ?)',
+      );
+      for (final row in rows) {
+        stmt.execute(row);
+      }
+      stmt.dispose();
+      _db.execute('COMMIT');
+    } catch (e) {
+      _db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  int tagCountRows() {
+    final result = _db.select('SELECT COUNT(*) as cnt FROM tag_count');
+    return result.first['cnt'] as int;
+  }
+
   static const Map<String, String> _namespaceAliases = {
     'rows': 'rows',
     '分类': 'rows',
@@ -624,7 +659,7 @@ class ServerDatabase {
   };
 
   List<Map<String, dynamic>> searchTagTranslations(String query,
-      {int limit = 20}) {
+      {int limit = 20, bool useFrequency = false}) {
     final searchList = _parseTagSearchQuery(query);
     if (searchList.isEmpty) {
       return [];
@@ -652,8 +687,10 @@ class ServerDatabase {
         key: trimmedKey,
         limit: limit * 8,
       );
-      candidates.sort((a, b) => _scoreTagTranslation(b, trimmedKey)
-          .compareTo(_scoreTagTranslation(a, trimmedKey)));
+      candidates.sort((a, b) => _scoreTagTranslation(b, trimmedKey,
+              useFrequency: useFrequency)
+          .compareTo(
+              _scoreTagTranslation(a, trimmedKey, useFrequency: useFrequency)));
 
       for (final row in candidates) {
         final id = '${row['namespace']}:${row['key']}';
@@ -707,14 +744,21 @@ class ServerDatabase {
     params.add(limit);
     return _db
         .select(
-          'SELECT * FROM tag_translation WHERE $where LIMIT ?',
+          'SELECT tag_translation.*, COALESCE(tag_count.count, 0) AS search_count '
+          'FROM tag_translation '
+          'LEFT JOIN tag_count ON tag_count.namespace_key = tag_translation.namespace || ":" || tag_translation.key '
+          'WHERE $where LIMIT ?',
           params,
         )
         .map(_rowToMap)
         .toList();
   }
 
-  double _scoreTagTranslation(Map<String, dynamic> row, String key) {
+  double _scoreTagTranslation(
+    Map<String, dynamic> row,
+    String key, {
+    required bool useFrequency,
+  }) {
     final namespace = row['namespace']?.toString() ?? '';
     final namespaceScore = _namespaceScores[namespace] ?? 1;
     final rawKey = row['key']?.toString().toLowerCase() ?? '';
@@ -740,6 +784,15 @@ class ServerDatabase {
 
     if (intro.contains(key) && intro.isNotEmpty) {
       score += namespaceScore * (key.length + 1) / intro.length * 0.5;
+    }
+
+    if (useFrequency) {
+      final count = row['search_count'] is int
+          ? row['search_count'] as int
+          : int.tryParse(row['search_count']?.toString() ?? '') ?? 0;
+      if (count > 0) {
+        score += math.log(count + 1) * 2;
+      }
     }
 
     return score;

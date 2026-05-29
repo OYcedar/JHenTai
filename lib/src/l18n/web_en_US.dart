@@ -619,6 +619,16 @@ class WebEnUS {
       'tagTranslation.refresh': 'Refresh Tag Database',
       'tagTranslation.refreshSuccess': '@count tags updated',
       'tagTranslation.refreshFailed': 'Failed to refresh: @error',
+      'zhTagSearchOrderOptimization':
+          'Chinese Tag Auto-Completion Ordering Rule',
+      'zhTagSearchOrderOptimizationHint':
+          'Intelligent sorting by default and sort by frequency if enabled',
+      'tagSearchOrder.loaded': '@count tag frequency rows loaded',
+      'tagSearchOrder.notLoaded': 'Tag frequency data not loaded',
+      'tagSearchOrder.version': 'Version: @version',
+      'tagSearchOrder.refresh': 'Refresh Tag Frequency Data',
+      'tagSearchOrder.refreshSuccess': '@count tag frequency rows updated',
+      'tagSearchOrder.refreshFailed': 'Failed to refresh: @error',
 
       // list mode
       'listMode.toggle': 'Toggle view mode',

@@ -972,6 +972,16 @@ class BackendApiClient {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> refreshTagSearchOrder() async {
+    final response = await _dio.post('/api/tag/order-refresh');
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> getTagSearchOrderStatus() async {
+    final response = await _dio.get('/api/tag/order-status');
+    return response.data;
+  }
+
   Future<Map<String, dynamic>> getTagTranslation(
       String namespace, String key) async {
     final response = await _dio.get(

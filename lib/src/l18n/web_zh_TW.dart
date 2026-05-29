@@ -562,6 +562,14 @@ class WebZhTW {
       'tagTranslation.refresh': '更新標籤資料庫',
       'tagTranslation.refreshSuccess': '已更新 @count 個標籤',
       'tagTranslation.refreshFailed': '更新失敗: @error',
+      'zhTagSearchOrderOptimization': '標籤補全排序規則',
+      'zhTagSearchOrderOptimizationHint': '預設智慧排序，啟用後按畫廊使用頻率排序',
+      'tagSearchOrder.loaded': '已載入 @count 筆標籤頻率',
+      'tagSearchOrder.notLoaded': '標籤頻率資料未載入',
+      'tagSearchOrder.version': '版本: @version',
+      'tagSearchOrder.refresh': '更新標籤頻率資料',
+      'tagSearchOrder.refreshSuccess': '已更新 @count 筆標籤頻率',
+      'tagSearchOrder.refreshFailed': '更新失敗: @error',
 
       // list mode
       'listMode.toggle': '切換顯示模式',

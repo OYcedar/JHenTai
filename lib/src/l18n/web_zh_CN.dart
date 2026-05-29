@@ -566,6 +566,14 @@ class WebZhCN {
       'tagTranslation.refresh': '更新标签数据库',
       'tagTranslation.refreshSuccess': '已更新 @count 个标签',
       'tagTranslation.refreshFailed': '更新失败: @error',
+      'zhTagSearchOrderOptimization': '标签补全排序规则',
+      'zhTagSearchOrderOptimizationHint': '默认智能排序，启用后按画廊使用频次排序',
+      'tagSearchOrder.loaded': '已加载 @count 条标签频次',
+      'tagSearchOrder.notLoaded': '标签频次数据未加载',
+      'tagSearchOrder.version': '版本: @version',
+      'tagSearchOrder.refresh': '更新标签频次数据',
+      'tagSearchOrder.refreshSuccess': '已更新 @count 条标签频次',
+      'tagSearchOrder.refreshFailed': '更新失败: @error',
 
       // list mode
       'listMode.toggle': '切换显示模式',

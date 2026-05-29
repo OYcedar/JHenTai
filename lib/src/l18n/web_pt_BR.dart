@@ -620,6 +620,17 @@ class WebPtBR {
       'tagTranslation.refresh': 'Atualizar Banco de Tags',
       'tagTranslation.refreshSuccess': '@count tags atualizadas',
       'tagTranslation.refreshFailed': 'Falha ao atualizar: @error',
+      'zhTagSearchOrderOptimization':
+          'Chinese Tag Auto-Completion Ordering Rule',
+      'zhTagSearchOrderOptimizationHint':
+          'Intelligent sorting by default and sort by frequency if enabled',
+      'tagSearchOrder.loaded': '@count linhas de frequência carregadas',
+      'tagSearchOrder.notLoaded': 'Dados de frequência de tags não carregados',
+      'tagSearchOrder.version': 'Versão: @version',
+      'tagSearchOrder.refresh': 'Atualizar Dados de Frequência',
+      'tagSearchOrder.refreshSuccess':
+          '@count linhas de frequência atualizadas',
+      'tagSearchOrder.refreshFailed': 'Falha ao atualizar: @error',
 
       // list mode
       'listMode.toggle': 'Alternar modo de visualização',
