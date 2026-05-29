@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
@@ -628,28 +629,34 @@ class WebLocalPage extends GetView<WebLocalController> {
   }
 
   Widget _buildGalleryTile(BuildContext context, Map<String, dynamic> gallery) {
-    return ListTile(
-      leading: _buildGalleryCover(gallery),
-      title: Text(
-        gallery['title'] as String? ?? '',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    return GestureDetector(
+      onLongPressStart: (details) =>
+          _showLocalGalleryMenu(context, details.globalPosition, gallery),
+      onSecondaryTapUp: (details) =>
+          _showLocalGalleryMenu(context, details.globalPosition, gallery),
+      child: ListTile(
+        leading: _buildGalleryCover(gallery),
+        title: Text(
+          gallery['title'] as String? ?? '',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text('common.images'
+            .trParams({'count': '${gallery['imageCount'] ?? 0}'})),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'common.delete'.tr,
+              onPressed: () => _confirmDeleteLocalGallery(context, gallery),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.menu_book),
+          ],
+        ),
+        onTap: () => controller.openGallery(gallery),
       ),
-      subtitle: Text(
-          'common.images'.trParams({'count': '${gallery['imageCount'] ?? 0}'})),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            tooltip: 'common.delete'.tr,
-            onPressed: () => _confirmDeleteLocalGallery(context, gallery),
-          ),
-          const SizedBox(width: 4),
-          const Icon(Icons.menu_book),
-        ],
-      ),
-      onTap: () => controller.openGallery(gallery),
     );
   }
 
@@ -686,51 +693,116 @@ class WebLocalPage extends GetView<WebLocalController> {
     final title = gallery['title'] as String? ?? '';
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => controller.openGallery(gallery),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _buildGalleryCoverLarge(context, gallery)),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
+      child: GestureDetector(
+        onLongPressStart: (details) =>
+            _showLocalGalleryMenu(context, details.globalPosition, gallery),
+        onSecondaryTapUp: (details) =>
+            _showLocalGalleryMenu(context, details.globalPosition, gallery),
+        child: InkWell(
+          onTap: () => controller.openGallery(gallery),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildGalleryCoverLarge(context, gallery)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 0, 6, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'common.images'
-                          .trParams({'count': '${gallery['imageCount'] ?? 0}'}),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 6, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'common.images'.trParams(
+                            {'count': '${gallery['imageCount'] ?? 0}'}),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: 'common.delete'.tr,
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () =>
-                        _confirmDeleteLocalGallery(context, gallery),
-                  ),
-                ],
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'common.delete'.tr,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () =>
+                          _confirmDeleteLocalGallery(context, gallery),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  void _showLocalGalleryMenu(
+    BuildContext context,
+    Offset position,
+    Map<String, dynamic> gallery,
+  ) {
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx + 1, position.dy + 1),
+      items: [
+        PopupMenuItem(
+          value: 'read',
+          child: ListTile(
+            leading: const Icon(Icons.menu_book, size: 20),
+            title: Text('downloads.read'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'copyPath',
+          child: ListTile(
+            leading: const Icon(Icons.copy, size: 20),
+            title: Text('local.copyPath'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading:
+                const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+            title: Text('common.delete'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    ).then((value) {
+      switch (value) {
+        case 'read':
+          controller.openGallery(gallery);
+          break;
+        case 'copyPath':
+          final path = gallery['path']?.toString() ?? '';
+          if (path.isEmpty) return;
+          Clipboard.setData(ClipboardData(text: path));
+          Get.snackbar('hasCopiedToClipboard'.tr, path,
+              snackPosition: SnackPosition.BOTTOM);
+          break;
+        case 'delete':
+          _confirmDeleteLocalGallery(context, gallery);
+          break;
+      }
+    });
   }
 
   Widget _buildGalleryCover(Map<String, dynamic> gallery) {

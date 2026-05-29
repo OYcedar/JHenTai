@@ -237,6 +237,7 @@ class WebZhTW {
       'local.deleteSuccess': '本機畫廊已刪除',
       'local.deleteFailed': '刪除本機畫廊失敗: @error',
       'local.parentDirectory': '上層目錄',
+      'local.copyPath': '複製路徑',
 
       // settings
       'settings.title': '設定',

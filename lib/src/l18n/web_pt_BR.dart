@@ -253,6 +253,7 @@ class WebPtBR {
       'local.deleteSuccess': 'Galeria local excluída',
       'local.deleteFailed': 'Falha ao excluir galeria local: @error',
       'local.parentDirectory': 'Pasta Pai',
+      'local.copyPath': 'Copiar Caminho',
 
       // settings
       'settings.title': 'Configurações',

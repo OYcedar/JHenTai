@@ -250,6 +250,7 @@ class WebRuRU {
       'local.deleteSuccess': 'Локальная галерея удалена',
       'local.deleteFailed': 'Не удалось удалить локальную галерею: @error',
       'local.parentDirectory': 'Родительская папка',
+      'local.copyPath': 'Копировать путь',
 
       // settings
       'settings.title': 'Настройки',

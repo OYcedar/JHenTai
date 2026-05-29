@@ -237,6 +237,7 @@ class WebZhCN {
       'local.deleteSuccess': '本地画廊已删除',
       'local.deleteFailed': '删除本地画廊失败: @error',
       'local.parentDirectory': '上级目录',
+      'local.copyPath': '复制路径',
 
       // settings
       'settings.title': '设置',

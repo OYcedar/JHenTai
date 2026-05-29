@@ -251,6 +251,7 @@ class WebEnUS {
       'local.deleteSuccess': 'Local gallery deleted',
       'local.deleteFailed': 'Failed to delete local gallery: @error',
       'local.parentDirectory': 'Parent Directory',
+      'local.copyPath': 'Copy Path',
 
       // settings
       'settings.title': 'Settings',
