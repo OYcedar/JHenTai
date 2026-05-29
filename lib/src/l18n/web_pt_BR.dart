@@ -417,6 +417,7 @@ class WebPtBR {
       'settings.proxyEnvironmentHint':
           'Apenas protocolo, host e porta aparecem aqui. Credenciais ficam ocultas.',
       'settings.proxyAuthConfigured': 'autenticação configurada',
+      'settings.copyNetworkDiagnostics': 'Copiar diagnóstico de rede',
       'settings.networkRuntimeFlags': 'Diagnóstico de rede',
       'settings.networkRestartHint':
           'Esses valores vêm do ambiente de inicialização do servidor. Reinicie o contêiner após alterá-los.',

@@ -412,6 +412,7 @@ class WebRuRU {
       'settings.proxyEnvironmentHint':
           'Здесь показаны только протокол, хост и порт. Учётные данные скрыты.',
       'settings.proxyAuthConfigured': 'авторизация настроена',
+      'settings.copyNetworkDiagnostics': 'Копировать диагностику сети',
       'settings.networkRuntimeFlags': 'Диагностика сети',
       'settings.networkRestartHint':
           'Эти значения берутся из окружения запуска сервера. После изменения перезапустите контейнер.',

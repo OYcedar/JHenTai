@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 
@@ -8,7 +9,20 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('settings.menuNetwork'.tr)),
+      appBar: AppBar(
+        title: Text('settings.menuNetwork'.tr),
+        actions: [
+          Obx(
+            () => IconButton(
+              tooltip: 'settings.copyNetworkDiagnostics'.tr,
+              onPressed: controller.isLoading.value
+                  ? null
+                  : () => _copyNetworkDiagnostics(context),
+              icon: const Icon(Icons.copy_all_outlined),
+            ),
+          ),
+        ],
+      ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -185,6 +199,41 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _copyNetworkDiagnostics(BuildContext context) async {
+    final info = controller.networkInfo;
+    final proxyEnv =
+        (info['proxyEnv'] as List?)?.whereType<Map>().toList() ?? const <Map>[];
+    final lines = <String>[
+      'JHenTai Web network diagnostics',
+      '${'settings.ehProxyRoute'.tr}: '
+          '${_sourceLabel(info['ehProxySource']?.toString() ?? 'DIRECT')}',
+      '${'settings.hathProxyRoute'.tr}: '
+          '${_sourceLabel(info['hathProxySource']?.toString() ?? 'DIRECT')}',
+      'JH_HATH_PROXY: '
+          '${_boolLabel(info['hathProxyConfigured'] == true)}',
+      '',
+      '${'settings.proxyEnvironment'.tr}:',
+      if (proxyEnv.isEmpty)
+        '- ${'settings.proxyEnvironmentEmpty'.tr}'
+      else
+        for (final item in proxyEnv)
+          '- ${item['name']?.toString() ?? '-'}: ${_proxyEnvLabel(item)}',
+      '',
+      '${'settings.networkRuntimeFlags'.tr}:',
+      '- JH_HATH_PREFER_IPV4: ${_boolLabel(info['hathPreferIpv4'] == true)}',
+      '- JH_IMAGE_PROXY_DEBUG: ${_boolLabel(info['imageProxyDebug'] == true)}',
+    ];
+    await Clipboard.setData(ClipboardData(text: lines.join('\n')));
+    if (!context.mounted) {
+      return;
+    }
+    Get.snackbar(
+      'common.success'.tr,
+      'hasCopiedToClipboard'.tr,
+      snackPosition: SnackPosition.BOTTOM,
     );
   }
 

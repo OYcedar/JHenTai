@@ -414,6 +414,7 @@ class WebEnUS {
       'settings.proxyEnvironmentHint':
           'Only protocol, host, and port are shown here. Credentials are hidden.',
       'settings.proxyAuthConfigured': 'auth configured',
+      'settings.copyNetworkDiagnostics': 'Copy network diagnostics',
       'settings.networkRuntimeFlags': 'Network diagnostics',
       'settings.networkRestartHint':
           'These values come from the server startup environment. Restart the container after changing them.',
