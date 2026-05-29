@@ -372,6 +372,8 @@ class WebDownloadsController extends GetxController
       task['archivePageUrl']?.toString() ?? '',
       task['downloadPageUrl']?.toString() ?? '',
       task['downloadUrl']?.toString() ?? '',
+      task['tagSearchText']?.toString() ?? '',
+      task['tag_search_text']?.toString() ?? '',
       task['size']?.toString() ?? '',
     ];
     return values.where((v) => v.isNotEmpty).join('\n');

@@ -306,6 +306,7 @@ class BackendApiClient {
     String group = 'default',
     int priority = 0,
     bool downloadOriginalImage = false,
+    String tagSearchText = '',
   }) async {
     await _dio.post(
       '/api/download/gallery/start',
@@ -321,6 +322,7 @@ class BackendApiClient {
         'group': group,
         'priority': priority,
         'downloadOriginalImage': downloadOriginalImage,
+        'tagSearchText': tagSearchText,
       },
     );
   }
@@ -402,6 +404,7 @@ class BackendApiClient {
     bool isOriginal = false,
     String group = 'default',
     int priority = 0,
+    String tagSearchText = '',
   }) async {
     await _dio.post(
       '/api/download/archive/start',
@@ -419,6 +422,7 @@ class BackendApiClient {
         'isOriginal': isOriginal,
         'group': group,
         'priority': priority,
+        'tagSearchText': tagSearchText,
       },
     );
   }

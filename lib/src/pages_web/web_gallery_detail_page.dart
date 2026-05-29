@@ -377,6 +377,22 @@ class WebGalleryDetailController extends GetxController {
     return translatedTags[key] ?? tag;
   }
 
+  String buildDownloadTagSearchText() {
+    final values = <String>{};
+    for (final entry in tags.entries) {
+      final namespace = entry.key;
+      for (final tag in entry.value) {
+        values.add('$namespace:$tag');
+        final translated = getTranslatedTag(namespace, tag);
+        if (translated != tag) {
+          values.add('$namespace:$translated');
+          values.add(translated);
+        }
+      }
+    }
+    return values.join('\n');
+  }
+
   /// Inline ARGB from gallery HTML (`tagsRich`), same order as [tags] rows.
   ({int? colorArgb, int? backgroundArgb})? tagHtmlStyleArgb(
       String namespace, String tagName) {
@@ -493,6 +509,7 @@ class WebGalleryDetailController extends GetxController {
         group: group,
         priority: priority,
         downloadOriginalImage: downloadOriginalImage,
+        tagSearchText: buildDownloadTagSearchText(),
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.galleryQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
@@ -554,6 +571,7 @@ class WebGalleryDetailController extends GetxController {
         isOriginal: isOriginal,
         group: group,
         priority: priority,
+        tagSearchText: buildDownloadTagSearchText(),
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.archiveQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);

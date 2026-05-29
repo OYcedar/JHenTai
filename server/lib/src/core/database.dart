@@ -22,7 +22,11 @@ class ServerDatabase {
     _addColumnIfMissing('gallery_download', 'download_original_image',
         'INTEGER NOT NULL DEFAULT 0');
     _addColumnIfMissing(
+        'gallery_download', 'tag_search_text', "TEXT NOT NULL DEFAULT ''");
+    _addColumnIfMissing(
         'archive_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
+    _addColumnIfMissing(
+        'archive_download', 'tag_search_text', "TEXT NOT NULL DEFAULT ''");
     _addColumnIfMissing('tag_translation', 'links', "TEXT NOT NULL DEFAULT ''");
   }
 
@@ -65,6 +69,7 @@ class ServerDatabase {
         group_name TEXT NOT NULL DEFAULT 'default',
         priority INTEGER NOT NULL DEFAULT 0,
         download_original_image INTEGER NOT NULL DEFAULT 0,
+        tag_search_text TEXT NOT NULL DEFAULT '',
         supersedes_gid INTEGER,
         superseded_by_gid INTEGER
       )
@@ -105,7 +110,8 @@ class ServerDatabase {
         group_name TEXT NOT NULL DEFAULT 'default',
         downloaded_bytes INTEGER NOT NULL DEFAULT 0,
         total_bytes INTEGER NOT NULL DEFAULT 0,
-        priority INTEGER NOT NULL DEFAULT 0
+        priority INTEGER NOT NULL DEFAULT 0,
+        tag_search_text TEXT NOT NULL DEFAULT ''
       )
     ''');
 
@@ -217,8 +223,8 @@ class ServerDatabase {
   void insertGalleryDownload(Map<String, dynamic> data) {
     _db.execute('''
       INSERT OR REPLACE INTO gallery_download 
-      (gid, token, title, category, page_count, gallery_url, cover_url, uploader, publish_time, download_status, insert_time, completed_count, group_name, priority, download_original_image, supersedes_gid, superseded_by_gid)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (gid, token, title, category, page_count, gallery_url, cover_url, uploader, publish_time, download_status, insert_time, completed_count, group_name, priority, download_original_image, tag_search_text, supersedes_gid, superseded_by_gid)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
       data['gid'],
       data['token'],
@@ -235,6 +241,7 @@ class ServerDatabase {
       data['group_name'] ?? 'default',
       data['priority'] ?? 0,
       data['download_original_image'] ?? 0,
+      data['tag_search_text'] ?? '',
       data['supersedes_gid'],
       data['superseded_by_gid'],
     ]);
@@ -317,8 +324,8 @@ class ServerDatabase {
       INSERT OR REPLACE INTO archive_download
       (gid, token, title, category, page_count, gallery_url, cover_url, uploader, size,
        publish_time, archive_status, archive_page_url, download_page_url, download_url,
-       is_original, insert_time, group_name, downloaded_bytes, total_bytes, priority)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       is_original, insert_time, group_name, downloaded_bytes, total_bytes, priority, tag_search_text)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
       data['gid'],
       data['token'],
@@ -340,6 +347,7 @@ class ServerDatabase {
       data['downloaded_bytes'] ?? 0,
       data['total_bytes'] ?? 0,
       data['priority'] ?? 0,
+      data['tag_search_text'] ?? '',
     ]);
   }
 

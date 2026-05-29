@@ -39,6 +39,7 @@ class GalleryDownloadTask {
   String group;
   int priority;
   final bool downloadOriginalImage;
+  final String tagSearchText;
   final String insertTime;
   int? supersedesGid;
   int? supersededByGid;
@@ -58,6 +59,7 @@ class GalleryDownloadTask {
     this.group = 'default',
     this.priority = 0,
     this.downloadOriginalImage = false,
+    this.tagSearchText = '',
     required this.insertTime,
     this.supersedesGid,
     this.supersededByGid,
@@ -79,6 +81,8 @@ class GalleryDownloadTask {
         'priority': priority,
         'downloadOriginalImage': downloadOriginalImage,
         'is_original': downloadOriginalImage ? 1 : 0,
+        'tagSearchText': tagSearchText,
+        'tag_search_text': tagSearchText,
         'insertTime': insertTime,
         if (supersedesGid != null) 'supersedesGid': supersedesGid,
         if (supersededByGid != null) 'supersededByGid': supersededByGid,
@@ -129,6 +133,7 @@ class GalleryDownloadService {
         priority: row['priority'] as int? ?? 0,
         downloadOriginalImage:
             (row['download_original_image'] as int? ?? 0) == 1,
+        tagSearchText: row['tag_search_text'] as String? ?? '',
         insertTime:
             row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
         supersedesGid: row['supersedes_gid'] as int?,
@@ -161,6 +166,7 @@ class GalleryDownloadService {
     String group = 'default',
     int priority = 0,
     bool downloadOriginalImage = false,
+    String tagSearchText = '',
     int? supersedesGid,
   }) async {
     if (_tasks.containsKey(gid)) {
@@ -189,6 +195,7 @@ class GalleryDownloadService {
       group: group,
       priority: priority,
       downloadOriginalImage: downloadOriginalImage,
+      tagSearchText: tagSearchText,
       insertTime: now,
       supersedesGid: supersedesGid,
     );
@@ -209,6 +216,7 @@ class GalleryDownloadService {
       'group_name': group,
       'priority': priority,
       'download_original_image': downloadOriginalImage ? 1 : 0,
+      'tag_search_text': tagSearchText,
       'supersedes_gid': supersedesGid,
     });
 

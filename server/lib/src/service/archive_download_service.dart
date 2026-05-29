@@ -42,6 +42,7 @@ class ArchiveDownloadTask {
   final bool isOriginal;
   String group;
   int priority;
+  final String tagSearchText;
   final String insertTime;
   ArchiveStatus status;
   String downloadPageUrl;
@@ -64,6 +65,7 @@ class ArchiveDownloadTask {
     required this.isOriginal,
     this.group = 'default',
     this.priority = 0,
+    this.tagSearchText = '',
     required this.insertTime,
     this.status = ArchiveStatus.none,
     this.downloadPageUrl = '',
@@ -92,6 +94,8 @@ class ArchiveDownloadTask {
         'group': group,
         'group_name': group,
         'priority': priority,
+        'tagSearchText': tagSearchText,
+        'tag_search_text': tagSearchText,
         'insertTime': insertTime,
       };
 }
@@ -133,6 +137,7 @@ class ArchiveDownloadService {
         totalBytes: row['total_bytes'] as int? ?? 0,
         group: row['group_name'] as String? ?? 'default',
         priority: row['priority'] as int? ?? 0,
+        tagSearchText: row['tag_search_text'] as String? ?? '',
         insertTime:
             row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
       );
@@ -173,6 +178,7 @@ class ArchiveDownloadService {
     bool isOriginal = false,
     String group = 'default',
     int priority = 0,
+    String tagSearchText = '',
   }) async {
     if (_tasks.containsKey(gid)) {
       final existing = _tasks[gid]!;
@@ -201,6 +207,7 @@ class ArchiveDownloadService {
       status: ArchiveStatus.unlocking,
       group: group,
       priority: priority,
+      tagSearchText: tagSearchText,
       insertTime: now,
     );
 
@@ -222,6 +229,7 @@ class ArchiveDownloadService {
       'group_name': group,
       'insert_time': now,
       'priority': priority,
+      'tag_search_text': tagSearchText,
     });
     _saveMetadata(task);
 
