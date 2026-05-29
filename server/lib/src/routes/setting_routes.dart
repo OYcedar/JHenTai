@@ -10,6 +10,7 @@ import 'package:sqlite3/sqlite3.dart';
 import '../config/server_config.dart';
 import '../core/database.dart';
 import '../network/eh_client.dart';
+import '../service/download_runtime_settings.dart';
 import '../utils/site_setting_page_parser.dart';
 
 class SettingRoutes {
@@ -499,11 +500,13 @@ class SettingRoutes {
       'downloadDir': _config.downloadDir,
       'localGalleryDir': _config.localGalleryDir,
       'extraScanPaths': _config.extraScanPaths,
-      'maxConcurrentGalleryDownloads': _config.maxConcurrentGalleryDownloads,
-      'maxConcurrentArchiveDownloads': _config.maxConcurrentArchiveDownloads,
+      'maxConcurrentGalleryDownloads':
+          effectiveMaxConcurrentGalleryDownloads(_config),
+      'maxConcurrentArchiveDownloads':
+          effectiveMaxConcurrentArchiveDownloads(_config),
       'downloadAllGalleriesOfSamePriority':
-          _config.downloadAllGalleriesOfSamePriority,
-      'galleryUpgradeReuseImages': _config.galleryUpgradeReuseImages,
+          effectiveDownloadAllGalleriesOfSamePriority(_config),
+      'galleryUpgradeReuseImages': effectiveGalleryUpgradeReuseImages(_config),
       'jhPublicApiBaseUrl': _config.jhPublicApiBaseUrl,
       'jhAppId': _config.jhAppId,
       'jhApiSecretConfigured': _config.jhApiSecret.trim().isNotEmpty,

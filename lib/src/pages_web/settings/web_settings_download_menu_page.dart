@@ -33,6 +33,11 @@ class _WebSettingsDownloadMenuPageState
   int speedLimitMaximum = 99;
   int speedLimitPeriodSeconds = 1;
   bool isLoadingSpeedLimit = true;
+  int galleryConcurrency = 3;
+  int archiveConcurrency = 2;
+  bool downloadAllGalleriesOfSamePriority = false;
+  bool galleryUpgradeReuseImages = true;
+  bool isLoadingRuntimeSettings = true;
 
   @override
   void initState() {
@@ -45,6 +50,7 @@ class _WebSettingsDownloadMenuPageState
     archivePriorityController.text = _readStorage(_archivePriorityKey, '0');
     _loadRestoreTasksAutomatically();
     _loadSpeedLimit();
+    _loadRuntimeSettings();
   }
 
   @override
@@ -74,8 +80,12 @@ class _WebSettingsDownloadMenuPageState
     }
     final list = set.where((e) => e.trim().isNotEmpty).toList();
     list.sort((a, b) {
-      if (a == 'default') return -1;
-      if (b == 'default') return 1;
+      if (a == 'default') {
+        return -1;
+      }
+      if (b == 'default') {
+        return 1;
+      }
       return a.compareTo(b);
     });
     return list;
@@ -113,6 +123,82 @@ class _WebSettingsDownloadMenuPageState
       if (mounted) {
         setState(() => isLoadingSpeedLimit = false);
       }
+    }
+  }
+
+  Future<void> _loadRuntimeSettings() async {
+    try {
+      final value = await backendApiClient.getDownloadRuntimeSettings();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        galleryConcurrency = value.galleryConcurrency;
+        archiveConcurrency = value.archiveConcurrency;
+        downloadAllGalleriesOfSamePriority =
+            value.downloadAllGalleriesOfSamePriority;
+        galleryUpgradeReuseImages = value.galleryUpgradeReuseImages;
+      });
+      await controller.refreshStatus();
+    } catch (_) {
+      // Keep server defaults when runtime settings cannot be loaded.
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingRuntimeSettings = false);
+      }
+    }
+  }
+
+  Future<void> _saveRuntimeSettings({
+    int? galleryConcurrency,
+    int? archiveConcurrency,
+    bool? downloadAllGalleriesOfSamePriority,
+    bool? galleryUpgradeReuseImages,
+  }) async {
+    final previousGalleryConcurrency = this.galleryConcurrency;
+    final previousArchiveConcurrency = this.archiveConcurrency;
+    final previousDownloadAllGalleriesOfSamePriority =
+        this.downloadAllGalleriesOfSamePriority;
+    final previousGalleryUpgradeReuseImages = this.galleryUpgradeReuseImages;
+    setState(() {
+      if (galleryConcurrency != null) {
+        this.galleryConcurrency = galleryConcurrency;
+      }
+      if (archiveConcurrency != null) {
+        this.archiveConcurrency = archiveConcurrency;
+      }
+      if (downloadAllGalleriesOfSamePriority != null) {
+        this.downloadAllGalleriesOfSamePriority =
+            downloadAllGalleriesOfSamePriority;
+      }
+      if (galleryUpgradeReuseImages != null) {
+        this.galleryUpgradeReuseImages = galleryUpgradeReuseImages;
+      }
+    });
+    try {
+      await backendApiClient.setDownloadRuntimeSettings(
+        galleryConcurrency: galleryConcurrency,
+        archiveConcurrency: archiveConcurrency,
+        downloadAllGalleriesOfSamePriority: downloadAllGalleriesOfSamePriority,
+        galleryUpgradeReuseImages: galleryUpgradeReuseImages,
+      );
+      await controller.refreshStatus();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          this.galleryConcurrency = previousGalleryConcurrency;
+          this.archiveConcurrency = previousArchiveConcurrency;
+          this.downloadAllGalleriesOfSamePriority =
+              previousDownloadAllGalleriesOfSamePriority;
+          this.galleryUpgradeReuseImages = previousGalleryUpgradeReuseImages;
+        });
+      }
+      Get.snackbar(
+        'common.error'.tr,
+        '${'common.failed'.tr}: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
     }
   }
 
@@ -181,7 +267,9 @@ class _WebSettingsDownloadMenuPageState
   }
 
   Future<void> _restoreDownloadTasks() async {
-    if (restoreRunning) return;
+    if (restoreRunning) {
+      return;
+    }
     setState(() => restoreRunning = true);
     try {
       final results = await Future.wait([
@@ -206,7 +294,9 @@ class _WebSettingsDownloadMenuPageState
         backgroundColor: Colors.red.withValues(alpha: 0.7),
       );
     } finally {
-      if (mounted) setState(() => restoreRunning = false);
+      if (mounted) {
+        setState(() => restoreRunning = false);
+      }
     }
   }
 
@@ -248,57 +338,7 @@ class _WebSettingsDownloadMenuPageState
             const SizedBox(height: 24),
             _sectionTitle(context, 'settings.downloadServerRuntime'.tr),
             const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _infoRow('settings.downloadDir'.tr,
-                        info['downloadDir']?.toString() ?? '-'),
-                    _infoRow('settings.localGalleryDir'.tr,
-                        info['localGalleryDir']?.toString() ?? '-'),
-                    if (info['extraScanPaths'] is List &&
-                        (info['extraScanPaths'] as List).isNotEmpty)
-                      _infoRow('settings.extraScanPaths'.tr,
-                          (info['extraScanPaths'] as List).join(', ')),
-                    _infoRow(
-                      'settings.galleryConcurrency'.tr,
-                      '${info['maxConcurrentGalleryDownloads'] ?? '-'}',
-                    ),
-                    _infoRow(
-                      'settings.archiveConcurrency'.tr,
-                      '${info['maxConcurrentArchiveDownloads'] ?? '-'}',
-                    ),
-                    _infoRow(
-                      'downloadAllGallerysOfSamePriority'.tr,
-                      _enabledLabel(info['downloadAllGalleriesOfSamePriority']),
-                    ),
-                    _infoRow(
-                      'useJH2UpdateGallery'.tr,
-                      _enabledLabel(info['galleryUpgradeReuseImages']),
-                    ),
-                    _infoRow(
-                      'settings.jhPublicApiBaseUrl'.tr,
-                      info['jhPublicApiBaseUrl']?.toString() ?? '-',
-                    ),
-                    _infoRow(
-                      'settings.jhAppId'.tr,
-                      info['jhAppId']?.toString() ?? '-',
-                    ),
-                    _infoRow(
-                      'settings.jhApiSecretConfigured'.tr,
-                      info['jhApiSecretConfigured'] == true
-                          ? 'settings.configured'.tr
-                          : 'settings.notConfigured'.tr,
-                    ),
-                    const SizedBox(height: 8),
-                    Text('settings.downloadRuntimeHint'.tr,
-                        style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                ),
-              ),
-            ),
+            _runtimeCard(info),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => Get.toNamed('/web/downloads'),
@@ -450,6 +490,119 @@ class _WebSettingsDownloadMenuPageState
     );
   }
 
+  Widget _runtimeCard(Map<String, dynamic> info) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _infoRow('settings.downloadDir'.tr,
+                info['downloadDir']?.toString() ?? '-'),
+            _infoRow('settings.localGalleryDir'.tr,
+                info['localGalleryDir']?.toString() ?? '-'),
+            if (info['extraScanPaths'] is List &&
+                (info['extraScanPaths'] as List).isNotEmpty)
+              _infoRow('settings.extraScanPaths'.tr,
+                  (info['extraScanPaths'] as List).join(', ')),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: galleryConcurrency,
+                    decoration: InputDecoration(
+                      labelText: 'settings.galleryConcurrency'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (var value = 1; value <= 16; value++)
+                        DropdownMenuItem(value: value, child: Text('$value')),
+                    ],
+                    onChanged: isLoadingRuntimeSettings
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              _saveRuntimeSettings(
+                                galleryConcurrency: value,
+                              );
+                            }
+                          },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: archiveConcurrency,
+                    decoration: InputDecoration(
+                      labelText: 'settings.archiveConcurrency'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final value in [1, 2, 3, 4, 5, 6, 7, 8])
+                        DropdownMenuItem(value: value, child: Text('$value')),
+                    ],
+                    onChanged: isLoadingRuntimeSettings
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              _saveRuntimeSettings(
+                                archiveConcurrency: value,
+                              );
+                            }
+                          },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.stacked_line_chart_outlined),
+              title: Text('downloadAllGallerysOfSamePriority'.tr),
+              subtitle: Text('downloadAllGallerysOfSamePriorityHint'.tr),
+              value: downloadAllGalleriesOfSamePriority,
+              onChanged: isLoadingRuntimeSettings
+                  ? null
+                  : (value) => _saveRuntimeSettings(
+                        downloadAllGalleriesOfSamePriority: value,
+                      ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.published_with_changes_outlined),
+              title: Text('useJH2UpdateGallery'.tr),
+              value: galleryUpgradeReuseImages,
+              onChanged: isLoadingRuntimeSettings
+                  ? null
+                  : (value) => _saveRuntimeSettings(
+                        galleryUpgradeReuseImages: value,
+                      ),
+            ),
+            const Divider(height: 24),
+            _infoRow(
+              'settings.jhPublicApiBaseUrl'.tr,
+              info['jhPublicApiBaseUrl']?.toString() ?? '-',
+            ),
+            _infoRow(
+              'settings.jhAppId'.tr,
+              info['jhAppId']?.toString() ?? '-',
+            ),
+            _infoRow(
+              'settings.jhApiSecretConfigured'.tr,
+              info['jhApiSecretConfigured'] == true
+                  ? 'settings.configured'.tr
+                  : 'settings.notConfigured'.tr,
+            ),
+            const SizedBox(height: 8),
+            Text('settings.downloadRuntimeHint'.tr,
+                style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _downloadDefaultEditor({
     required BuildContext context,
     required String title,
@@ -484,7 +637,9 @@ class _WebSettingsDownloadMenuPageState
                     ),
                 ],
                 onChanged: (value) {
-                  if (value != null) groupController.text = value;
+                  if (value != null) {
+                    groupController.text = value;
+                  }
                 },
               ),
             ),
@@ -528,10 +683,6 @@ class _WebSettingsDownloadMenuPageState
 
   Widget _sectionTitle(BuildContext context, String title) {
     return Text(title, style: Theme.of(context).textTheme.titleMedium);
-  }
-
-  String _enabledLabel(dynamic value) {
-    return value == true ? 'settings.enabled'.tr : 'settings.disabled'.tr;
   }
 
   Widget _infoRow(String label, String value) {

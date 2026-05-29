@@ -12,6 +12,7 @@ import '../core/log.dart';
 import '../network/eh_client.dart';
 import '../network/jh_public_client.dart';
 import '../service/event_bus.dart';
+import 'download_runtime_settings.dart';
 import 'download_rate_limiter.dart';
 
 T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
@@ -114,7 +115,7 @@ class GalleryDownloadService {
   final Set<int> _activeDownloads = {};
   final DownloadRateLimiter _rateLimiter = DownloadRateLimiter();
 
-  int get _maxConcurrent => _config.maxConcurrentGalleryDownloads;
+  int get _maxConcurrent => effectiveMaxConcurrentGalleryDownloads(_config);
 
   List<GalleryDownloadTask> get tasks => _tasks.values.toList();
 
@@ -566,12 +567,13 @@ class GalleryDownloadService {
   }
 
   GalleryDownloadTask? _nextQueuedTask() {
-    final activePriorities = _config.downloadAllGalleriesOfSamePriority
-        ? const <int>{}
-        : _activeDownloads
-            .map((gid) => _tasks[gid]?.priority)
-            .whereType<int>()
-            .toSet();
+    final activePriorities =
+        effectiveDownloadAllGalleriesOfSamePriority(_config)
+            ? const <int>{}
+            : _activeDownloads
+                .map((gid) => _tasks[gid]?.priority)
+                .whereType<int>()
+                .toSet();
     final candidates = _tasks.values
         .where((t) =>
             t.status == GalleryDownloadStatus.downloading &&
@@ -806,7 +808,7 @@ class GalleryDownloadService {
   ) async {
     final oldGid = task.supersedesGid;
     if (oldGid == null) return;
-    if (!_config.galleryUpgradeReuseImages) return;
+    if (!effectiveGalleryUpgradeReuseImages(_config)) return;
     if (_config.jhApiSecret.isEmpty) {
       log.debug(
           'JH_JHENTAI_API_SECRET unset: skip upgrade hash reuse for gid ${task.gid}');

@@ -10,6 +10,7 @@ import '../core/database.dart';
 import '../core/log.dart';
 import '../network/eh_client.dart';
 import '../utils/archive_util.dart';
+import 'download_runtime_settings.dart';
 import 'event_bus.dart';
 
 T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
@@ -112,7 +113,7 @@ class ArchiveDownloadService {
   final Map<int, ArchiveDownloadTask> _tasks = {};
   final Set<int> _activeDownloads = {};
 
-  int get _maxConcurrent => _config.maxConcurrentArchiveDownloads;
+  int get _maxConcurrent => effectiveMaxConcurrentArchiveDownloads(_config);
 
   List<ArchiveDownloadTask> get tasks => _tasks.values.toList();
 

@@ -1136,6 +1136,14 @@ class BackendApiClient {
       'web_download_speed_limit_maximum';
   static const webDownloadSpeedLimitPeriodSecondsKey =
       'web_download_speed_limit_period_seconds';
+  static const webMaxConcurrentGalleryDownloadsKey =
+      'web_max_concurrent_gallery_downloads';
+  static const webMaxConcurrentArchiveDownloadsKey =
+      'web_max_concurrent_archive_downloads';
+  static const webDownloadAllGalleriesOfSamePriorityKey =
+      'web_download_all_galleries_of_same_priority';
+  static const webGalleryUpgradeReuseImagesKey =
+      'web_gallery_upgrade_reuse_images';
 
   Future<Map<String, dynamic>> getSettings() async {
     final response = await _dio.get('/api/setting/');
@@ -1167,7 +1175,9 @@ class BackendApiClient {
       final response = await _dio.get('/api/setting/$key');
       final data = response.data as Map<String, dynamic>;
       final value = data['value'];
-      if (value == null) return null;
+      if (value == null) {
+        return null;
+      }
       return value is String ? value : jsonEncode(value);
     } catch (_) {
       return null;
@@ -1231,6 +1241,62 @@ class BackendApiClient {
         webDownloadSpeedLimitPeriodSecondsKey,
         periodSeconds.clamp(1, 3).toInt(),
       ),
+    ]);
+  }
+
+  Future<
+      ({
+        int galleryConcurrency,
+        int archiveConcurrency,
+        bool downloadAllGalleriesOfSamePriority,
+        bool galleryUpgradeReuseImages,
+      })> getDownloadRuntimeSettings() async {
+    final settings = await getSettings();
+    final server = settings['server'] is Map
+        ? Map<String, dynamic>.from(settings['server'] as Map)
+        : const <String, dynamic>{};
+    return (
+      galleryConcurrency:
+          ((server['maxConcurrentGalleryDownloads'] as num?)?.toInt() ?? 3)
+              .clamp(1, 16)
+              .toInt(),
+      archiveConcurrency:
+          ((server['maxConcurrentArchiveDownloads'] as num?)?.toInt() ?? 2)
+              .clamp(1, 8)
+              .toInt(),
+      downloadAllGalleriesOfSamePriority:
+          server['downloadAllGalleriesOfSamePriority'] == true,
+      galleryUpgradeReuseImages: server['galleryUpgradeReuseImages'] != false,
+    );
+  }
+
+  Future<void> setDownloadRuntimeSettings({
+    int? galleryConcurrency,
+    int? archiveConcurrency,
+    bool? downloadAllGalleriesOfSamePriority,
+    bool? galleryUpgradeReuseImages,
+  }) async {
+    await Future.wait([
+      if (galleryConcurrency != null)
+        putSetting(
+          webMaxConcurrentGalleryDownloadsKey,
+          galleryConcurrency.clamp(1, 16).toInt(),
+        ),
+      if (archiveConcurrency != null)
+        putSetting(
+          webMaxConcurrentArchiveDownloadsKey,
+          archiveConcurrency.clamp(1, 8).toInt(),
+        ),
+      if (downloadAllGalleriesOfSamePriority != null)
+        putSetting(
+          webDownloadAllGalleriesOfSamePriorityKey,
+          downloadAllGalleriesOfSamePriority,
+        ),
+      if (galleryUpgradeReuseImages != null)
+        putSetting(
+          webGalleryUpgradeReuseImagesKey,
+          galleryUpgradeReuseImages,
+        ),
     ]);
   }
 
