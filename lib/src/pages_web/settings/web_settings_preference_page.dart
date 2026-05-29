@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsPreferencePage extends StatelessWidget {
@@ -341,29 +342,46 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
             },
           ),
         ),
-        SwitchListTile(
-          secondary: const Icon(Icons.verified_user_outlined),
+        ListTile(
+          leading: const Icon(Icons.verified_user_outlined),
           title: Text('useBuiltInBlockedUsers'.tr),
           subtitle: Text('useBuiltInBlockedUsersHint'.tr),
-          value: useBuiltInBlockedUsers,
-          onChanged: isLoadingBuiltInBlockedUsers
-              ? null
-              : (value) async {
-                  setState(() => useBuiltInBlockedUsers = value);
-                  try {
-                    await backendApiClient.setUseBuiltInBlockedUsers(value);
-                  } catch (e) {
-                    if (!mounted) {
-                      return;
-                    }
-                    setState(() => useBuiltInBlockedUsers = !value);
-                    Get.snackbar(
-                      'common.error'.tr,
-                      '${'common.failed'.tr}: $e',
-                      snackPosition: SnackPosition.BOTTOM,
-                    );
-                  }
-                },
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'common.open'.tr,
+                icon: const Icon(Icons.help_outline),
+                onPressed: () => launchUrlString(
+                  'https://raw.githubusercontent.com/jiangtian616/JHenTai/refs/heads/master/built_in_blocked_user.json',
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
+              Switch(
+                value: useBuiltInBlockedUsers,
+                onChanged: isLoadingBuiltInBlockedUsers
+                    ? null
+                    : (value) async {
+                        setState(() => useBuiltInBlockedUsers = value);
+                        try {
+                          await backendApiClient.setUseBuiltInBlockedUsers(
+                            value,
+                          );
+                        } catch (e) {
+                          if (!mounted) {
+                            return;
+                          }
+                          setState(() => useBuiltInBlockedUsers = !value);
+                          Get.snackbar(
+                            'common.error'.tr,
+                            '${'common.failed'.tr}: $e',
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                        }
+                      },
+              ),
+            ],
+          ),
         ),
         ListTile(
           leading: const Icon(Icons.vertical_align_top),
