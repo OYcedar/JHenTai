@@ -399,6 +399,9 @@ class WebRuRU {
       'settings.downloadGridColumns': 'Колонки сетки загрузок',
       'settings.downloadGridColumnsHint':
           'Применяется к сетке задач загрузки в этом браузере.',
+      'settings.localGridColumns': 'Колонки сетки локальных галерей',
+      'settings.localGridColumnsHint':
+          'Применяется к папкам и сеткам локальных галерей в этом браузере.',
       'settings.detailThumbnailColumns': 'Колонки миниатюр в деталях',
       'settings.detailThumbnailColumnsHint':
           'Применяется к миниатюрам на странице галереи и полной странице миниатюр.',

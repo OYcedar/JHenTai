@@ -374,6 +374,8 @@ class WebZhCN {
       'settings.gridColumnsAuto': '自动',
       'settings.downloadGridColumns': '下载页网格列数',
       'settings.downloadGridColumnsHint': '应用到当前浏览器中的下载任务网格。',
+      'settings.localGridColumns': '本地库网格列数',
+      'settings.localGridColumnsHint': '应用到当前浏览器中的本地库目录和画廊网格。',
       'settings.detailThumbnailColumns': '详情页缩略图列数',
       'settings.detailThumbnailColumnsHint': '应用到画廊详情页缩略图和完整缩略图页。',
       'moveCover2RightSide': '移动封面图至右侧',

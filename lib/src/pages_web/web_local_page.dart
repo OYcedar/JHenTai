@@ -7,6 +7,7 @@ import 'package:web/web.dart' as web;
 
 class WebLocalController extends GetxController {
   static const viewModeStorageKey = 'jh_web_local_view_mode';
+  static const gridColumnsStorageKey = 'jh_web_local_grid_columns';
 
   final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
@@ -156,6 +157,20 @@ class WebLocalController extends GetxController {
     final next = viewMode.value == 'grid' ? 'list' : 'grid';
     viewMode.value = next;
     web.window.localStorage.setItem(viewModeStorageKey, next);
+  }
+
+  static int? get gridColumns {
+    final raw = web.window.localStorage.getItem(gridColumnsStorageKey);
+    final value = int.tryParse(raw ?? '');
+    return value != null && value >= 2 && value <= 8 ? value : null;
+  }
+
+  static void setGridColumns(int? count) {
+    if (count == null) {
+      web.window.localStorage.removeItem(gridColumnsStorageKey);
+    } else {
+      web.window.localStorage.setItem(gridColumnsStorageKey, '$count');
+    }
   }
 
   void enterDirectory(String path) {
@@ -533,15 +548,16 @@ class WebLocalPage extends GetView<WebLocalController> {
           Expanded(
             child: LayoutBuilder(builder: (context, constraints) {
               final width = constraints.maxWidth;
-              final columns = width > 1100
-                  ? 6
-                  : width > 850
-                      ? 5
-                      : width > 650
-                          ? 4
-                          : width > 420
-                              ? 3
-                              : 2;
+              final columns = WebLocalController.gridColumns ??
+                  (width > 1100
+                      ? 6
+                      : width > 850
+                          ? 5
+                          : width > 650
+                              ? 4
+                              : width > 420
+                                  ? 3
+                                  : 2);
               return GridView(
                 padding: const EdgeInsets.all(8),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -749,15 +765,16 @@ class WebLocalPage extends GetView<WebLocalController> {
       BuildContext context, List<Map<String, dynamic>> items) {
     return LayoutBuilder(builder: (context, constraints) {
       final width = constraints.maxWidth;
-      final columns = width > 1200
-          ? 6
-          : width > 900
-              ? 5
-              : width > 680
-                  ? 4
-                  : width > 460
-                      ? 3
-                      : 2;
+      final columns = WebLocalController.gridColumns ??
+          (width > 1200
+              ? 6
+              : width > 900
+                  ? 5
+                  : width > 680
+                      ? 4
+                      : width > 460
+                          ? 3
+                          : 2);
       return GridView.builder(
         padding: const EdgeInsets.all(10),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

@@ -399,6 +399,9 @@ class WebEnUS {
       'settings.downloadGridColumns': 'Download grid columns',
       'settings.downloadGridColumnsHint':
           'Applies to the download task grid in this browser.',
+      'settings.localGridColumns': 'Local gallery grid columns',
+      'settings.localGridColumnsHint':
+          'Applies to local gallery folders and gallery grids in this browser.',
       'settings.detailThumbnailColumns': 'Detail thumbnail columns',
       'settings.detailThumbnailColumnsHint':
           'Applies to gallery detail thumbnails and the full thumbnail page.',

@@ -404,6 +404,9 @@ class WebPtBR {
       'settings.downloadGridColumns': 'Colunas da grade de downloads',
       'settings.downloadGridColumnsHint':
           'Aplica-se à grade de tarefas de download neste navegador.',
+      'settings.localGridColumns': 'Colunas da grade de galerias locais',
+      'settings.localGridColumnsHint':
+          'Aplica-se às pastas e grades de galerias locais neste navegador.',
       'settings.detailThumbnailColumns': 'Colunas de miniaturas dos detalhes',
       'settings.detailThumbnailColumnsHint':
           'Aplica às miniaturas dos detalhes da galeria e à página completa de miniaturas.',

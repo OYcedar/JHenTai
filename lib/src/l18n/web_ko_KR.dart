@@ -379,6 +379,8 @@ class WebKoKR {
       'settings.gridColumnsAuto': '자동',
       'settings.downloadGridColumns': '다운로드 그리드 열 수',
       'settings.downloadGridColumnsHint': '이 브라우저의 다운로드 작업 그리드에 적용됩니다.',
+      'settings.localGridColumns': '로컬 갤러리 그리드 열 수',
+      'settings.localGridColumnsHint': '이 브라우저의 로컬 갤러리 폴더와 갤러리 그리드에 적용됩니다.',
       'settings.detailThumbnailColumns': '상세 썸네일 열 수',
       'settings.detailThumbnailColumnsHint': '갤러리 상세 썸네일과 전체 썸네일 페이지에 적용됩니다.',
       'moveCover2RightSide': '섬네일을 오른쪽으로 배치',
