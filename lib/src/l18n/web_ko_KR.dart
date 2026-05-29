@@ -205,6 +205,7 @@ class WebKoKR {
       'reader.wheelScrollSpeed': '휠 스크롤 속도',
       'reader.wheelScrollSpeedSubtitle':
           '세로 및 너비 맞춤 뷰어 모드에서 마우스 휠 스크롤 속도를 조절합니다.',
+      'wheelScrollSpeed': '휠 스크롤 속도',
 
       // downloads
       'downloads.title': '다운로드',
@@ -466,6 +467,7 @@ class WebKoKR {
       'settings.webTokenRotateHint':
           '서버에서 토큰을 교체했다면 먼저 여기서 연결을 해제한 뒤 설정에서 새 토큰을 붙여넣으세요.',
       'settings.mouseWheelIntro': '뷰어에서 이미지 위 마우스 휠 동작을 선택합니다(가로 페이지 모드).',
+      'settings.webWheelScrollSpeedHint': 'Web 갤러리 목록의 마우스 휠 스크롤 속도를 조절합니다.',
       'settings.mouseWheelReadHint': '방향, 프리로드 등 모든 읽기 옵션',
       'settings.aboutVersionLabel': '버전',
       'settings.aboutAuthorLabel': '제작자',

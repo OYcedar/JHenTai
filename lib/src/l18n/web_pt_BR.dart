@@ -219,6 +219,7 @@ class WebPtBR {
       'reader.wheelScrollSpeed': 'Velocidade da roda',
       'reader.wheelScrollSpeedSubtitle':
           'Controla a velocidade da roda do mouse nos modos vertical e ajustar à largura.',
+      'wheelScrollSpeed': 'Velocidade da roda',
 
       // downloads
       'downloads.title': 'Baixados',
@@ -499,6 +500,8 @@ class WebPtBR {
           'Se você trocou o token no servidor, desconecte aqui primeiro e cole o novo token na configuração.',
       'settings.mouseWheelIntro':
           'Escolha o comportamento da roda do mouse sobre as imagens no leitor (modos de página horizontais).',
+      'settings.webWheelScrollSpeedHint':
+          'Controla a velocidade da roda do mouse nas listas de galerias Web.',
       'settings.mouseWheelReadHint': 'Direção, pré-carregamento e mais',
       'settings.aboutVersionLabel': 'Versão',
       'settings.aboutAuthorLabel': 'Autor',

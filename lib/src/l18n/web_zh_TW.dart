@@ -204,6 +204,7 @@ class WebZhTW {
       'reader.wheelInvertPageTurnSubtitle': '交換滾輪／觸控板捲動時「下一頁」與「上一頁」的對應方向。',
       'reader.wheelScrollSpeed': '滑鼠滾輪速度',
       'reader.wheelScrollSpeedSubtitle': '控制直向與適應寬度閱讀模式中的滑鼠滾輪捲動速度。',
+      'wheelScrollSpeed': '滑鼠滾輪速度',
 
       // downloads
       'downloads.title': '下載',
@@ -452,6 +453,7 @@ class WebZhTW {
       'settings.webTokenRotateHint':
           '如果你已經在伺服器輪換 Token，請先斷開目前連線，然後在設定精靈中貼上新的 Token。',
       'settings.mouseWheelIntro': '選擇閱讀器中滑鼠滾輪在圖片上的行為（橫向翻頁模式）。',
+      'settings.webWheelScrollSpeedHint': '控制 Web 畫廊列表中的滑鼠滾輪捲動速度。',
       'settings.mouseWheelReadHint': '閱讀方向、預載入等全部選項',
       'settings.aboutVersionLabel': '版本',
       'settings.aboutAuthorLabel': '作者',

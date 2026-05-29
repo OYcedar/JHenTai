@@ -202,6 +202,7 @@ class WebZhCN {
       'reader.wheelInvertPageTurnSubtitle': '交换滚轮/触控板滚动时「下一页」与「上一页」的对应方向。',
       'reader.wheelScrollSpeed': '鼠标滚轮速度',
       'reader.wheelScrollSpeedSubtitle': '控制竖向与适应宽度阅读模式中的鼠标滚轮滚动速度。',
+      'wheelScrollSpeed': '鼠标滚轮速度',
 
       // downloads
       'downloads.title': '下载',
@@ -452,6 +453,7 @@ class WebZhCN {
       'settings.webTokenRotateHint':
           '如果你已经在服务端轮换 Token，请先断开当前连接，然后在设置向导中粘贴新的 Token。',
       'settings.mouseWheelIntro': '选择阅读器中鼠标滚轮在图片上的行为（横向翻页模式）。',
+      'settings.webWheelScrollSpeedHint': '控制 Web 画廊列表中的鼠标滚轮滚动速度。',
       'settings.mouseWheelReadHint': '阅读方向、预加载等全部选项',
       'settings.aboutVersionLabel': '版本',
       'settings.aboutAuthorLabel': '作者',

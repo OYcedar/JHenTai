@@ -216,6 +216,7 @@ class WebEnUS {
       'reader.wheelScrollSpeed': 'Wheel scroll speed',
       'reader.wheelScrollSpeedSubtitle':
           'Controls mouse wheel speed in vertical and fit-width reader modes.',
+      'wheelScrollSpeed': 'Wheel scroll speed',
 
       // downloads
       'downloads.title': 'Downloads',
@@ -496,6 +497,8 @@ class WebEnUS {
           'If you rotated the token on the server, disconnect here first, then paste the new token in setup.',
       'settings.mouseWheelIntro':
           'Choose how the mouse wheel behaves over images in the reader (horizontal page modes).',
+      'settings.webWheelScrollSpeedHint':
+          'Controls mouse wheel speed for Web gallery lists.',
       'settings.mouseWheelReadHint': 'Direction, preload, and more',
       'settings.aboutVersionLabel': 'Version',
       'settings.aboutAuthorLabel': 'Author',

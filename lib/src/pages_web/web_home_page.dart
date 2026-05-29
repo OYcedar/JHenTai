@@ -16,6 +16,7 @@ import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_wheel_speed_controller.dart';
 import 'package:web/web.dart' as web;
 
 String _webHomeUploaderSearchQuery(String uploader) {
@@ -195,6 +196,7 @@ class WebHomeController extends GetxController {
 
   final searchController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
+  final wheelScrollSpeed = 5.0.obs;
 
   /// Keys `namespace:tagKey` → translated name (from `/api/tag/batch`, same as gallery detail).
   final tagTranslations = <String, String>{}.obs;
@@ -310,6 +312,7 @@ class WebHomeController extends GetxController {
     _loadAdvancedSearchFromStorage();
     _loadFavoritesListPrefs();
     _loadSearchHistoryPrefs();
+    _loadWheelScrollSpeed();
     final args = Get.arguments;
     final appliedQuickSearch = _applyQuickSearchArgument(args);
     if (!appliedQuickSearch &&
@@ -330,6 +333,10 @@ class WebHomeController extends GetxController {
     loadQuickSearches();
     scrollController.addListener(_onScroll);
     unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+  }
+
+  Future<void> _loadWheelScrollSpeed() async {
+    wheelScrollSpeed.value = await loadWebWheelScrollSpeed();
   }
 
   bool _applyQuickSearchArgument(dynamic args) {
@@ -1653,8 +1660,17 @@ class WebHomePage extends GetView<WebHomeController> {
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: () => controller.refresh(),
-                        child: _buildGalleryGridStatic(context, controller,
-                            isLeftPane: isLeftPane),
+                        child: Obx(
+                          () => WebWheelSpeedController(
+                            controller: controller.scrollController,
+                            speed: controller.wheelScrollSpeed.value,
+                            child: _buildGalleryGridStatic(
+                              context,
+                              controller,
+                              isLeftPane: isLeftPane,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     _buildPaginationBarStatic(context, controller),

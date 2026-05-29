@@ -217,6 +217,7 @@ class WebRuRU {
       'reader.wheelScrollSpeed': 'Скорость прокрутки колёсиком',
       'reader.wheelScrollSpeedSubtitle':
           'Управляет скоростью прокрутки мышью в вертикальном режиме и режиме по ширине.',
+      'wheelScrollSpeed': 'Скорость прокрутки колёсиком',
 
       // downloads
       'downloads.title': 'Загрузки',
@@ -496,6 +497,8 @@ class WebRuRU {
           'Если токен на сервере был заменён, сначала отключитесь здесь, затем введите новый токен в мастере настройки.',
       'settings.mouseWheelIntro':
           'Поведение колёсика над изображением в читалке (горизонтальные режимы страниц).',
+      'settings.webWheelScrollSpeedHint':
+          'Управляет скоростью прокрутки колёсиком в списках галерей Web.',
       'settings.mouseWheelReadHint': 'Направление, предзагрузка и другое',
       'settings.aboutVersionLabel': 'Версия',
       'settings.aboutAuthorLabel': 'Автор',
