@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
+import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:web/web.dart' as web;
 
 Map<String, dynamic> _thumbMapForThumbsPage(
@@ -38,6 +39,7 @@ class WebThumbnailsController extends GetxController {
 
   final imagePageUrls = <String>[].obs;
   final thumbnailImageUrls = <String>[].obs;
+  final downloadedImageUrls = <String>[].obs;
   final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final coverUrl = ''.obs;
   final galleryTitle = ''.obs;
@@ -76,6 +78,7 @@ class WebThumbnailsController extends GetxController {
       final result = await backendApiClient.fetchGalleryImagePages(gid, token);
       final pages = (result['imagePageUrls'] as List?)?.cast<String>() ?? [];
       imagePageUrls.value = pages;
+      await _loadDownloadedImageUrls(pages.length);
       final thumbs =
           (result['thumbnailImageUrls'] as List?)?.cast<String>() ?? [];
       thumbnailImageUrls.value = thumbs.length == pages.length
@@ -103,6 +106,27 @@ class WebThumbnailsController extends GetxController {
         });
       }
     }
+  }
+
+  Future<void> _loadDownloadedImageUrls(int pageCount) async {
+    final urls = List<String>.filled(pageCount, '');
+    try {
+      final files = await backendApiClient.getGalleryDownloadImages(gid);
+      for (final file in files) {
+        final serialNo = _serialNoFromDownloadedImageFile(file);
+        if (serialNo == null || serialNo < 0 || serialNo >= pageCount) {
+          continue;
+        }
+        urls[serialNo] = backendApiClient.galleryImageUrl(gid, file);
+      }
+    } catch (_) {}
+    downloadedImageUrls.value = urls;
+  }
+
+  int? _serialNoFromDownloadedImageFile(String fileName) {
+    final dot = fileName.lastIndexOf('.');
+    final stem = dot > 0 ? fileName.substring(0, dot) : fileName;
+    return int.tryParse(stem);
   }
 
   Future<void> retry() => _load();
@@ -224,6 +248,10 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
                 gid: controller.gid,
                 token: controller.token,
                 galleryTitle: controller.galleryTitle.value,
+                downloadedImageUrl:
+                    index < controller.downloadedImageUrls.length
+                        ? controller.downloadedImageUrls[index]
+                        : '',
                 thumbData: _thumbMapForThumbsPage(controller, index),
               ));
         },
@@ -290,6 +318,7 @@ class _ThumbnailCell extends StatelessWidget {
   final int gid;
   final String token;
   final String galleryTitle;
+  final String downloadedImageUrl;
   final Map<String, dynamic> thumbData;
 
   const _ThumbnailCell({
@@ -297,6 +326,7 @@ class _ThumbnailCell extends StatelessWidget {
     required this.gid,
     required this.token,
     required this.galleryTitle,
+    required this.downloadedImageUrl,
     required this.thumbData,
   });
 
@@ -326,6 +356,18 @@ class _ThumbnailCell extends StatelessWidget {
               width: double.infinity,
               borderRadius: BorderRadius.circular(6),
             ),
+            if (downloadedImageUrl.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: WebProxiedImage(
+                  sourceUrl: downloadedImageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  maxBytes: 128 * 1024,
+                  readerErrorChild: const SizedBox.shrink(),
+                ),
+              ),
             Center(
               child: Text(
                 '${index + 1}',
