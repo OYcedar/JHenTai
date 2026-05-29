@@ -2361,6 +2361,55 @@ Future<void> _showWebReaderJumpDialog(
   }
 }
 
+Future<void> _showWebReaderShortcutHelp(BuildContext context) async {
+  final shortcuts = [
+    ('PageDown / ${'reader.shortcutRightKeys'.tr}', 'reader.shortcutNext'.tr),
+    ('PageUp / ${'reader.shortcutLeftKeys'.tr}', 'reader.shortcutPrev'.tr),
+    ('Space', 'reader.shortcutToggleMenu'.tr),
+    ('M', 'displayFirstPageAlone'.tr),
+    ('F11', 'toggleFullScreen'.tr),
+    ('Esc / End', 'reader.shortcutBack'.tr),
+  ];
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('reader.shortcuts'.tr),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final item in shortcuts)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 164,
+                      child: Text(
+                        item.$1,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(item.$2)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text('common.close'.tr),
+        ),
+      ],
+    ),
+  );
+}
+
 class _TopOverlay extends StatelessWidget {
   final WebReaderController controller;
   const _TopOverlay({required this.controller});
@@ -2461,6 +2510,12 @@ class _TopOverlay extends StatelessWidget {
                                   : 'reader.autoStart'.tr,
                               onPressed: controller.toggleAutoMode,
                             )),
+                        IconButton(
+                          icon: const Icon(Icons.help_outline,
+                              color: Colors.white),
+                          tooltip: 'reader.shortcuts'.tr,
+                          onPressed: () => _showWebReaderShortcutHelp(context),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.refresh, color: Colors.white),
                           tooltip: 'reader.reloadImage'.tr,
