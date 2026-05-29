@@ -963,6 +963,15 @@ class BackendApiClient {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> getTagTranslation(
+      String namespace, String key) async {
+    final response = await _dio.get(
+      '/api/tag/translate',
+      queryParameters: {'namespace': namespace, 'key': key},
+    );
+    return Map<String, dynamic>.from(response.data as Map);
+  }
+
   Future<Map<String, String>> translateTags(
     List<Map<String, String>> tags,
   ) async {

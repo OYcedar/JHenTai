@@ -31,17 +31,25 @@ class TagTranslationService {
         receiveTimeout: const Duration(seconds: 60),
       ));
       final response = await dio.get(downloadUrl);
-      final data = response.data is String ? jsonDecode(response.data) : response.data;
+      final data =
+          response.data is String ? jsonDecode(response.data) : response.data;
 
       final head = data['head'] as Map?;
       final committer = head?['committer'] as Map?;
       final newTimestamp = committer?['when']?.toString() ?? '';
 
       final existingTs = db.readConfig(_timestampKey);
-      if (existingTs == newTimestamp && newTimestamp.isNotEmpty && db.tagTranslationCount() > 0) {
+      if (existingTs == newTimestamp &&
+          newTimestamp.isNotEmpty &&
+          db.tagTranslationCount() > 0 &&
+          db.tagTranslationLinksCount() > 0) {
         log.info('Tag translation: already up to date ($newTimestamp)');
         _loading = false;
-        return {'success': true, 'message': 'Already up to date', 'count': db.tagTranslationCount()};
+        return {
+          'success': true,
+          'message': 'Already up to date',
+          'count': db.tagTranslationCount()
+        };
       }
 
       final dataList = data['data'] as List? ?? [];
@@ -57,7 +65,9 @@ class TagTranslationService {
           final tagName = match?.group(1) ?? rawName;
           final fullTagName = rawName;
           final intro = value['intro']?.toString() ?? '';
-          rows.add([namespace, key.toString(), tagName, fullTagName, intro]);
+          final links = value['links']?.toString() ?? '';
+          rows.add(
+              [namespace, key.toString(), tagName, fullTagName, intro, links]);
         });
       }
 

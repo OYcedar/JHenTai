@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/model/gallery_image_page_url.dart';
@@ -2279,6 +2280,16 @@ class WebGalleryDetailPage extends StatelessWidget {
         ),
         PopupMenuItem(
           child: ListTile(
+            leading: const Icon(Icons.info_outline, size: 20),
+            title:
+                Text('tagInfo.title'.tr, style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _showTagInfoDialog(context, namespace, tag),
+        ),
+        PopupMenuItem(
+          child: ListTile(
             leading: const Icon(Icons.block, size: 20, color: Colors.orange),
             title: Text('blockRule.blockTag'.tr,
                 style: const TextStyle(fontSize: 14)),
@@ -2288,6 +2299,19 @@ class WebGalleryDetailPage extends StatelessWidget {
           onTap: () => _quickBlockTag(namespace, tag),
         ),
       ],
+    );
+  }
+
+  Future<void> _showTagInfoDialog(
+      BuildContext context, String namespace, String tag) async {
+    final future = backendApiClient.getTagTranslation(namespace, tag);
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _WebTagInfoDialog(
+        namespace: namespace,
+        tag: tag,
+        future: future,
+      ),
     );
   }
 
@@ -4087,6 +4111,153 @@ class _SelectableSearchText extends StatelessWidget {
         }
         return toolbar;
       },
+    );
+  }
+}
+
+class _WebTagInfoDialog extends StatelessWidget {
+  const _WebTagInfoDialog({
+    required this.namespace,
+    required this.tag,
+    required this.future,
+  });
+
+  final String namespace;
+  final String tag;
+  final Future<Map<String, dynamic>> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: GestureDetector(
+        onTap: () async {
+          await Clipboard.setData(ClipboardData(text: '$namespace:"$tag"'));
+          Get.snackbar('common.success'.tr, 'hasCopiedToClipboard'.tr,
+              snackPosition: SnackPosition.BOTTOM);
+        },
+        child: Text('$namespace:$tag'),
+      ),
+      content: SizedBox(
+        width: 420,
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: future,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (snapshot.hasError) {
+              return Text(
+                'tagInfo.loadFailed'.trParams({'error': '${snapshot.error}'}),
+              );
+            }
+            final data = snapshot.data ?? {};
+            final fullTagName = data['full_tag_name']?.toString() ?? '';
+            final intro = data['intro']?.toString() ?? '';
+            final links = data['links']?.toString() ?? '';
+            final content = [fullTagName, intro, links]
+                .where((value) => value.trim().isNotEmpty)
+                .join('');
+            if (content.trim().isEmpty) {
+              return Text('tagInfo.empty'.tr);
+            }
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 460),
+              child: SingleChildScrollView(
+                child: HtmlWidget(
+                  content,
+                  textStyle: Theme.of(context).textTheme.bodySmall,
+                  onTapUrl: (url) async {
+                    web.window.open(url, '_blank');
+                    return true;
+                  },
+                  customWidgetBuilder: (element) {
+                    if (element.localName != 'img') {
+                      return null;
+                    }
+                    final src = element.attributes['src'];
+                    if (src == null || src.isEmpty) {
+                      return null;
+                    }
+                    final warning =
+                        !WebPreferenceSettings.showR18GImageDirectly &&
+                            element.attributes['nsfw'] == 'R18G';
+                    return _WebWarningImage(src: src, warning: warning);
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('common.close'.tr),
+        ),
+      ],
+    );
+  }
+}
+
+class _WebWarningImage extends StatefulWidget {
+  const _WebWarningImage({required this.src, required this.warning});
+
+  final String src;
+  final bool warning;
+
+  @override
+  State<_WebWarningImage> createState() => _WebWarningImageState();
+}
+
+class _WebWarningImageState extends State<_WebWarningImage> {
+  bool revealed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.warning && !revealed) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: InkWell(
+          onTap: () => setState(() => revealed = true),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 120),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.visibility_off_outlined,
+                    color: Theme.of(context).colorScheme.onErrorContainer),
+                const SizedBox(height: 8),
+                Text(
+                  'warningImageHint'.tr,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Image.network(
+          widget.src,
+          fit: BoxFit.contain,
+          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+        ),
+      ),
     );
   }
 }

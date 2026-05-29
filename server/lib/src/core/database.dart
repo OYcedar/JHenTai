@@ -23,6 +23,7 @@ class ServerDatabase {
         'INTEGER NOT NULL DEFAULT 0');
     _addColumnIfMissing(
         'archive_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
+    _addColumnIfMissing('tag_translation', 'links', "TEXT NOT NULL DEFAULT ''");
   }
 
   void _addColumnIfMissing(String table, String column, String columnDef) {
@@ -152,6 +153,7 @@ class ServerDatabase {
         tag_name TEXT NOT NULL DEFAULT '',
         full_tag_name TEXT NOT NULL DEFAULT '',
         intro TEXT NOT NULL DEFAULT '',
+        links TEXT NOT NULL DEFAULT '',
         PRIMARY KEY (namespace, key)
       )
     ''');
@@ -460,10 +462,11 @@ class ServerDatabase {
   }
 
   void insertTagTranslation(String namespace, String key, String tagName,
-      String fullTagName, String intro) {
+      String fullTagName, String intro,
+      {String links = ''}) {
     _db.execute(
-      'INSERT OR REPLACE INTO tag_translation (namespace, key, tag_name, full_tag_name, intro) VALUES (?, ?, ?, ?, ?)',
-      [namespace, key, tagName, fullTagName, intro],
+      'INSERT OR REPLACE INTO tag_translation (namespace, key, tag_name, full_tag_name, intro, links) VALUES (?, ?, ?, ?, ?, ?)',
+      [namespace, key, tagName, fullTagName, intro, links],
     );
   }
 
@@ -471,7 +474,7 @@ class ServerDatabase {
     _db.execute('BEGIN TRANSACTION');
     try {
       final stmt = _db.prepare(
-        'INSERT OR REPLACE INTO tag_translation (namespace, key, tag_name, full_tag_name, intro) VALUES (?, ?, ?, ?, ?)',
+        'INSERT OR REPLACE INTO tag_translation (namespace, key, tag_name, full_tag_name, intro, links) VALUES (?, ?, ?, ?, ?, ?)',
       );
       for (final row in rows) {
         stmt.execute(row);
@@ -686,6 +689,12 @@ class ServerDatabase {
 
   int tagTranslationCount() {
     final result = _db.select('SELECT COUNT(*) as cnt FROM tag_translation');
+    return result.first['cnt'] as int;
+  }
+
+  int tagTranslationLinksCount() {
+    final result = _db.select(
+        "SELECT COUNT(*) as cnt FROM tag_translation WHERE links <> ''");
     return result.first['cnt'] as int;
   }
 

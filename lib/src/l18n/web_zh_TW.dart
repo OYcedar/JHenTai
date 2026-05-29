@@ -19,6 +19,7 @@ class WebZhTW {
       'common.images': '@count 張圖片',
       'common.pages': '@count 頁',
       'common.open': '開啟',
+      'common.close': '關閉',
       'dawnOfaNewDay': '黎明之時',
       'encounterMonster': '你遭遇了一隻怪獸！',
       'encounterMonsterHint': '點擊跳轉至 HentaiVerse 戰鬥。',
@@ -502,6 +503,11 @@ class WebZhTW {
       'thumbnails.loadFailed': '載入縮圖失敗: @error',
 
       // tag translation
+      'tagInfo.title': '標籤詳情',
+      'tagInfo.empty': '暫無標籤詳情',
+      'tagInfo.loadFailed': '載入標籤詳情失敗: @error',
+      'showR18GImageDirectly': '標籤資料中直接顯示R18G圖片',
+      'warningImageHint': 'R18G圖片，點擊以顯示',
       'tagTranslation.title': '標籤翻譯',
       'tagTranslation.loaded': '已載入 @count 個標籤',
       'tagTranslation.notLoaded': '標籤資料庫未載入',

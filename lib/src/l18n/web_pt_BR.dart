@@ -19,6 +19,7 @@ class WebPtBR {
       'common.images': '@count imagens',
       'common.pages': '@count páginas',
       'common.open': 'Abrir',
+      'common.close': 'Fechar',
       'dawnOfaNewDay': 'É o amanhecer de um novo dia!',
       'encounterMonster': 'Você encontrou um monstro!',
       'encounterMonsterHint': 'Clique para lutar no HentaiVerse.',
@@ -550,6 +551,11 @@ class WebPtBR {
       'thumbnails.loadFailed': 'Falha ao carregar miniaturas: @error',
 
       // tag translation
+      'tagInfo.title': 'Detalhes da tag',
+      'tagInfo.empty': 'Nenhum detalhe da tag disponível',
+      'tagInfo.loadFailed': 'Falha ao carregar detalhes da tag: @error',
+      'showR18GImageDirectly': 'Mostrar imagem R18G diretamente',
+      'warningImageHint': 'Imagem R18G, clique para ver',
       'tagTranslation.title': 'Tradução de Tags',
       'tagTranslation.loaded': '@count tags carregadas',
       'tagTranslation.notLoaded': 'Banco de tags não carregado',

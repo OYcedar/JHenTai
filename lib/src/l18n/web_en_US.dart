@@ -20,6 +20,7 @@ class WebEnUS {
       'common.pages': '@count pages',
       'common.save': 'Save',
       'common.open': 'Open',
+      'common.close': 'Close',
       'dawnOfaNewDay': 'It is the dawn of a new day!',
       'encounterMonster': 'You have encountered a monster!',
       'encounterMonsterHint': 'Click to fight in the HentaiVerse.',
@@ -552,6 +553,11 @@ class WebEnUS {
       'home.ranklist': 'Ranklist',
 
       // tag translation
+      'tagInfo.title': 'Tag details',
+      'tagInfo.empty': 'No tag details available',
+      'tagInfo.loadFailed': 'Failed to load tag details: @error',
+      'showR18GImageDirectly': 'Show R18G Image Directly',
+      'warningImageHint': 'R18G image, click to view',
       'tagTranslation.title': 'Tag Translation',
       'tagTranslation.loaded': '@count tags loaded',
       'tagTranslation.notLoaded': 'Tag database not loaded',

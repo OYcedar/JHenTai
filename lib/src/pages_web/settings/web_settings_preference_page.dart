@@ -410,10 +410,12 @@ class _WebTagTranslationSubPage extends StatefulWidget {
 class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
   final tagStatus = <String, dynamic>{}.obs;
   final isRefreshing = false.obs;
+  late bool showR18GImageDirectly;
 
   @override
   void initState() {
     super.initState();
+    showR18GImageDirectly = WebPreferenceSettings.showR18GImageDirectly;
     _load();
   }
 
@@ -468,6 +470,17 @@ class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
                     ),
                   ),
                 const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.no_adult_content_outlined),
+                  title: Text('showR18GImageDirectly'.tr),
+                  value: showR18GImageDirectly,
+                  onChanged: (value) {
+                    setState(() => showR18GImageDirectly = value);
+                    WebPreferenceSettings.saveShowR18GImageDirectly(value);
+                  },
+                ),
+                const SizedBox(height: 8),
                 FilledButton.tonalIcon(
                   icon: isRefreshing.value
                       ? const SizedBox(

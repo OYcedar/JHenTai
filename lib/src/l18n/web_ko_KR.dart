@@ -19,6 +19,7 @@ class WebKoKR {
       'common.images': '@count장',
       'common.pages': '@count 페이지',
       'common.open': '열기',
+      'common.close': '닫기',
       'dawnOfaNewDay': '새로운 하루가 밝았습니다!',
       'encounterMonster': '몬스터를 만났습니다!',
       'encounterMonsterHint': 'HentaiVerse 전투로 이동하려면 클릭하세요.',
@@ -521,6 +522,11 @@ class WebKoKR {
       'home.ranklist': '랭킹',
 
       // tag translation
+      'tagInfo.title': '태그 상세',
+      'tagInfo.empty': '태그 상세 정보가 없습니다',
+      'tagInfo.loadFailed': '태그 상세 정보를 불러오지 못했습니다: @error',
+      'showR18GImageDirectly': 'R18G 이미지 표시',
+      'warningImageHint': 'R18G 이미지, 클릭하여 보기',
       'tagTranslation.title': '태그 번역',
       'tagTranslation.loaded': '@count개 태그 로드됨',
       'tagTranslation.notLoaded': '태그 데이터베이스가 로드되지 않음',

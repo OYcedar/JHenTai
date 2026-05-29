@@ -21,6 +21,7 @@ class WebPreferenceSettings {
   static const showDawnInfoKey = 'jh_web_show_dawn_info';
   static const showHvInfoKey = 'jh_web_show_hv_info';
   static const noImageModeKey = 'jh_web_no_image_mode';
+  static const showR18GImageDirectlyKey = 'jh_web_show_r18g_image_directly';
 
   const WebPreferenceSettings._();
 
@@ -47,6 +48,9 @@ class WebPreferenceSettings {
   static bool get showHvInfo => _readBool(showHvInfoKey, false);
 
   static bool get noImageMode => _readBool(noImageModeKey, false);
+
+  static bool get showR18GImageDirectly =>
+      _readBool(showR18GImageDirectlyKey, false);
 
   static bool get enableDefaultFavorite =>
       _readBool(enableDefaultFavoriteKey, false);
@@ -102,6 +106,9 @@ class WebPreferenceSettings {
   static void saveShowHvInfo(bool value) => _writeBool(showHvInfoKey, value);
 
   static void saveNoImageMode(bool value) => _writeBool(noImageModeKey, value);
+
+  static void saveShowR18GImageDirectly(bool value) =>
+      _writeBool(showR18GImageDirectlyKey, value);
 
   static void saveEnableDefaultFavorite(bool value) =>
       _writeBool(enableDefaultFavoriteKey, value);

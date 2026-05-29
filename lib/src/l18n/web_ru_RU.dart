@@ -19,6 +19,7 @@ class WebRuRU {
       'common.images': '@count изобр.',
       'common.pages': '@count стр.',
       'common.open': 'Открыть',
+      'common.close': 'Закрыть',
       'dawnOfaNewDay': 'Наступил рассвет нового дня!',
       'encounterMonster': 'Вы встретили монстра!',
       'encounterMonsterHint': 'Нажмите, чтобы сразиться в HentaiVerse.',
@@ -547,6 +548,11 @@ class WebRuRU {
       'thumbnails.loadFailed': 'Ошибка загрузки миниатюр: @error',
 
       // tag translation
+      'tagInfo.title': 'Сведения о теге',
+      'tagInfo.empty': 'Сведения о теге недоступны',
+      'tagInfo.loadFailed': 'Не удалось загрузить сведения о теге: @error',
+      'showR18GImageDirectly': 'Показывать R18G изображения сразу',
+      'warningImageHint': 'R18G изображение, нажмите для просмотра',
       'tagTranslation.title': 'Перевод тегов',
       'tagTranslation.loaded': '@count тегов загружено',
       'tagTranslation.notLoaded': 'База тегов не загружена',

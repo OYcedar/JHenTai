@@ -19,6 +19,7 @@ class WebZhCN {
       'common.images': '@count 张图片',
       'common.pages': '@count 页',
       'common.open': '打开',
+      'common.close': '关闭',
       'dawnOfaNewDay': '黎明之时',
       'encounterMonster': '你遭遇了一只怪兽！',
       'encounterMonsterHint': '点击跳转至 HentaiVerse 战斗。',
@@ -506,6 +507,11 @@ class WebZhCN {
       'home.ranklist': '排行榜',
 
       // tag translation
+      'tagInfo.title': '标签详情',
+      'tagInfo.empty': '暂无标签详情',
+      'tagInfo.loadFailed': '加载标签详情失败: @error',
+      'showR18GImageDirectly': '标签数据中直接显示R18G图片',
+      'warningImageHint': 'R18G图片，点击以显示',
       'tagTranslation.title': '标签翻译',
       'tagTranslation.loaded': '已加载 @count 个标签',
       'tagTranslation.notLoaded': '标签数据库未加载',
