@@ -586,6 +586,10 @@ class WebEnUS {
       'settings.disablePasswordAuthConfirm':
           'This removes the local PIN saved in this browser.',
       'settings.passwordAuthEnabled': 'Password auth enabled',
+      'settings.changeWebPin': 'Change PIN',
+      'settings.currentWebPinHint': 'Enter your current PIN',
+      'settings.newWebPinHint': 'Enter a new PIN',
+      'settings.webPinChanged': 'PIN changed',
       'settings.mouseWheelIntro':
           'Choose how the mouse wheel behaves over images in the reader (horizontal page modes).',
       'settings.webWheelScrollSpeedHint':

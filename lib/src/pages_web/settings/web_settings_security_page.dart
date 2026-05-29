@@ -107,6 +107,12 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
                     ),
                     const Divider(height: 1),
                     ListTile(
+                      leading: const Icon(Icons.pin_outlined),
+                      title: Text('settings.changeWebPin'.tr),
+                      onTap: _changePassword,
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
                       leading: const Icon(Icons.lock_reset_outlined),
                       title: Text('settings.lockNow'.tr),
                       onTap: _lockController.lock,
@@ -178,16 +184,22 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
   }
 
   String _maskToken(String token) {
-    if (token.length <= 16) return '********';
+    if (token.length <= 16) {
+      return '********';
+    }
     return '${token.substring(0, 8)}...${token.substring(token.length - 4)}';
   }
 
   Future<void> _verifyCurrentToken() async {
     final token = backendApiClient.currentToken ?? '';
-    if (token.isEmpty) return;
+    if (token.isEmpty) {
+      return;
+    }
     setState(() => _checking = true);
     final valid = await backendApiClient.verifyToken(token);
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _checking = false;
       _tokenValid = valid;
@@ -216,7 +228,9 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true) {
+      return;
+    }
     backendApiClient.clearToken();
     web.window.location.href = '/web/setup';
   }
@@ -254,6 +268,21 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
     Get.snackbar(
       'common.success'.tr,
       'settings.passwordAuthEnabled'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  Future<void> _changePassword() async {
+    final password = await Get.dialog<String>(
+      _WebPasswordChangeDialog(lockController: _lockController),
+    );
+    if (password == null) {
+      return;
+    }
+    _lockController.changePassword(password);
+    Get.snackbar(
+      'common.success'.tr,
+      'settings.webPinChanged'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
   }
@@ -323,10 +352,112 @@ class _WebPasswordSettingDialogState extends State<_WebPasswordSettingDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: () => Get.back(),
+          onPressed: Get.back,
           child: Text('common.cancel'.tr),
         ),
       ],
     );
   }
+}
+
+class _WebPasswordChangeDialog extends StatefulWidget {
+  const _WebPasswordChangeDialog({required this.lockController});
+
+  final WebAppLockController lockController;
+
+  @override
+  State<_WebPasswordChangeDialog> createState() =>
+      _WebPasswordChangeDialogState();
+}
+
+class _WebPasswordChangeDialogState extends State<_WebPasswordChangeDialog> {
+  final controller = TextEditingController();
+  String? firstPassword;
+  var step = _WebPasswordChangeStep.current;
+  late String hintText;
+
+  @override
+  void initState() {
+    super.initState();
+    hintText = 'settings.currentWebPinHint'.tr;
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('settings.changeWebPin'.tr),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Pinput(
+            length: 4,
+            controller: controller,
+            autofocus: true,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            onCompleted: _handleCompleted,
+          ),
+          const SizedBox(height: 16),
+          Text(hintText, textAlign: TextAlign.center),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: Get.back,
+          child: Text('common.cancel'.tr),
+        ),
+      ],
+    );
+  }
+
+  void _handleCompleted(String value) {
+    switch (step) {
+      case _WebPasswordChangeStep.current:
+        if (!widget.lockController.verifyPassword(value)) {
+          setState(() {
+            hintText = 'passwordErrorHint'.tr;
+            controller.clear();
+          });
+          return;
+        }
+        setState(() {
+          step = _WebPasswordChangeStep.newPassword;
+          hintText = 'settings.newWebPinHint'.tr;
+          controller.clear();
+        });
+        return;
+      case _WebPasswordChangeStep.newPassword:
+        setState(() {
+          firstPassword = value;
+          step = _WebPasswordChangeStep.confirm;
+          hintText = 'confirmPasswordHint'.tr;
+          controller.clear();
+        });
+        return;
+      case _WebPasswordChangeStep.confirm:
+        if (firstPassword == value) {
+          Get.back(result: value);
+          return;
+        }
+        setState(() {
+          firstPassword = null;
+          step = _WebPasswordChangeStep.newPassword;
+          hintText = 'passwordNotMatchHint'.tr;
+          controller.clear();
+        });
+        return;
+    }
+  }
+}
+
+enum _WebPasswordChangeStep {
+  current,
+  newPassword,
+  confirm,
 }

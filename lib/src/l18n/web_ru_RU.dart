@@ -588,6 +588,10 @@ class WebRuRU {
       'settings.disablePasswordAuthConfirm':
           'Локальный PIN-код, сохранённый в этом браузере, будет удалён.',
       'settings.passwordAuthEnabled': 'Пароль включён',
+      'settings.changeWebPin': 'Изменить PIN',
+      'settings.currentWebPinHint': 'Введите текущий PIN',
+      'settings.newWebPinHint': 'Введите новый PIN',
+      'settings.webPinChanged': 'PIN изменён',
       'settings.mouseWheelIntro':
           'Поведение колёсика над изображением в читалке (горизонтальные режимы страниц).',
       'settings.webWheelScrollSpeedHint':

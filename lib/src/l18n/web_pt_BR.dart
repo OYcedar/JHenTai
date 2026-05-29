@@ -594,6 +594,10 @@ class WebPtBR {
       'settings.disablePasswordAuthConfirm':
           'Isto remove o PIN local salvo neste navegador.',
       'settings.passwordAuthEnabled': 'Autenticação por senha ativada',
+      'settings.changeWebPin': 'Alterar PIN',
+      'settings.currentWebPinHint': 'Digite o PIN atual',
+      'settings.newWebPinHint': 'Digite um novo PIN',
+      'settings.webPinChanged': 'PIN alterado',
       'settings.mouseWheelIntro':
           'Escolha o comportamento da roda do mouse sobre as imagens no leitor (modos de página horizontais).',
       'settings.webWheelScrollSpeedHint':

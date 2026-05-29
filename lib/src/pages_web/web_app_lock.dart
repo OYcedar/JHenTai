@@ -77,6 +77,13 @@ class WebAppLockController extends GetxController with WidgetsBindingObserver {
     locked.value = false;
   }
 
+  void changePassword(String password) {
+    web.window.localStorage.setItem(_passwordHashKey, _hash(password));
+    web.window.localStorage.setItem(_enabledKey, 'true');
+    enabled.value = true;
+    locked.value = false;
+  }
+
   void disablePasswordAuth() {
     web.window.localStorage.removeItem(_enabledKey);
     web.window.localStorage.removeItem(_passwordHashKey);
@@ -96,11 +103,18 @@ class WebAppLockController extends GetxController with WidgetsBindingObserver {
   }
 
   bool unlock(String password) {
+    if (!verifyPassword(password)) {
+      return false;
+    }
+    locked.value = false;
+    return true;
+  }
+
+  bool verifyPassword(String password) {
     final expected = web.window.localStorage.getItem(_passwordHashKey);
     if (expected == null || expected != _hash(password)) {
       return false;
     }
-    locked.value = false;
     return true;
   }
 
