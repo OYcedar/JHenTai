@@ -9,6 +9,7 @@ class WebZhTW {
       'common.success': '成功',
       'common.failed': '失敗',
       'common.retry': '重試',
+      'common.add': '新增',
       'common.delete': '刪除',
       'common.reset': '重設',
       'common.clear': '清除',
@@ -285,7 +286,10 @@ class WebZhTW {
       'local.copyAllPaths': '複製全部路徑',
       'local.scanRoots': '掃描根目錄',
       'local.scanRootsHint':
-          '這裡顯示 Docker 服務端目前掃描的容器內路徑。如需調整，請修改 Docker 掛載或 JH_EXTRA_SCAN_PATHS。',
+          '這裡顯示 Docker 服務端目前掃描的容器內路徑。可以在此新增已掛載路徑，也可以透過 Docker 掛載和 JH_EXTRA_SCAN_PATHS 設定。',
+      'local.addScanRoot': '新增掃描根目錄',
+      'local.addScanRootFailed': '新增掃描根目錄失敗: @error',
+      'local.deleteScanRootFailed': '移除掃描根目錄失敗: @error',
       'local.noScanRoots': '未設定掃描根目錄',
 
       // settings

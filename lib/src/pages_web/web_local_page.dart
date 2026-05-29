@@ -12,6 +12,7 @@ class WebLocalController extends GetxController {
   final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
   final roots = <String>[].obs;
+  final extraRoots = <String>[].obs;
   final currentPath = ''.obs;
   final searchQuery = ''.obs;
   final viewMode = 'list'.obs;
@@ -40,18 +41,21 @@ class WebLocalController extends GetxController {
     isLoading.value = true;
     errorMessage.value = '';
     try {
-      final results = await Future.wait([
-        backendApiClient.listLocalGalleryRoots(),
-        backendApiClient.listLocalGalleries(),
-      ]);
-      final rootData = (results[0] as List<String>)
+      final rootInfo = await backendApiClient.getLocalGalleryRootInfo();
+      final galleryData = await backendApiClient.listLocalGalleries();
+      final rootData = rootInfo.roots
           .map(_normalizePath)
           .where((path) => path.isNotEmpty)
           .toList()
         ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
       roots.value = rootData;
+      extraRoots.value = rootInfo.extraRoots
+          .map(_normalizePath)
+          .where((p) => p.isNotEmpty)
+          .toList()
+        ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
 
-      galleries.value = results[1].cast<Map<String, dynamic>>();
+      galleries.value = galleryData.cast<Map<String, dynamic>>();
       if (currentPath.value.isNotEmpty &&
           !_isCurrentPathStillVisible(currentPath.value)) {
         currentPath.value = '';
@@ -76,6 +80,24 @@ class WebLocalController extends GetxController {
     } finally {
       isScanning.value = false;
     }
+  }
+
+  Future<void> addScanRoot(String path) async {
+    final normalized = _normalizePath(path);
+    if (normalized.isEmpty) {
+      return;
+    }
+    await backendApiClient.addLocalGalleryRoot(normalized);
+    await _loadGalleries();
+  }
+
+  Future<void> deleteScanRoot(String path) async {
+    final normalized = _normalizePath(path);
+    if (normalized.isEmpty) {
+      return;
+    }
+    await backendApiClient.deleteLocalGalleryRoot(normalized);
+    await _loadGalleries();
   }
 
   Future<void> openGallery(Map<String, dynamic> gallery) async {
@@ -423,76 +445,165 @@ class WebLocalPage extends GetView<WebLocalController> {
   }
 
   Future<void> _showScanRootsDialog(BuildContext context) async {
-    final roots = controller.roots.toList();
+    final pathController = TextEditingController();
+    var saving = false;
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('local.scanRoots'.tr),
-        content: SizedBox(
-          width: 520,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'local.scanRootsHint'.tr,
-                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 12),
-              if (roots.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text('local.noScanRoots'.tr),
-                )
-              else
-                Flexible(
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: roots.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final root = roots[index];
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.folder_special_outlined),
-                        title: Text(
-                          WebLocalController._displayPath(root),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          final roots = controller.roots.toList();
+          final extraRoots = controller.extraRoots.toSet();
+          Future<void> addRoot() async {
+            final path = pathController.text.trim();
+            if (path.isEmpty) {
+              return;
+            }
+            setDialogState(() => saving = true);
+            try {
+              await controller.addScanRoot(path);
+              pathController.clear();
+            } catch (e) {
+              Get.snackbar(
+                'common.error'.tr,
+                'local.addScanRootFailed'.trParams({'error': '$e'}),
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            } finally {
+              setDialogState(() => saving = false);
+            }
+          }
+
+          return AlertDialog(
+            title: Text('local.scanRoots'.tr),
+            content: SizedBox(
+              width: 560,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'local.scanRootsHint'.tr,
+                    style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                         ),
-                        subtitle: Text(
-                          root,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.copy),
-                          tooltip: 'local.copyPath'.tr,
-                          onPressed: () => _copyLocalPath(root),
-                        ),
-                      );
-                    },
                   ),
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          if (roots.isNotEmpty)
-            TextButton.icon(
-              icon: const Icon(Icons.copy_all),
-              onPressed: () => _copyLocalPath(roots.join('\n')),
-              label: Text('local.copyAllPaths'.tr),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: pathController,
+                          enabled: !saving,
+                          decoration: InputDecoration(
+                            labelText: 'local.addScanRoot'.tr,
+                            hintText: '/data/local_gallery_extra',
+                            border: const OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onSubmitted: (_) => addRoot(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: saving ? null : addRoot,
+                        icon: saving
+                            ? const SizedBox.square(
+                                dimension: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.add),
+                        label: Text('common.add'.tr),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (roots.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text('local.noScanRoots'.tr),
+                    )
+                  else
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: roots.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final root = roots[index];
+                          final isExtra = extraRoots.contains(root);
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.folder_special_outlined),
+                            title: Text(
+                              WebLocalController._displayPath(root),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              root,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: Wrap(
+                              spacing: 4,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.copy),
+                                  tooltip: 'local.copyPath'.tr,
+                                  onPressed: () => _copyLocalPath(root),
+                                ),
+                                if (isExtra)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline),
+                                    tooltip: 'common.delete'.tr,
+                                    onPressed: saving
+                                        ? null
+                                        : () async {
+                                            setDialogState(() => saving = true);
+                                            try {
+                                              await controller
+                                                  .deleteScanRoot(root);
+                                            } catch (e) {
+                                              Get.snackbar(
+                                                'common.error'.tr,
+                                                'local.deleteScanRootFailed'
+                                                    .trParams({'error': '$e'}),
+                                                snackPosition:
+                                                    SnackPosition.BOTTOM,
+                                              );
+                                            } finally {
+                                              setDialogState(
+                                                  () => saving = false);
+                                            }
+                                          },
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('common.close'.tr),
-          ),
-        ],
+            actions: [
+              if (roots.isNotEmpty)
+                TextButton.icon(
+                  icon: const Icon(Icons.copy_all),
+                  onPressed: () => _copyLocalPath(roots.join('\n')),
+                  label: Text('local.copyAllPaths'.tr),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('common.close'.tr),
+              ),
+            ],
+          );
+        },
       ),
     );
+    pathController.dispose();
   }
 
   void _copyLocalPath(String path) {

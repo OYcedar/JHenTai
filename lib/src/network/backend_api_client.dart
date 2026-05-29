@@ -474,6 +474,24 @@ class BackendApiClient {
     return ((response.data['roots'] as List?) ?? []).cast<String>();
   }
 
+  Future<({List<String> roots, List<String> extraRoots})>
+      getLocalGalleryRootInfo() async {
+    final response = await _dio.get('/api/local/roots');
+    final data = response.data as Map<String, dynamic>;
+    return (
+      roots: ((data['roots'] as List?) ?? []).cast<String>(),
+      extraRoots: ((data['extraRoots'] as List?) ?? []).cast<String>(),
+    );
+  }
+
+  Future<void> addLocalGalleryRoot(String path) async {
+    await _dio.post('/api/local/roots', data: {'path': path});
+  }
+
+  Future<void> deleteLocalGalleryRoot(String path) async {
+    await _dio.delete('/api/local/roots', queryParameters: {'path': path});
+  }
+
   Future<void> refreshLocalGalleries() async {
     await _dio.post('/api/local/refresh');
   }

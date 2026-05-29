@@ -9,6 +9,7 @@ class WebZhCN {
       'common.success': '成功',
       'common.failed': '失败',
       'common.retry': '重试',
+      'common.add': '添加',
       'common.delete': '删除',
       'common.reset': '重置',
       'common.clear': '清除',
@@ -285,7 +286,10 @@ class WebZhCN {
       'local.copyAllPaths': '复制全部路径',
       'local.scanRoots': '扫描根目录',
       'local.scanRootsHint':
-          '这里显示 Docker 服务端当前扫描的容器内路径。如需调整，请修改 Docker 挂载或 JH_EXTRA_SCAN_PATHS。',
+          '这里显示 Docker 服务端当前扫描的容器内路径。可以在此添加已挂载路径，也可以通过 Docker 挂载和 JH_EXTRA_SCAN_PATHS 配置。',
+      'local.addScanRoot': '添加扫描根目录',
+      'local.addScanRootFailed': '添加扫描根目录失败: @error',
+      'local.deleteScanRootFailed': '移除扫描根目录失败: @error',
       'local.noScanRoots': '未配置扫描根目录',
 
       // settings

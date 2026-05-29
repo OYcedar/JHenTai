@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../service/local_gallery_service.dart';
+import '../service/local_gallery_runtime_settings.dart';
 
 class LocalRoutes {
   final LocalGalleryService _service;
@@ -15,6 +17,8 @@ class LocalRoutes {
 
     router.get('/list', _listGalleries);
     router.get('/roots', _listRoots);
+    router.post('/roots', _addRoot);
+    router.delete('/roots', _deleteRoot);
     router.post('/refresh', _refresh);
     router.get('/images', _getImages);
     router.delete('/gallery', _deleteGallery);
@@ -35,9 +39,56 @@ class LocalRoutes {
 
   Future<Response> _listRoots(Request request) async {
     return Response.ok(
-      jsonEncode({'roots': _service.allowedScanPaths}),
+      jsonEncode({
+        'roots': _service.allowedScanPaths,
+        'extraRoots': webExtraLocalGalleryScanPaths(),
+      }),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _addRoot(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid JSON body'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    final path = body['path']?.toString().trim() ?? '';
+    if (path.isEmpty) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Missing path'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    if (!await Directory(path).exists()) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Directory does not exist'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    final paths = webExtraLocalGalleryScanPaths();
+    if (!paths.contains(path)) {
+      saveWebExtraLocalGalleryScanPaths([...paths, path]);
+    }
+    _service.refresh();
+    return _listRoots(request);
+  }
+
+  Future<Response> _deleteRoot(Request request) async {
+    final path = request.url.queryParameters['path']?.trim() ?? '';
+    if (path.isEmpty) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Missing path'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    removeWebExtraLocalGalleryScanPath(path);
+    _service.refresh();
+    return _listRoots(request);
   }
 
   Future<Response> _refresh(Request request) async {

@@ -9,6 +9,7 @@ class WebPtBR {
       'common.success': 'Sucesso',
       'common.failed': 'Falhou',
       'common.retry': 'Tentar novamente',
+      'common.add': 'Adicionar',
       'common.delete': 'Excluir',
       'common.reset': 'Redefinir',
       'common.clear': 'Limpar',
@@ -306,7 +307,12 @@ class WebPtBR {
       'local.copyAllPaths': 'Copiar Todos os Caminhos',
       'local.scanRoots': 'Raizes de Escaneamento',
       'local.scanRootsHint':
-          'Estes sao os caminhos do conteiner que o servidor Docker escaneia. Altere os volumes Docker ou JH_EXTRA_SCAN_PATHS para muda-los.',
+          'Estes sao os caminhos do conteiner que o servidor Docker escaneia. Adicione aqui um caminho montado ou use volumes Docker e JH_EXTRA_SCAN_PATHS.',
+      'local.addScanRoot': 'Adicionar raiz de escaneamento',
+      'local.addScanRootFailed':
+          'Falha ao adicionar raiz de escaneamento: @error',
+      'local.deleteScanRootFailed':
+          'Falha ao remover raiz de escaneamento: @error',
       'local.noScanRoots': 'Nenhuma raiz de escaneamento configurada',
 
       // settings

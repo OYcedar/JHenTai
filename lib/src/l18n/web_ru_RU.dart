@@ -9,6 +9,7 @@ class WebRuRU {
       'common.success': 'Успех',
       'common.failed': 'Ошибка',
       'common.retry': 'Повторить',
+      'common.add': 'Добавить',
       'common.delete': 'Удалить',
       'common.reset': 'Сбросить',
       'common.clear': 'Очистить',
@@ -301,7 +302,10 @@ class WebRuRU {
       'local.copyAllPaths': 'Копировать все пути',
       'local.scanRoots': 'Корни сканирования',
       'local.scanRootsHint':
-          'Это пути внутри контейнера, которые сканирует Docker-сервер. Измените тома Docker или JH_EXTRA_SCAN_PATHS, чтобы настроить их.',
+          'Это пути внутри контейнера, которые сканирует Docker-сервер. Добавьте смонтированный путь здесь или используйте тома Docker и JH_EXTRA_SCAN_PATHS.',
+      'local.addScanRoot': 'Добавить корень сканирования',
+      'local.addScanRootFailed': 'Не удалось добавить корень: @error',
+      'local.deleteScanRootFailed': 'Не удалось удалить корень: @error',
       'local.noScanRoots': 'Корни сканирования не настроены',
 
       // settings

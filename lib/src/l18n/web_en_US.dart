@@ -9,6 +9,7 @@ class WebEnUS {
       'common.success': 'Success',
       'common.failed': 'Failed',
       'common.retry': 'Retry',
+      'common.add': 'Add',
       'common.delete': 'Delete',
       'common.reset': 'Reset',
       'common.clear': 'Clear',
@@ -301,7 +302,10 @@ class WebEnUS {
       'local.copyAllPaths': 'Copy All Paths',
       'local.scanRoots': 'Scan Roots',
       'local.scanRootsHint':
-          'These are the container paths that the Docker server scans. Update Docker volume mounts or JH_EXTRA_SCAN_PATHS to change them.',
+          'These are the container paths that the Docker server scans. Add a mounted path here, or use Docker volume mounts and JH_EXTRA_SCAN_PATHS.',
+      'local.addScanRoot': 'Add scan root',
+      'local.addScanRootFailed': 'Failed to add scan root: @error',
+      'local.deleteScanRootFailed': 'Failed to remove scan root: @error',
       'local.noScanRoots': 'No scan roots configured',
 
       // settings

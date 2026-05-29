@@ -9,6 +9,7 @@ import '../config/server_config.dart';
 import '../console_diag.dart';
 import '../core/log.dart';
 import '../debug_flags.dart';
+import '../service/local_gallery_runtime_settings.dart';
 
 class ImageRoutes {
   final ServerConfig _config;
@@ -89,12 +90,10 @@ class ImageRoutes {
 
   bool _isAllowedPath(String filePath) {
     final resolved = p.canonicalize(filePath);
-    if (resolved.startsWith(p.canonicalize(_config.downloadDir))) return true;
-    if (resolved.startsWith(p.canonicalize(_config.localGalleryDir)))
+    final downloadDir = p.canonicalize(_config.downloadDir);
+    if (resolved == downloadDir || resolved.startsWith('$downloadDir/')) {
       return true;
-    for (final extra in _config.extraScanPaths) {
-      if (resolved.startsWith(p.canonicalize(extra))) return true;
     }
-    return false;
+    return isPathUnderLocalGalleryScanPath(filePath, _config);
   }
 }

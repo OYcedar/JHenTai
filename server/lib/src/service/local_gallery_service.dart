@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../config/server_config.dart';
 import '../core/log.dart';
 import '../utils/archive_util.dart';
+import 'local_gallery_runtime_settings.dart';
 
 class LocalGallery {
   final String path;
@@ -50,10 +51,7 @@ class LocalGalleryService {
       final start = DateTime.now();
       _galleries = [];
 
-      final scanPaths = <String>[
-        _config.localGalleryDir,
-        ..._config.extraScanPaths
-      ];
+      final scanPaths = effectiveLocalGalleryScanPaths(_config);
 
       for (final scanPath in scanPaths) {
         final dir = Directory(scanPath);
@@ -71,16 +69,10 @@ class LocalGalleryService {
     }
   }
 
-  List<String> get allowedScanPaths =>
-      [_config.localGalleryDir, ..._config.extraScanPaths];
+  List<String> get allowedScanPaths => effectiveLocalGalleryScanPaths(_config);
 
   bool isPathAllowed(String path) {
-    final resolved = p.canonicalize(path);
-    return allowedScanPaths.any((allowed) {
-      final resolvedAllowed = p.canonicalize(allowed);
-      return resolved == resolvedAllowed ||
-          resolved.startsWith('$resolvedAllowed/');
-    });
+    return isPathUnderLocalGalleryScanPath(path, _config);
   }
 
   List<String> getGalleryImages(String galleryPath) {

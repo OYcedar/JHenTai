@@ -9,6 +9,7 @@ class WebKoKR {
       'common.success': '성공',
       'common.failed': '실패',
       'common.retry': '재시도',
+      'common.add': '추가',
       'common.delete': '삭제',
       'common.reset': '초기화',
       'common.clear': '지우기',
@@ -289,7 +290,10 @@ class WebKoKR {
       'local.copyAllPaths': '모든 경로 복사',
       'local.scanRoots': '스캔 루트',
       'local.scanRootsHint':
-          'Docker 서버가 스캔하는 컨테이너 내부 경로입니다. 변경하려면 Docker 볼륨 마운트 또는 JH_EXTRA_SCAN_PATHS를 수정하세요.',
+          'Docker 서버가 스캔하는 컨테이너 내부 경로입니다. 마운트된 경로를 여기에서 추가하거나 Docker 볼륨과 JH_EXTRA_SCAN_PATHS를 사용하세요.',
+      'local.addScanRoot': '스캔 루트 추가',
+      'local.addScanRootFailed': '스캔 루트 추가 실패: @error',
+      'local.deleteScanRootFailed': '스캔 루트 제거 실패: @error',
       'local.noScanRoots': '설정된 스캔 루트가 없습니다',
 
       // settings
