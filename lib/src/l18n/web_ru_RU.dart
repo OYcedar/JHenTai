@@ -801,6 +801,7 @@ class WebRuRU {
       'downloads.pauseVisible': 'Поставить видимые задачи на паузу',
       'downloads.resumeVisible': 'Возобновить видимые задачи',
       'downloads.reDownloadVisible': 'Скачать видимые галереи заново',
+      'downloads.reUnlockVisible': 'Разблокировать видимые архивы заново',
       'downloads.reDownloadConfirm':
           'Удалить скачанные файлы этой галереи и начать заново?',
       'downloads.reDownloadVisibleConfirm':
@@ -814,10 +815,12 @@ class WebRuRU {
       'downloads.deleteVisible': 'Удалить видимые задачи',
       'downloads.deleteVisibleConfirm':
           'Выберите, как удалить @count видимых задач.',
+      'downloads.visibleTaskCount': 'Будет затронуто видимых задач: @count.',
       'downloads.noBatchTargets': 'В текущем списке нет подходящих задач',
       'downloads.batchPaused': 'Поставлено на паузу: @count',
       'downloads.batchResumed': 'Возобновлено: @count',
       'downloads.batchRedownloaded': 'Перезапущено задач: @count',
+      'downloads.batchReUnlocked': 'Архивов разблокировано заново: @count',
       'downloads.batchGroupChanged': 'Группа изменена для задач: @count',
       'downloads.batchDeleted': 'Удалено задач: @count',
       'detail.startDownloadTitle': 'Начать загрузку',

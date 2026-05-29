@@ -445,6 +445,51 @@ class WebDownloadsController extends GetxController
         snackPosition: SnackPosition.BOTTOM);
   }
 
+  Future<void> reUnlockVisibleArchiveTasks() async {
+    if (tabController.index != 1) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    final ids = sortedFilteredArchiveTasks
+        .where((t) => t['status'] != 6)
+        .map((t) => (t['gid'] as num?)?.toInt())
+        .whereType<int>()
+        .toList();
+    if (ids.isEmpty) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('downloads.reUnlockArchive'.tr),
+        content: Text(
+          '${'downloads.reUnlockArchiveConfirm'.tr}\n\n'
+          '${'downloads.visibleTaskCount'.trParams({
+                'count': '${ids.length}'
+              })}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('downloads.reUnlockArchive'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await Future.wait(ids.map(reUnlockArchive));
+    await refresh();
+    Get.snackbar('common.success'.tr,
+        'downloads.batchReUnlocked'.trParams({'count': '${ids.length}'}),
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
   Future<void> deleteVisibleTasks() async {
     final galleryTab = tabController.index == 0;
     final tasks =
@@ -637,10 +682,22 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
             tooltip: 'downloads.resumeVisible'.tr,
             onPressed: controller.resumeVisibleTasks,
           ),
-          IconButton(
-            icon: const Icon(Icons.restart_alt),
-            tooltip: 'downloads.reDownloadVisible'.tr,
-            onPressed: controller.reDownloadVisibleGalleryTasks,
+          AnimatedBuilder(
+            animation: controller.tabController,
+            builder: (context, _) {
+              final galleryTab = controller.tabController.index == 0;
+              return IconButton(
+                icon: Icon(
+                  galleryTab ? Icons.restart_alt : Icons.lock_reset,
+                ),
+                tooltip: galleryTab
+                    ? 'downloads.reDownloadVisible'.tr
+                    : 'downloads.reUnlockVisible'.tr,
+                onPressed: galleryTab
+                    ? controller.reDownloadVisibleGalleryTasks
+                    : controller.reUnlockVisibleArchiveTasks,
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.drive_file_move_outline),

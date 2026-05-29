@@ -803,6 +803,7 @@ class WebEnUS {
       'downloads.pauseVisible': 'Pause visible tasks',
       'downloads.resumeVisible': 'Resume visible tasks',
       'downloads.reDownloadVisible': 'Re-download visible gallery tasks',
+      'downloads.reUnlockVisible': 'Re-unlock visible archive tasks',
       'downloads.reDownloadConfirm':
           'Delete downloaded files for this gallery and start it again?',
       'downloads.reDownloadVisibleConfirm':
@@ -816,10 +817,12 @@ class WebEnUS {
       'downloads.deleteVisible': 'Delete visible tasks',
       'downloads.deleteVisibleConfirm':
           'Choose how to delete @count visible tasks.',
+      'downloads.visibleTaskCount': '@count visible tasks will be affected.',
       'downloads.noBatchTargets': 'No matching tasks in the current list',
       'downloads.batchPaused': 'Paused @count tasks',
       'downloads.batchResumed': 'Resumed @count tasks',
       'downloads.batchRedownloaded': 'Restarted @count tasks',
+      'downloads.batchReUnlocked': 'Re-unlocked @count archive tasks',
       'downloads.batchGroupChanged': 'Changed group for @count tasks',
       'downloads.batchDeleted': 'Deleted @count tasks',
 

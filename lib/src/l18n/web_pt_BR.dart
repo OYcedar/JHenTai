@@ -803,6 +803,7 @@ class WebPtBR {
       'downloads.pauseVisible': 'Pausar tarefas visíveis',
       'downloads.resumeVisible': 'Retomar tarefas visíveis',
       'downloads.reDownloadVisible': 'Baixar novamente galerias visíveis',
+      'downloads.reUnlockVisible': 'Desbloquear arquivos visíveis novamente',
       'downloads.reDownloadConfirm':
           'Excluir os arquivos baixados desta galeria e iniciar novamente?',
       'downloads.reDownloadVisibleConfirm':
@@ -816,10 +817,13 @@ class WebPtBR {
       'downloads.deleteVisible': 'Excluir tarefas visíveis',
       'downloads.deleteVisibleConfirm':
           'Escolha como excluir @count tarefas visíveis.',
+      'downloads.visibleTaskCount': '@count tarefas visíveis serão afetadas.',
       'downloads.noBatchTargets': 'Nenhuma tarefa compatível na lista atual',
       'downloads.batchPaused': '@count tarefas pausadas',
       'downloads.batchResumed': '@count tarefas retomadas',
       'downloads.batchRedownloaded': '@count tarefas reiniciadas',
+      'downloads.batchReUnlocked':
+          '@count tarefas de arquivo desbloqueadas novamente',
       'downloads.batchGroupChanged': 'Grupo alterado para @count tarefas',
       'downloads.batchDeleted': '@count tarefas excluídas',
       'detail.startDownloadTitle': 'Iniciar download',
