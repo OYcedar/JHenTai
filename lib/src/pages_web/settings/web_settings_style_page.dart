@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_theme_controller.dart';
 import 'package:web/web.dart' as web;
@@ -20,6 +21,7 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
 
   late String listMode;
   int? gridColumns;
+  int? downloadGridColumns;
   int? detailThumbnailColumns;
   late bool moveCoverToRight;
   late Map<String, String> pageListModes;
@@ -39,6 +41,10 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
     gridColumns = home?.gridColumns.value ??
         _parseGridColumns(web.window.localStorage
             .getItem(WebHomeController.gridColumnsStorageKey));
+    downloadGridColumns = _parseDownloadGridColumns(
+      web.window.localStorage
+          .getItem(WebDownloadsController.gridColumnsStorageKey),
+    );
     detailThumbnailColumns = _parseDetailThumbnailColumns(
       web.window.localStorage.getItem(detailThumbnailColumnsStorageKey),
     );
@@ -53,6 +59,11 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
   }
 
   int? _parseDetailThumbnailColumns(String? raw) {
+    final value = int.tryParse(raw ?? '');
+    return value != null && value >= 2 && value <= 8 ? value : null;
+  }
+
+  int? _parseDownloadGridColumns(String? raw) {
     final value = int.tryParse(raw ?? '');
     return value != null && value >= 2 && value <= 8 ? value : null;
   }
@@ -89,6 +100,11 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
       web.window.localStorage
           .setItem(detailThumbnailColumnsStorageKey, '$count');
     }
+  }
+
+  void _setDownloadGridColumns(int? count) {
+    setState(() => downloadGridColumns = count);
+    WebDownloadsController.setGridColumns(count);
   }
 
   void _setMoveCoverToRight(bool value) {
@@ -329,6 +345,32 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
                           ),
                         Text(
                           'settings.pageListStyleHint'.tr,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Colors.grey),
+                        ),
+                        const Divider(height: 32),
+                        Text('settings.downloadGridColumns'.tr,
+                            style: Theme.of(context).textTheme.titleSmall),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<int?>(
+                          initialValue: downloadGridColumns,
+                          decoration: const InputDecoration(
+                              border: OutlineInputBorder()),
+                          items: [
+                            DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('settings.gridColumnsAuto'.tr)),
+                            for (final n in [2, 3, 4, 5, 6, 7, 8])
+                              DropdownMenuItem<int?>(
+                                  value: n, child: Text('$n')),
+                          ],
+                          onChanged: _setDownloadGridColumns,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'settings.downloadGridColumnsHint'.tr,
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall

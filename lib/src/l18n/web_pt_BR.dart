@@ -396,6 +396,9 @@ class WebPtBR {
       'settings.listModeCompact': 'Compacta',
       'settings.gridColumns': 'Colunas da grade',
       'settings.gridColumnsAuto': 'Automático',
+      'settings.downloadGridColumns': 'Colunas da grade de downloads',
+      'settings.downloadGridColumnsHint':
+          'Aplica-se à grade de tarefas de download neste navegador.',
       'settings.detailThumbnailColumns': 'Colunas de miniaturas dos detalhes',
       'settings.detailThumbnailColumnsHint':
           'Aplica às miniaturas dos detalhes da galeria e à página completa de miniaturas.',

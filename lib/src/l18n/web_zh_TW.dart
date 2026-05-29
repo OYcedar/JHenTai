@@ -367,6 +367,8 @@ class WebZhTW {
       'settings.listModeCompact': '緊湊',
       'settings.gridColumns': '網格欄數',
       'settings.gridColumnsAuto': '自動',
+      'settings.downloadGridColumns': '下載頁網格欄數',
+      'settings.downloadGridColumnsHint': '套用到目前瀏覽器中的下載工作網格。',
       'settings.detailThumbnailColumns': '詳情頁縮圖欄數',
       'settings.detailThumbnailColumnsHint': '套用到畫廊詳情頁縮圖和完整縮圖頁。',
       'moveCover2RightSide': '移動封面圖至右側',

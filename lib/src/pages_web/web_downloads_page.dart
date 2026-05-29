@@ -17,6 +17,7 @@ class WebDownloadsController extends GetxController
 
   static const maxGalleryNum4AnimationStorageKey =
       'jh_web_max_gallery_num_for_animation';
+  static const gridColumnsStorageKey = 'jh_web_download_grid_columns';
   static const defaultMaxGalleryNum4Animation = 30;
 
   static const _kGalleryGroupsExpanded =
@@ -53,6 +54,22 @@ class WebDownloadsController extends GetxController
       maxGalleryNum4AnimationStorageKey,
       '${value < 0 ? 0 : value}',
     );
+  }
+
+  static int? get gridColumns {
+    final value = int.tryParse(
+      web.window.localStorage.getItem(gridColumnsStorageKey) ?? '',
+    );
+    return value != null && value >= 2 && value <= 8 ? value : null;
+  }
+
+  static void setGridColumns(int? value) {
+    if (value == null) {
+      web.window.localStorage.removeItem(gridColumnsStorageKey);
+      return;
+    }
+    web.window.localStorage
+        .setItem(gridColumnsStorageKey, '${value.clamp(2, 8)}');
   }
 
   static String _taskGroupName(Map<String, dynamic> t) =>
@@ -1490,15 +1507,16 @@ class _GroupedDownloadGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final columns = width >= 1280
-            ? 6
-            : width >= 1000
-                ? 5
-                : width >= 760
-                    ? 4
-                    : width >= 520
-                        ? 3
-                        : 2;
+        final columns = WebDownloadsController.gridColumns ??
+            (width >= 1280
+                ? 6
+                : width >= 1000
+                    ? 5
+                    : width >= 760
+                        ? 4
+                        : width >= 520
+                            ? 3
+                            : 2);
         return ListView(
           padding: const EdgeInsets.all(8),
           children: [

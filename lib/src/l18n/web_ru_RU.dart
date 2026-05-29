@@ -391,6 +391,9 @@ class WebRuRU {
       'settings.listModeCompact': 'Компактно',
       'settings.gridColumns': 'Колонки сетки',
       'settings.gridColumnsAuto': 'Авто',
+      'settings.downloadGridColumns': 'Колонки сетки загрузок',
+      'settings.downloadGridColumnsHint':
+          'Применяется к сетке задач загрузки в этом браузере.',
       'settings.detailThumbnailColumns': 'Колонки миниатюр в деталях',
       'settings.detailThumbnailColumnsHint':
           'Применяется к миниатюрам на странице галереи и полной странице миниатюр.',
