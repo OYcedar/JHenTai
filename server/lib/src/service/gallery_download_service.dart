@@ -373,6 +373,57 @@ class GalleryDownloadService {
     return true;
   }
 
+  Future<bool> reDownloadImage(int gid, int serialNo) async {
+    final task = _tasks[gid];
+    if (task == null || serialNo < 0 || serialNo >= task.pageCount) {
+      return false;
+    }
+    if (_activeDownloads.contains(gid)) {
+      return false;
+    }
+
+    final imagePageUrls = await _imagePageUrlsForTask(task);
+    if (serialNo >= imagePageUrls.length) {
+      return false;
+    }
+
+    final previousStatus = task.status;
+    final dir = Directory(_galleryDir(gid));
+    await dir.create(recursive: true);
+    final existing = _findExistingImage(gid, serialNo);
+    if (existing != null && await existing.exists()) {
+      await existing.delete();
+    }
+
+    task.status = GalleryDownloadStatus.downloading;
+    task.completedCount = _countExistingImages(dir);
+    db.updateGalleryDownloadStatus(gid, task.status.index,
+        completedCount: task.completedCount);
+    _notifyProgress(task);
+
+    try {
+      await _downloadImagePage(task, serialNo, imagePageUrls[serialNo], dir);
+      task.completedCount = _countExistingImages(dir);
+      task.status = task.completedCount >= task.pageCount
+          ? GalleryDownloadStatus.completed
+          : previousStatus;
+      db.updateGalleryDownloadStatus(gid, task.status.index,
+          completedCount: task.completedCount);
+      _notifyProgress(task);
+      return true;
+    } catch (e, s) {
+      log.error(
+          'Re-download image failed for gallery $gid page $serialNo', e, s);
+      task.status = previousStatus == GalleryDownloadStatus.completed
+          ? GalleryDownloadStatus.failed
+          : previousStatus;
+      db.updateGalleryDownloadStatus(gid, task.status.index,
+          completedCount: task.completedCount);
+      _notifyProgress(task, error: '$e');
+      return false;
+    }
+  }
+
   Future<void> deleteDownload(int gid, {bool deleteFiles = true}) async {
     final task = _tasks.remove(gid);
     task?._cancelToken?.cancel('deleted');
@@ -569,89 +620,26 @@ class GalleryDownloadService {
           continue;
         }
 
-        int retries = 0;
-        const maxRetries = 3;
-        bool downloaded = false;
-
-        String? reloadKey;
-        while (!downloaded &&
-            retries < maxRetries &&
-            task.status == GalleryDownloadStatus.downloading) {
-          try {
-            task._cancelToken = CancelToken();
-            var pageUrl = imagePageUrls[i];
-            if (reloadKey != null) {
-              final sep = pageUrl.contains('?') ? '&' : '?';
-              pageUrl = '$pageUrl${sep}nl=$reloadKey';
-            }
-            final imagePage = await _client.fetchImagePage(
-              pageUrl,
-              preferOriginalImage: task.downloadOriginalImage,
-            );
-
-            if (imagePage.imageUrl.isEmpty) {
-              reloadKey = imagePage.reloadKey;
-              retries++;
-              continue;
-            }
-
-            final ext = _getExtension(imagePage.imageUrl);
-            final savePath =
-                p.join(dir.path, '${i.toString().padLeft(5, '0')}.$ext');
-
-            await _client.downloadFile(
-              imagePage.imageUrl,
-              savePath,
-              cancelToken: task._cancelToken,
-            );
-
-            db.upsertGalleryImage({
-              'gid': task.gid,
-              'serial_no': i,
-              'url': '',
-              'image_url': imagePage.imageUrl,
-              'image_hash': imagePage.imageHash,
-              'path': savePath,
-              'download_status': 1,
-              'image_page_url': imagePageUrls[i],
-            });
-
-            task.completedCount = i + 1;
-            db.updateGalleryDownloadStatus(task.gid, task.status.index,
-                completedCount: task.completedCount);
-            _notifyProgress(task);
-            downloaded = true;
-          } on DioException catch (e) {
-            if (e.type == DioExceptionType.cancel) break;
-            retries++;
-            if (e.response?.statusCode == 509) {
-              reloadKey = null;
-              log.warning(
-                  'Image limit (509) on image $i for gallery ${task.gid}, retrying...');
-              await Future.delayed(Duration(seconds: retries * 5));
-            } else {
-              if (retries >= maxRetries) {
-                log.warning(
-                    'Failed to download image $i for gallery ${task.gid}');
-              }
-              await Future.delayed(Duration(seconds: retries));
-            }
-          } catch (e) {
-            retries++;
-            log.error('Error downloading image $i for gallery ${task.gid}', e);
-            await Future.delayed(Duration(seconds: retries));
-          }
+        var downloaded = false;
+        try {
+          await _downloadImagePage(task, i, imagePageUrls[i], dir);
+          task.completedCount = i + 1;
+          db.updateGalleryDownloadStatus(task.gid, task.status.index,
+              completedCount: task.completedCount);
+          _notifyProgress(task);
+          downloaded = true;
+        } catch (_) {
+          downloaded = false;
         }
 
         if (!downloaded && task.status == GalleryDownloadStatus.downloading) {
           log.warning(
-              'Failed to download image $i after $maxRetries retries, marking gallery ${task.gid} as failed');
+              'Failed to download image $i after retries, marking gallery ${task.gid} as failed');
           task.status = GalleryDownloadStatus.failed;
           db.updateGalleryDownloadStatus(
               task.gid, GalleryDownloadStatus.failed.index);
           _notifyProgress(task,
-              error:
-                  'Failed to download image ${i + 1} after $maxRetries retries');
+              error: 'Failed to download image ${i + 1} after retries');
           return;
         }
       }
@@ -674,6 +662,114 @@ class GalleryDownloadService {
       _activeDownloads.remove(task.gid);
       _processQueue();
     }
+  }
+
+  Future<void> _downloadImagePage(
+    GalleryDownloadTask task,
+    int index,
+    String imagePageUrl,
+    Directory dir,
+  ) async {
+    int retries = 0;
+    const maxRetries = 3;
+    String? reloadKey;
+    while (retries < maxRetries &&
+        task.status == GalleryDownloadStatus.downloading) {
+      try {
+        task._cancelToken = CancelToken();
+        var pageUrl = imagePageUrl;
+        if (reloadKey != null) {
+          final sep = pageUrl.contains('?') ? '&' : '?';
+          pageUrl = '$pageUrl${sep}nl=$reloadKey';
+        }
+        final imagePage = await _client.fetchImagePage(
+          pageUrl,
+          preferOriginalImage: task.downloadOriginalImage,
+        );
+
+        if (imagePage.imageUrl.isEmpty) {
+          reloadKey = imagePage.reloadKey;
+          retries++;
+          continue;
+        }
+
+        final ext = _getExtension(imagePage.imageUrl);
+        final savePath =
+            p.join(dir.path, '${index.toString().padLeft(5, '0')}.$ext');
+
+        await _client.downloadFile(
+          imagePage.imageUrl,
+          savePath,
+          cancelToken: task._cancelToken,
+        );
+
+        db.upsertGalleryImage({
+          'gid': task.gid,
+          'serial_no': index,
+          'url': '',
+          'image_url': imagePage.imageUrl,
+          'image_hash': imagePage.imageHash,
+          'path': savePath,
+          'download_status': 1,
+          'image_page_url': imagePageUrl,
+        });
+        return;
+      } on DioException catch (e) {
+        if (e.type == DioExceptionType.cancel) rethrow;
+        retries++;
+        if (e.response?.statusCode == 509) {
+          reloadKey = null;
+          log.warning(
+              'Image limit (509) on image $index for gallery ${task.gid}, retrying...');
+          await Future.delayed(Duration(seconds: retries * 5));
+        } else {
+          if (retries >= maxRetries) {
+            log.warning(
+                'Failed to download image $index for gallery ${task.gid}');
+          }
+          await Future.delayed(Duration(seconds: retries));
+        }
+      } catch (e) {
+        retries++;
+        log.error('Error downloading image $index for gallery ${task.gid}', e);
+        await Future.delayed(Duration(seconds: retries));
+      }
+    }
+    throw StateError('Failed to download image ${index + 1}');
+  }
+
+  Future<List<String>> _imagePageUrlsForTask(GalleryDownloadTask task) async {
+    final rows = db.selectGalleryImages(task.gid);
+    final fromDb = <String>[];
+    for (final row in rows) {
+      final url = row['image_page_url'] as String? ?? '';
+      if (url.isNotEmpty) fromDb.add(url);
+    }
+    if (fromDb.length >= task.pageCount) return fromDb;
+
+    final metaFile = File(p.join(_galleryDir(task.gid), 'metadata.json'));
+    if (await metaFile.exists()) {
+      try {
+        final meta = jsonDecode(await metaFile.readAsString());
+        final urls = (meta['imagePageUrls'] as List?)?.cast<String>() ?? [];
+        if (urls.length >= task.pageCount) return urls;
+      } catch (_) {}
+    }
+
+    final detail = await _client.fetchGalleryDetail(task.galleryUrl);
+    final urls = <String>[...detail.imagePageUrls];
+    if (detail.pageCount > urls.length && urls.isNotEmpty) {
+      final totalPages = (detail.pageCount / urls.length).ceil();
+      for (int page = 1; page < totalPages; page++) {
+        final nextDetail =
+            await _client.fetchGalleryDetail('${task.galleryUrl}?p=$page');
+        urls.addAll(nextDetail.imagePageUrls);
+      }
+    }
+    if (urls.isNotEmpty) {
+      _saveMetadata(task, urls);
+    }
+    return urls;
   }
 
   String _galleryDir(int gid) =>

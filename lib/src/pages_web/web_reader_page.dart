@@ -92,6 +92,18 @@ Future<void> _webReaderCopyText(String text) async {
       duration: const Duration(seconds: 2));
 }
 
+Future<void> _webReDownloadGalleryImage(
+    WebReaderController controller, int index) async {
+  try {
+    await backendApiClient.reDownloadGalleryImage(controller.gid, index);
+    await controller.refreshDownloadedImages(cacheBustIndex: index);
+    Get.snackbar('reDownload'.tr, 'common.success'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+  } catch (e) {
+    Get.snackbar('common.error'.tr, '$e', snackPosition: SnackPosition.BOTTOM);
+  }
+}
+
 /// Pop-up menu for a reader image (online / downloaded / archive / local).
 Future<void> showWebReaderImageContextMenu(
   BuildContext context,
@@ -167,7 +179,7 @@ Future<void> showWebReaderImageContextMenu(
     items: [
       PopupMenuItem(value: 'share', child: Text('share'.tr)),
       PopupMenuItem(value: 'save', child: Text('save'.tr)),
-      if (mode == ReaderMode.downloaded || mode == ReaderMode.archive)
+      if (mode == ReaderMode.downloaded)
         PopupMenuItem(value: 'redl', child: Text('reDownload'.tr)),
     ],
   );
@@ -180,8 +192,7 @@ Future<void> showWebReaderImageContextMenu(
       web.window.open(url, '_blank');
       break;
     case 'redl':
-      Get.snackbar('reDownload'.tr, 'reader.redownloadHint'.tr);
-      Get.toNamed('/web/downloads');
+      await _webReDownloadGalleryImage(controller, index);
       break;
     default:
       break;
@@ -827,6 +838,19 @@ class WebReaderController extends GetxController {
     totalPages.value = filenames.length;
     imageUrls.value =
         filenames.map((f) => backendApiClient.galleryImageUrl(gid, f)).toList();
+  }
+
+  Future<void> refreshDownloadedImages({int? cacheBustIndex}) async {
+    await _loadDownloaded();
+    if (cacheBustIndex == null ||
+        cacheBustIndex < 0 ||
+        cacheBustIndex >= imageUrls.length) {
+      return;
+    }
+    final sep = imageUrls[cacheBustIndex].contains('?') ? '&' : '?';
+    imageUrls[cacheBustIndex] =
+        '${imageUrls[cacheBustIndex]}${sep}v=${DateTime.now().millisecondsSinceEpoch}';
+    imageUrls.refresh();
   }
 
   Future<void> _loadArchive() async {

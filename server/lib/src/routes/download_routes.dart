@@ -29,6 +29,8 @@ class DownloadRoutes {
     router.post('/gallery/<gid>/pause', _pauseGalleryDownload);
     router.post('/gallery/<gid>/resume', _resumeGalleryDownload);
     router.post('/gallery/<gid>/redownload', _reDownloadGallery);
+    router.post(
+        '/gallery/<gid>/image/<serialNo>/redownload', _reDownloadGalleryImage);
     router.delete('/gallery/<gid>', _deleteGalleryDownload);
     router.get('/gallery/<gid>/images', _listGalleryImages);
 
@@ -184,6 +186,28 @@ class DownloadRoutes {
     if (!ok) {
       return Response.notFound(
         jsonEncode({'success': false, 'error': 'Gallery task not found'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    return Response.ok(jsonEncode({'success': true}),
+        headers: {'Content-Type': 'application/json'});
+  }
+
+  Future<Response> _reDownloadGalleryImage(
+      Request request, String gid, String serialNo) async {
+    final id = int.tryParse(gid);
+    final index = int.tryParse(serialNo);
+    if (id == null || index == null || index < 0) {
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid gid or serialNo'}));
+    }
+    final ok = await _galleryService.reDownloadImage(id, index);
+    if (!ok) {
+      return Response.notFound(
+        jsonEncode({
+          'success': false,
+          'error': 'Gallery task or image page not found',
+        }),
         headers: {'Content-Type': 'application/json'},
       );
     }
