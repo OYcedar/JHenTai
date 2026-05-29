@@ -268,6 +268,14 @@ class WebEnUS {
       'settings.cookieSuccess': 'Cookies set successfully',
       'settings.cookieFailed': 'Failed to set cookies: @error',
       'settings.cookieEmpty': 'Please paste cookies',
+      'settings.showCookies': 'Show Cookies',
+      'settings.copyCookies': 'Copy Cookies',
+      'settings.copyKeyCookies': 'Copy Login Cookies',
+      'settings.refreshIgneous': 'Refresh igneous',
+      'settings.refreshIgneousSuccess': 'igneous refreshed',
+      'settings.refreshIgneousFailed': 'Failed to refresh igneous',
+      'settings.refreshIgneousFailedWithError':
+          'Failed to refresh igneous: @error',
       'settings.credentialLogin':
           'Login with credentials (may fail due to Cloudflare)',
       'settings.username': 'Username',

@@ -265,6 +265,14 @@ class WebRuRU {
       'settings.cookieSuccess': 'Cookies установлены',
       'settings.cookieFailed': 'Ошибка установки cookies: @error',
       'settings.cookieEmpty': 'Вставьте cookies',
+      'settings.showCookies': 'Показать cookies',
+      'settings.copyCookies': 'Копировать cookies',
+      'settings.copyKeyCookies': 'Копировать cookies входа',
+      'settings.refreshIgneous': 'Обновить igneous',
+      'settings.refreshIgneousSuccess': 'igneous обновлен',
+      'settings.refreshIgneousFailed': 'Не удалось обновить igneous',
+      'settings.refreshIgneousFailedWithError':
+          'Не удалось обновить igneous: @error',
       'settings.credentialLogin':
           'Вход по логину (может не работать из-за Cloudflare)',
       'settings.username': 'Имя пользователя',

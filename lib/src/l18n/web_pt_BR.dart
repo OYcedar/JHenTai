@@ -269,6 +269,14 @@ class WebPtBR {
       'settings.cookieSuccess': 'Cookies definidos com sucesso',
       'settings.cookieFailed': 'Falha ao definir cookies: @error',
       'settings.cookieEmpty': 'Por favor, cole os cookies',
+      'settings.showCookies': 'Mostrar Cookies',
+      'settings.copyCookies': 'Copiar Cookies',
+      'settings.copyKeyCookies': 'Copiar Cookies de Login',
+      'settings.refreshIgneous': 'Atualizar igneous',
+      'settings.refreshIgneousSuccess': 'igneous atualizado',
+      'settings.refreshIgneousFailed': 'Falha ao atualizar igneous',
+      'settings.refreshIgneousFailedWithError':
+          'Falha ao atualizar igneous: @error',
       'settings.credentialLogin':
           'Login com credenciais (pode falhar devido ao Cloudflare)',
       'settings.username': 'Usuário',

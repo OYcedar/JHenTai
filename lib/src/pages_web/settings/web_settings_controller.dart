@@ -163,11 +163,21 @@ class WebSettingsController extends GetxController {
   }
 
   final cookieStatus = ''.obs;
+  final cookies = <Map<String, String>>[].obs;
+  final isRefreshingIgneous = false.obs;
 
   Future<void> loadCookieStatus() async {
     try {
-      final cookies = await backendApiClient.getCookies();
-      final list = cookies['cookies'] as List? ?? [];
+      final result = await backendApiClient.getCookies();
+      final list = result['cookies'] as List? ?? [];
+      cookies.value = list
+          .whereType<Map>()
+          .map((c) => {
+                'name': c['name']?.toString() ?? '',
+                'value': c['value']?.toString() ?? '',
+              })
+          .where((c) => c['name']!.isNotEmpty)
+          .toList();
       final names = list
           .map((c) => (c as Map)['name']?.toString() ?? '')
           .where((n) => n.isNotEmpty)
@@ -184,6 +194,35 @@ class WebSettingsController extends GetxController {
       }
     } catch (_) {
       cookieStatus.value = '';
+      cookies.clear();
+    }
+  }
+
+  Future<void> refreshIgneousCookie() async {
+    if (isRefreshingIgneous.value) {
+      return;
+    }
+    isRefreshingIgneous.value = true;
+    try {
+      final result = await backendApiClient.refreshIgneousCookie();
+      if (result['success'] == true) {
+        await loadCookieStatus();
+        Get.snackbar('common.success'.tr, 'settings.refreshIgneousSuccess'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      } else {
+        final error =
+            result['error']?.toString() ?? 'settings.refreshIgneousFailed'.tr;
+        Get.snackbar('common.failed'.tr, error,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.red.withValues(alpha: 0.7));
+      }
+    } catch (e) {
+      Get.snackbar('common.error'.tr,
+          'settings.refreshIgneousFailedWithError'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
+    } finally {
+      isRefreshingIgneous.value = false;
     }
   }
 

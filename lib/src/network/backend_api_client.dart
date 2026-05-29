@@ -269,6 +269,13 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> refreshIgneousCookie() async {
+    final response = await _dio.post('/api/auth/cookies/igneous');
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data)
+        : {'success': true};
+  }
+
   Future<Map<String, dynamic>> setSite(String site) async {
     final response = await _dio.put('/api/auth/site', data: {'site': site});
     return response.data is Map
