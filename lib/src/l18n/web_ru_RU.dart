@@ -844,6 +844,8 @@ class WebRuRU {
       'downloads.groupCleared': '@count задач перемещено обратно в default',
       'downloads.superseded': 'Обновлено до gid @gid',
       'downloads.editTask': 'Редактировать задачу',
+      'downloads.selectTasks': 'Выбрать задачи',
+      'downloads.selectVisible': 'Выбрать видимые задачи',
       'downloads.pauseVisible': 'Поставить видимые задачи на паузу',
       'downloads.resumeVisible': 'Возобновить видимые задачи',
       'downloads.reDownloadVisible': 'Скачать видимые галереи заново',
@@ -852,16 +854,22 @@ class WebRuRU {
           'Удалить скачанные файлы этой галереи и начать заново?',
       'downloads.reDownloadVisibleConfirm':
           'Удалить файлы и перезапустить @count видимых галерей?',
+      'downloads.reDownloadBatchConfirm':
+          'Удалить файлы и перезапустить @scope?',
       'downloads.reUnlockArchive': 'Разблокировать архив заново',
       'downloads.reUnlockArchiveConfirm':
           'Очистить ссылку загрузки архива и разблокировать заново?',
       'downloads.changeVisibleGroup': 'Изменить группу видимых задач',
       'downloads.changeVisibleGroupConfirm':
           'Переместить @count видимых задач в эту группу.',
+      'downloads.changeBatchGroup': 'Изменить группу задач',
+      'downloads.changeBatchGroupConfirm': 'Переместить @scope в эту группу.',
       'downloads.deleteVisible': 'Удалить видимые задачи',
       'downloads.deleteVisibleConfirm':
           'Выберите, как удалить @count видимых задач.',
-      'downloads.visibleTaskCount': 'Будет затронуто видимых задач: @count.',
+      'downloads.deleteBatchConfirm': 'Выберите, как удалить @scope.',
+      'downloads.visibleTaskCount': 'видимых задач: @count',
+      'downloads.selectedTaskCount': 'Выбрано задач: @count',
       'downloads.noBatchTargets': 'В текущем списке нет подходящих задач',
       'downloads.batchPaused': 'Поставлено на паузу: @count',
       'downloads.batchResumed': 'Возобновлено: @count',

@@ -32,6 +32,9 @@ class WebDownloadsController extends GetxController
   final gallerySort = WebDownloadSort.priorityDesc.obs;
   final archiveSort = WebDownloadSort.priorityDesc.obs;
   final viewMode = 'list'.obs;
+  final selectionMode = false.obs;
+  final gallerySelectedGids = <int>{}.obs;
+  final archiveSelectedGids = <int>{}.obs;
 
   final galleryGroupExpanded = RxMap<String, bool>();
   final archiveGroupExpanded = RxMap<String, bool>();
@@ -121,6 +124,79 @@ class WebDownloadsController extends GetxController
     final next = viewMode.value == 'grid' ? 'list' : 'grid';
     viewMode.value = next;
     web.window.localStorage.setItem(_kViewMode, next);
+  }
+
+  Set<int> get activeSelectedGids =>
+      tabController.index == 0 ? gallerySelectedGids : archiveSelectedGids;
+
+  int get activeSelectedCount => activeSelectedGids.length;
+
+  bool isSelected(int gid) => activeSelectedGids.contains(gid);
+
+  void toggleSelectionMode() {
+    if (selectionMode.value) {
+      exitSelectionMode();
+    } else {
+      selectionMode.value = true;
+    }
+  }
+
+  void exitSelectionMode() {
+    selectionMode.value = false;
+    gallerySelectedGids.clear();
+    archiveSelectedGids.clear();
+  }
+
+  void toggleTaskSelection(int gid) {
+    selectionMode.value = true;
+    final selected = activeSelectedGids;
+    if (selected.contains(gid)) {
+      selected.remove(gid);
+    } else {
+      selected.add(gid);
+    }
+    if (selected.isEmpty) {
+      selectionMode.value = false;
+    }
+  }
+
+  void selectVisibleTasks() {
+    selectionMode.value = true;
+    activeSelectedGids
+      ..clear()
+      ..addAll(_visibleTasks()
+          .map((t) => (t['gid'] as num?)?.toInt())
+          .whereType<int>());
+    if (activeSelectedGids.isEmpty) {
+      selectionMode.value = false;
+    }
+  }
+
+  List<Map<String, dynamic>> _visibleTasks() {
+    return tabController.index == 0
+        ? sortedFilteredGalleryTasks
+        : sortedFilteredArchiveTasks;
+  }
+
+  List<Map<String, dynamic>> _batchTargetTasks() {
+    if (!selectionMode.value) {
+      return _visibleTasks();
+    }
+    final selected = activeSelectedGids;
+    final tasks = tabController.index == 0
+        ? _svc.galleryTasks.values
+        : _svc.archiveTasks.values;
+    return tasks.where((t) {
+      final gid = (t['gid'] as num?)?.toInt();
+      return gid != null && selected.contains(gid);
+    }).toList();
+  }
+
+  String _batchScopeText(int count) {
+    return (selectionMode.value
+            ? 'downloads.selectedTaskCount'
+            : 'downloads.visibleTaskCount')
+        .trParams({'count': '$count'});
   }
 
   void _mergeExpandedMap(String key, RxMap<String, bool> target) {
@@ -359,8 +435,7 @@ class WebDownloadsController extends GetxController
 
   Future<void> pauseVisibleTasks() async {
     final galleryTab = tabController.index == 0;
-    final tasks =
-        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final tasks = _batchTargetTasks();
     final ids = tasks
         .where((t) => galleryTab
             ? (t['status'] == 1)
@@ -375,6 +450,7 @@ class WebDownloadsController extends GetxController
     }
     await Future.wait(ids.map(galleryTab ? pauseGallery : pauseArchive));
     await refresh();
+    if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
         'downloads.batchPaused'.trParams({'count': '${ids.length}'}),
         snackPosition: SnackPosition.BOTTOM);
@@ -382,8 +458,7 @@ class WebDownloadsController extends GetxController
 
   Future<void> resumeVisibleTasks() async {
     final galleryTab = tabController.index == 0;
-    final tasks =
-        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final tasks = _batchTargetTasks();
     final ids = tasks
         .where((t) => galleryTab
             ? ({2, 4}.contains(t['status']))
@@ -398,6 +473,7 @@ class WebDownloadsController extends GetxController
     }
     await Future.wait(ids.map(galleryTab ? resumeGallery : resumeArchive));
     await refresh();
+    if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
         'downloads.batchResumed'.trParams({'count': '${ids.length}'}),
         snackPosition: SnackPosition.BOTTOM);
@@ -409,7 +485,7 @@ class WebDownloadsController extends GetxController
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    final ids = sortedFilteredGalleryTasks
+    final ids = _batchTargetTasks()
         .map((t) => (t['gid'] as num?)?.toInt())
         .whereType<int>()
         .toList();
@@ -422,8 +498,8 @@ class WebDownloadsController extends GetxController
       AlertDialog(
         title: Text('reDownload'.tr),
         content: Text(
-          'downloads.reDownloadVisibleConfirm'
-              .trParams({'count': '${ids.length}'}),
+          'downloads.reDownloadBatchConfirm'
+              .trParams({'scope': _batchScopeText(ids.length)}),
         ),
         actions: [
           TextButton(
@@ -440,6 +516,7 @@ class WebDownloadsController extends GetxController
     if (ok != true) return;
     await Future.wait(ids.map(reDownloadGallery));
     await refresh();
+    if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
         'downloads.batchRedownloaded'.trParams({'count': '${ids.length}'}),
         snackPosition: SnackPosition.BOTTOM);
@@ -451,7 +528,7 @@ class WebDownloadsController extends GetxController
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    final ids = sortedFilteredArchiveTasks
+    final ids = _batchTargetTasks()
         .where((t) => t['status'] != 6)
         .map((t) => (t['gid'] as num?)?.toInt())
         .whereType<int>()
@@ -466,9 +543,7 @@ class WebDownloadsController extends GetxController
         title: Text('downloads.reUnlockArchive'.tr),
         content: Text(
           '${'downloads.reUnlockArchiveConfirm'.tr}\n\n'
-          '${'downloads.visibleTaskCount'.trParams({
-                'count': '${ids.length}'
-              })}',
+          '${_batchScopeText(ids.length)}',
         ),
         actions: [
           TextButton(
@@ -485,6 +560,7 @@ class WebDownloadsController extends GetxController
     if (ok != true) return;
     await Future.wait(ids.map(reUnlockArchive));
     await refresh();
+    if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
         'downloads.batchReUnlocked'.trParams({'count': '${ids.length}'}),
         snackPosition: SnackPosition.BOTTOM);
@@ -492,8 +568,7 @@ class WebDownloadsController extends GetxController
 
   Future<void> deleteVisibleTasks() async {
     final galleryTab = tabController.index == 0;
-    final tasks =
-        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final tasks = _batchTargetTasks();
     final ids =
         tasks.map((t) => (t['gid'] as num?)?.toInt()).whereType<int>().toList();
     if (ids.isEmpty) {
@@ -506,7 +581,8 @@ class WebDownloadsController extends GetxController
       AlertDialog(
         title: Text('downloads.deleteVisible'.tr),
         content: Text(
-          'downloads.deleteVisibleConfirm'.trParams({'count': '${ids.length}'}),
+          'downloads.deleteBatchConfirm'
+              .trParams({'scope': _batchScopeText(ids.length)}),
         ),
         actions: [
           TextButton(
@@ -532,6 +608,7 @@ class WebDownloadsController extends GetxController
         ? deleteGallery(gid, deleteFiles: deleteFiles)
         : deleteArchive(gid, deleteFiles: deleteFiles)));
     await refresh();
+    if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
         'downloads.batchDeleted'.trParams({'count': '${ids.length}'}),
         snackPosition: SnackPosition.BOTTOM);
@@ -539,8 +616,7 @@ class WebDownloadsController extends GetxController
 
   Future<void> changeVisibleTasksGroup(BuildContext context) async {
     final galleryTab = tabController.index == 0;
-    final tasks =
-        galleryTab ? sortedFilteredGalleryTasks : sortedFilteredArchiveTasks;
+    final tasks = _batchTargetTasks();
     final ids =
         tasks.map((t) => (t['gid'] as num?)?.toInt()).whereType<int>().toList();
     if (ids.isEmpty) {
@@ -549,13 +625,15 @@ class WebDownloadsController extends GetxController
       return;
     }
 
-    final group = await _showBatchGroupDialog(context, tasks);
+    final group = await _showBatchGroupDialog(
+        context, tasks, _batchScopeText(ids.length));
     if (group == null) return;
 
     await Future.wait(ids.map((gid) => galleryTab
         ? patchGalleryTask(gid, group: group)
         : patchArchiveTask(gid, group: group)));
     await refresh();
+    if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
         'downloads.batchGroupChanged'.trParams({'count': '${ids.length}'}),
         snackPosition: SnackPosition.BOTTOM);
@@ -661,7 +739,10 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('downloads.title'.tr),
+        title: Obx(() => Text(controller.selectionMode.value
+            ? 'downloads.selectedTaskCount'
+                .trParams({'count': '${controller.activeSelectedCount}'})
+            : 'downloads.title'.tr)),
         actions: [
           Obx(
             () => IconButton(
@@ -671,6 +752,26 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
               tooltip: 'listMode.toggle'.tr,
               onPressed: controller.toggleViewMode,
             ),
+          ),
+          Obx(
+            () => IconButton(
+              icon: Icon(controller.selectionMode.value
+                  ? Icons.close
+                  : Icons.done_all),
+              tooltip: controller.selectionMode.value
+                  ? 'common.cancel'.tr
+                  : 'downloads.selectTasks'.tr,
+              onPressed: controller.toggleSelectionMode,
+            ),
+          ),
+          Obx(
+            () => controller.selectionMode.value
+                ? IconButton(
+                    icon: const Icon(Icons.select_all),
+                    tooltip: 'downloads.selectVisible'.tr,
+                    onPressed: controller.selectVisibleTasks,
+                  )
+                : const SizedBox.shrink(),
           ),
           IconButton(
             icon: const Icon(Icons.pause_circle_outline),
@@ -746,8 +847,8 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
   }
 }
 
-Future<String?> _showBatchGroupDialog(
-    BuildContext context, List<Map<String, dynamic>> tasks) async {
+Future<String?> _showBatchGroupDialog(BuildContext context,
+    List<Map<String, dynamic>> tasks, String scopeText) async {
   final groups = WebDownloadsController.sortedGroupNames(
     tasks.map(WebDownloadsController._taskGroupName),
   );
@@ -758,15 +859,15 @@ Future<String?> _showBatchGroupDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: Text('downloads.changeVisibleGroup'.tr),
+          title: Text('downloads.changeBatchGroup'.tr),
           content: SizedBox(
             width: 420,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('downloads.changeVisibleGroupConfirm'
-                    .trParams({'count': '${tasks.length}'})),
+                Text('downloads.changeBatchGroupConfirm'
+                    .trParams({'scope': scopeText})),
                 const SizedBox(height: 12),
                 TextField(
                   controller: controller,
@@ -1452,30 +1553,33 @@ class _GalleryTaskGridCard extends StatelessWidget {
     final token = task['token'] as String? ?? '';
     final status = _taskInt(task, 'status');
     final isCompleted = status == 3;
-    return _DownloadTaskGridCard(
-      task: task,
-      statusName: 'downloads.gStatus$status'.tr,
-      isCompleted: isCompleted,
-      progressLabel:
-          '${_taskInt(task, 'completedCount')} / ${_taskInt(task, 'pageCount')}',
-      progressValue:
-          _ratio(_taskInt(task, 'completedCount'), _taskInt(task, 'pageCount')),
-      readRoute: '/web/reader/$gid/$token?mode=downloaded',
-      onEdit: () => _showGalleryPatchDialog(context, controller, task),
-      onReDownload: () async {
-        if (!await _showReDownloadGalleryDialog(context)) return;
-        await controller.reDownloadGallery(gid);
-      },
-      onPause: status == 1 ? () => controller.pauseGallery(gid) : null,
-      onResume: status == 2 || status == 4
-          ? () => controller.resumeGallery(gid)
-          : null,
-      onDelete: () async {
-        final deleteFiles = await _showDeleteTaskDialog(context);
-        if (deleteFiles == null) return;
-        await controller.deleteGallery(gid, deleteFiles: deleteFiles);
-      },
-    );
+    return Obx(() => _DownloadTaskGridCard(
+          task: task,
+          statusName: 'downloads.gStatus$status'.tr,
+          isCompleted: isCompleted,
+          selectionMode: controller.selectionMode.value,
+          selected: controller.isSelected(gid),
+          onToggleSelection: () => controller.toggleTaskSelection(gid),
+          progressLabel:
+              '${_taskInt(task, 'completedCount')} / ${_taskInt(task, 'pageCount')}',
+          progressValue: _ratio(
+              _taskInt(task, 'completedCount'), _taskInt(task, 'pageCount')),
+          readRoute: '/web/reader/$gid/$token?mode=downloaded',
+          onEdit: () => _showGalleryPatchDialog(context, controller, task),
+          onReDownload: () async {
+            if (!await _showReDownloadGalleryDialog(context)) return;
+            await controller.reDownloadGallery(gid);
+          },
+          onPause: status == 1 ? () => controller.pauseGallery(gid) : null,
+          onResume: status == 2 || status == 4
+              ? () => controller.resumeGallery(gid)
+              : null,
+          onDelete: () async {
+            final deleteFiles = await _showDeleteTaskDialog(context);
+            if (deleteFiles == null) return;
+            await controller.deleteGallery(gid, deleteFiles: deleteFiles);
+          },
+        ));
   }
 }
 
@@ -1493,39 +1597,42 @@ class _ArchiveTaskGridCard extends StatelessWidget {
     final downloaded = _taskInt(task, 'downloadedBytes');
     final total = _taskInt(task, 'totalBytes');
     final isCompleted = status == 6;
-    return _DownloadTaskGridCard(
-      task: task,
-      fallbackIcon: Icons.archive,
-      statusName: 'downloads.aStatus$status'.tr,
-      isCompleted: isCompleted,
-      isArchive: true,
-      isOriginalArchive: task['isOriginal'] == true,
-      progressLabel: total > 0
-          ? '${_formatBytes(downloaded)} / ${_formatBytes(total)}'
-          : '',
-      progressValue: status == 3
-          ? _ratio(downloaded, total)
-          : isCompleted
-              ? 1
+    return Obx(() => _DownloadTaskGridCard(
+          task: task,
+          fallbackIcon: Icons.archive,
+          statusName: 'downloads.aStatus$status'.tr,
+          isCompleted: isCompleted,
+          selectionMode: controller.selectionMode.value,
+          selected: controller.isSelected(gid),
+          onToggleSelection: () => controller.toggleTaskSelection(gid),
+          isArchive: true,
+          isOriginalArchive: task['isOriginal'] == true,
+          progressLabel: total > 0
+              ? '${_formatBytes(downloaded)} / ${_formatBytes(total)}'
+              : '',
+          progressValue: status == 3
+              ? _ratio(downloaded, total)
+              : isCompleted
+                  ? 1
+                  : null,
+          readRoute: '/web/reader/$gid/$token?mode=archive',
+          onEdit: () => _showArchivePatchDialog(context, controller, task),
+          onReUnlock: status == 6
+              ? null
+              : () async {
+                  if (!await _showReUnlockArchiveDialog(context)) return;
+                  await controller.reUnlockArchive(gid);
+                },
+          onPause: status == 3 ? () => controller.pauseArchive(gid) : null,
+          onResume: status == 7 || status == 8
+              ? () => controller.resumeArchive(gid)
               : null,
-      readRoute: '/web/reader/$gid/$token?mode=archive',
-      onEdit: () => _showArchivePatchDialog(context, controller, task),
-      onReUnlock: status == 6
-          ? null
-          : () async {
-              if (!await _showReUnlockArchiveDialog(context)) return;
-              await controller.reUnlockArchive(gid);
-            },
-      onPause: status == 3 ? () => controller.pauseArchive(gid) : null,
-      onResume: status == 7 || status == 8
-          ? () => controller.resumeArchive(gid)
-          : null,
-      onDelete: () async {
-        final deleteFiles = await _showDeleteTaskDialog(context);
-        if (deleteFiles == null) return;
-        await controller.deleteArchive(gid, deleteFiles: deleteFiles);
-      },
-    );
+          onDelete: () async {
+            final deleteFiles = await _showDeleteTaskDialog(context);
+            if (deleteFiles == null) return;
+            await controller.deleteArchive(gid, deleteFiles: deleteFiles);
+          },
+        ));
   }
 }
 
@@ -1539,6 +1646,9 @@ class _DownloadTaskGridCard extends StatelessWidget {
   final String progressLabel;
   final double? progressValue;
   final String readRoute;
+  final bool selectionMode;
+  final bool selected;
+  final VoidCallback onToggleSelection;
   final VoidCallback onEdit;
   final VoidCallback? onReDownload;
   final VoidCallback? onReUnlock;
@@ -1551,6 +1661,9 @@ class _DownloadTaskGridCard extends StatelessWidget {
     this.fallbackIcon = Icons.photo_library,
     required this.statusName,
     required this.isCompleted,
+    required this.selectionMode,
+    required this.selected,
+    required this.onToggleSelection,
     this.isArchive = false,
     this.isOriginalArchive = false,
     required this.progressLabel,
@@ -1574,35 +1687,49 @@ class _DownloadTaskGridCard extends StatelessWidget {
         (task['group_name'] ?? task['groupName'] ?? 'default') as String;
 
     return GestureDetector(
-      onLongPressStart: (details) => _showDownloadTaskContextMenu(
-        context,
-        details.globalPosition,
-        isCompleted: isCompleted,
-        readRoute: readRoute,
-        onEdit: onEdit,
-        onReDownload: onReDownload,
-        onReUnlock: onReUnlock,
-        onPause: onPause,
-        onResume: onResume,
-        onDelete: onDelete,
-      ),
-      onSecondaryTapUp: (details) => _showDownloadTaskContextMenu(
-        context,
-        details.globalPosition,
-        isCompleted: isCompleted,
-        readRoute: readRoute,
-        onEdit: onEdit,
-        onReDownload: onReDownload,
-        onReUnlock: onReUnlock,
-        onPause: onPause,
-        onResume: onResume,
-        onDelete: onDelete,
-      ),
+      onLongPressStart: (details) => selectionMode
+          ? onToggleSelection()
+          : _showDownloadTaskContextMenu(
+              context,
+              details.globalPosition,
+              isCompleted: isCompleted,
+              readRoute: readRoute,
+              onEdit: onEdit,
+              onReDownload: onReDownload,
+              onReUnlock: onReUnlock,
+              onPause: onPause,
+              onResume: onResume,
+              onDelete: onDelete,
+            ),
+      onSecondaryTapUp: (details) => selectionMode
+          ? onToggleSelection()
+          : _showDownloadTaskContextMenu(
+              context,
+              details.globalPosition,
+              isCompleted: isCompleted,
+              readRoute: readRoute,
+              onEdit: onEdit,
+              onReDownload: onReDownload,
+              onReUnlock: onReUnlock,
+              onPause: onPause,
+              onResume: onResume,
+              onDelete: onDelete,
+            ),
       child: Card(
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
+        color: selected
+            ? Theme.of(context)
+                .colorScheme
+                .primaryContainer
+                .withValues(alpha: 0.55)
+            : null,
         child: InkWell(
-          onTap: isCompleted ? () => Get.toNamed(readRoute) : null,
+          onTap: selectionMode
+              ? onToggleSelection
+              : isCompleted
+                  ? () => Get.toNamed(readRoute)
+                  : null,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1628,36 +1755,60 @@ class _DownloadTaskGridCard extends StatelessWidget {
                     Positioned(
                       top: 6,
                       right: 6,
-                      child: PopupMenuButton<_DownloadTaskAction>(
-                        tooltip: 'downloads.editTask'.tr,
-                        icon: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(16),
+                      child: selectionMode
+                          ? Checkbox(
+                              value: selected,
+                              onChanged: (_) => onToggleSelection(),
+                              side: const BorderSide(color: Colors.white),
+                              fillColor: WidgetStateProperty.resolveWith(
+                                  (states) => states
+                                          .contains(WidgetState.selected)
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Colors.black.withValues(alpha: 0.45)),
+                            )
+                          : PopupMenuButton<_DownloadTaskAction>(
+                              tooltip: 'downloads.editTask'.tr,
+                              icon: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                padding: const EdgeInsets.all(3),
+                                child: const Icon(Icons.more_vert,
+                                    color: Colors.white, size: 18),
+                              ),
+                              onSelected: (action) => _handleDownloadTaskAction(
+                                action,
+                                readRoute: readRoute,
+                                onEdit: onEdit,
+                                onReDownload: onReDownload,
+                                onReUnlock: onReUnlock,
+                                onPause: onPause,
+                                onResume: onResume,
+                                onDelete: onDelete,
+                              ),
+                              itemBuilder: (context) => _downloadTaskMenuItems(
+                                isCompleted: isCompleted,
+                                onReDownload: onReDownload,
+                                onReUnlock: onReUnlock,
+                                onPause: onPause,
+                                onResume: onResume,
+                              ),
+                            ),
+                    ),
+                    if (selected)
+                      Positioned.fill(
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 3,
+                              ),
+                            ),
                           ),
-                          padding: const EdgeInsets.all(3),
-                          child: const Icon(Icons.more_vert,
-                              color: Colors.white, size: 18),
-                        ),
-                        onSelected: (action) => _handleDownloadTaskAction(
-                          action,
-                          readRoute: readRoute,
-                          onEdit: onEdit,
-                          onReDownload: onReDownload,
-                          onReUnlock: onReUnlock,
-                          onPause: onPause,
-                          onResume: onResume,
-                          onDelete: onDelete,
-                        ),
-                        itemBuilder: (context) => _downloadTaskMenuItems(
-                          isCompleted: isCompleted,
-                          onReDownload: onReDownload,
-                          onReUnlock: onReUnlock,
-                          onPause: onPause,
-                          onResume: onResume,
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -2077,204 +2228,235 @@ class _GalleryTaskCard extends StatelessWidget {
         : null;
 
     return GestureDetector(
-      onLongPressStart: (details) => _showDownloadTaskContextMenu(
-        context,
-        details.globalPosition,
-        isCompleted: isCompleted,
-        readRoute: readRoute,
-        onEdit: () => _showGalleryPatchDialog(context, controller, task),
-        onReDownload: onReDownload,
-        onReUnlock: null,
-        onPause: onPause,
-        onResume: onResume,
-        onDelete: () => _confirmDelete(context, gid),
-      ),
-      onSecondaryTapUp: (details) => _showDownloadTaskContextMenu(
-        context,
-        details.globalPosition,
-        isCompleted: isCompleted,
-        readRoute: readRoute,
-        onEdit: () => _showGalleryPatchDialog(context, controller, task),
-        onReDownload: onReDownload,
-        onReUnlock: null,
-        onPause: onPause,
-        onResume: onResume,
-        onDelete: () => _confirmDelete(context, gid),
-      ),
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: isCompleted ? () => Get.toNamed(readRoute) : null,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Cover
-              SizedBox(
-                width: 80,
-                height: 110,
-                child: coverUrl.isNotEmpty
-                    ? WebProxiedImage(
-                        sourceUrl: coverUrl,
-                        fit: BoxFit.cover,
-                        readerErrorChild: Container(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          child: const Icon(Icons.photo_library,
-                              color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        child:
-                            const Icon(Icons.photo_library, color: Colors.grey),
-                      ),
-              ),
-              // Info
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (category.isNotEmpty) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: _categoryColor(category),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(category,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          if (uploader.isNotEmpty)
-                            Flexible(
-                              child: Text(uploader,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: Colors.grey),
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          _StatusBadge(
-                              statusIndex: status,
-                              statusName: statusName,
-                              isCompleted: isCompleted),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'downloads.priorityLabel'
-                                  .trParams({'n': '$priority'}),
-                              style: const TextStyle(
-                                  fontSize: 10, color: Colors.purple),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (groupName != 'default') ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: Colors.blueGrey.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(groupName,
-                                  style: const TextStyle(
-                                      fontSize: 10, color: Colors.blueGrey)),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Text('$completed / $total',
-                              style: Theme.of(context).textTheme.bodySmall),
-                        ],
-                      ),
-                      if (supersededBy != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            'downloads.superseded'
-                                .trParams({'gid': '$supersededBy'}),
-                            style: TextStyle(
-                                fontSize: 11, color: Colors.orange.shade800),
-                          ),
-                        ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(value: progress),
-                    ],
-                  ),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
+      onLongPressStart: (details) {
+        if (controller.selectionMode.value) {
+          controller.toggleTaskSelection(gid);
+          return;
+        }
+        _showDownloadTaskContextMenu(
+          context,
+          details.globalPosition,
+          isCompleted: isCompleted,
+          readRoute: readRoute,
+          onEdit: () => _showGalleryPatchDialog(context, controller, task),
+          onReDownload: onReDownload,
+          onReUnlock: null,
+          onPause: onPause,
+          onResume: onResume,
+          onDelete: () => _confirmDelete(context, gid),
+        );
+      },
+      onSecondaryTapUp: (details) {
+        if (controller.selectionMode.value) {
+          controller.toggleTaskSelection(gid);
+          return;
+        }
+        _showDownloadTaskContextMenu(
+          context,
+          details.globalPosition,
+          isCompleted: isCompleted,
+          readRoute: readRoute,
+          onEdit: () => _showGalleryPatchDialog(context, controller, task),
+          onReDownload: onReDownload,
+          onReUnlock: null,
+          onPause: onPause,
+          onResume: onResume,
+          onDelete: () => _confirmDelete(context, gid),
+        );
+      },
+      child: Obx(() => Card(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            clipBehavior: Clip.antiAlias,
+            color: controller.isSelected(gid)
+                ? Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.55)
+                : null,
+            child: InkWell(
+              onTap: controller.selectionMode.value
+                  ? () => controller.toggleTaskSelection(gid)
+                  : isCompleted
+                      ? () => Get.toNamed(readRoute)
+                      : null,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.tune, size: 20),
-                    tooltip: 'downloads.editTask'.tr,
-                    onPressed: () =>
-                        _showGalleryPatchDialog(context, controller, task),
+                  // Cover
+                  SizedBox(
+                    width: 80,
+                    height: 110,
+                    child: coverUrl.isNotEmpty
+                        ? WebProxiedImage(
+                            sourceUrl: coverUrl,
+                            fit: BoxFit.cover,
+                            readerErrorChild: Container(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child: const Icon(Icons.photo_library,
+                                  color: Colors.grey),
+                            ),
+                          )
+                        : Container(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            child: const Icon(Icons.photo_library,
+                                color: Colors.grey),
+                          ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.restart_alt, size: 20),
-                    tooltip: 'reDownload'.tr,
-                    onPressed: onReDownload,
-                  ),
-                  if (isCompleted)
-                    IconButton(
-                      icon: const Icon(Icons.menu_book, color: Colors.green),
-                      tooltip: 'downloads.read'.tr,
-                      onPressed: () => Get.toNamed(readRoute),
+                  // Info
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              if (category.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: _categoryColor(category),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(category,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              if (uploader.isNotEmpty)
+                                Flexible(
+                                  child: Text(uploader,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: Colors.grey),
+                                      overflow: TextOverflow.ellipsis),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              _StatusBadge(
+                                  statusIndex: status,
+                                  statusName: statusName,
+                                  isCompleted: isCompleted),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'downloads.priorityLabel'
+                                      .trParams({'n': '$priority'}),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.purple),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (groupName != 'default') ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Colors.blueGrey.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(groupName,
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.blueGrey)),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Text('$completed / $total',
+                                  style: Theme.of(context).textTheme.bodySmall),
+                            ],
+                          ),
+                          if (supersededBy != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                'downloads.superseded'
+                                    .trParams({'gid': '$supersededBy'}),
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.orange.shade800),
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(value: progress),
+                        ],
+                      ),
                     ),
-                  if (status == 1)
-                    IconButton(
-                        icon: const Icon(Icons.pause),
-                        tooltip: 'downloads.pause'.tr,
-                        onPressed: onPause),
-                  if (status == 2 || status == 4)
-                    IconButton(
-                        icon: const Icon(Icons.play_arrow),
-                        tooltip: 'downloads.resume'.tr,
-                        onPressed: onResume),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: 'common.delete'.tr,
-                    onPressed: () => _confirmDelete(context, gid),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (controller.selectionMode.value)
+                        Checkbox(
+                          value: controller.isSelected(gid),
+                          onChanged: (_) => controller.toggleTaskSelection(gid),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.tune, size: 20),
+                        tooltip: 'downloads.editTask'.tr,
+                        onPressed: () =>
+                            _showGalleryPatchDialog(context, controller, task),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.restart_alt, size: 20),
+                        tooltip: 'reDownload'.tr,
+                        onPressed: onReDownload,
+                      ),
+                      if (isCompleted)
+                        IconButton(
+                          icon:
+                              const Icon(Icons.menu_book, color: Colors.green),
+                          tooltip: 'downloads.read'.tr,
+                          onPressed: () => Get.toNamed(readRoute),
+                        ),
+                      if (status == 1)
+                        IconButton(
+                            icon: const Icon(Icons.pause),
+                            tooltip: 'downloads.pause'.tr,
+                            onPressed: onPause),
+                      if (status == 2 || status == 4)
+                        IconButton(
+                            icon: const Icon(Icons.play_arrow),
+                            tooltip: 'downloads.resume'.tr,
+                            onPressed: onResume),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'common.delete'.tr,
+                        onPressed: () => _confirmDelete(context, gid),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          )),
     );
   }
 
@@ -2408,210 +2590,243 @@ class _ArchiveTaskCard extends StatelessWidget {
         : null;
 
     return GestureDetector(
-      onLongPressStart: (details) => _showDownloadTaskContextMenu(
-        context,
-        details.globalPosition,
-        isCompleted: isCompleted,
-        readRoute: readRoute,
-        onEdit: () => _showArchivePatchDialog(context, controller, task),
-        onReDownload: null,
-        onReUnlock: onReUnlock,
-        onPause: onPause,
-        onResume: onResume,
-        onDelete: () => _confirmDelete(context, gid),
-      ),
-      onSecondaryTapUp: (details) => _showDownloadTaskContextMenu(
-        context,
-        details.globalPosition,
-        isCompleted: isCompleted,
-        readRoute: readRoute,
-        onEdit: () => _showArchivePatchDialog(context, controller, task),
-        onReDownload: null,
-        onReUnlock: onReUnlock,
-        onPause: onPause,
-        onResume: onResume,
-        onDelete: () => _confirmDelete(context, gid),
-      ),
-      child: Card(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: isCompleted ? () => Get.toNamed(readRoute) : null,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Cover
-              SizedBox(
-                width: 80,
-                height: 110,
-                child: coverUrl.isNotEmpty
-                    ? WebProxiedImage(
-                        sourceUrl: coverUrl,
-                        fit: BoxFit.cover,
-                        readerErrorChild: Container(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          child: const Icon(Icons.archive, color: Colors.grey),
-                        ),
-                      )
-                    : Container(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                        child: const Icon(Icons.archive, color: Colors.grey),
-                      ),
-              ),
-              // Info
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (category.isNotEmpty) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: _categoryColor(category),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(category,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          if (uploader.isNotEmpty)
-                            Flexible(
-                              child: Text(uploader,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(color: Colors.grey),
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          _StatusBadge(
-                              statusIndex: status,
-                              statusName: statusName,
-                              isCompleted: isCompleted,
-                              isArchive: true),
-                          const SizedBox(width: 8),
-                          if (isOriginal) ...[
-                            _TinyLabel(
-                              label: 'originalImage'.tr,
-                              color: Colors.teal,
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'downloads.priorityLabel'
-                                  .trParams({'n': '$priority'}),
-                              style: const TextStyle(
-                                  fontSize: 10, color: Colors.purple),
-                            ),
-                          ),
-                          if (groupName != 'default') ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: Colors.blueGrey.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(groupName,
-                                  style: const TextStyle(
-                                      fontSize: 10, color: Colors.blueGrey)),
-                            ),
-                          ],
-                          const SizedBox(width: 8),
-                          if (total > 0)
-                            Flexible(
-                              child: Text(
-                                  '${_formatBytes(downloaded)} / ${_formatBytes(total)}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  overflow: TextOverflow.ellipsis),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                          value: status == 3
-                              ? progress
-                              : (isCompleted ? 1.0 : null)),
-                    ],
-                  ),
-                ),
-              ),
-              // Actions
-              Column(
-                mainAxisSize: MainAxisSize.min,
+      onLongPressStart: (details) {
+        if (controller.selectionMode.value) {
+          controller.toggleTaskSelection(gid);
+          return;
+        }
+        _showDownloadTaskContextMenu(
+          context,
+          details.globalPosition,
+          isCompleted: isCompleted,
+          readRoute: readRoute,
+          onEdit: () => _showArchivePatchDialog(context, controller, task),
+          onReDownload: null,
+          onReUnlock: onReUnlock,
+          onPause: onPause,
+          onResume: onResume,
+          onDelete: () => _confirmDelete(context, gid),
+        );
+      },
+      onSecondaryTapUp: (details) {
+        if (controller.selectionMode.value) {
+          controller.toggleTaskSelection(gid);
+          return;
+        }
+        _showDownloadTaskContextMenu(
+          context,
+          details.globalPosition,
+          isCompleted: isCompleted,
+          readRoute: readRoute,
+          onEdit: () => _showArchivePatchDialog(context, controller, task),
+          onReDownload: null,
+          onReUnlock: onReUnlock,
+          onPause: onPause,
+          onResume: onResume,
+          onDelete: () => _confirmDelete(context, gid),
+        );
+      },
+      child: Obx(() => Card(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            clipBehavior: Clip.antiAlias,
+            color: controller.isSelected(gid)
+                ? Theme.of(context)
+                    .colorScheme
+                    .primaryContainer
+                    .withValues(alpha: 0.55)
+                : null,
+            child: InkWell(
+              onTap: controller.selectionMode.value
+                  ? () => controller.toggleTaskSelection(gid)
+                  : isCompleted
+                      ? () => Get.toNamed(readRoute)
+                      : null,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.tune, size: 20),
-                    tooltip: 'downloads.editTask'.tr,
-                    onPressed: () =>
-                        _showArchivePatchDialog(context, controller, task),
+                  // Cover
+                  SizedBox(
+                    width: 80,
+                    height: 110,
+                    child: coverUrl.isNotEmpty
+                        ? WebProxiedImage(
+                            sourceUrl: coverUrl,
+                            fit: BoxFit.cover,
+                            readerErrorChild: Container(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child:
+                                  const Icon(Icons.archive, color: Colors.grey),
+                            ),
+                          )
+                        : Container(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            child:
+                                const Icon(Icons.archive, color: Colors.grey),
+                          ),
                   ),
-                  if (!isCompleted)
-                    IconButton(
-                      icon: const Icon(Icons.lock_reset, size: 20),
-                      tooltip: 'downloads.reUnlockArchive'.tr,
-                      onPressed: onReUnlock,
+                  // Info
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              if (category.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: _categoryColor(category),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(category,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              if (uploader.isNotEmpty)
+                                Flexible(
+                                  child: Text(uploader,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(color: Colors.grey),
+                                      overflow: TextOverflow.ellipsis),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              _StatusBadge(
+                                  statusIndex: status,
+                                  statusName: statusName,
+                                  isCompleted: isCompleted,
+                                  isArchive: true),
+                              const SizedBox(width: 8),
+                              if (isOriginal) ...[
+                                _TinyLabel(
+                                  label: 'originalImage'.tr,
+                                  color: Colors.teal,
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.purple.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  'downloads.priorityLabel'
+                                      .trParams({'n': '$priority'}),
+                                  style: const TextStyle(
+                                      fontSize: 10, color: Colors.purple),
+                                ),
+                              ),
+                              if (groupName != 'default') ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Colors.blueGrey.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(groupName,
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.blueGrey)),
+                                ),
+                              ],
+                              const SizedBox(width: 8),
+                              if (total > 0)
+                                Flexible(
+                                  child: Text(
+                                      '${_formatBytes(downloaded)} / ${_formatBytes(total)}',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                      overflow: TextOverflow.ellipsis),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(
+                              value: status == 3
+                                  ? progress
+                                  : (isCompleted ? 1.0 : null)),
+                        ],
+                      ),
                     ),
-                  if (isCompleted)
-                    IconButton(
-                      icon: const Icon(Icons.menu_book, color: Colors.green),
-                      tooltip: 'downloads.read'.tr,
-                      onPressed: () => Get.toNamed(readRoute),
-                    ),
-                  if (status == 3)
-                    IconButton(
-                        icon: const Icon(Icons.pause),
-                        tooltip: 'downloads.pause'.tr,
-                        onPressed: onPause),
-                  if (status == 7 || status == 8)
-                    IconButton(
-                        icon: const Icon(Icons.play_arrow),
-                        tooltip: 'downloads.resume'.tr,
-                        onPressed: onResume),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    tooltip: 'common.delete'.tr,
-                    onPressed: () => _confirmDelete(context, gid),
+                  ),
+                  // Actions
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (controller.selectionMode.value)
+                        Checkbox(
+                          value: controller.isSelected(gid),
+                          onChanged: (_) => controller.toggleTaskSelection(gid),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.tune, size: 20),
+                        tooltip: 'downloads.editTask'.tr,
+                        onPressed: () =>
+                            _showArchivePatchDialog(context, controller, task),
+                      ),
+                      if (!isCompleted)
+                        IconButton(
+                          icon: const Icon(Icons.lock_reset, size: 20),
+                          tooltip: 'downloads.reUnlockArchive'.tr,
+                          onPressed: onReUnlock,
+                        ),
+                      if (isCompleted)
+                        IconButton(
+                          icon:
+                              const Icon(Icons.menu_book, color: Colors.green),
+                          tooltip: 'downloads.read'.tr,
+                          onPressed: () => Get.toNamed(readRoute),
+                        ),
+                      if (status == 3)
+                        IconButton(
+                            icon: const Icon(Icons.pause),
+                            tooltip: 'downloads.pause'.tr,
+                            onPressed: onPause),
+                      if (status == 7 || status == 8)
+                        IconButton(
+                            icon: const Icon(Icons.play_arrow),
+                            tooltip: 'downloads.resume'.tr,
+                            onPressed: onResume),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'common.delete'.tr,
+                        onPressed: () => _confirmDelete(context, gid),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
+          )),
     );
   }
 

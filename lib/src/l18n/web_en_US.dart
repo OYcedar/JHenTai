@@ -846,6 +846,8 @@ class WebEnUS {
       'downloads.groupCleared': 'Moved @count tasks back to default',
       'downloads.superseded': 'Upgraded to gid @gid',
       'downloads.editTask': 'Edit task',
+      'downloads.selectTasks': 'Select tasks',
+      'downloads.selectVisible': 'Select visible tasks',
       'downloads.pauseVisible': 'Pause visible tasks',
       'downloads.resumeVisible': 'Resume visible tasks',
       'downloads.reDownloadVisible': 'Re-download visible gallery tasks',
@@ -854,16 +856,21 @@ class WebEnUS {
           'Delete downloaded files for this gallery and start it again?',
       'downloads.reDownloadVisibleConfirm':
           'Delete files and restart @count visible gallery tasks?',
+      'downloads.reDownloadBatchConfirm': 'Delete files and restart @scope?',
       'downloads.reUnlockArchive': 'Re-unlock archive',
       'downloads.reUnlockArchiveConfirm':
           'Clear the archive download link and unlock it again?',
       'downloads.changeVisibleGroup': 'Change visible tasks group',
       'downloads.changeVisibleGroupConfirm':
           'Move @count visible tasks to this group.',
+      'downloads.changeBatchGroup': 'Change tasks group',
+      'downloads.changeBatchGroupConfirm': 'Move @scope to this group.',
       'downloads.deleteVisible': 'Delete visible tasks',
       'downloads.deleteVisibleConfirm':
           'Choose how to delete @count visible tasks.',
-      'downloads.visibleTaskCount': '@count visible tasks will be affected.',
+      'downloads.deleteBatchConfirm': 'Choose how to delete @scope.',
+      'downloads.visibleTaskCount': '@count visible tasks',
+      'downloads.selectedTaskCount': '@count selected tasks',
       'downloads.noBatchTargets': 'No matching tasks in the current list',
       'downloads.batchPaused': 'Paused @count tasks',
       'downloads.batchResumed': 'Resumed @count tasks',

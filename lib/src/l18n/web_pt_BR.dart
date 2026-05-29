@@ -848,6 +848,8 @@ class WebPtBR {
       'downloads.groupCleared': '@count tarefas movidas de volta para default',
       'downloads.superseded': 'Atualizada para gid @gid',
       'downloads.editTask': 'Editar tarefa',
+      'downloads.selectTasks': 'Selecionar tarefas',
+      'downloads.selectVisible': 'Selecionar tarefas visíveis',
       'downloads.pauseVisible': 'Pausar tarefas visíveis',
       'downloads.resumeVisible': 'Retomar tarefas visíveis',
       'downloads.reDownloadVisible': 'Baixar novamente galerias visíveis',
@@ -856,16 +858,22 @@ class WebPtBR {
           'Excluir os arquivos baixados desta galeria e iniciar novamente?',
       'downloads.reDownloadVisibleConfirm':
           'Excluir arquivos e reiniciar @count galerias visíveis?',
+      'downloads.reDownloadBatchConfirm':
+          'Excluir arquivos e reiniciar @scope?',
       'downloads.reUnlockArchive': 'Desbloquear arquivo novamente',
       'downloads.reUnlockArchiveConfirm':
           'Limpar o link de download do arquivo e desbloquear novamente?',
       'downloads.changeVisibleGroup': 'Alterar grupo das tarefas visíveis',
       'downloads.changeVisibleGroupConfirm':
           'Mover @count tarefas visíveis para este grupo.',
+      'downloads.changeBatchGroup': 'Alterar grupo das tarefas',
+      'downloads.changeBatchGroupConfirm': 'Mover @scope para este grupo.',
       'downloads.deleteVisible': 'Excluir tarefas visíveis',
       'downloads.deleteVisibleConfirm':
           'Escolha como excluir @count tarefas visíveis.',
-      'downloads.visibleTaskCount': '@count tarefas visíveis serão afetadas.',
+      'downloads.deleteBatchConfirm': 'Escolha como excluir @scope.',
+      'downloads.visibleTaskCount': '@count tarefas visíveis',
+      'downloads.selectedTaskCount': '@count tarefas selecionadas',
       'downloads.noBatchTargets': 'Nenhuma tarefa compatível na lista atual',
       'downloads.batchPaused': '@count tarefas pausadas',
       'downloads.batchResumed': '@count tarefas retomadas',
