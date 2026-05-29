@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -1034,6 +1035,51 @@ class EHClient {
     } on DioException catch (e) {
       return {'success': false, 'message': e.message ?? 'Failed to add tags'};
     }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchTagSuggestions(
+    String keyword, {
+    int limit = 20,
+  }) async {
+    final text = keyword.trim();
+    if (text.isEmpty) {
+      return [];
+    }
+    final response = await _dio.post(
+      apiUrl,
+      options: Options(contentType: Headers.jsonContentType),
+      data: {
+        'method': 'tagsuggest',
+        'text': text,
+      },
+    );
+    final data = response.data;
+    final map = data is Map
+        ? Map<String, dynamic>.from(data)
+        : jsonDecode(data.toString()) as Map<String, dynamic>;
+    final tags = map['tags'];
+    if (tags is! Map) {
+      return [];
+    }
+    final results = <Map<String, dynamic>>[];
+    for (final value in tags.values) {
+      if (value is! Map) continue;
+      final namespace = value['ns']?.toString() ?? '';
+      final key = value['tn']?.toString() ?? '';
+      if (namespace.isEmpty || key.isEmpty) continue;
+      results.add({
+        'namespace': namespace,
+        'key': key,
+        'tag_name': key,
+        'full_tag_name': '$namespace:$key',
+        'intro': '',
+        'source': 'eh',
+      });
+      if (results.length >= limit) {
+        break;
+      }
+    }
+    return results;
   }
 
   Future<Map<String, dynamic>> updateUsertag({

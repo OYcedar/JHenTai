@@ -99,10 +99,37 @@ class TagRoutes {
           headers: {'Content-Type': 'application/json'});
     }
     final results = db.searchTagTranslations(query, limit: limit);
+    final ehClient = _ehClient;
+    if (results.length < limit && ehClient != null) {
+      final onlineLimit = limit - results.length;
+      try {
+        final online = await ehClient
+            .fetchTagSuggestions(_lastTagSearchPart(query), limit: onlineLimit);
+        final seen = results
+            .map((r) => '${r['namespace']}:${r['key']}'.toLowerCase())
+            .toSet();
+        for (final row in online) {
+          final id = '${row['namespace']}:${row['key']}'.toLowerCase();
+          if (seen.add(id)) {
+            results.add(row);
+          }
+          if (results.length >= limit) {
+            break;
+          }
+        }
+      } catch (_) {
+        // Online EH suggestions are best-effort; local translation matches remain useful.
+      }
+    }
     return Response.ok(
       jsonEncode({'results': results}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  String _lastTagSearchPart(String query) {
+    final parts = query.trim().split(RegExp(r'\s+'));
+    return parts.isEmpty ? query.trim() : parts.last;
   }
 
   Future<Response> _vote(Request request) async {
