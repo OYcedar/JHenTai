@@ -219,6 +219,22 @@ void _popOrExitWebReader(BuildContext context, WebReaderController c) {
   });
 }
 
+Future<void> _toggleWebReaderFullscreen() async {
+  try {
+    final fullscreenElement = web.document.fullscreenElement;
+    if (fullscreenElement == null) {
+      final root = web.document.documentElement;
+      if (root != null) {
+        await root.requestFullscreen().toDart;
+      }
+    } else {
+      await web.document.exitFullscreen().toDart;
+    }
+  } catch (_) {
+    // Browser fullscreen can be denied by the platform or embedding context.
+  }
+}
+
 enum ReaderMode { online, downloaded, archive, local }
 
 enum ReadDirection { ltr, rtl, vertical, fitWidth, doubleColumn }
@@ -1525,6 +1541,8 @@ class _ReaderBody extends StatelessWidget {
             controller.toggleOverlay();
           } else if (event.logicalKey == LogicalKeyboardKey.keyM) {
             controller.toggleDisplayFirstPageAlone();
+          } else if (event.logicalKey == LogicalKeyboardKey.f11) {
+            _toggleWebReaderFullscreen();
           } else if (event.logicalKey == LogicalKeyboardKey.escape) {
             _popOrExitWebReader(context, controller);
           } else if (event.logicalKey == LogicalKeyboardKey.end) {
