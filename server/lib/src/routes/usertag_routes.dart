@@ -17,6 +17,7 @@ class UsertagRoutes {
     r.get('/list', _list);
     r.post('/add', _add);
     r.post('/update', _update);
+    r.post('/tagset/update', _updateTagSet);
     r.post('/delete', _delete);
     return r;
   }
@@ -160,5 +161,39 @@ class UsertagRoutes {
       body: jsonEncode(result),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _updateTagSet(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON'}));
+    }
+
+    final tagSetNo = (body['tagSetNo'] as num?)?.toInt() ?? 1;
+    final enable = body['enable'] as bool? ?? true;
+    final color = body['color'] as String? ?? '';
+
+    final data = <String, dynamic>{
+      'tagset_action': 'update',
+      'tagset_name': '',
+      if (enable) 'tagset_enable': 'on',
+      'tagset_color': color,
+    };
+
+    try {
+      try {
+        await _client.postMyTagsForm(tagSetNo, data);
+      } on DioException catch (e) {
+        if (e.response?.statusCode != 302) rethrow;
+      }
+      return Response.ok(jsonEncode({'success': true}),
+          headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to update tag set: $e'}),
+      );
+    }
   }
 }

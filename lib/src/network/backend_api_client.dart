@@ -720,6 +720,21 @@ class BackendApiClient {
     );
   }
 
+  Future<void> updateUsertagSet({
+    required int tagSetNo,
+    required bool enable,
+    String? color,
+  }) async {
+    await _dio.post(
+      '/api/usertags/tagset/update',
+      data: {
+        'tagSetNo': tagSetNo,
+        'enable': enable,
+        'color': color ?? '',
+      },
+    );
+  }
+
   /// Returns `imagePageUrls`, `thumbnailImageUrls`, `galleryThumbnails` (sprite metadata), and `totalPages`.
   Future<Map<String, dynamic>> fetchGalleryImagePages(
     int gid,

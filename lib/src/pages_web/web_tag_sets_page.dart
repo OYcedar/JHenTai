@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
+import 'package:jhentai/src/utils/color_util.dart';
 
 /// Watched / hidden tags (EH My Tags), proxied by the server.
 class WebTagSetsPage extends StatefulWidget {
@@ -150,11 +152,58 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
     }
   }
 
+  Future<void> _updateTagSetColor(String? color) async {
+    setState(() => _busy = true);
+    try {
+      await backendApiClient.updateUsertagSet(
+        tagSetNo: _tagSetNo,
+        enable: _data?['tagSetEnable'] as bool? ?? true,
+        color: color,
+      );
+      Get.snackbar('common.success'.tr, 'usertags.updated'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+      await _load();
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.withValues(alpha: 0.7));
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
   void _searchTag(String label) {
     if (label.trim().isEmpty) {
       return;
     }
     Get.offAllNamed('/web/home', arguments: {'search': label});
+  }
+
+  Future<Object?> _showColorDialog(Color initialColor) {
+    return Get.dialog<Object?>(
+      _ColorSettingDialog(initialColor: initialColor),
+    );
+  }
+
+  Future<void> _showTagSetColorDialog() async {
+    final currentColor =
+        aRGBString2Color(_data?['tagSetBackgroundColor'] as String?);
+    final result = await _showColorDialog(
+      currentColor ?? Theme.of(context).colorScheme.primary,
+    );
+    if (result == null) {
+      return;
+    }
+    if (result == _ColorSettingDialog.resetValue) {
+      await _updateTagSetColor(null);
+      return;
+    }
+    if (result is Color) {
+      await _updateTagSetColor(color2aRGBString(result));
+    }
   }
 
   Future<void> _showEditDialog(Map<String, dynamic> tag) async {
@@ -174,12 +223,15 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
             ? 'watch'
             : 'none';
     var status = initialStatus;
-    final tagColor = tag['tagColor']?.toString() ?? '';
+    var tagColor = tag['tagColor']?.toString() ?? '';
     final result = await Get.dialog<bool>(
       AlertDialog(
         title: Text('usertags.editTitle'.tr),
         content: StatefulBuilder(
           builder: (context, setDialogState) {
+            final swatchColor = aRGBString2Color(tagColor) ??
+                aRGBString2Color(_data?['tagSetBackgroundColor'] as String?) ??
+                Theme.of(context).colorScheme.primary;
             return ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 360),
               child: Column(
@@ -216,6 +268,45 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
                       border: const OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.circle, color: swatchColor),
+                    title: Text('usertags.tagColor'.tr),
+                    subtitle: Text(tagColor.isEmpty
+                        ? 'usertags.colorDefault'.tr
+                        : tagColor),
+                    trailing: Wrap(
+                      spacing: 4,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.palette_outlined),
+                          tooltip: 'usertags.changeColor'.tr,
+                          onPressed: () async {
+                            final colorResult =
+                                await _showColorDialog(swatchColor);
+                            if (colorResult == null) {
+                              return;
+                            }
+                            setDialogState(() {
+                              tagColor = colorResult ==
+                                      _ColorSettingDialog.resetValue
+                                  ? ''
+                                  : color2aRGBString(colorResult as Color) ??
+                                      '';
+                            });
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.restart_alt),
+                          tooltip: 'common.reset'.tr,
+                          onPressed: tagColor.isEmpty
+                              ? null
+                              : () => setDialogState(() => tagColor = ''),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -255,6 +346,18 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
       appBar: AppBar(
         title: Text('usertags.title'.tr),
         actions: [
+          if (!_loading && _data != null)
+            IconButton(
+              tooltip: 'usertags.tagSetColor'.tr,
+              icon: Icon(
+                Icons.circle,
+                color: aRGBString2Color(
+                      _data?['tagSetBackgroundColor'] as String?,
+                    ) ??
+                    Theme.of(context).colorScheme.primary,
+              ),
+              onPressed: _busy ? null : _showTagSetColorDialog,
+            ),
           IconButton(
               icon: const Icon(Icons.refresh), onPressed: _busy ? null : _load),
         ],
@@ -384,10 +487,20 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
             final w = t['watched'] == true;
             final h = t['hidden'] == true;
             final weight = (t['weight'] as num?)?.toInt() ?? 10;
+            final tagColor = aRGBString2Color(t['tagColor'] as String?) ??
+                aRGBString2Color(_data?['tagSetBackgroundColor'] as String?);
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
                 onTap: _busy ? null : () => _showEditDialog(t),
+                leading: Icon(
+                  w
+                      ? Icons.favorite
+                      : h
+                          ? Icons.visibility_off
+                          : Icons.circle,
+                  color: tagColor ?? Theme.of(context).colorScheme.primary,
+                ),
                 title: Text(
                   label,
                   maxLines: 1,
@@ -428,6 +541,75 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
               ),
             );
           }),
+      ],
+    );
+  }
+}
+
+class _ColorSettingDialog extends StatefulWidget {
+  static const resetValue = 'reset';
+
+  const _ColorSettingDialog({required this.initialColor});
+
+  final Color initialColor;
+
+  @override
+  State<_ColorSettingDialog> createState() => _ColorSettingDialogState();
+}
+
+class _ColorSettingDialogState extends State<_ColorSettingDialog> {
+  late Color selectedColor;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedColor = widget.initialColor;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('usertags.changeColor'.tr),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: ColorPicker(
+          color: selectedColor,
+          pickersEnabled: const <ColorPickerType, bool>{
+            ColorPickerType.both: true,
+            ColorPickerType.primary: false,
+            ColorPickerType.accent: false,
+            ColorPickerType.bw: false,
+            ColorPickerType.custom: false,
+            ColorPickerType.wheel: true,
+          },
+          pickerTypeLabels: <ColorPickerType, String>{
+            ColorPickerType.both: 'preset'.tr,
+            ColorPickerType.wheel: 'custom'.tr,
+          },
+          enableTonalPalette: true,
+          showColorCode: true,
+          colorCodeHasColor: true,
+          colorCodeTextStyle: const TextStyle(fontSize: 18),
+          width: 36,
+          height: 36,
+          columnSpacing: 16,
+          onColorChanged: (color) => selectedColor = color,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: Get.back,
+          child: Text('common.cancel'.tr),
+        ),
+        TextButton(
+          onPressed: () =>
+              Get.back<Object?>(result: _ColorSettingDialog.resetValue),
+          child: Text('common.reset'.tr),
+        ),
+        FilledButton(
+          onPressed: () => Get.back<Object?>(result: selectedColor),
+          child: Text('common.save'.tr),
+        ),
       ],
     );
   }
