@@ -316,6 +316,7 @@ class WebReaderController extends GetxController {
 
   /// Double-column: first screen shows only page 0 (persisted).
   final displayFirstPageAlone = false.obs;
+  final spreadPages = <bool>[].obs;
 
   /// Gallery title from route args, query `title=`, or API when available.
   final galleryTitle = ''.obs;
@@ -474,6 +475,73 @@ class WebReaderController extends GetxController {
     } catch (_) {}
   }
 
+  String? _spreadPageSettingKey() {
+    if (mode != ReaderMode.local) {
+      if (gid == 0) return null;
+      return 'web_reader_spread_pages_$gid';
+    }
+    final key = localProgressKey;
+    if (key == null || key.isEmpty) return null;
+    final encoded = base64Url.encode(utf8.encode(key)).replaceAll('=', '');
+    return 'web_reader_spread_pages_local_$encoded';
+  }
+
+  Future<void> _loadSpreadPages() async {
+    final total = totalPages.value;
+    if (total <= 0) {
+      spreadPages.value = [];
+      return;
+    }
+
+    final values = List<bool>.filled(total, false);
+    final key = _spreadPageSettingKey();
+    if (key != null) {
+      try {
+        final raw = await backendApiClient.getSetting(key);
+        if (raw != null && raw.isNotEmpty) {
+          final decoded = jsonDecode(raw);
+          if (decoded is List) {
+            for (var i = 0; i < math.min(total, decoded.length); i++) {
+              values[i] = decoded[i] == 1 || decoded[i] == true;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    spreadPages.value = values;
+  }
+
+  void _saveSpreadPages() {
+    final key = _spreadPageSettingKey();
+    if (key == null) return;
+    backendApiClient
+        .putSetting(key, spreadPages.map((e) => e ? 1 : 0).toList())
+        .catchError((_) {});
+  }
+
+  void recordImageSize(int index, Size size) {
+    if (index < 0 || index >= totalPages.value) return;
+    if (size.width <= size.height) return;
+    if (spreadPages.length != totalPages.value) {
+      spreadPages.value = List<bool>.generate(
+        totalPages.value,
+        (i) => i < spreadPages.length ? spreadPages[i] : false,
+      );
+    }
+    if (spreadPages[index]) return;
+
+    final oldScreen = doubleColumnScreenIndexForImagePage(currentPage.value);
+    spreadPages[index] = true;
+    spreadPages.refresh();
+    _saveSpreadPages();
+
+    if (readDirection.value != ReadDirection.doubleColumn) return;
+    final newScreen = doubleColumnScreenIndexForImagePage(currentPage.value);
+    if (newScreen == oldScreen) return;
+    pageController.dispose();
+    pageController = PageController(initialPage: newScreen);
+  }
+
   Future<void> _loadAutoInterval() async {
     try {
       final saved = await backendApiClient.getSetting(kWebAutoIntervalKey);
@@ -617,44 +685,105 @@ class WebReaderController extends GetxController {
     if (t <= 0) return 0;
     if (page < 0) return 0;
     if (page >= t) {
-      final n = doubleColumnPageCount();
-      return n <= 0 ? 0 : n - 1;
+      page = t - 1;
     }
+
+    var beginImageIndex = 0;
+    var pageIndex = 0;
+    var hasLeftColumn = false;
+
     if (displayFirstPageAlone.value) {
       if (page == 0) return 0;
-      return 1 + (page - 1) ~/ 2;
+      beginImageIndex++;
+      pageIndex++;
     }
-    return page ~/ 2;
+
+    for (var i = beginImageIndex; i < page; i++) {
+      final isSpreadPage = _isSpreadPage(i);
+      if (isSpreadPage && !hasLeftColumn) {
+        pageIndex++;
+        continue;
+      }
+      if (isSpreadPage && hasLeftColumn) {
+        pageIndex += 2;
+        hasLeftColumn = false;
+        continue;
+      }
+      if (hasLeftColumn) {
+        pageIndex++;
+        hasLeftColumn = false;
+        continue;
+      }
+      hasLeftColumn = true;
+    }
+
+    if (_isSpreadPage(page) && hasLeftColumn) {
+      return pageIndex + 1;
+    }
+    return pageIndex;
   }
 
   int doubleColumnPageCount() {
     final t = totalPages.value;
     if (t <= 0) return 0;
-    if (displayFirstPageAlone.value) {
-      return 1 + ((t - 1) / 2).ceil();
-    }
-    return (t / 2).ceil();
+    return doubleColumnScreenIndexForImagePage(t - 1) + 1;
   }
 
   List<int> doubleColumnIndicesForScreen(int screenIndex) {
     final t = totalPages.value;
+    if (screenIndex < 0 || screenIndex >= doubleColumnPageCount()) return [];
+
+    var currentImageIndex = 0;
+    var currentScreenIndex = 0;
+    var hasLeftColumn = false;
+
     if (displayFirstPageAlone.value) {
       if (screenIndex == 0) return [0];
-      final left = 1 + (screenIndex - 1) * 2;
-      if (left >= t) return [];
-      final right = left + 1;
-      if (right < t) {
-        return [left, right];
+      currentImageIndex++;
+      currentScreenIndex++;
+    }
+
+    while (currentScreenIndex < screenIndex && currentImageIndex < t) {
+      final isSpreadPage = _isSpreadPage(currentImageIndex);
+      if (isSpreadPage && !hasLeftColumn) {
+        currentImageIndex++;
+        currentScreenIndex++;
+        continue;
       }
-      return [left];
+      if (isSpreadPage && hasLeftColumn) {
+        currentImageIndex++;
+        currentScreenIndex += 2;
+        hasLeftColumn = false;
+        continue;
+      }
+      if (hasLeftColumn) {
+        currentImageIndex++;
+        currentScreenIndex++;
+        hasLeftColumn = false;
+        continue;
+      }
+      currentImageIndex++;
+      hasLeftColumn = true;
     }
-    final left = screenIndex * 2;
-    if (left >= t) return [];
-    final right = left + 1;
-    if (right < t) {
-      return [left, right];
+
+    if (currentImageIndex >= t) return [];
+    if (currentScreenIndex > screenIndex) {
+      return [currentImageIndex - 1];
     }
-    return [left];
+    if (_isSpreadPage(currentImageIndex)) {
+      return [currentImageIndex];
+    }
+    if (currentImageIndex == t - 1) {
+      return [currentImageIndex];
+    }
+    if (_isSpreadPage(currentImageIndex + 1)) {
+      return [currentImageIndex];
+    }
+    return [currentImageIndex, currentImageIndex + 1];
+  }
+
+  bool _isSpreadPage(int index) {
+    return index >= 0 && index < spreadPages.length && spreadPages[index];
   }
 
   void toggleDisplayFirstPageAlone() {
@@ -801,6 +930,7 @@ class WebReaderController extends GetxController {
           _loadLocal();
           break;
       }
+      await _loadSpreadPages();
       await _restoreProgress();
       if (mode == ReaderMode.online) {
         readerLoadingLabelKey.value = 'reader.resolvingFirstPages';
@@ -2241,6 +2371,7 @@ class _ImageContent extends StatelessWidget {
           readerTallLoading: isVertical || fitWidth,
           readerFillMinLoadingHeight: !isVertical && !fitWidth,
           maxBytes: controller.imageMaxBytes,
+          onImageSize: (size) => controller.recordImageSize(index, size),
           readerErrorChild: SizedBox(
             height: isVertical ? 400 : null,
             child: Center(

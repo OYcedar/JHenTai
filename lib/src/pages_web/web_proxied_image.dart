@@ -28,6 +28,7 @@ class WebProxiedImage extends StatefulWidget {
     /// Gallery cards: themed surface + spinner while loading (GET and POST paths).
     this.surfaceLoadingPlaceholder = false,
     this.maxBytes,
+    this.onImageSize,
   });
 
   /// Raw image URL (e-hentai CDN / ehgt), not pre-encoded proxy URL.
@@ -45,6 +46,7 @@ class WebProxiedImage extends StatefulWidget {
   final Widget? readerErrorChild;
   final bool surfaceLoadingPlaceholder;
   final int? maxBytes;
+  final ValueChanged<Size>? onImageSize;
 
   @override
   State<WebProxiedImage> createState() => _WebProxiedImageState();
@@ -127,12 +129,14 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
     if (base.isNotEmpty && u.startsWith(base) && u.contains('/api/image/')) {
       webImageClientLogVerbose(
           'WebProxiedImage direct Image.network api/image');
-      return Image.network(
-        _withMaxBytes(u, widget.maxBytes),
+      final provider = NetworkImage(_withMaxBytes(u, widget.maxBytes));
+      return _ImageWithSizeCallback(
+        provider: provider,
         fit: widget.fit,
         width: widget.width,
         height: widget.height,
         alignment: widget.alignment,
+        onImageSize: widget.onImageSize,
         loadingBuilder: widget.readerStyle
             ? (context, child, loadingProgress) {
                 if (loadingProgress == null) {
@@ -227,12 +231,13 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
             );
             return widget.readerErrorChild ?? _defaultError();
           }
-          return Image.memory(
-            bytes,
+          return _ImageWithSizeCallback(
+            provider: MemoryImage(bytes),
             fit: widget.fit,
             width: widget.width,
             height: widget.height,
             alignment: widget.alignment,
+            onImageSize: widget.onImageSize,
             errorBuilder: (_, __, ___) =>
                 widget.readerErrorChild ?? _defaultError(),
           );
@@ -244,12 +249,13 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
         backendApiClient.proxyImageUrl(u, maxBytes: widget.maxBytes);
     webImageClientLogVerbose(
         'WebProxiedImage Image.network GET ${_urlPreview(proxied, max: 160)}');
-    return Image.network(
-      proxied,
+    return _ImageWithSizeCallback(
+      provider: NetworkImage(proxied),
       fit: widget.fit,
       width: widget.width,
       height: widget.height,
       alignment: widget.alignment,
+      onImageSize: widget.onImageSize,
       loadingBuilder: widget.readerStyle
           ? (context, child, loadingProgress) {
               if (loadingProgress == null) {
@@ -320,6 +326,102 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
           ? Colors.transparent
           : Theme.of(context).colorScheme.surfaceContainerHighest,
       child: child,
+    );
+  }
+}
+
+class _ImageWithSizeCallback extends StatefulWidget {
+  const _ImageWithSizeCallback({
+    required this.provider,
+    required this.fit,
+    required this.alignment,
+    this.width,
+    this.height,
+    this.loadingBuilder,
+    this.errorBuilder,
+    this.onImageSize,
+  });
+
+  final ImageProvider provider;
+  final BoxFit fit;
+  final Alignment alignment;
+  final double? width;
+  final double? height;
+  final ImageLoadingBuilder? loadingBuilder;
+  final ImageErrorWidgetBuilder? errorBuilder;
+  final ValueChanged<Size>? onImageSize;
+
+  @override
+  State<_ImageWithSizeCallback> createState() => _ImageWithSizeCallbackState();
+}
+
+class _ImageWithSizeCallbackState extends State<_ImageWithSizeCallback> {
+  ImageStream? _stream;
+  ImageStreamListener? _listener;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _resolve();
+  }
+
+  @override
+  void didUpdateWidget(_ImageWithSizeCallback oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.provider != widget.provider) {
+      _removeListener();
+      _resolve();
+    }
+  }
+
+  @override
+  void dispose() {
+    _removeListener();
+    super.dispose();
+  }
+
+  void _resolve() {
+    if (widget.onImageSize == null || _stream != null) {
+      return;
+    }
+    final stream =
+        widget.provider.resolve(createLocalImageConfiguration(context));
+    _stream = stream;
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, _) {
+        widget.onImageSize?.call(Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
+        ));
+        stream.removeListener(listener);
+      },
+      onError: (_, __) => stream.removeListener(listener),
+    );
+    _listener = listener;
+    stream.addListener(listener);
+  }
+
+  void _removeListener() {
+    final stream = _stream;
+    final listener = _listener;
+    if (stream != null && listener != null) {
+      stream.removeListener(listener);
+    }
+    _stream = null;
+    _listener = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Image(
+      image: widget.provider,
+      fit: widget.fit,
+      width: widget.width,
+      height: widget.height,
+      alignment: widget.alignment,
+      loadingBuilder: widget.loadingBuilder,
+      errorBuilder: widget.errorBuilder,
     );
   }
 }
