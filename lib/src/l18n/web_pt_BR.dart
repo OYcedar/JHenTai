@@ -311,6 +311,7 @@ class WebPtBR {
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Definir Cookies',
+      'settings.pasteCookies': 'Colar Cookies',
       'settings.cookieSuccess': 'Cookies definidos com sucesso',
       'settings.cookieFailed': 'Falha ao definir cookies: @error',
       'settings.cookieEmpty': 'Por favor, cole os cookies',

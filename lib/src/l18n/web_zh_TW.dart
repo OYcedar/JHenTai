@@ -289,6 +289,7 @@ class WebZhTW {
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': '設定 Cookie',
+      'settings.pasteCookies': '貼上 Cookie',
       'settings.cookieSuccess': 'Cookie 設定成功',
       'settings.cookieFailed': '設定 Cookie 失敗: @error',
       'settings.cookieEmpty': '請貼上 Cookie',

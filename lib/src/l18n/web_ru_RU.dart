@@ -305,6 +305,7 @@ class WebRuRU {
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Установить Cookies',
+      'settings.pasteCookies': 'Вставить cookies',
       'settings.cookieSuccess': 'Cookies установлены',
       'settings.cookieFailed': 'Ошибка установки cookies: @error',
       'settings.cookieEmpty': 'Вставьте cookies',

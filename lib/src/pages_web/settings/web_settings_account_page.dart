@@ -133,6 +133,39 @@ class WebSettingsAccountPage extends GetView<WebSettingsController> {
         snackPosition: SnackPosition.BOTTOM);
   }
 
+  Future<void> _pasteCookies() async {
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text ?? '';
+    final normalized = _normalizeCookieText(text);
+    if (normalized.isEmpty) {
+      Get.snackbar('common.error'.tr, 'settings.cookieEmpty'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    controller.cookieController.text = normalized;
+  }
+
+  String _normalizeCookieText(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return '';
+    }
+
+    final cookies = <String, String>{};
+    for (final name in const ['ipb_member_id', 'ipb_pass_hash', 'igneous']) {
+      final match =
+          RegExp('$name[=:]\\s?([^;\\n\\r\\t ]+)').firstMatch(trimmed);
+      final value = match?.group(1);
+      if (value != null && value.isNotEmpty) {
+        cookies[name] = value;
+      }
+    }
+    if (cookies.isNotEmpty) {
+      return cookies.entries.map((e) => '${e.key}=${e.value}').join('; ');
+    }
+
+    return trimmed;
+  }
+
   Widget _loginForm(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,9 +190,20 @@ class WebSettingsAccountPage extends GetView<WebSettingsController> {
           ),
         ),
         const SizedBox(height: 8),
-        FilledButton(
-          onPressed: controller.loginWithCookies,
-          child: Text('settings.setCookies'.tr),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton(
+              onPressed: controller.loginWithCookies,
+              child: Text('settings.setCookies'.tr),
+            ),
+            OutlinedButton.icon(
+              onPressed: _pasteCookies,
+              icon: const Icon(Icons.content_paste, size: 18),
+              label: Text('settings.pasteCookies'.tr),
+            ),
+          ],
         ),
         const Divider(height: 32),
         Theme(

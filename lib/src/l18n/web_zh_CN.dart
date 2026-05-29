@@ -289,6 +289,7 @@ class WebZhCN {
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': '设置 Cookie',
+      'settings.pasteCookies': '粘贴 Cookie',
       'settings.cookieSuccess': 'Cookie 设置成功',
       'settings.cookieFailed': '设置 Cookie 失败: @error',
       'settings.cookieEmpty': '请粘贴 Cookie',

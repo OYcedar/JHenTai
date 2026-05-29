@@ -306,6 +306,7 @@ class WebEnUS {
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': 'Set Cookies',
+      'settings.pasteCookies': 'Paste Cookies',
       'settings.cookieSuccess': 'Cookies set successfully',
       'settings.cookieFailed': 'Failed to set cookies: @error',
       'settings.cookieEmpty': 'Please paste cookies',

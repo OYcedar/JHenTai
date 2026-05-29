@@ -293,6 +293,7 @@ class WebKoKR {
       'settings.cookiePlaceholder':
           'ipb_member_id=xxx; ipb_pass_hash=xxx; igneous=xxx',
       'settings.setCookies': '쿠키 설정',
+      'settings.pasteCookies': '쿠키 붙여넣기',
       'settings.cookieSuccess': '쿠키가 설정되었습니다',
       'settings.cookieFailed': '쿠키 설정 실패: @error',
       'settings.cookieEmpty': '쿠키를 붙여넣으세요',
