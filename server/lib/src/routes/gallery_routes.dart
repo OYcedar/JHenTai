@@ -12,6 +12,19 @@ import '../utils/eh_tag_style_parse.dart';
 import '../utils/gallery_stats_parser.dart';
 import 'block_rule_routes.dart';
 
+const Map<String, int> _favoriteColorToSlot = {
+  '000': 0,
+  'f00': 1,
+  'fa0': 2,
+  'dd0': 3,
+  '080': 4,
+  '9f4': 5,
+  '4bf': 6,
+  '00f': 7,
+  '508': 8,
+  'e8e': 9,
+};
+
 /// Parses total image count from EH/EX `.gpc` thumbnail pager text (English + common variants).
 int _parseThumbGridTotalPages(String gpcText) {
   final t = gpcText.replaceAll('\u00a0', ' ').trim();
@@ -1254,7 +1267,53 @@ class GalleryRoutes {
     final tags = _parseGalleryRowTags(tagElements);
     if (tags.isNotEmpty) extra['tags'] = tags;
 
+    final favorite = _parseGalleryRowFavorite(element);
+    if (favorite != null) {
+      extra.addAll(favorite);
+    }
+
     return extra;
+  }
+
+  Map<String, dynamic>? _parseGalleryRowFavorite(Element element) {
+    final selectors = [
+      '.gl2m > div:nth-child(2) > [id][style]',
+      '.gl2c > div:nth-child(2) > [id][style]',
+      '.gl3e > [id][style]',
+      '.gl5t > div > [id][style]',
+      '[id][style*="border-color"]',
+    ];
+    Element? favoriteEl;
+    for (final selector in selectors) {
+      final el = element.querySelector(selector);
+      final style = el?.attributes['style'] ?? '';
+      if (el != null && style.contains('border-color')) {
+        favoriteEl = el;
+        break;
+      }
+    }
+    if (favoriteEl == null) return null;
+
+    final style = favoriteEl.attributes['style'] ?? '';
+    final match =
+        RegExp(r'border-color:\s*#([0-9a-fA-F]{3,6})').firstMatch(style);
+    if (match == null) return null;
+
+    var color = match.group(1)!.toLowerCase();
+    if (color.length == 6 &&
+        color[0] == color[1] &&
+        color[2] == color[3] &&
+        color[4] == color[5]) {
+      color = '${color[0]}${color[2]}${color[4]}';
+    }
+    final slot = _favoriteColorToSlot[color];
+    if (slot == null) return null;
+
+    return {
+      'favoriteTagIndex': slot,
+      if ((favoriteEl.attributes['title'] ?? '').trim().isNotEmpty)
+        'favoriteTagName': favoriteEl.attributes['title']!.trim(),
+    };
   }
 
   /// Per-namespace list of `{tag, color?, backgroundColor?}` (ARGB ints) for watched-tag styling.

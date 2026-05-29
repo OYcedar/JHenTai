@@ -4094,6 +4094,85 @@ List<Widget> _buildHomePageTagChips(
   return chips;
 }
 
+Color _webHomeFavoriteColor(int slot) {
+  const colors = [
+    Color(0xff9e9e9e),
+    Color(0xfffc4e4e),
+    Color(0xfffcb417),
+    Color(0xffdde500),
+    Color(0xff17b91b),
+    Color(0xff36b940),
+    Color(0xff68c9de),
+    Color(0xff5050d7),
+    Color(0xff9755f5),
+    Color(0xfffe93ff),
+  ];
+  return colors[slot.clamp(0, colors.length - 1)];
+}
+
+int? _webHomeFavoriteSlot(Map<String, dynamic> gallery) {
+  final raw = gallery['favoriteTagIndex'] ?? gallery['favoriteSlot'];
+  return (raw as num?)?.toInt();
+}
+
+String _webHomeFavoriteName(Map<String, dynamic> gallery) =>
+    (gallery['favoriteTagName'] ?? gallery['favoriteName'])?.toString() ?? '';
+
+class _WebHomeFavoriteBadge extends StatelessWidget {
+  final Map<String, dynamic> gallery;
+  final bool overlay;
+
+  const _WebHomeFavoriteBadge({
+    required this.gallery,
+    this.overlay = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final slot = _webHomeFavoriteSlot(gallery);
+    if (slot == null) {
+      return const SizedBox.shrink();
+    }
+    final name = _webHomeFavoriteName(gallery);
+    final color = _webHomeFavoriteColor(slot);
+    final tooltip = name.isEmpty ? 'favorite'.tr : name;
+    if (overlay) {
+      return Tooltip(
+        message: tooltip,
+        child: Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(Icons.favorite, size: 14, color: color),
+        ),
+      );
+    }
+    return Tooltip(
+      message: tooltip,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.favorite, size: 14, color: color),
+          if (name.isNotEmpty) ...[
+            const SizedBox(width: 2),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 96),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _GalleryListTile extends StatelessWidget {
   final Map<String, dynamic> gallery;
   final WebHomeController homeController;
@@ -4223,6 +4302,7 @@ class _GalleryListTile extends StatelessWidget {
                             gid: gid is int ? gid : 0,
                             pageCount: pageCount,
                           ),
+                          _WebHomeFavoriteBadge(gallery: gallery),
                         ],
                       ),
                       if (!compact && tags != null && tags.isNotEmpty) ...[
@@ -4350,6 +4430,14 @@ class _GalleryCard extends StatelessWidget {
                             ),
                           ),
                     _DownloadBadgeOverlay(gid: gid is int ? gid : 0),
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: _WebHomeFavoriteBadge(
+                        gallery: gallery,
+                        overlay: true,
+                      ),
+                    ),
                     Positioned(
                       left: 4,
                       bottom: 4,
