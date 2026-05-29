@@ -325,7 +325,12 @@ class WebHomeController extends GetxController {
       _currentSearch = searchQuery;
       currentSearchText.value = searchQuery;
     }
-    if (appliedQuickSearch || _currentSearch.trim().isNotEmpty) {
+    if (appliedQuickSearch) {
+      currentPage.value = 0;
+      _clearPaginationCursors();
+      _syncSectionUrl(currentSection.value);
+      _fetchGalleryList();
+    } else if (_currentSearch.trim().isNotEmpty) {
       _loadHomePage();
     } else {
       _loadInitialSection();
@@ -403,6 +408,7 @@ class WebHomeController extends GetxController {
       searchController.text = keyword;
       _currentSearch = keyword;
       currentSearchText.value = keyword;
+      currentSection.value = _quickSearchSection(config);
       categoryFilter.value = (config['categoryFilter'] as num?)?.toInt() ?? 0;
       minimumRating.value = (config['minimumRating'] as num?)?.toInt() ?? 0;
       searchInName.value = config['searchInName'] as bool? ?? true;
@@ -421,7 +427,12 @@ class WebHomeController extends GetxController {
           config['disableFilterForUploader'] as bool? ?? false;
       disableFilterForTags.value =
           config['disableFilterForTags'] as bool? ?? false;
+      favoriteSortFavoritedFirst.value =
+          config['favoriteSortFavoritedFirst'] as bool? ?? true;
+      favoriteCategoryFilter.value =
+          (config['favoriteCategoryFilter'] as num?)?.toInt();
       persistAdvancedSearchSettings();
+      persistFavoritesListPrefs();
       return true;
     } catch (_) {
       return false;
@@ -1352,6 +1363,9 @@ class WebHomeController extends GetxController {
 
   Future<void> saveCurrentAsQuickSearch(String name) async {
     final config = jsonEncode({
+      'section': _quickSearchSection({
+        'section': currentSection.value,
+      }),
       'keyword': _currentSearch,
       'categoryFilter': categoryFilter.value,
       'minimumRating': minimumRating.value,
@@ -1366,6 +1380,8 @@ class WebHomeController extends GetxController {
       'disableFilterForLanguage': disableFilterForLanguage.value,
       'disableFilterForUploader': disableFilterForUploader.value,
       'disableFilterForTags': disableFilterForTags.value,
+      'favoriteSortFavoritedFirst': favoriteSortFavoritedFirst.value,
+      'favoriteCategoryFilter': favoriteCategoryFilter.value,
     });
     await backendApiClient.saveQuickSearch(name, config);
     loadQuickSearches();
@@ -1374,12 +1390,12 @@ class WebHomeController extends GetxController {
   void applyQuickSearch(Map<String, dynamic> item) {
     try {
       _exitListByUrlMode();
-      final config =
-          jsonDecode(item['config'] as String? ?? '{}') as Map<String, dynamic>;
+      final config = decodeQuickSearchConfig(item['config'] as String? ?? '{}');
       final keyword = config['keyword'] as String? ?? '';
       searchController.text = keyword;
       _currentSearch = keyword;
       currentSearchText.value = keyword;
+      currentSection.value = _quickSearchSection(config);
       categoryFilter.value = config['categoryFilter'] as int? ?? 0;
       minimumRating.value = config['minimumRating'] as int? ?? 0;
       searchInName.value = config['searchInName'] as bool? ?? true;
@@ -1398,11 +1414,15 @@ class WebHomeController extends GetxController {
           config['disableFilterForUploader'] as bool? ?? false;
       disableFilterForTags.value =
           config['disableFilterForTags'] as bool? ?? false;
+      favoriteSortFavoritedFirst.value =
+          config['favoriteSortFavoritedFirst'] as bool? ?? true;
+      favoriteCategoryFilter.value =
+          (config['favoriteCategoryFilter'] as num?)?.toInt();
       currentPage.value = 0;
       _clearPaginationCursors();
-      currentSection.value = 'home';
-      _syncSectionUrl('home');
+      _syncSectionUrl(currentSection.value);
       persistAdvancedSearchSettings();
+      persistFavoritesListPrefs();
       _fetchGalleryList();
     } catch (_) {}
   }
@@ -1441,11 +1461,20 @@ class WebHomeController extends GetxController {
   Map<String, dynamic> decodeQuickSearchConfig(String rawConfig) {
     try {
       final decoded = jsonDecode(rawConfig);
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
+      if (decoded is Map) {
+        final config = Map<String, dynamic>.from(decoded);
+        config['section'] = _quickSearchSection(config);
+        config['favoriteSortFavoritedFirst'] =
+            config['favoriteSortFavoritedFirst'] as bool? ?? true;
+        if (config['favoriteCategoryFilter'] != null) {
+          config['favoriteCategoryFilter'] =
+              (config['favoriteCategoryFilter'] as num?)?.toInt();
+        }
+        return config;
       }
     } catch (_) {}
     return {
+      'section': 'home',
       'keyword': '',
       'categoryFilter': 0,
       'minimumRating': 0,
@@ -1460,7 +1489,14 @@ class WebHomeController extends GetxController {
       'disableFilterForLanguage': false,
       'disableFilterForUploader': false,
       'disableFilterForTags': false,
+      'favoriteSortFavoritedFirst': true,
+      'favoriteCategoryFilter': null,
     };
+  }
+
+  String _quickSearchSection(Map<String, dynamic> config) {
+    final section = config['section']?.toString();
+    return _sectionSupportsSearch(section ?? '') ? section! : 'home';
   }
 
   Future<void> _loadDashboardPreviews({bool force = false}) async {

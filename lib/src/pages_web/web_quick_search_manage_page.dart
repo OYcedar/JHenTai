@@ -40,6 +40,16 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
       .where((key) => key != 'japanese')
       .toList();
 
+  static const _searchSections = ['home', 'favorites', 'watched'];
+
+  static String _sectionLabel(String section) {
+    return switch (section) {
+      'favorites' => 'home.favorites'.tr,
+      'watched' => 'home.watched'.tr,
+      _ => 'home.home'.tr,
+    };
+  }
+
   @override
   void initState() {
     super.initState();
@@ -105,9 +115,22 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
   Map<String, dynamic> _decodeConfig(String config, {String keyword = ''}) {
     try {
       final decoded = jsonDecode(config);
-      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) {
+        final result = Map<String, dynamic>.from(decoded);
+        final section = result['section']?.toString() ?? 'home';
+        result['section'] =
+            _searchSections.contains(section) ? section : 'home';
+        result['favoriteSortFavoritedFirst'] =
+            result['favoriteSortFavoritedFirst'] as bool? ?? true;
+        if (result['favoriteCategoryFilter'] != null) {
+          result['favoriteCategoryFilter'] =
+              (result['favoriteCategoryFilter'] as num?)?.toInt();
+        }
+        return result;
+      }
     } catch (_) {}
     return {
+      'section': 'home',
       'keyword': keyword.trim(),
       'categoryFilter': 0,
       'minimumRating': 0,
@@ -122,6 +145,8 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
       'disableFilterForLanguage': false,
       'disableFilterForUploader': false,
       'disableFilterForTags': false,
+      'favoriteSortFavoritedFirst': true,
+      'favoriteCategoryFilter': null,
     };
   }
 
@@ -370,7 +395,10 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                         try {
                           final m = jsonDecode(cfg) as Map<String, dynamic>?;
                           final kw = m?['keyword'] as String? ?? '';
-                          subtitle = kw.isEmpty ? cfg : kw;
+                          final section = m?['section']?.toString() ?? 'home';
+                          final sectionText = _sectionLabel(section);
+                          subtitle =
+                              kw.isEmpty ? sectionText : '$sectionText - $kw';
                         } catch (_) {}
                         if (subtitle.length > 120) {
                           subtitle = '${subtitle.substring(0, 120)}…';
@@ -487,6 +515,13 @@ class _QuickSearchConfigEditorState extends State<_QuickSearchConfigEditor> {
 
   int get _categoryFilter => (_config['categoryFilter'] as num?)?.toInt() ?? 0;
 
+  String get _section {
+    final section = _config['section']?.toString() ?? 'home';
+    return _WebQuickSearchManagePageState._searchSections.contains(section)
+        ? section
+        : 'home';
+  }
+
   bool _boolValue(String key, bool fallback) =>
       _config[key] as bool? ?? fallback;
 
@@ -530,6 +565,8 @@ class _QuickSearchConfigEditorState extends State<_QuickSearchConfigEditor> {
         'disableFilterForLanguage': false,
         'disableFilterForUploader': false,
         'disableFilterForTags': false,
+        'favoriteSortFavoritedFirst': true,
+        'favoriteCategoryFilter': null,
       };
       _pageAtLeastCtrl.clear();
       _pageAtMostCtrl.clear();
@@ -546,6 +583,70 @@ class _QuickSearchConfigEditorState extends State<_QuickSearchConfigEditor> {
       title: Text('home.searchFilterSheetTitle'.tr),
       childrenPadding: const EdgeInsets.only(bottom: 8),
       children: [
+        DropdownButtonFormField<String>(
+          initialValue: _section,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'defaultTab'.tr,
+            border: const OutlineInputBorder(),
+          ),
+          items: _WebQuickSearchManagePageState._searchSections
+              .map((section) => DropdownMenuItem<String>(
+                    value: section,
+                    child: Text(
+                      _WebQuickSearchManagePageState._sectionLabel(section),
+                    ),
+                  ))
+              .toList(),
+          onChanged: (value) => _set('section', value ?? 'home'),
+        ),
+        if (_section == 'favorites') ...[
+          const SizedBox(height: 12),
+          DropdownButtonFormField<bool>(
+            initialValue: _boolValue('favoriteSortFavoritedFirst', true),
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'home.favSortTitle'.tr,
+              border: const OutlineInputBorder(),
+            ),
+            items: [
+              DropdownMenuItem<bool>(
+                value: true,
+                child: Text('home.favSortFavorited'.tr),
+              ),
+              DropdownMenuItem<bool>(
+                value: false,
+                child: Text('home.favSortPublished'.tr),
+              ),
+            ],
+            onChanged: (value) =>
+                _set('favoriteSortFavoritedFirst', value ?? true),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int?>(
+            initialValue: (_config['favoriteCategoryFilter'] as num?)?.toInt(),
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: 'home.favorites'.tr,
+              border: const OutlineInputBorder(),
+            ),
+            items: [
+              DropdownMenuItem<int?>(
+                value: null,
+                child: Text('home.favAllFolders'.tr),
+              ),
+              ...List.generate(
+                10,
+                (index) => DropdownMenuItem<int?>(
+                  value: index,
+                  child: Text('home.favSlotShort'.trParams({'n': '$index'})),
+                ),
+              ),
+            ],
+            onChanged: (value) => _set('favoriteCategoryFilter', value),
+          ),
+        ],
+        const SizedBox(height: 12),
         Align(
           alignment: Alignment.centerLeft,
           child:
