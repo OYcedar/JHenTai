@@ -2545,16 +2545,58 @@ class _BottomOverlay extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Obx(() => controller.totalPages.value > 1
-                      ? Slider(
-                          value: controller.currentPage.value.toDouble().clamp(
-                              0, (controller.totalPages.value - 1).toDouble()),
-                          min: 0,
-                          max: (controller.totalPages.value - 1).toDouble(),
-                          divisions: controller.totalPages.value > 1
-                              ? controller.totalPages.value - 1
-                              : 1,
-                          label: '${controller.currentPage.value + 1}',
-                          onChanged: (v) => controller.goToPage(v.round()),
+                      ? Row(
+                          children: [
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                controller.readDirection.value ==
+                                        ReadDirection.rtl
+                                    ? '${controller.totalPages.value}'
+                                    : '${controller.currentPage.value + 1}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12),
+                              ),
+                            ),
+                            Expanded(
+                              child: RotatedBox(
+                                quarterTurns: controller.readDirection.value ==
+                                        ReadDirection.rtl
+                                    ? 2
+                                    : 0,
+                                child: Slider(
+                                  value: controller.currentPage.value
+                                      .toDouble()
+                                      .clamp(
+                                          0,
+                                          (controller.totalPages.value - 1)
+                                              .toDouble()),
+                                  min: 0,
+                                  max: (controller.totalPages.value - 1)
+                                      .toDouble(),
+                                  divisions: controller.totalPages.value > 1
+                                      ? controller.totalPages.value - 1
+                                      : 1,
+                                  label: '${controller.currentPage.value + 1}',
+                                  onChanged: (v) =>
+                                      controller.goToPage(v.round()),
+                                ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                controller.readDirection.value ==
+                                        ReadDirection.rtl
+                                    ? '${controller.currentPage.value + 1}'
+                                    : '${controller.totalPages.value}',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12),
+                              ),
+                            ),
+                          ],
                         )
                       : const SizedBox.shrink()),
                   Obx(() {
