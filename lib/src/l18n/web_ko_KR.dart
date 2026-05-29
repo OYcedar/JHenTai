@@ -192,6 +192,7 @@ class WebKoKR {
       'detail.comments': '댓글 (@count)',
       'detail.anonymous': '익명',
       'detail.loadFailed': '갤러리 세부 정보 로드 실패: @error',
+      'detail.metadataOnly': '전체 상세 페이지를 사용할 수 없어 EH API 메타데이터를 표시합니다.',
 
       // reader
       'reader.loading': '갤러리 로드 중...',

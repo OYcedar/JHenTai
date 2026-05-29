@@ -191,6 +191,7 @@ class WebZhCN {
       'detail.comments': '评论 (@count)',
       'detail.anonymous': '匿名',
       'detail.loadFailed': '加载画廊详情失败: @error',
+      'detail.metadataOnly': '完整详情页不可用，当前显示 EH API 元数据。',
 
       // reader
       'reader.loading': '加载画廊中...',

@@ -714,6 +714,13 @@ class GalleryRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     } on GalleryDetailAccessException catch (e) {
+      final fallback = await _galleryMetadataFallback(gid, token, e.message);
+      if (fallback != null) {
+        return Response.ok(
+          jsonEncode(fallback),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
       return Response(
         403,
         body: jsonEncode({'error': e.message}),
@@ -724,6 +731,87 @@ class GalleryRoutes {
         body: jsonEncode({'error': 'Failed to fetch gallery detail: $e'}),
       );
     }
+  }
+
+  Future<Map<String, dynamic>?> _galleryMetadataFallback(
+    String gid,
+    String token,
+    String message,
+  ) async {
+    final id = int.tryParse(gid);
+    if (id == null) {
+      return null;
+    }
+    try {
+      final data = await _client.fetchGalleryMetadata(id, token);
+      final list = data['gmetadata'];
+      if (list is! List || list.isEmpty || list.first is! Map) {
+        return null;
+      }
+      final meta = Map<String, dynamic>.from(list.first as Map);
+      final tags = <String, List<String>>{};
+      final rawTags = meta['tags'];
+      if (rawTags is List) {
+        for (final raw in rawTags) {
+          final text = raw?.toString().trim() ?? '';
+          if (text.isEmpty) {
+            continue;
+          }
+          final index = text.indexOf(':');
+          final namespace = index > 0 ? text.substring(0, index) : 'misc';
+          final key = index > 0 ? text.substring(index + 1) : text;
+          if (key.isEmpty) {
+            continue;
+          }
+          tags.putIfAbsent(namespace, () => <String>[]).add(key);
+        }
+      }
+
+      return {
+        'title': meta['title']?.toString() ?? '',
+        'titleJpn': meta['title_jpn']?.toString() ?? '',
+        'category': meta['category']?.toString() ?? '',
+        'uploader': meta['uploader']?.toString() ?? '',
+        'coverUrl': meta['thumb']?.toString() ?? '',
+        'rating': double.tryParse(meta['rating']?.toString() ?? '') ?? 0.0,
+        'pageCount': int.tryParse(meta['filecount']?.toString() ?? '') ?? 0,
+        'archiverUrl': '',
+        'imagePageUrls': const <String>[],
+        'thumbnailImageUrls': const <String>[],
+        'galleryThumbnails': const <Map<String, dynamic>>[],
+        'galleryUrl': '${_client.baseUrl}/g/$gid/$token/',
+        'tags': tags,
+        'tagsRich': const <String, List<Map<String, dynamic>>>{},
+        'apiuid': null,
+        'apikey': null,
+        'favoriteSlot': null,
+        'favoriteName': null,
+        'comments': const <Map<String, dynamic>>[],
+        'publishDate': _formatMetadataPosted(meta['posted']),
+        'fileSize': meta['filesize']?.toString() ?? '',
+        'language': '',
+        'parentUrl': null,
+        'ratingCount': 0,
+        'favoriteCount': 0,
+        'newerVersionUrl': null,
+        'childVersions': const <Map<String, dynamic>>[],
+        'torrentCount':
+            int.tryParse(meta['torrentcount']?.toString() ?? '') ?? 0,
+        'metadataOnly': true,
+        'detailUnavailableMessage': message,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _formatMetadataPosted(dynamic value) {
+    final seconds = int.tryParse(value?.toString() ?? '');
+    if (seconds == null || seconds <= 0) {
+      return value?.toString() ?? '';
+    }
+    return DateTime.fromMillisecondsSinceEpoch(seconds * 1000, isUtc: true)
+        .toIso8601String();
   }
 
   Future<Response> _galleryImagePages(

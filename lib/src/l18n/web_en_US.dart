@@ -203,6 +203,8 @@ class WebEnUS {
       'detail.comments': 'Comments (@count)',
       'detail.anonymous': 'Anonymous',
       'detail.loadFailed': 'Failed to load gallery detail: @error',
+      'detail.metadataOnly':
+          'Full detail page is unavailable. Showing EH API metadata.',
 
       // reader
       'reader.loading': 'Loading gallery...',

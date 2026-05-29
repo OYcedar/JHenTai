@@ -205,6 +205,8 @@ class WebRuRU {
       'detail.comments': 'Комментарии (@count)',
       'detail.anonymous': 'Аноним',
       'detail.loadFailed': 'Ошибка загрузки деталей: @error',
+      'detail.metadataOnly':
+          'Полная страница деталей недоступна. Показаны метаданные EH API.',
 
       // reader
       'reader.loading': 'Загрузка галереи...',

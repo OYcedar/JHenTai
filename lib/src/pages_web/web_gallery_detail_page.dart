@@ -133,6 +133,8 @@ class WebGalleryDetailController extends GetxController {
   final childVersions = <Map<String, dynamic>>[].obs;
   final torrentCount = 0.obs;
   final readProgress = 0.obs;
+  final metadataOnly = false.obs;
+  final detailUnavailableMessage = ''.obs;
 
   /// True while fetching full thumbnail strip via [fetchGalleryImagePages] (EH shows ~20 per HTML page).
   final isThumbsLoading = false.obs;
@@ -208,6 +210,9 @@ class WebGalleryDetailController extends GetxController {
         errorMessage.value = err;
         return;
       }
+      metadataOnly.value = result['metadataOnly'] == true;
+      detailUnavailableMessage.value =
+          result['detailUnavailableMessage'] as String? ?? '';
       title.value = result['title'] as String? ?? 'Unknown';
       titleJpn.value = result['titleJpn'] as String? ?? '';
       category.value = result['category'] as String? ?? '';
@@ -288,7 +293,8 @@ class WebGalleryDetailController extends GetxController {
 
       _loadTagTranslations();
 
-      if (pageCount.value > 0 &&
+      if (!metadataOnly.value &&
+          pageCount.value > 0 &&
           (thumbnailImageUrls.length < pageCount.value ||
               galleryThumbnails.length < pageCount.value)) {
         _loadFullThumbnails();
@@ -1329,6 +1335,12 @@ class WebGalleryDetailPage extends StatelessWidget {
                   _buildWideHeader(context)
                 else
                   _buildNarrowHeader(context),
+                Obx(() => controller.detailUnavailableMessage.value.isEmpty
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: _buildUnavailableMetadataBanner(context),
+                      )),
                 const SizedBox(height: 20),
                 _buildActionButtons(context),
                 const SizedBox(height: 24),
@@ -1342,6 +1354,30 @@ class WebGalleryDetailPage extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnavailableMetadataBanner(BuildContext context) {
+    return Material(
+      color:
+          Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(8),
+      child: ListTile(
+        leading: Icon(
+          Icons.info_outline,
+          color: Theme.of(context).colorScheme.onErrorContainer,
+        ),
+        title: Text(
+          'detail.metadataOnly'.tr,
+          style:
+              TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+        ),
+        subtitle: Text(
+          controller.detailUnavailableMessage.value,
+          style:
+              TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
         ),
       ),
     );
@@ -1680,6 +1716,7 @@ class WebGalleryDetailPage extends StatelessWidget {
       final aTask = svc.getArchiveTask(controller.gid);
       final gStatus = gTask?['status'] as int?;
       final aStatus = aTask?['status'] as int?;
+      final metadataOnly = controller.metadataOnly.value;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1724,16 +1761,26 @@ class WebGalleryDetailPage extends StatelessWidget {
                   label: Text(label),
                   style:
                       FilledButton.styleFrom(minimumSize: const Size(160, 44)),
-                  onPressed: () {
-                    final q = controller.buildReaderQuery(
-                        startPage: progress > 0 ? progress : null);
-                    Get.toNamed(
-                        '/web/reader/${controller.gid}/${controller.token}$q');
-                  },
+                  onPressed: metadataOnly
+                      ? null
+                      : () {
+                          final q = controller.buildReaderQuery(
+                              startPage: progress > 0 ? progress : null);
+                          Get.toNamed(
+                              '/web/reader/${controller.gid}/${controller.token}$q');
+                        },
                 );
               }),
-              _buildGalleryDownloadButton(context, gTask, gStatus),
-              if (gStatus == 3)
+              metadataOnly
+                  ? FilledButton.tonalIcon(
+                      icon: const Icon(Icons.download),
+                      label: Text('detail.downloadGallery'.tr),
+                      style: FilledButton.styleFrom(
+                          minimumSize: const Size(160, 44)),
+                      onPressed: null,
+                    )
+                  : _buildGalleryDownloadButton(context, gTask, gStatus),
+              if (!metadataOnly && gStatus == 3)
                 FilledButton.icon(
                   icon: const Icon(Icons.menu_book),
                   label: Text('detail.readDownloaded'.tr),
@@ -1742,18 +1789,21 @@ class WebGalleryDetailPage extends StatelessWidget {
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: () => Get.toNamed(
-                      '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(mode: 'downloaded')}'),
+                  onPressed: () {
+                    Get.toNamed(
+                        '/web/reader/${controller.gid}/${controller.token}${controller.buildReaderQuery(mode: 'downloaded')}');
+                  },
                 ),
-              _buildArchiveButton(context, aTask, aStatus),
+              if (!metadataOnly) _buildArchiveButton(context, aTask, aStatus),
               Obx(() => OutlinedButton.icon(
                     icon: const Icon(Icons.cloud_download_outlined),
                     label: Text('detail.hhDownload'.tr),
                     style: OutlinedButton.styleFrom(
                         minimumSize: const Size(160, 44)),
-                    onPressed: controller.archiverUrl.isNotEmpty
-                        ? () => _showHHDownloadDialog(context)
-                        : null,
+                    onPressed:
+                        !metadataOnly && controller.archiverUrl.isNotEmpty
+                            ? () => _showHHDownloadDialog(context)
+                            : null,
                   )),
               Obx(() => OutlinedButton.icon(
                     icon: const Icon(Icons.file_present),

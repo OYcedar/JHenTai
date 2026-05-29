@@ -209,6 +209,8 @@ class WebPtBR {
       'detail.comments': 'Comentários (@count)',
       'detail.anonymous': 'Anônimo',
       'detail.loadFailed': 'Falha ao carregar detalhes da galeria: @error',
+      'detail.metadataOnly':
+          'A página completa de detalhes está indisponível. Exibindo metadados da API EH.',
 
       // reader
       'reader.loading': 'Carregando galeria...',

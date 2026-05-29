@@ -193,6 +193,7 @@ class WebZhTW {
       'detail.comments': '評論 (@count)',
       'detail.anonymous': '匿名',
       'detail.loadFailed': '載入畫廊詳情失敗: @error',
+      'detail.metadataOnly': '完整詳情頁不可用，目前顯示 EH API 元資料。',
 
       // reader
       'reader.loading': '載入畫廊中...',
