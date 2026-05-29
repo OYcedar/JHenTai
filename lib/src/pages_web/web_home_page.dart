@@ -228,6 +228,12 @@ class WebHomeController extends GetxController {
   static bool _sectionUsesRanklistPaging(String section) =>
       section == 'ranklist';
 
+  static bool _sectionSupportsSearch(String section) =>
+      section == 'home' || section == 'watched' || section == 'favorites';
+
+  static bool _sectionSupportsAdvancedSearch(String section) =>
+      section == 'home' || section == 'watched';
+
   // Advanced search state
   final categoryFilter = 0.obs;
   final minimumRating = 0.obs;
@@ -784,12 +790,15 @@ class WebHomeController extends GetxController {
   Future<void> search(String keyword) async {
     _exitListByUrlMode();
     _applySearchBehaviour();
+    final targetSection = _sectionSupportsSearch(currentSection.value)
+        ? currentSection.value
+        : 'home';
     _currentSearch = keyword;
     currentSearchText.value = keyword;
-    currentSection.value = 'home';
+    currentSection.value = targetSection;
     currentPage.value = 0;
     _clearPaginationCursors();
-    _syncSectionUrl('home');
+    _syncSectionUrl(targetSection);
     if (keyword.trim().isNotEmpty) {
       backendApiClient.recordSearchHistory(keyword.trim()).catchError((_) {});
       loadSearchHistory();
@@ -991,11 +1000,7 @@ class WebHomeController extends GetxController {
   }
 
   Map<String, dynamic>? _buildAdvancedParams() {
-    if (currentSection.value == 'watched') {
-      if (!disableFilterForLanguage.value) return null;
-      return {'f_sfl': 'on'};
-    }
-    if (currentSection.value != 'home') return null;
+    if (!_sectionSupportsAdvancedSearch(currentSection.value)) return null;
 
     final params = <String, dynamic>{};
     bool hasAdvanced = false;
@@ -1500,7 +1505,8 @@ class WebHomePage extends GetView<WebHomeController> {
                     onPressed: controller.pickImageAndSearch,
                   ),
                   Obx(() {
-                    if (controller.currentSection.value != 'home') {
+                    if (!WebHomeController._sectionSupportsAdvancedSearch(
+                        controller.currentSection.value)) {
                       return const SizedBox.shrink();
                     }
                     return IconButton(
@@ -2390,7 +2396,8 @@ class _TwoPaneHomeState extends State<_TwoPaneHome> {
                 tooltip: 'listMode.toggle'.tr,
               )),
           Obx(() {
-            if (controller.currentSection.value != 'home') {
+            if (!WebHomeController._sectionSupportsAdvancedSearch(
+                controller.currentSection.value)) {
               return const SizedBox.shrink();
             }
             return IconButton(

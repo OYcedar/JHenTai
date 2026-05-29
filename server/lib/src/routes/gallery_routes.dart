@@ -578,9 +578,9 @@ class GalleryRoutes {
       }
     }
 
-    // Advanced search / category bitmask only applies to the main gallery index on EH/EX.
-    // Forwarding them to /popular, /watched, etc. can break upstream responses and cause 5xx.
-    if (section == 'home') {
+    // Advanced search / category bitmask applies to index-like search pages.
+    // Keep it away from /popular and /toplist.php, which are not search endpoints.
+    if (section == 'home' || section == 'watched') {
       for (final key in [
         'f_cats',
         'f_sname',
@@ -600,11 +600,6 @@ class GalleryRoutes {
       ]) {
         final val = request.url.queryParameters[key];
         if (val != null && val.isNotEmpty) queryParams[key] = val;
-      }
-    } else if (section == 'watched') {
-      final fSfl = request.url.queryParameters['f_sfl'];
-      if (fSfl != null && fSfl.isNotEmpty) {
-        queryParams['f_sfl'] = fSfl;
       }
     }
 
