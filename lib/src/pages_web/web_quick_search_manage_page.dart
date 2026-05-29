@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 
 /// Manage quick searches stored on the server (same format as [WebHomeController.saveCurrentAsQuickSearch]).
@@ -18,6 +19,26 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
   bool _loading = true;
   bool _savingOrder = false;
   String? _error;
+
+  static const _categoryKeys = [
+    'category.doujinshi',
+    'category.manga',
+    'category.artistCg',
+    'category.gameCg',
+    'category.western',
+    'category.nonH',
+    'category.imageSet',
+    'category.cosplay',
+    'category.asianPorn',
+    'category.misc',
+  ];
+
+  static const _categoryBits = [2, 4, 8, 16, 512, 256, 32, 64, 128, 1];
+
+  static final List<String> _searchLanguageKeys = LocaleConsts
+      .language2Abbreviation.keys
+      .where((key) => key != 'japanese')
+      .toList();
 
   @override
   void initState() {
@@ -60,25 +81,9 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
     }
   }
 
-  Future<void> _add(String name, String keyword) async {
+  Future<void> _add(String name, String config) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
-    final config = jsonEncode({
-      'keyword': keyword.trim(),
-      'categoryFilter': 0,
-      'minimumRating': 0,
-      'searchInName': true,
-      'searchInTags': true,
-      'searchInDesc': false,
-      'showExpunged': false,
-      'onlyShowGalleriesWithTorrents': false,
-      'pageAtLeast': null,
-      'pageAtMost': null,
-      'filterLanguage': null,
-      'disableFilterForLanguage': false,
-      'disableFilterForUploader': false,
-      'disableFilterForTags': false,
-    });
     try {
       final nextOrder = _items.length;
       await backendApiClient.saveQuickSearch(trimmed, config,
@@ -123,14 +128,11 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
   Future<void> _updateQuickSearch({
     required String oldName,
     required String newName,
-    required String keyword,
-    required String oldConfig,
+    required Map<String, dynamic> config,
     required int sortOrder,
   }) async {
     final trimmedName = newName.trim();
     if (trimmedName.isEmpty) return;
-    final config = _decodeConfig(oldConfig, keyword: keyword);
-    config['keyword'] = keyword.trim();
     try {
       await backendApiClient.saveQuickSearch(
         trimmedName,
@@ -196,6 +198,7 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
   void _showAddDialog() {
     final nameCtrl = TextEditingController();
     final kwCtrl = TextEditingController();
+    var config = _decodeConfig('', keyword: '');
     Get.dialog(
       AlertDialog(
         title: Text('quickSearch.addNew'.tr),
@@ -220,6 +223,11 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                   border: const OutlineInputBorder(),
                 ),
               ),
+              const SizedBox(height: 12),
+              _QuickSearchConfigEditor(
+                config: config,
+                onChanged: (value) => config = value,
+              ),
             ],
           ),
         ),
@@ -227,7 +235,10 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
           TextButton(
               onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
           FilledButton(
-            onPressed: () => _add(nameCtrl.text, kwCtrl.text),
+            onPressed: () {
+              config['keyword'] = kwCtrl.text.trim();
+              _add(nameCtrl.text, jsonEncode(config));
+            },
             child: Text('common.confirm'.tr),
           ),
         ],
@@ -238,7 +249,7 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
   void _showEditDialog(Map<String, dynamic> item, int index) {
     final oldName = item['name']?.toString() ?? '';
     final oldConfig = item['config']?.toString() ?? '';
-    final config = _decodeConfig(oldConfig);
+    var config = _decodeConfig(oldConfig);
     final nameCtrl = TextEditingController(text: oldName);
     final kwCtrl =
         TextEditingController(text: config['keyword']?.toString() ?? '');
@@ -268,6 +279,11 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                   border: const OutlineInputBorder(),
                 ),
               ),
+              const SizedBox(height: 12),
+              _QuickSearchConfigEditor(
+                config: config,
+                onChanged: (value) => config = value,
+              ),
             ],
           ),
         ),
@@ -278,8 +294,10 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
             onPressed: () => _updateQuickSearch(
               oldName: oldName,
               newName: nameCtrl.text,
-              keyword: kwCtrl.text,
-              oldConfig: oldConfig,
+              config: {
+                ...config,
+                'keyword': kwCtrl.text.trim(),
+              },
               sortOrder: sortOrder,
             ),
             child: Text('common.save'.tr),
@@ -424,6 +442,286 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                         );
                       },
                     ),
+    );
+  }
+}
+
+class _QuickSearchConfigEditor extends StatefulWidget {
+  const _QuickSearchConfigEditor({
+    required this.config,
+    required this.onChanged,
+  });
+
+  final Map<String, dynamic> config;
+  final ValueChanged<Map<String, dynamic>> onChanged;
+
+  @override
+  State<_QuickSearchConfigEditor> createState() =>
+      _QuickSearchConfigEditorState();
+}
+
+class _QuickSearchConfigEditorState extends State<_QuickSearchConfigEditor> {
+  late Map<String, dynamic> _config;
+  late final TextEditingController _pageAtLeastCtrl;
+  late final TextEditingController _pageAtMostCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _config = Map<String, dynamic>.from(widget.config);
+    _pageAtLeastCtrl = TextEditingController(
+      text: _config['pageAtLeast']?.toString() ?? '',
+    );
+    _pageAtMostCtrl = TextEditingController(
+      text: _config['pageAtMost']?.toString() ?? '',
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _emit());
+  }
+
+  @override
+  void dispose() {
+    _pageAtLeastCtrl.dispose();
+    _pageAtMostCtrl.dispose();
+    super.dispose();
+  }
+
+  int get _categoryFilter => (_config['categoryFilter'] as num?)?.toInt() ?? 0;
+
+  bool _boolValue(String key, bool fallback) =>
+      _config[key] as bool? ?? fallback;
+
+  int _intValue(String key, int fallback) =>
+      (_config[key] as num?)?.toInt() ?? fallback;
+
+  void _set(String key, dynamic value) {
+    setState(() => _config[key] = value);
+    _emit();
+  }
+
+  void _emit() => widget.onChanged(Map<String, dynamic>.from(_config));
+
+  void _toggleCategory(int index) {
+    final bit = _WebQuickSearchManagePageState._categoryBits[index];
+    final next = (_categoryFilter & bit) == 0
+        ? _categoryFilter | bit
+        : _categoryFilter & ~bit;
+    _set('categoryFilter', next);
+  }
+
+  void _setPageValue(String key, String raw) {
+    final value = int.tryParse(raw.trim());
+    _set(key, value != null && value > 0 ? value : null);
+  }
+
+  void _resetFilters() {
+    setState(() {
+      _config = {
+        ..._config,
+        'categoryFilter': 0,
+        'minimumRating': 0,
+        'searchInName': true,
+        'searchInTags': true,
+        'searchInDesc': false,
+        'showExpunged': false,
+        'onlyShowGalleriesWithTorrents': false,
+        'pageAtLeast': null,
+        'pageAtMost': null,
+        'filterLanguage': null,
+        'disableFilterForLanguage': false,
+        'disableFilterForUploader': false,
+        'disableFilterForTags': false,
+      };
+      _pageAtLeastCtrl.clear();
+      _pageAtMostCtrl.clear();
+    });
+    _emit();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      initiallyExpanded: true,
+      title: Text('home.searchFilterSheetTitle'.tr),
+      childrenPadding: const EdgeInsets.only(bottom: 8),
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child:
+              Text('home.categoryFilter'.tr, style: theme.textTheme.titleSmall),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: List.generate(
+              _WebQuickSearchManagePageState._categoryKeys.length,
+              (index) {
+                final enabled = (_categoryFilter &
+                        _WebQuickSearchManagePageState._categoryBits[index]) ==
+                    0;
+                return FilterChip(
+                  label: Text(
+                    _WebQuickSearchManagePageState._categoryKeys[index].tr,
+                  ),
+                  selected: enabled,
+                  onSelected: (_) => _toggleCategory(index),
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String?>(
+          initialValue: _config['filterLanguage'] as String?,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'home.language'.tr,
+            border: const OutlineInputBorder(),
+          ),
+          items: [
+            DropdownMenuItem<String?>(
+              value: null,
+              child: Text('home.languageNone'.tr),
+            ),
+            ..._WebQuickSearchManagePageState._searchLanguageKeys.map(
+              (key) => DropdownMenuItem<String?>(
+                value: key,
+                child: Text('${key[0].toUpperCase()}${key.substring(1)}'),
+              ),
+            ),
+          ],
+          onChanged: (value) => _set('filterLanguage', value),
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child:
+              Text('home.minimumRating'.tr, style: theme.textTheme.titleSmall),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: Slider(
+                value: _intValue('minimumRating', 0).toDouble(),
+                min: 0,
+                max: 5,
+                divisions: 5,
+                label: _intValue('minimumRating', 0) == 0
+                    ? 'home.ratingAny'.tr
+                    : '${_intValue('minimumRating', 0)}+',
+                onChanged: (value) => _set('minimumRating', value.round()),
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              child: Text(
+                _intValue('minimumRating', 0) == 0
+                    ? 'home.ratingAny'.tr
+                    : '${_intValue('minimumRating', 0)}+',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _pageAtLeastCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'home.pageAtLeast'.tr,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (value) => _setPageValue('pageAtLeast', value),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _pageAtMostCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'home.pageAtMost'.tr,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (value) => _setPageValue('pageAtMost', value),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        CheckboxListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.galleryName'.tr),
+          value: _boolValue('searchInName', true),
+          onChanged: (value) => _set('searchInName', value ?? true),
+        ),
+        CheckboxListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.tags'.tr),
+          value: _boolValue('searchInTags', true),
+          onChanged: (value) => _set('searchInTags', value ?? true),
+        ),
+        CheckboxListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.description'.tr),
+          value: _boolValue('searchInDesc', false),
+          onChanged: (value) => _set('searchInDesc', value ?? false),
+        ),
+        SwitchListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.showExpunged'.tr),
+          value: _boolValue('showExpunged', false),
+          onChanged: (value) => _set('showExpunged', value),
+        ),
+        SwitchListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.onlyShowGalleriesWithTorrents'.tr),
+          value: _boolValue('onlyShowGalleriesWithTorrents', false),
+          onChanged: (value) => _set('onlyShowGalleriesWithTorrents', value),
+        ),
+        SwitchListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.disableFilterForLanguage'.tr),
+          value: _boolValue('disableFilterForLanguage', false),
+          onChanged: (value) => _set('disableFilterForLanguage', value),
+        ),
+        SwitchListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.disableFilterForUploader'.tr),
+          value: _boolValue('disableFilterForUploader', false),
+          onChanged: (value) => _set('disableFilterForUploader', value),
+        ),
+        SwitchListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text('home.disableFilterForTags'.tr),
+          value: _boolValue('disableFilterForTags', false),
+          onChanged: (value) => _set('disableFilterForTags', value),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _resetFilters,
+            icon: const Icon(Icons.restart_alt),
+            label: Text('common.reset'.tr),
+          ),
+        ),
+      ],
     );
   }
 }
