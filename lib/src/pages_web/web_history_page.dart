@@ -17,6 +17,8 @@ class WebHistoryController extends GetxController {
   final errorMessage = ''.obs;
   final viewMode = 'list'.obs;
   final searchQuery = ''.obs;
+  final totalCount = 0.obs;
+  final currentOffset = 0.obs;
   Worker? _searchWorker;
 
   @override
@@ -41,18 +43,26 @@ class WebHistoryController extends GetxController {
     super.onClose();
   }
 
-  Future<void> loadHistory() async {
+  int get pageCount =>
+      totalCount.value == 0 ? 0 : ((totalCount.value - 1) ~/ pageSize) + 1;
+
+  int get currentPage => currentOffset.value ~/ pageSize;
+
+  Future<void> loadHistory({int offset = 0}) async {
     isLoading.value = true;
     errorMessage.value = '';
     try {
       final result = await backendApiClient.fetchHistory(
         limit: pageSize,
+        offset: offset,
         query: searchQuery.value,
       );
       final nextItems =
           ((result['items'] as List?) ?? []).cast<Map<String, dynamic>>();
       items.value = nextItems;
-      hasMore.value = nextItems.length >= pageSize;
+      totalCount.value = (result['total'] as num?)?.toInt() ?? nextItems.length;
+      currentOffset.value = offset;
+      hasMore.value = currentOffset.value + nextItems.length < totalCount.value;
     } catch (e) {
       errorMessage.value = 'history.loadFailed'.trParams({'error': '$e'});
     } finally {
@@ -68,13 +78,14 @@ class WebHistoryController extends GetxController {
     try {
       final result = await backendApiClient.fetchHistory(
         limit: pageSize,
-        offset: items.length,
+        offset: currentOffset.value + items.length,
         query: searchQuery.value,
       );
       final nextItems =
           ((result['items'] as List?) ?? []).cast<Map<String, dynamic>>();
       items.addAll(nextItems);
-      hasMore.value = nextItems.length >= pageSize;
+      totalCount.value = (result['total'] as num?)?.toInt() ?? totalCount.value;
+      hasMore.value = currentOffset.value + items.length < totalCount.value;
     } catch (e) {
       Get.snackbar(
         'common.error'.tr,
@@ -89,11 +100,17 @@ class WebHistoryController extends GetxController {
   Future<void> deleteItem(int gid) async {
     await backendApiClient.deleteHistoryItem(gid);
     items.removeWhere((e) => e['gid'] == gid);
+    if (totalCount.value > 0) {
+      totalCount.value -= 1;
+    }
+    hasMore.value = currentOffset.value + items.length < totalCount.value;
   }
 
   Future<void> clearAll() async {
     await backendApiClient.clearHistory();
     items.clear();
+    totalCount.value = 0;
+    currentOffset.value = 0;
     hasMore.value = false;
   }
 
@@ -115,6 +132,11 @@ class WebHistoryController extends GetxController {
       searchQuery.value = '';
     }
   }
+
+  Future<void> jumpToPage(int page) {
+    final clamped = page.clamp(0, pageCount == 0 ? 0 : pageCount - 1);
+    return loadHistory(offset: clamped * pageSize);
+  }
 }
 
 class WebHistoryPage extends GetView<WebHistoryController> {
@@ -126,6 +148,13 @@ class WebHistoryPage extends GetView<WebHistoryController> {
       appBar: AppBar(
         title: Text('history.title'.tr),
         actions: [
+          Obx(() => IconButton(
+                icon: const Icon(Icons.near_me_outlined),
+                tooltip: 'history.jumpToPage'.tr,
+                onPressed: controller.pageCount <= 1
+                    ? null
+                    : () => _jumpToPage(context),
+              )),
           Obx(() => IconButton(
                 icon: Icon(controller.viewMode.value == 'grid'
                     ? Icons.view_list
@@ -237,6 +266,56 @@ class WebHistoryPage extends GetView<WebHistoryController> {
         ],
       ),
     );
+  }
+
+  Future<void> _jumpToPage(BuildContext context) async {
+    final total = controller.pageCount;
+    if (total <= 1) {
+      return;
+    }
+    final textController =
+        TextEditingController(text: '${controller.currentPage + 1}');
+    final page = await showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('history.jumpToPage'.tr),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            labelText: 'history.pageRange'.trParams({
+              'total': '$total',
+              'current': '${controller.currentPage + 1}',
+            }),
+          ),
+          onSubmitted: (value) {
+            final parsed = int.tryParse(value);
+            Navigator.pop(ctx, parsed == null ? null : parsed - 1);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () {
+              final parsed = int.tryParse(textController.text);
+              Navigator.pop(ctx, parsed == null ? null : parsed - 1);
+            },
+            child: Text('common.ok'.tr),
+          ),
+        ],
+      ),
+    );
+    textController.dispose();
+    if (page != null) {
+      await controller.jumpToPage(page);
+    }
   }
 
   Widget _buildList(BuildContext context) {

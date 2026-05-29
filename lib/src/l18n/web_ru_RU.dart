@@ -539,6 +539,8 @@ class WebRuRU {
       'history.loadFailed': 'Ошибка загрузки истории: @error',
       'history.loadMore': 'Загрузить ещё',
       'history.search': 'Поиск в истории...',
+      'history.jumpToPage': 'Перейти к странице истории',
+      'history.pageRange': 'Диапазон: 1 - @total, текущая: @current',
 
       // search history
       'searchHistory.clearAll': 'Очистить историю поиска',

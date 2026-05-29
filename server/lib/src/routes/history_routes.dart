@@ -24,8 +24,9 @@ class HistoryRoutes {
         int.tryParse(request.url.queryParameters['offset'] ?? '') ?? 0;
     final query = request.url.queryParameters['q'] ?? '';
     final items = db.selectHistory(limit: limit, offset: offset, query: query);
+    final total = db.countHistory(query: query);
     return Response.ok(
-      jsonEncode({'items': items}),
+      jsonEncode({'items': items, 'total': total}),
       headers: {'Content-Type': 'application/json'},
     );
   }

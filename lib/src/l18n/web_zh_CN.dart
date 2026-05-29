@@ -490,6 +490,8 @@ class WebZhCN {
       'history.loadFailed': '加载浏览记录失败: @error',
       'history.loadMore': '加载更多',
       'history.search': '搜索浏览记录...',
+      'history.jumpToPage': '跳转浏览记录页',
+      'history.pageRange': '范围: 1 - @total，当前: @current',
 
       // search history
       'searchHistory.clearAll': '清除搜索记录',

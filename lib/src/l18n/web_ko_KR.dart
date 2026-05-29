@@ -507,6 +507,8 @@ class WebKoKR {
       'history.loadFailed': '방문 기록 로드 실패: @error',
       'history.loadMore': '더 불러오기',
       'history.search': '방문 기록 검색...',
+      'history.jumpToPage': '방문 기록 페이지 이동',
+      'history.pageRange': '범위: 1 - @total, 현재: @current',
 
       // search history
       'searchHistory.clearAll': '검색 기록 삭제',

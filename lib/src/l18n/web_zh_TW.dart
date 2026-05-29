@@ -490,6 +490,8 @@ class WebZhTW {
       'history.loadFailed': '載入瀏覽記錄失敗: @error',
       'history.loadMore': '載入更多',
       'history.search': '搜尋瀏覽記錄...',
+      'history.jumpToPage': '跳轉瀏覽記錄頁',
+      'history.pageRange': '範圍: 1 - @total，目前: @current',
 
       // search history
       'searchHistory.clearAll': '清除搜尋記錄',

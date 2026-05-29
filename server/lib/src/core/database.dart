@@ -440,6 +440,27 @@ class ServerDatabase {
         .toList();
   }
 
+  int countHistory({String query = ''}) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      final rows = _db.select('SELECT COUNT(*) AS count FROM history');
+      return (rows.first['count'] as num).toInt();
+    }
+
+    final like = '%${_escapeLike(trimmed.toLowerCase())}%';
+    final rows = _db.select(
+      '''
+      SELECT COUNT(*) AS count FROM history
+      WHERE CAST(gid AS TEXT) LIKE ? ESCAPE '\'
+         OR lower(token) LIKE ? ESCAPE '\'
+         OR lower(title) LIKE ? ESCAPE '\'
+         OR lower(category) LIKE ? ESCAPE '\'
+    ''',
+      [like, like, like, like],
+    );
+    return (rows.first['count'] as num).toInt();
+  }
+
   String _escapeLike(String value) => value
       .replaceAll(r'\', r'\\')
       .replaceAll('%', r'\%')

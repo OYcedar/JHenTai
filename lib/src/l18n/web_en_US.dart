@@ -540,6 +540,8 @@ class WebEnUS {
       'history.loadFailed': 'Failed to load history: @error',
       'history.loadMore': 'Load more',
       'history.search': 'Search browsing history...',
+      'history.jumpToPage': 'Jump history page',
+      'history.pageRange': 'Range: 1 - @total, current: @current',
 
       // search history
       'searchHistory.clearAll': 'Clear search history',

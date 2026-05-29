@@ -544,6 +544,8 @@ class WebPtBR {
       'history.loadFailed': 'Falha ao carregar histórico: @error',
       'history.loadMore': 'Carregar mais',
       'history.search': 'Pesquisar histórico...',
+      'history.jumpToPage': 'Ir para página do histórico',
+      'history.pageRange': 'Intervalo: 1 - @total, atual: @current',
 
       // search history
       'searchHistory.clearAll': 'Limpar histórico de pesquisa',
