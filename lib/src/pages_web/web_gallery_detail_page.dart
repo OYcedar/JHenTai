@@ -1628,24 +1628,24 @@ class WebGalleryDetailPage extends StatelessWidget {
                 children: List.generate(5, (i) {
                   final starVal = (i + 1).toDouble();
                   final halfVal = i + 0.5;
-                  return GestureDetector(
-                    onTapDown: (details) {
-                      final box = context.findRenderObject() as RenderBox?;
-                      if (box != null) {
-                        final localX = details.localPosition.dx;
-                        setState(
-                            () => selected = localX < 16 ? halfVal : starVal);
-                      }
-                    },
-                    onTap: () => setState(() => selected = starVal),
-                    child: Icon(
-                      selected >= starVal
-                          ? Icons.star
-                          : selected >= halfVal
-                              ? Icons.star_half
-                              : Icons.star_border,
-                      color: Colors.amber,
-                      size: 40,
+                  return SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapDown: (details) {
+                        setState(() => selected =
+                            details.localPosition.dx < 24 ? halfVal : starVal);
+                      },
+                      child: Icon(
+                        selected >= starVal
+                            ? Icons.star
+                            : selected >= halfVal
+                                ? Icons.star_half
+                                : Icons.star_border,
+                        color: Colors.amber,
+                        size: 40,
+                      ),
                     ),
                   );
                 }),
