@@ -22,6 +22,7 @@ class WebSettingsPreferencePage extends StatelessWidget {
             onTap: () => Get.to(() => const _WebLanguageSubPage()),
           ),
           const _WebDefaultSectionTile(),
+          const _WebDefaultTagSetTile(),
           const _WebGalleryDisplaySection(),
           ListTile(
             leading: const Icon(Icons.translate),
@@ -51,6 +52,106 @@ class WebSettingsPreferencePage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _WebDefaultTagSetTile extends StatefulWidget {
+  const _WebDefaultTagSetTile();
+
+  @override
+  State<_WebDefaultTagSetTile> createState() => _WebDefaultTagSetTileState();
+}
+
+class _WebDefaultTagSetTileState extends State<_WebDefaultTagSetTile> {
+  bool enableDefaultTagSet = true;
+  int? defaultTagSetNo;
+  bool loading = true;
+  List<Map<String, dynamic>> tagSets = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    enableDefaultTagSet = WebPreferenceSettings.enableDefaultTagSet;
+    defaultTagSetNo = WebPreferenceSettings.defaultTagSetNo;
+    _loadTagSets();
+  }
+
+  Future<void> _loadTagSets() async {
+    try {
+      final data = await backendApiClient.listUsertags(
+        tagset: defaultTagSetNo ?? 1,
+      );
+      final sets = (data['tagSets'] as List?)
+              ?.whereType<Map>()
+              .map(Map<String, dynamic>.from)
+              .toList() ??
+          const <Map<String, dynamic>>[];
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        tagSets = sets;
+        if (defaultTagSetNo != null &&
+            !sets.any((set) =>
+                ((set['number'] as num?)?.toInt() ?? 1) == defaultTagSetNo)) {
+          defaultTagSetNo = null;
+          WebPreferenceSettings.saveDefaultTagSetNo(null);
+        }
+      });
+    } catch (_) {
+      // Keep local preferences editable even when the tag-set list cannot load.
+    } finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: const Icon(Icons.playlist_add_check_outlined),
+          title: Text('enableDefaultTagSet'.tr),
+          subtitle: Text(enableDefaultTagSet
+              ? 'enableDefaultTagSetHint'.tr
+              : 'disableDefaultTagSetHint'.tr),
+          value: enableDefaultTagSet,
+          onChanged: (value) {
+            setState(() => enableDefaultTagSet = value);
+            WebPreferenceSettings.saveEnableDefaultTagSet(value);
+          },
+        ),
+        if (enableDefaultTagSet)
+          ListTile(
+            leading: const Icon(Icons.label_important_outline),
+            title: Text('usertags.defaultTagSet'.tr),
+            subtitle: loading ? Text('common.loading'.tr) : null,
+            trailing: DropdownButton<int?>(
+              value: defaultTagSetNo,
+              alignment: AlignmentDirectional.centerEnd,
+              items: [
+                DropdownMenuItem<int?>(
+                  value: null,
+                  child: Text('usertags.defaultTagSetNone'.tr),
+                ),
+                for (final set in tagSets)
+                  DropdownMenuItem<int?>(
+                    value: (set['number'] as num?)?.toInt() ?? 1,
+                    child: Text(set['name']?.toString() ?? ''),
+                  ),
+              ],
+              onChanged: loading
+                  ? null
+                  : (value) {
+                      setState(() => defaultTagSetNo = value);
+                      WebPreferenceSettings.saveDefaultTagSetNo(value);
+                    },
+            ),
+          ),
+      ],
     );
   }
 }
