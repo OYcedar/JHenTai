@@ -39,6 +39,8 @@ class WebPtBR {
           'Baixar todas as galerias da mesma prioridade',
       'downloadAllGallerysOfSamePriorityHint':
           'Por padrão, apenas uma galeria por prioridade é baixada por vez.',
+      'useJH2UpdateGallery':
+          'Usar servidor JH para acelerar atualizações de galerias',
       'restoreDownloadTasks': 'Restaurar tarefas de download',
       'restoreDownloadTasksHint': 'Restaurar tarefas de download por metadados',
       'restoreTasksAutomatically': 'Restaurar tarefas automaticamente',
@@ -439,6 +441,9 @@ class WebPtBR {
       'settings.downloadServerRuntime': 'Execução do servidor',
       'settings.galleryConcurrency': 'Concorrência de galerias',
       'settings.archiveConcurrency': 'Concorrência de arquivos',
+      'settings.jhPublicApiBaseUrl': 'API pública JH',
+      'settings.jhAppId': 'ID do app JH',
+      'settings.jhApiSecretConfigured': 'Segredo da API JH',
       'settings.downloadRuntimeHint':
           'Concorrência e caminhos são controlados por variáveis de ambiente Docker e valem após reiniciar o servidor.',
       'settings.performanceWebSummary':

@@ -41,6 +41,7 @@ class WebEnUS {
           'Download all galleries of the same priority',
       'downloadAllGallerysOfSamePriorityHint':
           'By default, only one gallery per priority is downloaded at a time.',
+      'useJH2UpdateGallery': 'Use JH server to accelerate gallery updates',
       'restoreDownloadTasks': 'Restore download tasks',
       'restoreDownloadTasksHint': 'Restore download tasks from metadata',
       'restoreTasksAutomatically': 'Restore tasks automatically',
@@ -436,6 +437,9 @@ class WebEnUS {
       'settings.downloadServerRuntime': 'Server runtime',
       'settings.galleryConcurrency': 'Gallery concurrency',
       'settings.archiveConcurrency': 'Archive concurrency',
+      'settings.jhPublicApiBaseUrl': 'JH public API',
+      'settings.jhAppId': 'JH app ID',
+      'settings.jhApiSecretConfigured': 'JH API secret',
       'settings.downloadRuntimeHint':
           'Concurrency and paths are controlled by Docker environment variables and take effect after restarting the server.',
       'settings.performanceWebSummary':

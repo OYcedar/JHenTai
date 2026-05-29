@@ -38,6 +38,7 @@ class WebZhCN {
       'downloadAllGallerysOfSamePriority': '同一优先级下同时下载所有画廊',
       'downloadAllGallerysOfSamePriorityHint':
           '默认情况下逐优先级下载画廊，且每个优先级下只会同时下载一个画廊',
+      'useJH2UpdateGallery': '使用 JH 服务器加速画廊更新',
       'restoreDownloadTasks': '恢复下载任务',
       'restoreDownloadTasksHint': '通过下载元数据来恢复下载记录',
       'restoreTasksAutomatically': '自动恢复下载任务',
@@ -402,6 +403,9 @@ class WebZhCN {
       'settings.downloadServerRuntime': '服务端运行参数',
       'settings.galleryConcurrency': '画廊并发',
       'settings.archiveConcurrency': '归档并发',
+      'settings.jhPublicApiBaseUrl': 'JH 公共 API',
+      'settings.jhAppId': 'JH 应用 ID',
+      'settings.jhApiSecretConfigured': 'JH API 密钥',
       'settings.downloadRuntimeHint': '并发与路径由 Docker 环境变量控制，修改后需重启服务端生效。',
       'settings.performanceWebSummary': '设置 Web 下载列表动画阈值，减少大列表展开/收起时的浏览器负担。',
       'settings.webPerformance': 'Web 性能',

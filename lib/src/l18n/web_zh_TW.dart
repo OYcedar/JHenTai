@@ -38,6 +38,7 @@ class WebZhTW {
       'downloadAllGallerysOfSamePriority': '同一優先級下同時下載所有畫廊',
       'downloadAllGallerysOfSamePriorityHint':
           '預設情況下逐優先級下載畫廊，且每個優先級下只會同時下載一個畫廊',
+      'useJH2UpdateGallery': '使用 JH 伺服器加速畫廊更新',
       'restoreDownloadTasks': '復原下載任務',
       'restoreDownloadTasksHint': '透過下載中繼資料來復原下載記錄',
       'restoreTasksAutomatically': '自動復原下載任務',
@@ -402,6 +403,9 @@ class WebZhTW {
       'settings.downloadServerRuntime': '伺服器執行參數',
       'settings.galleryConcurrency': '畫廊並行數',
       'settings.archiveConcurrency': '封存並行數',
+      'settings.jhPublicApiBaseUrl': 'JH 公共 API',
+      'settings.jhAppId': 'JH 應用 ID',
+      'settings.jhApiSecretConfigured': 'JH API 金鑰',
       'settings.downloadRuntimeHint': '並行數與路徑由 Docker 環境變數控制，修改後需重啟伺服器生效。',
       'settings.performanceWebSummary': '設定 Web 下載列表動畫閾值，降低大型列表展開／收合時的瀏覽器負擔。',
       'settings.webPerformance': 'Web 效能',

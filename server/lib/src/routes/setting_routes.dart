@@ -378,6 +378,10 @@ class SettingRoutes {
       'maxConcurrentArchiveDownloads': _config.maxConcurrentArchiveDownloads,
       'downloadAllGalleriesOfSamePriority':
           _config.downloadAllGalleriesOfSamePriority,
+      'galleryUpgradeReuseImages': _config.galleryUpgradeReuseImages,
+      'jhPublicApiBaseUrl': _config.jhPublicApiBaseUrl,
+      'jhAppId': _config.jhAppId,
+      'jhApiSecretConfigured': _config.jhApiSecret.trim().isNotEmpty,
     };
     settings['network'] = _networkRuntime();
 

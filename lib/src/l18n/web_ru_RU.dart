@@ -40,6 +40,8 @@ class WebRuRU {
           'Скачивать все галереи одного приоритета',
       'downloadAllGallerysOfSamePriorityHint':
           'По умолчанию одновременно скачивается только одна галерея каждого приоритета.',
+      'useJH2UpdateGallery':
+          'Использовать сервер JH для ускорения обновления галерей',
       'restoreDownloadTasks': 'Восстановить задачи загрузки',
       'restoreDownloadTasksHint': 'Восстановить задачи загрузки по метаданным',
       'restoreTasksAutomatically': 'Восстанавливать задачи автоматически',
@@ -434,6 +436,9 @@ class WebRuRU {
       'settings.downloadServerRuntime': 'Параметры сервера',
       'settings.galleryConcurrency': 'Параллельные галереи',
       'settings.archiveConcurrency': 'Параллельные архивы',
+      'settings.jhPublicApiBaseUrl': 'Публичный API JH',
+      'settings.jhAppId': 'ID приложения JH',
+      'settings.jhApiSecretConfigured': 'Секрет API JH',
       'settings.downloadRuntimeHint':
           'Параллельность и пути задаются переменными окружения Docker и применяются после перезапуска сервера.',
       'settings.performanceWebSummary':

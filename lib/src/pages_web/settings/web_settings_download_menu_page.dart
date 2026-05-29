@@ -219,9 +219,25 @@ class _WebSettingsDownloadMenuPageState
                     ),
                     _infoRow(
                       'downloadAllGallerysOfSamePriority'.tr,
-                      info['downloadAllGalleriesOfSamePriority'] == true
-                          ? 'settings.enabled'.tr
-                          : 'settings.disabled'.tr,
+                      _enabledLabel(info['downloadAllGalleriesOfSamePriority']),
+                    ),
+                    _infoRow(
+                      'useJH2UpdateGallery'.tr,
+                      _enabledLabel(info['galleryUpgradeReuseImages']),
+                    ),
+                    _infoRow(
+                      'settings.jhPublicApiBaseUrl'.tr,
+                      info['jhPublicApiBaseUrl']?.toString() ?? '-',
+                    ),
+                    _infoRow(
+                      'settings.jhAppId'.tr,
+                      info['jhAppId']?.toString() ?? '-',
+                    ),
+                    _infoRow(
+                      'settings.jhApiSecretConfigured'.tr,
+                      info['jhApiSecretConfigured'] == true
+                          ? 'settings.configured'.tr
+                          : 'settings.notConfigured'.tr,
                     ),
                     const SizedBox(height: 8),
                     Text('settings.downloadRuntimeHint'.tr,
@@ -391,6 +407,10 @@ class _WebSettingsDownloadMenuPageState
 
   Widget _sectionTitle(BuildContext context, String title) {
     return Text(title, style: Theme.of(context).textTheme.titleMedium);
+  }
+
+  String _enabledLabel(dynamic value) {
+    return value == true ? 'settings.enabled'.tr : 'settings.disabled'.tr;
   }
 
   Widget _infoRow(String label, String value) {

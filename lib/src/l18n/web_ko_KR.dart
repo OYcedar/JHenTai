@@ -38,6 +38,7 @@ class WebKoKR {
       'downloadAllGallerysOfSamePriority': '같은 우선순위의 모든 갤러리 다운로드',
       'downloadAllGallerysOfSamePriorityHint':
           '기본적으로 각 우선순위마다 갤러리 하나만 동시에 다운로드합니다.',
+      'useJH2UpdateGallery': 'JH 서버로 갤러리 업데이트 가속',
       'restoreDownloadTasks': '다운로드 작업 복원',
       'restoreDownloadTasksHint': '메타데이터로 다운로드 작업 복원',
       'restoreTasksAutomatically': '작업 자동 복원',
@@ -412,6 +413,9 @@ class WebKoKR {
       'settings.downloadServerRuntime': '서버 런타임',
       'settings.galleryConcurrency': '갤러리 동시 다운로드',
       'settings.archiveConcurrency': '아카이브 동시 다운로드',
+      'settings.jhPublicApiBaseUrl': 'JH 공개 API',
+      'settings.jhAppId': 'JH 앱 ID',
+      'settings.jhApiSecretConfigured': 'JH API 시크릿',
       'settings.downloadRuntimeHint':
           '동시 다운로드 수와 경로는 Docker 환경 변수로 제어되며 서버 재시작 후 적용됩니다.',
       'settings.performanceWebSummary':
