@@ -38,6 +38,27 @@ int _galleryInt(Map<String, dynamic> gallery, String key) =>
 String _galleryString(Map<String, dynamic> gallery, String key) =>
     gallery[key]?.toString() ?? '';
 
+String _galleryLanguageAbbreviation(Map<String, dynamic> gallery) {
+  var language = _galleryString(gallery, 'language').trim().toLowerCase();
+  if (language.isEmpty) {
+    final tags = gallery['tags'];
+    if (tags is Map) {
+      final rawLanguages = tags['language'];
+      if (rawLanguages is List && rawLanguages.isNotEmpty) {
+        language = _parseTagListEntryKey(rawLanguages.first)
+            .trim()
+            .toLowerCase()
+            .replaceAll(r'$', '');
+      }
+    }
+  }
+  if (language.isEmpty) {
+    return '';
+  }
+  return LocaleConsts.language2Abbreviation[language] ??
+      language.substring(0, math.min(language.length, 2)).toUpperCase();
+}
+
 String _webHomeGalleryUrl(Map<String, dynamic> gallery) {
   final exact = _galleryString(gallery, 'galleryUrl').trim();
   if (exact.isNotEmpty) {
@@ -2300,6 +2321,7 @@ class _DashboardGalleryCard extends StatelessWidget {
     final gid = gallery['gid'];
     final token = gallery['token'];
     final coverUrl = gallery['coverUrl'] as String? ?? '';
+    final language = _galleryLanguageAbbreviation(gallery);
     return SizedBox(
       width: width,
       child: Card(
@@ -2367,6 +2389,12 @@ class _DashboardGalleryCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                      ),
+                    if (language.isNotEmpty)
+                      Positioned(
+                        right: 4,
+                        bottom: 4,
+                        child: _GalleryLanguageBadge(language: language),
                       ),
                   ],
                 ),
@@ -4207,6 +4235,7 @@ class _GalleryListTile extends StatelessWidget {
     final rating = (gallery['rating'] as num?)?.toDouble() ?? 0;
     final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
     final tags = gallery['tags'] as Map<String, dynamic>?;
+    final language = _galleryLanguageAbbreviation(gallery);
 
     return GestureDetector(
       onLongPressStart: (details) => _showWebHomeGalleryMenu(
@@ -4309,6 +4338,16 @@ class _GalleryListTile extends StatelessWidget {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(color: Colors.grey)),
+                          if (language.isNotEmpty)
+                            Text(language,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    )),
                           _WebGalleryReadProgressIndicator(
                             gid: gid is int ? gid : 0,
                             pageCount: pageCount,
@@ -4387,6 +4426,7 @@ class _GalleryCard extends StatelessWidget {
     final coverUrl = gallery['coverUrl'] as String? ?? '';
     final tags = gallery['tags'] as Map<String, dynamic>?;
     final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
+    final language = _galleryLanguageAbbreviation(gallery);
 
     return GestureDetector(
       onLongPressStart: (details) => _showWebHomeGalleryMenu(
@@ -4478,6 +4518,14 @@ class _GalleryCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+              if (language.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: _GalleryLanguageBadge(language: language),
+                  ),
+                ),
               Obx(() {
                 if (tags == null ||
                     tags.isEmpty ||
@@ -4581,6 +4629,36 @@ class _WebGalleryReadProgressIndicator extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _GalleryLanguageBadge extends StatelessWidget {
+  const _GalleryLanguageBadge({required this.language});
+
+  final String language;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'home.language'.tr,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          child: Text(
+            language,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
