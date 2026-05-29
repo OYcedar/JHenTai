@@ -439,6 +439,9 @@ class WebPtBR {
           'Aplica às páginas largas de detalhes da galeria neste navegador.',
       'settings.galleryListStyleHint':
           'Aplica imediatamente à lista de galerias da página inicial web e fica salvo neste navegador.',
+      'settings.showGalleryListTags': 'Mostrar tags nas listas de galerias',
+      'settings.showGalleryListTagsHint':
+          'Equivale aos estilos do app que podem ocultar tags para uma lista mais limpa.',
       'settings.pageListStyleHint':
           'Substitui o estilo da lista de galerias por seção web. Global usa o estilo acima.',
       'settings.networkWebSummary':

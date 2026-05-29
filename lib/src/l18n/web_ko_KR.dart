@@ -409,6 +409,9 @@ class WebKoKR {
       'moveCover2RightSide': '섬네일을 오른쪽으로 배치',
       'settings.moveCoverWebHint': '이 브라우저의 넓은 갤러리 상세 페이지에 적용됩니다.',
       'settings.galleryListStyleHint': '웹 홈 갤러리 목록에 즉시 적용되며 이 브라우저에 저장됩니다.',
+      'settings.showGalleryListTags': '갤러리 목록에 태그 표시',
+      'settings.showGalleryListTagsHint':
+          '갤러리 태그를 숨길 수 있는 앱 목록 스타일과 맞춰 더 간결한 목록을 제공합니다.',
       'settings.pageListStyleHint':
           '각 Web 섹션의 갤러리 목록 스타일을 개별로 덮어씁니다. 전역은 위 스타일을 사용합니다.',
       'settings.networkWebSummary':

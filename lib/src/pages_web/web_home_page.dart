@@ -373,6 +373,7 @@ class WebHomeController extends GetxController {
   static const listModeStorageKey = 'jh_web_list_mode';
   static const pageListModeStorageKey = 'jh_web_page_list_modes';
   static const gridColumnsStorageKey = 'jh_web_grid_columns';
+  static const showGalleryListTagsStorageKey = 'jh_web_show_gallery_list_tags';
   static const defaultSectionStorageKey = 'jh_web_default_section';
   static const _lastClipboardGalleryUrlKey =
       'jh_web_last_clipboard_gallery_url';
@@ -452,6 +453,7 @@ class WebHomeController extends GetxController {
   // List mode: grid, list, listCompact
   final listMode = 'grid'.obs;
   final pageListModes = <String, String>{}.obs;
+  final showGalleryListTags = true.obs;
 
   /// `null` means responsive auto columns, otherwise fixed 1-6 columns for the main gallery grid.
   final gridColumns = RxnInt(null);
@@ -500,6 +502,9 @@ class WebHomeController extends GetxController {
     if (savedColumns != null && savedColumns >= 1 && savedColumns <= 6) {
       gridColumns.value = savedColumns;
     }
+    showGalleryListTags.value =
+        web.window.localStorage.getItem(showGalleryListTagsStorageKey) !=
+            'false';
     _loadAdvancedSearchFromStorage();
     _loadFavoritesListPrefs();
     _loadSearchHistoryPrefs();
@@ -1485,6 +1490,12 @@ class WebHomeController extends GetxController {
     if (!listModes.contains(mode)) return;
     listMode.value = mode;
     web.window.localStorage.setItem(listModeStorageKey, mode);
+  }
+
+  void setShowGalleryListTags(bool value) {
+    showGalleryListTags.value = value;
+    web.window.localStorage
+        .setItem(showGalleryListTagsStorageKey, value ? 'true' : 'false');
   }
 
   void setPageListMode(String section, String? mode) {
@@ -4305,22 +4316,30 @@ class _GalleryListTile extends StatelessWidget {
                           _WebHomeFavoriteBadge(gallery: gallery),
                         ],
                       ),
-                      if (!compact && tags != null && tags.isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Obx(() => Wrap(
-                              spacing: 3,
-                              runSpacing: 3,
-                              children: _buildHomePageTagChips(
-                                tags,
-                                tagTranslations: homeController.tagTranslations,
-                                accountWatchedBackgroundArgb:
-                                    Get.find<WebWatchedTagStylesController>()
-                                        .backgroundArgbByTagKey
-                                        .value,
-                                maxTags: 12,
-                              ),
-                            )),
-                      ],
+                      Obx(() {
+                        if (compact ||
+                            tags == null ||
+                            tags.isEmpty ||
+                            !homeController.showGalleryListTags.value) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Wrap(
+                            spacing: 3,
+                            runSpacing: 3,
+                            children: _buildHomePageTagChips(
+                              tags,
+                              tagTranslations: homeController.tagTranslations,
+                              accountWatchedBackgroundArgb:
+                                  Get.find<WebWatchedTagStylesController>()
+                                      .backgroundArgbByTagKey
+                                      .value,
+                              maxTags: 12,
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -4459,23 +4478,29 @@ class _GalleryCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-              if (tags != null && tags.isNotEmpty)
-                Padding(
+              Obx(() {
+                if (tags == null ||
+                    tags.isEmpty ||
+                    !homeController.showGalleryListTags.value) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
                   padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: Obx(() => Wrap(
-                        spacing: 3,
-                        runSpacing: 3,
-                        children: _buildHomePageTagChips(
-                          tags,
-                          tagTranslations: homeController.tagTranslations,
-                          accountWatchedBackgroundArgb:
-                              Get.find<WebWatchedTagStylesController>()
-                                  .backgroundArgbByTagKey
-                                  .value,
-                          maxTags: 8,
-                        ),
-                      )),
-                ),
+                  child: Wrap(
+                    spacing: 3,
+                    runSpacing: 3,
+                    children: _buildHomePageTagChips(
+                      tags,
+                      tagTranslations: homeController.tagTranslations,
+                      accountWatchedBackgroundArgb:
+                          Get.find<WebWatchedTagStylesController>()
+                              .backgroundArgbByTagKey
+                              .value,
+                      maxTags: 8,
+                    ),
+                  ),
+                );
+              }),
             ],
           ),
         ),

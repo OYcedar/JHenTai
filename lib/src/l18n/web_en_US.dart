@@ -434,6 +434,9 @@ class WebEnUS {
           'Applies to wide gallery detail pages in this browser.',
       'settings.galleryListStyleHint':
           'Applies to the web home gallery list immediately and is saved in this browser.',
+      'settings.showGalleryListTags': 'Show tags in gallery lists',
+      'settings.showGalleryListTagsHint':
+          'Matches the app list styles that can hide gallery tags for a cleaner list.',
       'settings.pageListStyleHint':
           'Override the gallery list style for individual web sections. Global uses the style above.',
       'settings.networkWebSummary':

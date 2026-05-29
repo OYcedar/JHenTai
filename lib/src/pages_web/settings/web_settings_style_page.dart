@@ -25,6 +25,7 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
   int? downloadGridColumns;
   int? localGridColumns;
   int? detailThumbnailColumns;
+  late bool showGalleryListTags;
   late bool moveCoverToRight;
   late Map<String, String> pageListModes;
 
@@ -53,6 +54,10 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
     detailThumbnailColumns = _parseDetailThumbnailColumns(
       web.window.localStorage.getItem(detailThumbnailColumnsStorageKey),
     );
+    showGalleryListTags = home?.showGalleryListTags.value ??
+        (web.window.localStorage
+                .getItem(WebHomeController.showGalleryListTagsStorageKey) !=
+            'false');
     moveCoverToRight =
         web.window.localStorage.getItem(moveCoverToRightStorageKey) == 'true';
     pageListModes = _loadPageListModes();
@@ -120,6 +125,18 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
   void _setLocalGridColumns(int? count) {
     setState(() => localGridColumns = count);
     WebLocalController.setGridColumns(count);
+  }
+
+  void _setShowGalleryListTags(bool value) {
+    setState(() => showGalleryListTags = value);
+    if (Get.isRegistered<WebHomeController>()) {
+      Get.find<WebHomeController>().setShowGalleryListTags(value);
+    } else {
+      web.window.localStorage.setItem(
+        WebHomeController.showGalleryListTagsStorageKey,
+        value ? 'true' : 'false',
+      );
+    }
   }
 
   void _setMoveCoverToRight(bool value) {
@@ -329,6 +346,14 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
                               .textTheme
                               .bodySmall
                               ?.copyWith(color: Colors.grey),
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          secondary: const Icon(Icons.label_outline),
+                          title: Text('settings.showGalleryListTags'.tr),
+                          subtitle: Text('settings.showGalleryListTagsHint'.tr),
+                          value: showGalleryListTags,
+                          onChanged: _setShowGalleryListTags,
                         ),
                         const Divider(height: 32),
                         Text('pageListStyle'.tr,

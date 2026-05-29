@@ -404,6 +404,8 @@ class WebZhTW {
       'moveCover2RightSide': '移動封面圖至右側',
       'settings.moveCoverWebHint': '套用到目前瀏覽器中的寬螢幕畫廊詳情頁。',
       'settings.galleryListStyleHint': '會立即套用到 Web 首頁畫廊列表，並儲存在目前瀏覽器。',
+      'settings.showGalleryListTags': '在畫廊列表中顯示標籤',
+      'settings.showGalleryListTagsHint': '對應 App 中可隱藏標籤的列表樣式，讓列表更清爽。',
       'settings.pageListStyleHint': '為各個 Web 頁面單獨覆蓋畫廊列表樣式；全域表示使用上方樣式。',
       'settings.networkWebSummary': '網路代理狀態請在「網路」頁查看；修改 Docker 環境變數後需重啟伺服器。',
       'settings.proxyRouting': '請求路由',
