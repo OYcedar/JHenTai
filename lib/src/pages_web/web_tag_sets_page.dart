@@ -21,6 +21,7 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
   bool _enableDefaultTagSet = true;
   int? _defaultTagSetNo;
   Map<String, dynamic>? _data;
+  Map<String, String> _translations = const {};
   String? _error;
   bool _loading = true;
 
@@ -53,8 +54,13 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
     });
     try {
       final m = await backendApiClient.listUsertags(tagset: _tagSetNo);
+      final translations = await _loadTagTranslations(m);
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _data = m;
+        _translations = translations;
         _loading = false;
       });
     } catch (e) {
@@ -62,6 +68,28 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
         _error = 'usertags.loadFailed'.trParams({'error': '$e'});
         _loading = false;
       });
+    }
+  }
+
+  Future<Map<String, String>> _loadTagTranslations(
+      Map<String, dynamic> data) async {
+    final tags = (data['tags'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    final requests = <String, Map<String, String>>{};
+    for (final tag in tags) {
+      final namespace = tag['namespace']?.toString() ?? '';
+      final key = tag['key']?.toString() ?? '';
+      if (namespace.isEmpty || key.isEmpty) {
+        continue;
+      }
+      requests['$namespace:$key'] = {'namespace': namespace, 'key': key};
+    }
+    if (requests.isEmpty) {
+      return const {};
+    }
+    try {
+      return await backendApiClient.translateTags(requests.values.toList());
+    } catch (_) {
+      return const {};
     }
   }
 
@@ -484,6 +512,12 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
             final ns = t['namespace']?.toString() ?? '';
             final key = t['key']?.toString() ?? '';
             final label = key.isNotEmpty ? '$ns:$key' : ns;
+            final translatedTag = _translations[label];
+            final displayLabel = translatedTag == null ||
+                    translatedTag.isEmpty ||
+                    translatedTag == key
+                ? label
+                : '$ns:$translatedTag';
             final w = t['watched'] == true;
             final h = t['hidden'] == true;
             final weight = (t['weight'] as num?)?.toInt() ?? 10;
@@ -502,13 +536,17 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
                   color: tagColor ?? Theme.of(context).colorScheme.primary,
                 ),
                 title: Text(
-                  label,
+                  displayLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                  style: TextStyle(
+                    fontFamily: displayLabel == label ? 'monospace' : null,
+                    fontSize: 13,
+                  ),
                 ),
                 subtitle: Text(
                   [
+                    if (displayLabel != label) label,
                     if (w) 'usertags.watch'.tr,
                     if (h) 'usertags.hidden'.tr,
                     '${'usertags.weight'.tr}: $weight',
