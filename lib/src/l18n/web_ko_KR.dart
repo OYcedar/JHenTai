@@ -44,6 +44,8 @@ class WebKoKR {
       'home.pasteAndSearch': '붙여넣고 검색 또는 열기',
       'home.clipboardEmpty': '클립보드가 비어 있습니다',
       'home.clipboardReadFailed': '클립보드를 읽을 수 없습니다. 권한을 허용한 뒤 다시 시도하세요.',
+      'galleryUrlDetected': '클립보드에서 갤러리 URL을 찾았습니다',
+      'galleryUrlDetectedHint': '감지된 링크 열기',
       'restoredGalleryCount': '복원된 갤러리',
       'restoredArchiveCount': '복원된 아카이브',
       'reDownload': '다시 다운로드',
@@ -438,6 +440,9 @@ class WebKoKR {
       'settings.importDataFailed': '데이터 가져오기 실패: @error',
       'settings.noImageMode': '이미지 없음 모드',
       'settings.noImageModeHint': '이 브라우저에서 갤러리 표지, 썸네일, 리더 이미지를 숨깁니다.',
+      'checkClipboard': '클립보드의 갤러리 URL 확인',
+      'settings.checkClipboardHint':
+          '홈 화면을 열 때 브라우저 클립보드의 갤러리 링크를 감지하고 열지 묻습니다.',
       'settings.pageCache': '페이지 캐시',
       'settings.clearPageCache': '페이지 캐시 지우기',
       'settings.clearPageCacheTitle': '페이지 캐시를 지울까요?',

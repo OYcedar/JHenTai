@@ -49,6 +49,8 @@ class WebEnUS {
       'home.clipboardEmpty': 'Clipboard is empty',
       'home.clipboardReadFailed':
           'Could not read clipboard. Allow clipboard permission and try again.',
+      'galleryUrlDetected': 'Found Gallery URL in Clipboard',
+      'galleryUrlDetectedHint': 'Open detected link',
       'restoredGalleryCount': 'Restored galleries',
       'restoredArchiveCount': 'Restored archives',
       'reDownload': 'Re-Download',
@@ -464,6 +466,9 @@ class WebEnUS {
       'settings.noImageMode': 'No image mode',
       'settings.noImageModeHint':
           'Hide gallery covers, thumbnails, and reader images in this browser.',
+      'checkClipboard': 'Check Gallery URL in Clipboard',
+      'settings.checkClipboardHint':
+          'When the home page opens, detect gallery links from the browser clipboard and offer to open them.',
       'settings.pageCache': 'Page cache',
       'settings.clearPageCache': 'Clear page cache',
       'settings.clearPageCacheTitle': 'Clear page cache?',

@@ -22,6 +22,7 @@ class WebPreferenceSettings {
   static const showHvInfoKey = 'jh_web_show_hv_info';
   static const noImageModeKey = 'jh_web_no_image_mode';
   static const showR18GImageDirectlyKey = 'jh_web_show_r18g_image_directly';
+  static const checkClipboardKey = 'jh_web_check_clipboard';
 
   const WebPreferenceSettings._();
 
@@ -51,6 +52,8 @@ class WebPreferenceSettings {
 
   static bool get showR18GImageDirectly =>
       _readBool(showR18GImageDirectlyKey, false);
+
+  static bool get checkClipboard => _readBool(checkClipboardKey, true);
 
   static bool get enableDefaultFavorite =>
       _readBool(enableDefaultFavoriteKey, false);
@@ -109,6 +112,9 @@ class WebPreferenceSettings {
 
   static void saveShowR18GImageDirectly(bool value) =>
       _writeBool(showR18GImageDirectlyKey, value);
+
+  static void saveCheckClipboard(bool value) =>
+      _writeBool(checkClipboardKey, value);
 
   static void saveEnableDefaultFavorite(bool value) =>
       _writeBool(enableDefaultFavoriteKey, value);

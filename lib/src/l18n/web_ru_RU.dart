@@ -48,6 +48,8 @@ class WebRuRU {
       'home.clipboardEmpty': 'Буфер обмена пуст',
       'home.clipboardReadFailed':
           'Не удалось прочитать буфер обмена. Разрешите доступ и повторите попытку.',
+      'galleryUrlDetected': 'В буфере обмена найдена ссылка на галерею',
+      'galleryUrlDetectedHint': 'Открыть найденную ссылку',
       'restoredGalleryCount': 'Восстановлено галерей',
       'restoredArchiveCount': 'Восстановлено архивов',
       'reDownload': 'Скачать снова',
@@ -463,6 +465,9 @@ class WebRuRU {
       'settings.noImageMode': 'Режим без изображений',
       'settings.noImageModeHint':
           'Скрывает обложки галерей, миниатюры и изображения читалки в этом браузере.',
+      'checkClipboard': 'Проверять ссылку на галерею в буфере обмена',
+      'settings.checkClipboardHint':
+          'При открытии главной страницы искать ссылки на галереи в буфере браузера и предлагать открыть их.',
       'settings.pageCache': 'Кэш страниц',
       'settings.clearPageCache': 'Очистить кэш страниц',
       'settings.clearPageCacheTitle': 'Очистить кэш страниц?',

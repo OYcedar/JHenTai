@@ -13,6 +13,7 @@ class WebSettingsController extends GetxController {
   final networkInfo = <String, dynamic>{}.obs;
   final isLoading = true.obs;
   final noImageMode = false.obs;
+  final checkClipboard = true.obs;
 
   final loginUserController = TextEditingController();
   final loginPassController = TextEditingController();
@@ -30,6 +31,7 @@ class WebSettingsController extends GetxController {
     super.onInit();
     enableDefaultFavorite.value = WebPreferenceSettings.enableDefaultFavorite;
     noImageMode.value = WebPreferenceSettings.noImageMode;
+    checkClipboard.value = WebPreferenceSettings.checkClipboard;
     _loadDefaultFavoriteSlot();
     _loadStatus();
   }
@@ -61,6 +63,11 @@ class WebSettingsController extends GetxController {
   void setNoImageMode(bool value) {
     noImageMode.value = value;
     WebPreferenceSettings.saveNoImageMode(value);
+  }
+
+  void setCheckClipboard(bool value) {
+    checkClipboard.value = value;
+    WebPreferenceSettings.saveCheckClipboard(value);
   }
 
   Future<void> refreshStatus() => _loadStatus();

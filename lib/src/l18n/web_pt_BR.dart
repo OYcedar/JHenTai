@@ -47,6 +47,9 @@ class WebPtBR {
       'home.clipboardEmpty': 'A área de transferência está vazia',
       'home.clipboardReadFailed':
           'Não foi possível ler a área de transferência. Permita o acesso e tente novamente.',
+      'galleryUrlDetected':
+          'URL de galeria encontrada na área de transferência',
+      'galleryUrlDetectedHint': 'Abrir link detectado',
       'restoredGalleryCount': 'Galerias restauradas',
       'restoredArchiveCount': 'Arquivos restaurados',
       'reDownload': 'Baixar novamente',
@@ -467,6 +470,9 @@ class WebPtBR {
       'settings.noImageMode': 'Modo sem imagens',
       'settings.noImageModeHint':
           'Oculta capas, miniaturas e imagens do leitor neste navegador.',
+      'checkClipboard': 'Verificar URL de galeria na área de transferência',
+      'settings.checkClipboardHint':
+          'Ao abrir a página inicial, detecta links de galeria na área de transferência do navegador e oferece abri-los.',
       'settings.pageCache': 'Cache de páginas',
       'settings.clearPageCache': 'Limpar cache de páginas',
       'settings.clearPageCacheTitle': 'Limpar cache de páginas?',

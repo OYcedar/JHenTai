@@ -283,12 +283,24 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
             ),
             const SizedBox(height: 24),
             Card(
-              child: SwitchListTile(
-                secondary: const Icon(Icons.image_not_supported_outlined),
-                title: Text('settings.noImageMode'.tr),
-                subtitle: Text('settings.noImageModeHint'.tr),
-                value: controller.noImageMode.value,
-                onChanged: controller.setNoImageMode,
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    secondary: const Icon(Icons.image_not_supported_outlined),
+                    title: Text('settings.noImageMode'.tr),
+                    subtitle: Text('settings.noImageModeHint'.tr),
+                    value: controller.noImageMode.value,
+                    onChanged: controller.setNoImageMode,
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.content_paste_search),
+                    title: Text('checkClipboard'.tr),
+                    subtitle: Text('settings.checkClipboardHint'.tr),
+                    value: controller.checkClipboard.value,
+                    onChanged: controller.setCheckClipboard,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 24),

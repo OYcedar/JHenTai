@@ -185,6 +185,8 @@ class WebHomeController extends GetxController {
   static const pageListModeStorageKey = 'jh_web_page_list_modes';
   static const gridColumnsStorageKey = 'jh_web_grid_columns';
   static const defaultSectionStorageKey = 'jh_web_default_section';
+  static const _lastClipboardGalleryUrlKey =
+      'jh_web_last_clipboard_gallery_url';
   static const listModes = ['grid', 'list', 'listCompact'];
   static const defaultSections = [
     'home',
@@ -335,8 +337,54 @@ class WebHomeController extends GetxController {
     unawaited(Get.find<WebWatchedTagStylesController>().refresh());
   }
 
+  @override
+  void onReady() {
+    super.onReady();
+    unawaited(_checkClipboardGalleryUrl());
+  }
+
   Future<void> _loadWheelScrollSpeed() async {
     wheelScrollSpeed.value = await loadWebWheelScrollSpeed();
+  }
+
+  Future<void> _checkClipboardGalleryUrl() async {
+    if (!WebPreferenceSettings.checkClipboard) {
+      return;
+    }
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final rawText = data?.text?.trim() ?? '';
+      if (rawText.isEmpty) {
+        return;
+      }
+      final galleryUrl = GalleryUrl.tryParse(rawText);
+      final imagePageUrl = GalleryImagePageUrl.tryParse(rawText);
+      if (galleryUrl == null && imagePageUrl == null) {
+        return;
+      }
+      final detectedUrl = galleryUrl?.url ?? imagePageUrl!.url;
+      if (web.window.sessionStorage.getItem(_lastClipboardGalleryUrlKey) ==
+          detectedUrl) {
+        return;
+      }
+      web.window.sessionStorage
+          .setItem(_lastClipboardGalleryUrlKey, detectedUrl);
+      Get.snackbar(
+        'galleryUrlDetected'.tr,
+        '${'galleryUrlDetectedHint'.tr}: $detectedUrl',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 8),
+        mainButton: TextButton(
+          onPressed: () {
+            Get.closeCurrentSnackbar();
+            unawaited(searchOrOpenGalleryUrl(detectedUrl));
+          },
+          child: Text('common.open'.tr),
+        ),
+      );
+    } catch (_) {
+      // Browsers may deny clipboard reads until the user grants permission.
+    }
   }
 
   bool _applyQuickSearchArgument(dynamic args) {
