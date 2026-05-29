@@ -21,6 +21,8 @@ class WebEnUS {
       'common.save': 'Save',
       'common.open': 'Open',
       'common.close': 'Close',
+      'localizedReason': 'Please authenticate to continue',
+      'passwordErrorHint': 'Password error, please try again',
       'dawnOfaNewDay': 'It is the dawn of a new day!',
       'encounterMonster': 'You have encountered a monster!',
       'encounterMonsterHint': 'Click to fight in the HentaiVerse.',
@@ -70,6 +72,12 @@ class WebEnUS {
       'imageRegionWidthRatio': 'Image region width ratio',
       'spaceBetweenImages': 'Space Between Images',
       'defaultTab': 'Default Tab',
+      'enablePasswordAuth': 'Enable Password Auth',
+      'enableAuthOnResume': 'Enable Auth on Resume',
+      'enableAuthOnResumeHints': 'Lock again after 3 seconds in background',
+      'setPasswordHint': 'Please input your password',
+      'confirmPasswordHint': 'Please input your password again',
+      'passwordNotMatchHint': 'Password not match, try again',
 
       // setup
       'setup.title': 'JHenTai Server Setup',
@@ -495,6 +503,13 @@ class WebEnUS {
           'This clears the API token saved in this browser and returns to setup. The server token will not be deleted.',
       'settings.webTokenRotateHint':
           'If you rotated the token on the server, disconnect here first, then paste the new token in setup.',
+      'settings.webPasswordAuthHint':
+          'Protect this browser session with a local 4-digit PIN.',
+      'settings.lockNow': 'Lock now',
+      'settings.disablePasswordAuthTitle': 'Disable password auth?',
+      'settings.disablePasswordAuthConfirm':
+          'This removes the local PIN saved in this browser.',
+      'settings.passwordAuthEnabled': 'Password auth enabled',
       'settings.mouseWheelIntro':
           'Choose how the mouse wheel behaves over images in the reader (horizontal page modes).',
       'settings.webWheelScrollSpeedHint':

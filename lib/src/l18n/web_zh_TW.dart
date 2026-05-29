@@ -20,6 +20,8 @@ class WebZhTW {
       'common.pages': '@count 頁',
       'common.open': '開啟',
       'common.close': '關閉',
+      'localizedReason': '請驗證以繼續',
+      'passwordErrorHint': '密碼錯誤，請重試',
       'dawnOfaNewDay': '黎明之時',
       'encounterMonster': '你遭遇了一隻怪獸！',
       'encounterMonsterHint': '點擊跳轉至 HentaiVerse 戰鬥。',
@@ -65,6 +67,12 @@ class WebZhTW {
       'imageRegionWidthRatio': '圖片區域寬度比例',
       'spaceBetweenImages': '圖片間隔',
       'defaultTab': '啟動時預設選單',
+      'enablePasswordAuth': '開啟密碼認證',
+      'enableAuthOnResume': '切換至背景後重新認證',
+      'enableAuthOnResumeHints': '切至背景超過 3 秒後重新鎖定',
+      'setPasswordHint': '請輸入您的密碼',
+      'confirmPasswordHint': '請再次輸入您的密碼',
+      'passwordNotMatchHint': '密碼不一致，請重試',
 
       // setup
       'setup.title': 'JHenTai 伺服器設定',
@@ -452,6 +460,11 @@ class WebZhTW {
           '這會清除目前瀏覽器儲存的 API Token，並返回設定精靈。伺服器 Token 不會被刪除。',
       'settings.webTokenRotateHint':
           '如果你已經在伺服器輪換 Token，請先斷開目前連線，然後在設定精靈中貼上新的 Token。',
+      'settings.webPasswordAuthHint': '使用目前瀏覽器本機儲存的 4 位 PIN 保護 Web 工作階段。',
+      'settings.lockNow': '立即鎖定',
+      'settings.disablePasswordAuthTitle': '關閉密碼認證？',
+      'settings.disablePasswordAuthConfirm': '這會刪除目前瀏覽器儲存的本機 PIN。',
+      'settings.passwordAuthEnabled': '已開啟密碼認證',
       'settings.mouseWheelIntro': '選擇閱讀器中滑鼠滾輪在圖片上的行為（橫向翻頁模式）。',
       'settings.webWheelScrollSpeedHint': '控制 Web 畫廊列表中的滑鼠滾輪捲動速度。',
       'settings.mouseWheelReadHint': '閱讀方向、預載入等全部選項',

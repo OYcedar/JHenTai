@@ -20,6 +20,8 @@ class WebRuRU {
       'common.pages': '@count стр.',
       'common.open': 'Открыть',
       'common.close': 'Закрыть',
+      'localizedReason': 'Подтвердите доступ, чтобы продолжить',
+      'passwordErrorHint': 'Неверный пароль, попробуйте ещё раз',
       'dawnOfaNewDay': 'Наступил рассвет нового дня!',
       'encounterMonster': 'Вы встретили монстра!',
       'encounterMonsterHint': 'Нажмите, чтобы сразиться в HentaiVerse.',
@@ -69,6 +71,12 @@ class WebRuRU {
       'imageRegionWidthRatio': 'Доля ширины области изображения',
       'spaceBetweenImages': 'Отступы между изображениями',
       'defaultTab': 'Вкладка по умолчанию',
+      'enablePasswordAuth': 'Включить пароль',
+      'enableAuthOnResume': 'Запрашивать пароль при возврате',
+      'enableAuthOnResumeHints': 'Блокировать снова через 3 секунды в фоне',
+      'setPasswordHint': 'Введите пароль',
+      'confirmPasswordHint': 'Введите пароль ещё раз',
+      'passwordNotMatchHint': 'Пароли не совпадают, попробуйте снова',
 
       // setup
       'setup.title': 'Настройка сервера JHenTai',
@@ -495,6 +503,13 @@ class WebRuRU {
           'API-токен, сохранённый в этом браузере, будет удалён, а вы вернётесь к настройке. Токен сервера не будет удалён.',
       'settings.webTokenRotateHint':
           'Если токен на сервере был заменён, сначала отключитесь здесь, затем введите новый токен в мастере настройки.',
+      'settings.webPasswordAuthHint':
+          'Защитить эту сессию браузера локальным 4-значным PIN-кодом.',
+      'settings.lockNow': 'Заблокировать сейчас',
+      'settings.disablePasswordAuthTitle': 'Отключить пароль?',
+      'settings.disablePasswordAuthConfirm':
+          'Локальный PIN-код, сохранённый в этом браузере, будет удалён.',
+      'settings.passwordAuthEnabled': 'Пароль включён',
       'settings.mouseWheelIntro':
           'Поведение колёсика над изображением в читалке (горизонтальные режимы страниц).',
       'settings.webWheelScrollSpeedHint':

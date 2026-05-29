@@ -20,6 +20,8 @@ class WebPtBR {
       'common.pages': '@count páginas',
       'common.open': 'Abrir',
       'common.close': 'Fechar',
+      'localizedReason': 'Autentique-se para continuar',
+      'passwordErrorHint': 'Senha incorreta, tente novamente',
       'dawnOfaNewDay': 'É o amanhecer de um novo dia!',
       'encounterMonster': 'Você encontrou um monstro!',
       'encounterMonsterHint': 'Clique para lutar no HentaiVerse.',
@@ -69,6 +71,13 @@ class WebPtBR {
       'imageRegionWidthRatio': 'Proporção da largura da área da imagem',
       'spaceBetweenImages': 'Espaçamento entre imagens',
       'defaultTab': 'Aba padrão',
+      'enablePasswordAuth': 'Ativar autenticação por senha',
+      'enableAuthOnResume': 'Autenticar ao retornar',
+      'enableAuthOnResumeHints':
+          'Bloquear novamente após 3 segundos em segundo plano',
+      'setPasswordHint': 'Digite sua senha',
+      'confirmPasswordHint': 'Digite sua senha novamente',
+      'passwordNotMatchHint': 'As senhas não coincidem, tente novamente',
 
       // setup
       'setup.title': 'Configuração do Servidor JHenTai',
@@ -498,6 +507,13 @@ class WebPtBR {
           'Isto remove o token de API salvo neste navegador e volta à configuração. O token do servidor não será excluído.',
       'settings.webTokenRotateHint':
           'Se você trocou o token no servidor, desconecte aqui primeiro e cole o novo token na configuração.',
+      'settings.webPasswordAuthHint':
+          'Protege esta sessão do navegador com um PIN local de 4 dígitos.',
+      'settings.lockNow': 'Bloquear agora',
+      'settings.disablePasswordAuthTitle': 'Desativar autenticação por senha?',
+      'settings.disablePasswordAuthConfirm':
+          'Isto remove o PIN local salvo neste navegador.',
+      'settings.passwordAuthEnabled': 'Autenticação por senha ativada',
       'settings.mouseWheelIntro':
           'Escolha o comportamento da roda do mouse sobre as imagens no leitor (modos de página horizontais).',
       'settings.webWheelScrollSpeedHint':

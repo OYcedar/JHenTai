@@ -20,6 +20,8 @@ class WebKoKR {
       'common.pages': '@count 페이지',
       'common.open': '열기',
       'common.close': '닫기',
+      'localizedReason': '계속하려면 인증하세요',
+      'passwordErrorHint': '비밀번호가 틀렸습니다. 다시 시도하세요',
       'dawnOfaNewDay': '새로운 하루가 밝았습니다!',
       'encounterMonster': '몬스터를 만났습니다!',
       'encounterMonsterHint': 'HentaiVerse 전투로 이동하려면 클릭하세요.',
@@ -65,6 +67,12 @@ class WebKoKR {
       'imageRegionWidthRatio': '이미지 영역 너비 비율',
       'spaceBetweenImages': '이미지 간격',
       'defaultTab': '기본 탭',
+      'enablePasswordAuth': '비밀번호 인증 사용',
+      'enableAuthOnResume': '다시 돌아올 때 인증',
+      'enableAuthOnResumeHints': '백그라운드 3초 후 다시 잠급니다',
+      'setPasswordHint': '비밀번호를 입력하세요',
+      'confirmPasswordHint': '비밀번호를 다시 입력하세요',
+      'passwordNotMatchHint': '비밀번호가 일치하지 않습니다. 다시 시도하세요',
 
       // setup
       'setup.title': 'JHenTai 서버 설정',
@@ -466,6 +474,12 @@ class WebKoKR {
           '이 브라우저에 저장된 API 토큰을 지우고 설정으로 돌아갑니다. 서버 토큰은 삭제되지 않습니다.',
       'settings.webTokenRotateHint':
           '서버에서 토큰을 교체했다면 먼저 여기서 연결을 해제한 뒤 설정에서 새 토큰을 붙여넣으세요.',
+      'settings.webPasswordAuthHint':
+          '이 브라우저에 저장되는 로컬 4자리 PIN으로 Web 세션을 보호합니다.',
+      'settings.lockNow': '지금 잠그기',
+      'settings.disablePasswordAuthTitle': '비밀번호 인증을 끌까요?',
+      'settings.disablePasswordAuthConfirm': '이 브라우저에 저장된 로컬 PIN을 삭제합니다.',
+      'settings.passwordAuthEnabled': '비밀번호 인증이 켜졌습니다',
       'settings.mouseWheelIntro': '뷰어에서 이미지 위 마우스 휠 동작을 선택합니다(가로 페이지 모드).',
       'settings.webWheelScrollSpeedHint': 'Web 갤러리 목록의 마우스 휠 스크롤 속도를 조절합니다.',
       'settings.mouseWheelReadHint': '방향, 프리로드 등 모든 읽기 옵션',

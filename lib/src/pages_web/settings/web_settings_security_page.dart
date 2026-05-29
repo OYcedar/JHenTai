@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_app_lock.dart';
+import 'package:pinput/pinput.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsSecurityPage extends StatefulWidget {
@@ -14,6 +16,7 @@ class WebSettingsSecurityPage extends StatefulWidget {
 class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
   bool _checking = false;
   bool? _tokenValid;
+  final WebAppLockController _lockController = Get.find<WebAppLockController>();
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +80,38 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                   ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Obx(
+            () => Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    secondary: const Icon(Icons.password_outlined),
+                    title: Text('enablePasswordAuth'.tr),
+                    subtitle: Text('settings.webPasswordAuthHint'.tr),
+                    value: _lockController.enabled.value,
+                    onChanged: _handlePasswordAuthChanged,
+                  ),
+                  if (_lockController.enabled.value) ...[
+                    const Divider(height: 1),
+                    SwitchListTile(
+                      secondary: const Icon(Icons.lock_clock_outlined),
+                      title: Text('enableAuthOnResume'.tr),
+                      subtitle: Text('enableAuthOnResumeHints'.tr),
+                      value: _lockController.lockOnResume.value,
+                      onChanged: _lockController.saveLockOnResume,
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(Icons.lock_reset_outlined),
+                      title: Text('settings.lockNow'.tr),
+                      onTap: _lockController.lock,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -184,5 +219,114 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
     if (confirmed != true) return;
     backendApiClient.clearToken();
     web.window.location.href = '/web/setup';
+  }
+
+  Future<void> _handlePasswordAuthChanged(bool value) async {
+    if (!value) {
+      final confirmed = await Get.dialog<bool>(
+        AlertDialog(
+          title: Text('settings.disablePasswordAuthTitle'.tr),
+          content: Text('settings.disablePasswordAuthConfirm'.tr),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () => Get.back(result: true),
+              child: Text('common.confirm'.tr),
+            ),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        _lockController.disablePasswordAuth();
+      }
+      return;
+    }
+
+    final password =
+        await Get.dialog<String>(const _WebPasswordSettingDialog());
+    if (password == null) {
+      return;
+    }
+    _lockController.enableWithPassword(password);
+    Get.snackbar(
+      'common.success'.tr,
+      'settings.passwordAuthEnabled'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+}
+
+class _WebPasswordSettingDialog extends StatefulWidget {
+  const _WebPasswordSettingDialog();
+
+  @override
+  State<_WebPasswordSettingDialog> createState() =>
+      _WebPasswordSettingDialogState();
+}
+
+class _WebPasswordSettingDialogState extends State<_WebPasswordSettingDialog> {
+  final controller = TextEditingController();
+  String? firstPassword;
+  late String hintText;
+
+  @override
+  void initState() {
+    super.initState();
+    hintText = 'setPasswordHint'.tr;
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('enablePasswordAuth'.tr),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Pinput(
+            length: 4,
+            controller: controller,
+            autofocus: true,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            onCompleted: (value) {
+              if (firstPassword == null) {
+                setState(() {
+                  firstPassword = value;
+                  hintText = 'confirmPasswordHint'.tr;
+                  controller.clear();
+                });
+                return;
+              }
+              if (firstPassword == value) {
+                Get.back(result: value);
+                return;
+              }
+              setState(() {
+                firstPassword = null;
+                hintText = 'passwordNotMatchHint'.tr;
+                controller.clear();
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          Text(hintText, textAlign: TextAlign.center),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(),
+          child: Text('common.cancel'.tr),
+        ),
+      ],
+    );
   }
 }

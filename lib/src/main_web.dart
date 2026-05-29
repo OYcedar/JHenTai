@@ -14,6 +14,7 @@ import 'package:jhentai/src/pages_web/web_history_page.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_local_page.dart';
 import 'package:jhentai/src/pages_web/web_reader_page.dart';
+import 'package:jhentai/src/pages_web/web_app_lock.dart';
 import 'package:jhentai/src/pages_web/web_quick_search_manage_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_about_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_account_page.dart';
@@ -49,6 +50,7 @@ void main() async {
   backendApiClient.init(baseUrl: serverUrl, token: savedToken);
 
   Get.put(ThemeController());
+  Get.put(WebAppLockController(), permanent: true);
   Get.put(WebLayoutController());
   Get.put(WebDownloadService());
   Get.put(WebWatchedTagStylesController(), permanent: true);
@@ -302,6 +304,8 @@ class JHenTaiWebApp extends StatelessWidget {
           fallbackLocale: const Locale('en', 'US'),
           getPages: _webRoutes,
           initialRoute: backendApiClient.hasToken ? '/web/home' : '/web/setup',
+          builder: (context, child) =>
+              WebAppLockGate(child: child ?? const SizedBox.shrink()),
         ));
   }
 
