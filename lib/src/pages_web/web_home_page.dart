@@ -297,6 +297,9 @@ void _showStartWebHomeGalleryDownloadDialog(
                 priority: priority,
                 downloadOriginalImage: downloadOriginalImage,
                 tagSearchText: _webHomeDownloadTagSearchText(gallery),
+                publishTime: _galleryString(gallery, 'publishDate').isNotEmpty
+                    ? _galleryString(gallery, 'publishDate')
+                    : _galleryString(gallery, 'publishTime'),
               );
               Get.snackbar(
                 'detail.downloadStarted'.tr,

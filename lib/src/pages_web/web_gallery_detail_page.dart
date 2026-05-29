@@ -539,6 +539,7 @@ class WebGalleryDetailController extends GetxController {
         priority: priority,
         downloadOriginalImage: downloadOriginalImage,
         tagSearchText: buildDownloadTagSearchText(),
+        publishTime: publishDate.value,
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.galleryQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
@@ -601,6 +602,7 @@ class WebGalleryDetailController extends GetxController {
         group: group,
         priority: priority,
         tagSearchText: buildDownloadTagSearchText(),
+        publishTime: publishDate.value,
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.archiveQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);

@@ -43,6 +43,7 @@ class ArchiveDownloadTask {
   String group;
   int priority;
   final String tagSearchText;
+  final String publishTime;
   final String insertTime;
   ArchiveStatus status;
   String downloadPageUrl;
@@ -66,6 +67,7 @@ class ArchiveDownloadTask {
     this.group = 'default',
     this.priority = 0,
     this.tagSearchText = '',
+    required this.publishTime,
     required this.insertTime,
     this.status = ArchiveStatus.none,
     this.downloadPageUrl = '',
@@ -96,6 +98,8 @@ class ArchiveDownloadTask {
         'priority': priority,
         'tagSearchText': tagSearchText,
         'tag_search_text': tagSearchText,
+        'publishTime': publishTime,
+        'publish_time': publishTime,
         'insertTime': insertTime,
       };
 }
@@ -138,6 +142,7 @@ class ArchiveDownloadService {
         group: row['group_name'] as String? ?? 'default',
         priority: row['priority'] as int? ?? 0,
         tagSearchText: row['tag_search_text'] as String? ?? '',
+        publishTime: row['publish_time'] as String? ?? '',
         insertTime:
             row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
       );
@@ -179,6 +184,7 @@ class ArchiveDownloadService {
     String group = 'default',
     int priority = 0,
     String tagSearchText = '',
+    String? publishTime,
   }) async {
     if (_tasks.containsKey(gid)) {
       final existing = _tasks[gid]!;
@@ -208,6 +214,8 @@ class ArchiveDownloadService {
       group: group,
       priority: priority,
       tagSearchText: tagSearchText,
+      publishTime:
+          publishTime != null && publishTime.isNotEmpty ? publishTime : now,
       insertTime: now,
     );
 
@@ -222,7 +230,8 @@ class ArchiveDownloadService {
       'cover_url': coverUrl,
       'uploader': uploader,
       'size': size,
-      'publish_time': now,
+      'publish_time':
+          publishTime != null && publishTime.isNotEmpty ? publishTime : now,
       'archive_status': ArchiveStatus.unlocking.index,
       'archive_page_url': archivePageUrl,
       'is_original': isOriginal ? 1 : 0,
@@ -372,6 +381,9 @@ class ArchiveDownloadService {
             meta['groupName']?.toString() ??
             'default',
         priority: (meta['priority'] as num?)?.toInt() ?? 0,
+        publishTime: meta['publishTime']?.toString() ??
+            meta['publish_time']?.toString() ??
+            insertTime,
         insertTime: insertTime,
         status: hasImages ? ArchiveStatus.completed : ArchiveStatus.paused,
         downloadPageUrl: meta['downloadPageUrl']?.toString() ?? '',
@@ -389,7 +401,7 @@ class ArchiveDownloadService {
         'cover_url': task.coverUrl,
         'uploader': task.uploader,
         'size': task.size,
-        'publish_time': insertTime,
+        'publish_time': task.publishTime,
         'archive_status': task.status.index,
         'archive_page_url': archivePageUrl,
         'download_page_url': task.downloadPageUrl,
@@ -580,6 +592,7 @@ class ArchiveDownloadService {
       'isOriginal': task.isOriginal,
       'group': task.group,
       'priority': task.priority,
+      'publishTime': task.publishTime,
       'downloadPageUrl': task.downloadPageUrl,
       'downloadUrl': task.downloadUrl,
     }));

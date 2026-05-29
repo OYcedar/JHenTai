@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/utils/date_util.dart';
 import 'package:web/web.dart' as web;
 
 enum WebDownloadSort { priorityDesc, timeDesc, title, status }
@@ -374,6 +376,8 @@ class WebDownloadsController extends GetxController
       task['downloadUrl']?.toString() ?? '',
       task['tagSearchText']?.toString() ?? '',
       task['tag_search_text']?.toString() ?? '',
+      task['publishTime']?.toString() ?? '',
+      task['publish_time']?.toString() ?? '',
       task['size']?.toString() ?? '',
     ];
     return values.where((v) => v.isNotEmpty).join('\n');
@@ -1856,6 +1860,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
     final category = task['category'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
     final priority = _taskInt(task, 'priority');
+    final publishTime = _taskPublishTime(task);
     final groupName =
         (task['group_name'] ?? task['groupName'] ?? 'default') as String;
 
@@ -1992,13 +1997,25 @@ class _DownloadTaskGridCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      maxLines: 2,
+                      maxLines: publishTime.isEmpty ? 2 : 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
                           ?.copyWith(fontWeight: FontWeight.w600),
                     ),
+                    if (publishTime.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        publishTime,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                              fontSize: 11,
+                            ),
+                      ),
+                    ],
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 5,
@@ -2376,6 +2393,7 @@ class _GalleryTaskCard extends StatelessWidget {
     final category = task['category'] as String? ?? '';
     final uploader = task['uploader'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
+    final publishTime = _taskPublishTime(task);
     final groupName =
         (task['group_name'] ?? task['groupName'] ?? 'default') as String;
     final priority = (task['priority'] as num?)?.toInt() ?? 0;
@@ -2521,6 +2539,24 @@ class _GalleryTaskCard extends StatelessWidget {
                                           ?.copyWith(color: Colors.grey),
                                       overflow: TextOverflow.ellipsis),
                                 ),
+                              if (publishTime.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    publishTime,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline,
+                                        ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 6),
@@ -2737,6 +2773,7 @@ class _ArchiveTaskCard extends StatelessWidget {
     final category = task['category'] as String? ?? '';
     final uploader = task['uploader'] as String? ?? '';
     final coverUrl = task['coverUrl'] as String? ?? '';
+    final publishTime = _taskPublishTime(task);
     final priority = (task['priority'] as num?)?.toInt() ?? 0;
     final groupName =
         (task['group_name'] ?? task['groupName'] ?? 'default') as String;
@@ -2883,6 +2920,24 @@ class _ArchiveTaskCard extends StatelessWidget {
                                           ?.copyWith(color: Colors.grey),
                                       overflow: TextOverflow.ellipsis),
                                 ),
+                              if (publishTime.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    publishTime,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outline,
+                                        ),
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.end,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 6),
@@ -3075,6 +3130,21 @@ Color _categoryColor(String category) {
     'misc' => Colors.grey.shade700,
     _ => Colors.grey.shade700,
   };
+}
+
+String _taskPublishTime(Map<String, dynamic> task) {
+  final raw = (task['publishTime'] ?? task['publish_time'])?.toString().trim();
+  if (raw == null || raw.isEmpty) {
+    return '';
+  }
+  if (WebPreferenceSettings.showUtcTime) {
+    return raw;
+  }
+  try {
+    return DateUtil.transformUtc2LocalTimeString(raw);
+  } catch (_) {
+    return raw;
+  }
 }
 
 String _formatBytes(int bytes) {

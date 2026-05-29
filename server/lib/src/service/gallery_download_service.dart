@@ -41,6 +41,7 @@ class GalleryDownloadTask {
   int priority;
   final bool downloadOriginalImage;
   final String tagSearchText;
+  final String publishTime;
   final String insertTime;
   int? supersedesGid;
   int? supersededByGid;
@@ -61,6 +62,7 @@ class GalleryDownloadTask {
     this.priority = 0,
     this.downloadOriginalImage = false,
     this.tagSearchText = '',
+    required this.publishTime,
     required this.insertTime,
     this.supersedesGid,
     this.supersededByGid,
@@ -84,6 +86,8 @@ class GalleryDownloadTask {
         'is_original': downloadOriginalImage ? 1 : 0,
         'tagSearchText': tagSearchText,
         'tag_search_text': tagSearchText,
+        'publishTime': publishTime,
+        'publish_time': publishTime,
         'insertTime': insertTime,
         if (supersedesGid != null) 'supersedesGid': supersedesGid,
         if (supersededByGid != null) 'supersededByGid': supersededByGid,
@@ -136,6 +140,7 @@ class GalleryDownloadService {
         downloadOriginalImage:
             (row['download_original_image'] as int? ?? 0) == 1,
         tagSearchText: row['tag_search_text'] as String? ?? '',
+        publishTime: row['publish_time'] as String? ?? '',
         insertTime:
             row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
         supersedesGid: row['supersedes_gid'] as int?,
@@ -169,6 +174,7 @@ class GalleryDownloadService {
     int priority = 0,
     bool downloadOriginalImage = false,
     String tagSearchText = '',
+    String? publishTime,
     int? supersedesGid,
   }) async {
     if (_tasks.containsKey(gid)) {
@@ -198,6 +204,8 @@ class GalleryDownloadService {
       priority: priority,
       downloadOriginalImage: downloadOriginalImage,
       tagSearchText: tagSearchText,
+      publishTime:
+          publishTime != null && publishTime.isNotEmpty ? publishTime : now,
       insertTime: now,
       supersedesGid: supersedesGid,
     );
@@ -212,7 +220,8 @@ class GalleryDownloadService {
       'gallery_url': galleryUrl,
       'cover_url': coverUrl,
       'uploader': uploader,
-      'publish_time': now,
+      'publish_time':
+          publishTime != null && publishTime.isNotEmpty ? publishTime : now,
       'download_status': GalleryDownloadStatus.downloading.index,
       'insert_time': now,
       'group_name': group,
@@ -508,6 +517,9 @@ class GalleryDownloadService {
             'default',
         priority: (meta['priority'] as num?)?.toInt() ?? 0,
         downloadOriginalImage: meta['downloadOriginalImage'] as bool? ?? false,
+        publishTime: meta['publishTime']?.toString() ??
+            meta['publish_time']?.toString() ??
+            insertTime,
         insertTime: insertTime,
       );
 
@@ -521,7 +533,7 @@ class GalleryDownloadService {
         'gallery_url': galleryUrl,
         'cover_url': task.coverUrl,
         'uploader': task.uploader,
-        'publish_time': insertTime,
+        'publish_time': task.publishTime,
         'download_status': status.index,
         'insert_time': insertTime,
         'completed_count': completedCount,
@@ -913,6 +925,7 @@ class GalleryDownloadService {
       'group': task.group,
       'priority': task.priority,
       'downloadOriginalImage': task.downloadOriginalImage,
+      'publishTime': task.publishTime,
       'imagePageUrls': imagePageUrls,
     }));
   }

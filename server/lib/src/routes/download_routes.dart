@@ -92,6 +92,7 @@ class DownloadRoutes {
       priority: (body['priority'] as num?)?.toInt() ?? 0,
       downloadOriginalImage: body['downloadOriginalImage'] as bool? ?? false,
       tagSearchText: body['tagSearchText'] as String? ?? '',
+      publishTime: body['publishTime'] as String? ?? '',
     );
 
     return Response.ok(
@@ -279,6 +280,7 @@ class DownloadRoutes {
       group: body['group'] as String? ?? 'default',
       priority: (body['priority'] as num?)?.toInt() ?? 0,
       tagSearchText: body['tagSearchText'] as String? ?? '',
+      publishTime: body['publishTime'] as String? ?? '',
     );
 
     return Response.ok(
