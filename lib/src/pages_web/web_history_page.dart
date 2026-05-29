@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
@@ -198,39 +199,44 @@ class WebHistoryPage extends GetView<WebHistoryController> {
         }
         final item = controller.items[index];
         final gid = (item['gid'] as num?)?.toInt() ?? 0;
-        final token = item['token'] as String? ?? '';
         final title = item['title'] as String? ?? '';
         final coverUrl = item['cover_url'] as String? ?? '';
         final category = item['category'] as String? ?? '';
         final visitTime = item['visit_time'] as String? ?? '';
 
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: SizedBox(
-              width: 50,
-              height: 70,
-              child: coverUrl.isNotEmpty
-                  ? WebProxiedImage(
-                      sourceUrl: coverUrl,
-                      fit: BoxFit.cover,
-                      errorIconSize: 24,
-                      readerErrorChild:
-                          const Icon(Icons.broken_image, color: Colors.grey),
-                    )
-                  : const Icon(Icons.photo_library, color: Colors.grey),
+        return GestureDetector(
+          onLongPressStart: (details) =>
+              _showHistoryItemMenu(context, details.globalPosition, item),
+          onSecondaryTapUp: (details) =>
+              _showHistoryItemMenu(context, details.globalPosition, item),
+          child: Card(
+            clipBehavior: Clip.antiAlias,
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: SizedBox(
+                width: 50,
+                height: 70,
+                child: coverUrl.isNotEmpty
+                    ? WebProxiedImage(
+                        sourceUrl: coverUrl,
+                        fit: BoxFit.cover,
+                        errorIconSize: 24,
+                        readerErrorChild:
+                            const Icon(Icons.broken_image, color: Colors.grey),
+                      )
+                    : const Icon(Icons.photo_library, color: Colors.grey),
+              ),
+              title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                '${category.isNotEmpty ? '$category · ' : ''}${_formatTime(visitTime)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () => controller.deleteItem(gid),
+              ),
+              onTap: () => _openHistoryItem(item),
             ),
-            title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
-            subtitle: Text(
-              '${category.isNotEmpty ? '$category · ' : ''}${_formatTime(visitTime)}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            trailing: IconButton(
-              icon: const Icon(Icons.close, size: 18),
-              onPressed: () => controller.deleteItem(gid),
-            ),
-            onTap: () => Get.toNamed('/web/gallery/$gid/$token'),
           ),
         );
       },
@@ -293,53 +299,59 @@ class WebHistoryPage extends GetView<WebHistoryController> {
 
   Widget _buildGridItem(BuildContext context, Map<String, dynamic> item) {
     final gid = (item['gid'] as num?)?.toInt() ?? 0;
-    final token = item['token'] as String? ?? '';
     final title = item['title'] as String? ?? '';
     final coverUrl = item['cover_url'] as String? ?? '';
     final category = item['category'] as String? ?? '';
     final visitTime = item['visit_time'] as String? ?? '';
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Get.toNamed('/web/gallery/$gid/$token'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _buildGridCover(context, coverUrl)),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
+    return GestureDetector(
+      onLongPressStart: (details) =>
+          _showHistoryItemMenu(context, details.globalPosition, item),
+      onSecondaryTapUp: (details) =>
+          _showHistoryItemMenu(context, details.globalPosition, item),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _openHistoryItem(item),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildGridCover(context, coverUrl)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 0, 6, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${category.isNotEmpty ? '$category · ' : ''}${_formatTime(visitTime)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 0, 6, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${category.isNotEmpty ? '$category · ' : ''}${_formatTime(visitTime)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => controller.deleteItem(gid),
-                  ),
-                ],
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => controller.deleteItem(gid),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -358,6 +370,133 @@ class WebHistoryPage extends GetView<WebHistoryController> {
       errorIconSize: 40,
       readerErrorChild: const Icon(Icons.broken_image, color: Colors.grey),
     );
+  }
+
+  int _historyGid(Map<String, dynamic> item) =>
+      (item['gid'] as num?)?.toInt() ?? 0;
+
+  String _historyToken(Map<String, dynamic> item) =>
+      item['token']?.toString() ?? '';
+
+  String _historyTitle(Map<String, dynamic> item) =>
+      item['title']?.toString().trim() ?? '';
+
+  String _historyGalleryUrl(Map<String, dynamic> item) {
+    final gid = _historyGid(item);
+    final token = _historyToken(item);
+    if (gid <= 0 || token.isEmpty) {
+      return '';
+    }
+    return 'https://e-hentai.org/g/$gid/$token/';
+  }
+
+  void _openHistoryItem(Map<String, dynamic> item) {
+    final gid = _historyGid(item);
+    final token = _historyToken(item);
+    if (gid <= 0 || token.isEmpty) {
+      return;
+    }
+    Get.toNamed('/web/gallery/$gid/$token');
+  }
+
+  Future<void> _readHistoryItem(Map<String, dynamic> item) async {
+    final gid = _historyGid(item);
+    final token = _historyToken(item);
+    if (gid <= 0 || token.isEmpty) {
+      return;
+    }
+    final saved = await backendApiClient.getSetting('read_progress_$gid');
+    final progress = int.tryParse(saved ?? '') ?? 0;
+    final title = _historyTitle(item);
+    final params = <String>[];
+    if (progress > 0) {
+      params.add('startPage=$progress');
+    }
+    if (title.isNotEmpty) {
+      params.add('title=${Uri.encodeQueryComponent(title)}');
+    }
+    Get.toNamed(
+        '/web/reader/$gid/$token${params.isEmpty ? '' : '?${params.join('&')}'}');
+  }
+
+  void _copyHistoryUrl(Map<String, dynamic> item) {
+    final url = _historyGalleryUrl(item);
+    if (url.isEmpty) {
+      return;
+    }
+    Clipboard.setData(ClipboardData(text: url));
+    Get.snackbar('hasCopiedToClipboard'.tr, url,
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
+  void _showHistoryItemMenu(
+    BuildContext context,
+    Offset position,
+    Map<String, dynamic> item,
+  ) {
+    final gid = _historyGid(item);
+    if (gid <= 0) {
+      return;
+    }
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx + 1, position.dy + 1),
+      items: [
+        PopupMenuItem(
+          value: 'open',
+          child: ListTile(
+            leading: const Icon(Icons.open_in_new, size: 20),
+            title: Text('common.open'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'read',
+          child: ListTile(
+            leading: const Icon(Icons.menu_book, size: 20),
+            title: Text('downloads.read'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'copy',
+          child: ListTile(
+            leading: const Icon(Icons.copy, size: 20),
+            title: Text('detail.copyUrl'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading:
+                const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+            title: Text('common.delete'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
+    ).then((value) {
+      switch (value) {
+        case 'open':
+          _openHistoryItem(item);
+          break;
+        case 'read':
+          _readHistoryItem(item);
+          break;
+        case 'copy':
+          _copyHistoryUrl(item);
+          break;
+        case 'delete':
+          controller.deleteItem(gid);
+          break;
+      }
+    });
   }
 
   String _formatTime(String iso) {
