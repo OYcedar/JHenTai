@@ -19,6 +19,7 @@ import 'package:jhentai/src/pages_web/web_quick_search_manage_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_about_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_account_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_advanced_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_cloud_sync_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_download_menu_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_eh_page.dart';
@@ -449,6 +450,11 @@ final _webRoutes = [
   GetPage(
     name: '/web/settings/advanced',
     page: () => const WebSettingsAdvancedPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/cloud-sync',
+    page: () => const WebSettingsCloudSyncPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(

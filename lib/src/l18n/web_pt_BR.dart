@@ -59,6 +59,19 @@ class WebPtBR {
       'deleteTask': 'Apagar apenas tarefa',
       'deleteTaskAndImages': 'Apagar tarefa e imagens',
       'hasCopiedToClipboard': 'Copiado para a área de transferência',
+      'search': 'Pesquisar',
+      'all': 'Tudo',
+      'download': 'Baixar',
+      'import': 'Importar',
+      'delete': 'Excluir',
+      'deleteSuccess': 'Excluído',
+      'serverCondition': 'Condição do servidor',
+      'copyShareCode': 'Copiar código de compartilhamento',
+      'readIndexRecord': 'Progresso de leitura',
+      'quickSearch': 'Busca rápida',
+      'blockingRules': 'Regras de bloqueio',
+      'searchHistory': 'Histórico de busca',
+      'galleryHistory': 'Histórico de galerias',
       'autoModeStyle': 'Estilo do modo automático',
       'scroll': 'Rolagem',
       'turnPage': 'Virar página',
@@ -501,6 +514,24 @@ class WebPtBR {
           'Escolha uma exportação do JHenTai Web ou um arquivo JHenTaiConfig do app. Configurações importadas podem sobrescrever valores atuais.',
       'settings.importDataSuccess': '@count itens importados',
       'settings.importDataFailed': 'Falha ao importar dados: @error',
+      'settings.cloudSync': 'Sincronização de config na nuvem',
+      'settings.cloudSyncHint':
+          'Veja configs da nuvem JHenTai, importe por código de compartilhamento e mescle neste servidor Docker.',
+      'settings.cloudServiceAvailable':
+          'O serviço de configs da nuvem JHenTai está disponível',
+      'settings.cloudServiceUnavailable':
+          'O serviço de configs da nuvem JHenTai está indisponível',
+      'settings.cloudShareCode': 'Código de compartilhamento',
+      'settings.cloudConfigType': 'Tipo de config',
+      'settings.cloudConfigEmpty': 'Nenhuma config na nuvem',
+      'settings.cloudConfigNotFound':
+          'Nenhuma config encontrada para este código',
+      'settings.cloudConfigUnknownType': 'Config desconhecida',
+      'settings.deleteCloudConfigTitle': 'Excluir config da nuvem?',
+      'settings.deleteCloudConfigConfirm':
+          'Isso remove a config do serviço de nuvem JHenTai.',
+      'settings.deleteCloudConfigFailed':
+          'Falha ao excluir config da nuvem: @error',
       'settings.noImageMode': 'Modo sem imagens',
       'settings.noImageModeHint':
           'Oculta capas, miniaturas e imagens do leitor neste navegador.',

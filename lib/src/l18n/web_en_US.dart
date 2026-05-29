@@ -59,6 +59,19 @@ class WebEnUS {
       'deleteTask': 'Delete Task Only',
       'deleteTaskAndImages': 'Delete Task And Images',
       'hasCopiedToClipboard': 'Copied to clipboard',
+      'search': 'Search',
+      'all': 'All',
+      'download': 'Download',
+      'import': 'Import',
+      'delete': 'Delete',
+      'deleteSuccess': 'Deleted',
+      'serverCondition': 'Server Condition',
+      'copyShareCode': 'Copy Share Code',
+      'readIndexRecord': 'Read Progress',
+      'quickSearch': 'Quick Search',
+      'blockingRules': 'Block Rules',
+      'searchHistory': 'Search History',
+      'galleryHistory': 'Gallery History',
       'autoModeStyle': 'Auto mode style',
       'scroll': 'Scroll',
       'turnPage': 'Turn page',
@@ -495,6 +508,23 @@ class WebEnUS {
           'Choose a JHenTai Web export or App JHenTaiConfig file. Imported settings may overwrite current values.',
       'settings.importDataSuccess': 'Imported @count items',
       'settings.importDataFailed': 'Failed to import data: @error',
+      'settings.cloudSync': 'Cloud Config Sync',
+      'settings.cloudSyncHint':
+          'Browse JHenTai cloud configs, import by share code, and merge them into this Docker server.',
+      'settings.cloudServiceAvailable':
+          'JHenTai cloud config service is available',
+      'settings.cloudServiceUnavailable':
+          'JHenTai cloud config service is unavailable',
+      'settings.cloudShareCode': 'Share code',
+      'settings.cloudConfigType': 'Config type',
+      'settings.cloudConfigEmpty': 'No cloud configs',
+      'settings.cloudConfigNotFound': 'No config found for this share code',
+      'settings.cloudConfigUnknownType': 'Unknown config',
+      'settings.deleteCloudConfigTitle': 'Delete cloud config?',
+      'settings.deleteCloudConfigConfirm':
+          'This removes the config from the JHenTai cloud service.',
+      'settings.deleteCloudConfigFailed':
+          'Failed to delete cloud config: @error',
       'settings.noImageMode': 'No image mode',
       'settings.noImageModeHint':
           'Hide gallery covers, thumbnails, and reader images in this browser.',

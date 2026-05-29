@@ -363,6 +363,14 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
                   ),
                   const Divider(height: 1),
                   ListTile(
+                    leading: const Icon(Icons.cloud_sync_outlined),
+                    title: Text('settings.cloudSync'.tr),
+                    subtitle: Text('settings.cloudSyncHint'.tr),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Get.toNamed('/web/settings/cloud-sync'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
                     leading: const Icon(Icons.upload_file_outlined),
                     title: Text('settings.importData'.tr),
                     subtitle: Text('settings.importDataHint'.tr),

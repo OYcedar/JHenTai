@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:dio/dio.dart' hide Response;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:path/path.dart' as p;
@@ -25,6 +26,10 @@ class SettingRoutes {
     router.put('/', _updateSettings);
     router.get('/profiles', _listProfiles);
     router.put('/profile', _selectProfile);
+    router.get('/cloud/alive', _cloudAlive);
+    router.get('/cloud/configs', _cloudListConfigs);
+    router.get('/cloud/config', _cloudGetConfigByShareCode);
+    router.post('/cloud/config/delete', _cloudDeleteConfig);
     router.get('/export', _exportData);
     router.post('/import', _importData);
     router.get('/cache/page', _getPageCache);
@@ -37,6 +42,85 @@ class SettingRoutes {
     router.delete('/<key>', _deleteSetting);
 
     return router;
+  }
+
+  Dio _cloudClient() => Dio(
+        BaseOptions(
+          baseUrl: _config.jhPublicApiBaseUrl,
+          connectTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+
+  Future<Response> _proxyCloudRequest(Future<dynamic> Function() run) async {
+    try {
+      final response = await run();
+      final data = response.data;
+      return Response.ok(
+        data is String ? data : jsonEncode(data),
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+      );
+    } on DioException catch (e) {
+      final status = e.response?.statusCode ?? 502;
+      final data = e.response?.data;
+      final message = data is Map && data['message'] != null
+          ? data['message'].toString()
+          : (e.message ?? e.toString());
+      return Response(
+        status,
+        body: jsonEncode({'code': status, 'message': message, 'data': null}),
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'code': 500, 'message': '$e', 'data': null}),
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+      );
+    }
+  }
+
+  Future<Response> _cloudAlive(Request request) {
+    return _proxyCloudRequest(() => _cloudClient().get('/alive'));
+  }
+
+  Future<Response> _cloudListConfigs(Request request) {
+    final type = int.tryParse(request.url.queryParameters['type'] ?? '');
+    return _proxyCloudRequest(
+      () => _cloudClient().get(
+        '/api/config/list',
+        queryParameters: {if (type != null) 'type': type},
+      ),
+    );
+  }
+
+  Future<Response> _cloudGetConfigByShareCode(Request request) async {
+    final shareCode = request.url.queryParameters['shareCode']?.trim() ?? '';
+    if (shareCode.isEmpty) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Missing shareCode'}),
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+      );
+    }
+    return _proxyCloudRequest(
+      () => _cloudClient().get(
+        '/api/config/getByShareCode',
+        queryParameters: {'shareCode': shareCode},
+      ),
+    );
+  }
+
+  Future<Response> _cloudDeleteConfig(Request request) {
+    return _proxyCloudRequest(() async {
+      final body = jsonDecode(await request.readAsString()) as Map;
+      final id = (body['id'] as num?)?.toInt();
+      if (id == null) {
+        throw ArgumentError('Missing id');
+      }
+      return _cloudClient().post(
+        '/api/config/delete',
+        queryParameters: {'id': id},
+      );
+    });
   }
 
   Future<Response> _listProfiles(Request request) async {

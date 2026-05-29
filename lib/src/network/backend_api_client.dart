@@ -1245,6 +1245,44 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> checkCloudConfigService() async {
+    final response = await _dio.get('/api/setting/cloud/alive');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<List<Map<String, dynamic>>> listCloudConfigs({int? type}) async {
+    final response = await _dio.get(
+      '/api/setting/cloud/configs',
+      queryParameters: {if (type != null) 'type': type},
+    );
+    final data = response.data;
+    final responseData = data is Map ? data['data'] : null;
+    final configs = responseData is Map ? responseData['configs'] : null;
+    if (configs is! List) {
+      return [];
+    }
+    return configs
+        .whereType<Map>()
+        .map<Map<String, dynamic>>(Map<String, dynamic>.from)
+        .toList();
+  }
+
+  Future<Map<String, dynamic>?> getCloudConfigByShareCode(
+      String shareCode) async {
+    final response = await _dio.get(
+      '/api/setting/cloud/config',
+      queryParameters: {'shareCode': shareCode},
+    );
+    final data = response.data;
+    final responseData = data is Map ? data['data'] : null;
+    final config = responseData is Map ? responseData['config'] : null;
+    return config is Map ? Map<String, dynamic>.from(config) : null;
+  }
+
+  Future<void> deleteCloudConfig(int id) async {
+    await _dio.post('/api/setting/cloud/config/delete', data: {'id': id});
+  }
+
   // --- Health ---
 
   Future<Map<String, dynamic>> health() async {

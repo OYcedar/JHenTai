@@ -81,6 +81,12 @@ class WebSettingsPage extends GetView<WebSettingsController> {
               onTap: () => Get.toNamed('/web/settings/advanced'),
             ),
             ListTile(
+              leading: const Icon(Icons.cloud_sync_outlined),
+              title: Text('settings.cloudSync'.tr),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Get.toNamed('/web/settings/cloud-sync'),
+            ),
+            ListTile(
               leading: const Icon(Icons.security),
               title: Text('settings.menuSecurity'.tr),
               trailing: const Icon(Icons.chevron_right),

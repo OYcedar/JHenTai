@@ -59,6 +59,19 @@ class WebRuRU {
       'deleteTask': 'Удалить только задачу',
       'deleteTaskAndImages': 'Удалить задачу и изображения',
       'hasCopiedToClipboard': 'Скопировано в буфер обмена',
+      'search': 'Поиск',
+      'all': 'Все',
+      'download': 'Скачать',
+      'import': 'Импорт',
+      'delete': 'Удалить',
+      'deleteSuccess': 'Удалено',
+      'serverCondition': 'Состояние сервера',
+      'copyShareCode': 'Скопировать код для обмена',
+      'readIndexRecord': 'Прогресс чтения',
+      'quickSearch': 'Быстрый поиск',
+      'blockingRules': 'Правила блокировки',
+      'searchHistory': 'История поиска',
+      'galleryHistory': 'История галерей',
       'autoModeStyle': 'Стиль авторежима',
       'scroll': 'Прокрутка',
       'turnPage': 'Перелистывание',
@@ -496,6 +509,23 @@ class WebRuRU {
           'Выберите файл экспорта JHenTai Web или JHenTaiConfig из приложения. Импортированные настройки могут перезаписать текущие значения.',
       'settings.importDataSuccess': 'Импортировано элементов: @count',
       'settings.importDataFailed': 'Не удалось импортировать данные: @error',
+      'settings.cloudSync': 'Синхронизация облачных настроек',
+      'settings.cloudSyncHint':
+          'Просматривайте облачные настройки JHenTai, импортируйте по коду обмена и объединяйте их с этим Docker-сервером.',
+      'settings.cloudServiceAvailable':
+          'Сервис облачных настроек JHenTai доступен',
+      'settings.cloudServiceUnavailable':
+          'Сервис облачных настроек JHenTai недоступен',
+      'settings.cloudShareCode': 'Код обмена',
+      'settings.cloudConfigType': 'Тип настройки',
+      'settings.cloudConfigEmpty': 'Нет облачных настроек',
+      'settings.cloudConfigNotFound': 'Настройка для этого кода не найдена',
+      'settings.cloudConfigUnknownType': 'Неизвестная настройка',
+      'settings.deleteCloudConfigTitle': 'Удалить облачную настройку?',
+      'settings.deleteCloudConfigConfirm':
+          'Это удалит настройку из облачного сервиса JHenTai.',
+      'settings.deleteCloudConfigFailed':
+          'Не удалось удалить облачную настройку: @error',
       'settings.noImageMode': 'Режим без изображений',
       'settings.noImageModeHint':
           'Скрывает обложки галерей, миниатюры и изображения читалки в этом браузере.',
