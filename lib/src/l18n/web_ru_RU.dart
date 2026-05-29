@@ -63,6 +63,7 @@ class WebRuRU {
       'showStatusInfo': 'Показывать статус снизу',
       'keepScreenAwakeWhenReading': 'Не выключать экран при чтении',
       'gestureRegionWidthRatio': 'Доля ширины области жеста меню',
+      'imageRegionWidthRatio': 'Доля ширины области изображения',
       'spaceBetweenImages': 'Отступы между изображениями',
       'defaultTab': 'Вкладка по умолчанию',
 
@@ -723,6 +724,8 @@ class WebRuRU {
       'settings.imageSpacing': 'Отступы изображений',
       'settings.preloadPages': 'Предзагрузка страниц (онлайн)',
       'settings.preloadPagesLocal': 'Предзагрузка страниц (локально)',
+      'settings.imageRegionWidthRatioHint':
+          'Влияет только на вертикальное чтение. Режим по ширине по-прежнему занимает всю ширину окна.',
       'settings.autoInterval': 'Интервал автопролистывания',
       'settings.fitWidth': 'По ширине',
       'hideScroll2TopButton': 'Кнопка наверх',

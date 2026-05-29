@@ -63,6 +63,7 @@ class WebPtBR {
       'keepScreenAwakeWhenReading': 'Manter tela ativa ao ler',
       'gestureRegionWidthRatio':
           'Proporção da largura da área de gesto do menu',
+      'imageRegionWidthRatio': 'Proporção da largura da área da imagem',
       'spaceBetweenImages': 'Espaçamento entre imagens',
       'defaultTab': 'Aba padrão',
 
@@ -726,6 +727,8 @@ class WebPtBR {
       'settings.imageSpacing': 'Espaçamento de Imagem',
       'settings.preloadPages': 'Páginas Pré-carregadas (Online)',
       'settings.preloadPagesLocal': 'Páginas Pré-carregadas (Local)',
+      'settings.imageRegionWidthRatioHint':
+          'Afeta apenas a leitura vertical. Ajustar Largura ainda usa toda a largura da janela.',
       'settings.autoInterval': 'Intervalo Auto-leitura',
       'settings.fitWidth': 'Ajustar Largura',
       'hideScroll2TopButton': 'Botão voltar ao topo',

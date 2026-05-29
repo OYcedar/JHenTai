@@ -64,6 +64,7 @@ class WebEnUS {
       'showStatusInfo': 'Show Status at Bottom',
       'keepScreenAwakeWhenReading': 'Keep Screen Awake When Reading',
       'gestureRegionWidthRatio': 'Gesture region width ratio',
+      'imageRegionWidthRatio': 'Image region width ratio',
       'spaceBetweenImages': 'Space Between Images',
       'defaultTab': 'Default Tab',
 
@@ -723,6 +724,8 @@ class WebEnUS {
       'settings.imageSpacing': 'Image Spacing',
       'settings.preloadPages': 'Preload Pages (Online)',
       'settings.preloadPagesLocal': 'Preload Pages (Local)',
+      'settings.imageRegionWidthRatioHint':
+          'Only affects vertical reading. Fit Width still uses the full viewport width.',
       'settings.autoInterval': 'Auto-mode Interval',
       'settings.fitWidth': 'Fit Width',
       'hideScroll2TopButton': 'Scroll to top button',

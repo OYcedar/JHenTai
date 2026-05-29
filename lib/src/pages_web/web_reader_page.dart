@@ -288,6 +288,7 @@ class WebReaderController extends GetxController {
   final keepScreenAwake = true.obs;
   final enableBottomMenu = true.obs;
   final imageSpacing = 0.obs;
+  final imageRegionWidthRatio = 100.obs;
   final enablePageTurnAnimation = true.obs;
   final enableDoubleTapZoom = true.obs;
   final enableTapDragZoom = false.obs;
@@ -558,6 +559,12 @@ class WebReaderController extends GetxController {
       final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       final value = int.tryParse(spacing ?? '');
       if (value != null) imageSpacing.value = value.clamp(0, 32).toInt();
+      final imageRatio =
+          await backendApiClient.getSetting(kWebImageRegionWidthRatioKey);
+      final ratioValue = int.tryParse(imageRatio ?? '');
+      if (ratioValue != null) {
+        imageRegionWidthRatio.value = ratioValue.clamp(1, 100).toInt();
+      }
     } catch (_) {}
   }
 
@@ -2198,7 +2205,7 @@ class _ImageContent extends StatelessWidget {
         );
       }
 
-      return GestureDetector(
+      Widget content = GestureDetector(
         onLongPress: () =>
             showWebReaderImageContextMenu(context, controller, index),
         onSecondaryTapUp: (details) => showWebReaderImageContextMenu(
@@ -2236,6 +2243,18 @@ class _ImageContent extends StatelessWidget {
           ),
         ),
       );
+      if (isVertical && !fitWidth) {
+        final widthFactor =
+            controller.imageRegionWidthRatio.value.clamp(1, 100) / 100;
+        content = Align(
+          alignment: Alignment.topCenter,
+          child: FractionallySizedBox(
+            widthFactor: widthFactor,
+            child: content,
+          ),
+        );
+      }
+      return content;
     });
   }
 }

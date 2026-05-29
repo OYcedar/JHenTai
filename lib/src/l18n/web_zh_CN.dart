@@ -59,6 +59,7 @@ class WebZhCN {
       'showStatusInfo': '底部显示状态信息',
       'keepScreenAwakeWhenReading': '阅读时屏幕不自动锁定',
       'gestureRegionWidthRatio': '菜单手势区域宽度比例',
+      'imageRegionWidthRatio': '图片区域宽度比例',
       'spaceBetweenImages': '图片间隔',
       'defaultTab': '启动时默认菜单',
 
@@ -675,6 +676,7 @@ class WebZhCN {
       'settings.imageSpacing': '图片间距',
       'settings.preloadPages': '预加载页数（在线）',
       'settings.preloadPagesLocal': '预加载页数（本地）',
+      'settings.imageRegionWidthRatioHint': '仅影响纵向阅读；适应宽度模式仍使用完整视口宽度。',
       'settings.autoInterval': '自动阅读间隔',
       'settings.fitWidth': '适应宽度',
       'hideScroll2TopButton': '快速回顶按钮',

@@ -120,6 +120,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
   final gestureRegionWidthRatio = 60.obs;
+  final imageRegionWidthRatio = 100.obs;
   final imageSpacing = 0.obs;
   final loaded = false.obs;
 
@@ -193,6 +194,12 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (gestureRatio != null) {
         gestureRegionWidthRatio.value =
             (int.tryParse(gestureRatio) ?? 60).clamp(1, 99).toInt();
+      }
+      final imageRatio =
+          await backendApiClient.getSetting(kWebImageRegionWidthRatioKey);
+      if (imageRatio != null) {
+        imageRegionWidthRatio.value =
+            (int.tryParse(imageRatio) ?? 100).clamp(1, 100).toInt();
       }
       final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       if (spacing != null) imageSpacing.value = int.tryParse(spacing) ?? 0;
@@ -286,6 +293,37 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                           .catchError((_) {});
                     },
                   )),
+              const SizedBox(height: 8),
+              Obx(() => Row(
+                    children: [
+                      Expanded(child: Text('imageRegionWidthRatio'.tr)),
+                      Text('${imageRegionWidthRatio.value}%'),
+                    ],
+                  )),
+              Obx(() => Slider(
+                    value: imageRegionWidthRatio.value.toDouble(),
+                    min: 1,
+                    max: 100,
+                    divisions: 99,
+                    label: '${imageRegionWidthRatio.value}%',
+                    onChanged: (v) {
+                      final rounded = v.round();
+                      imageRegionWidthRatio.value = rounded;
+                      backendApiClient
+                          .putSetting(kWebImageRegionWidthRatioKey, rounded)
+                          .catchError((_) {});
+                    },
+                  )),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'settings.imageRegionWidthRatioHint'.tr,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.grey),
+                ),
+              ),
               const SizedBox(height: 8),
               Obx(() => Row(
                     children: [

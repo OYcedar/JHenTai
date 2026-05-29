@@ -59,6 +59,7 @@ class WebKoKR {
       'showStatusInfo': '하단 상태 표시',
       'keepScreenAwakeWhenReading': '읽는 중에 화면 꺼짐 방지하기',
       'gestureRegionWidthRatio': '메뉴 제스처 영역 너비 비율',
+      'imageRegionWidthRatio': '이미지 영역 너비 비율',
       'spaceBetweenImages': '이미지 간격',
       'defaultTab': '기본 탭',
 
@@ -692,6 +693,8 @@ class WebKoKR {
       'settings.imageSpacing': '이미지 간격',
       'settings.preloadPages': '미리 로드 페이지(온라인)',
       'settings.preloadPagesLocal': '미리 로드 페이지(로컬)',
+      'settings.imageRegionWidthRatioHint':
+          '세로 읽기에만 적용됩니다. 너비 맞춤 모드는 계속 전체 화면 너비를 사용합니다.',
       'settings.autoInterval': '자동 넘기기 간격',
       'settings.fitWidth': '너비 맞춤',
       'hideScroll2TopButton': '맨 위로 버튼',

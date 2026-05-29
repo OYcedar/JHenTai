@@ -59,6 +59,7 @@ class WebZhTW {
       'showStatusInfo': '底部顯示狀態資訊',
       'keepScreenAwakeWhenReading': '閱讀時螢幕不自動鎖定',
       'gestureRegionWidthRatio': '選單手勢區域寬度比例',
+      'imageRegionWidthRatio': '圖片區域寬度比例',
       'spaceBetweenImages': '圖片間隔',
       'defaultTab': '啟動時預設選單',
 
@@ -670,6 +671,7 @@ class WebZhTW {
       'settings.imageSpacing': '圖片間距',
       'settings.preloadPages': '預載入頁數（線上）',
       'settings.preloadPagesLocal': '預載入頁數（本機）',
+      'settings.imageRegionWidthRatioHint': '僅影響縱向閱讀；適應寬度模式仍使用完整視口寬度。',
       'settings.autoInterval': '自動閱讀間隔',
       'settings.fitWidth': '適應寬度',
       'hideScroll2TopButton': '快速回頂按鈕',
