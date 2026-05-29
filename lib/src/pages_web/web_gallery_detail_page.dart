@@ -3086,8 +3086,58 @@ class _CommentTextRun {
   final String text;
   final String? url;
   final bool image;
+  final _CommentRunStyle style;
 
-  const _CommentTextRun(this.text, {this.url, this.image = false});
+  const _CommentTextRun(this.text,
+      {this.url, this.image = false, this.style = const _CommentRunStyle()});
+}
+
+class _CommentRunStyle {
+  final bool bold;
+  final bool italic;
+  final bool strikeThrough;
+  final bool underline;
+  final Color? color;
+
+  const _CommentRunStyle({
+    this.bold = false,
+    this.italic = false,
+    this.strikeThrough = false,
+    this.underline = false,
+    this.color,
+  });
+
+  _CommentRunStyle merge({
+    bool? bold,
+    bool? italic,
+    bool? strikeThrough,
+    bool? underline,
+    Color? color,
+  }) {
+    return _CommentRunStyle(
+      bold: bold ?? this.bold,
+      italic: italic ?? this.italic,
+      strikeThrough: strikeThrough ?? this.strikeThrough,
+      underline: underline ?? this.underline,
+      color: color ?? this.color,
+    );
+  }
+
+  TextStyle applyTo(TextStyle? base, {bool link = false, Color? linkColor}) {
+    final decorations = <TextDecoration>[
+      if (strikeThrough) TextDecoration.lineThrough,
+      if (underline || link) TextDecoration.underline,
+    ];
+    return (base ?? const TextStyle()).copyWith(
+      color: link ? linkColor : color,
+      fontWeight: bold ? FontWeight.bold : base?.fontWeight,
+      fontStyle: italic ? FontStyle.italic : base?.fontStyle,
+      decoration: decorations.isEmpty
+          ? base?.decoration
+          : TextDecoration.combine(decorations),
+      decorationColor: link ? linkColor : color,
+    );
+  }
 }
 
 class _LinkedCommentBody extends StatefulWidget {
@@ -3125,11 +3175,7 @@ class _LinkedCommentBodyState extends State<_LinkedCommentBody> {
   Widget build(BuildContext context) {
     _disposeRecognizers();
     final style = Theme.of(context).textTheme.bodyMedium;
-    final linkStyle = style?.copyWith(
-      color: Theme.of(context).colorScheme.primary,
-      decoration: TextDecoration.underline,
-      decorationColor: Theme.of(context).colorScheme.primary,
-    );
+    final linkColor = Theme.of(context).colorScheme.primary;
 
     final spans = <InlineSpan>[];
     for (final run in _parseCommentRuns(widget.body)) {
@@ -3165,7 +3211,7 @@ class _LinkedCommentBodyState extends State<_LinkedCommentBody> {
         continue;
       }
       if (url == null || url.isEmpty) {
-        spans.add(TextSpan(text: run.text, style: style));
+        spans.add(TextSpan(text: run.text, style: run.style.applyTo(style)));
         continue;
       }
       final recognizer = TapGestureRecognizer()
@@ -3173,7 +3219,7 @@ class _LinkedCommentBodyState extends State<_LinkedCommentBody> {
       _recognizers.add(recognizer);
       spans.add(TextSpan(
         text: run.text,
-        style: linkStyle,
+        style: run.style.applyTo(style, link: true, linkColor: linkColor),
         recognizer: recognizer,
       ));
     }
@@ -3193,40 +3239,56 @@ List<_CommentTextRun> _parseCommentRuns(String body) {
   );
   final runs = <_CommentTextRun>[];
 
-  void addText(String text, {String? url}) {
+  void addText(String text,
+      {_CommentRunStyle style = const _CommentRunStyle(), String? url}) {
     if (text.isEmpty) return;
     if (url != null && url.isNotEmpty) {
-      runs.add(_CommentTextRun(text, url: _normalizeCommentUrl(url)));
+      runs.add(
+          _CommentTextRun(text, url: _normalizeCommentUrl(url), style: style));
       return;
     }
-    runs.addAll(_splitPlainCommentLinks(text));
+    runs.addAll(_splitPlainCommentLinks(text, style: style));
   }
 
-  void walk(html_dom.Node node) {
+  void walk(
+    html_dom.Node node, {
+    _CommentRunStyle style = const _CommentRunStyle(),
+    String? linkUrl,
+  }) {
     if (node is html_dom.Text) {
-      addText(node.text);
+      addText(node.text, style: style, url: linkUrl);
       return;
     }
     if (node is! html_dom.Element) return;
     final tag = node.localName?.toLowerCase();
+    if (tag == 'div' && node.attributes['id'] == 'spa') {
+      return;
+    }
     if (tag == 'br') {
       addText('\n');
       return;
     }
     if (tag == 'a') {
       final href = node.attributes['href'] ?? '';
-      addText(node.text.isEmpty ? href : node.text, url: href);
+      if (node.nodes.isEmpty) {
+        addText(href, style: style, url: href);
+        return;
+      }
+      for (final child in node.nodes) {
+        walk(child, style: style, linkUrl: href);
+      }
       return;
     }
     if (tag == 'img') {
       final src = node.attributes['src'] ?? '';
       if (src.isEmpty) return;
       runs.add(_CommentTextRun('[${'image'.tr}]',
-          url: _normalizeCommentUrl(src), image: true));
+          url: _normalizeCommentUrl(src), image: true, style: style));
       return;
     }
+    final childStyle = _commentStyleForElement(node, style);
     for (final child in node.nodes) {
-      walk(child);
+      walk(child, style: childStyle, linkUrl: linkUrl);
     }
   }
 
@@ -3236,24 +3298,83 @@ List<_CommentTextRun> _parseCommentRuns(String body) {
   return runs;
 }
 
-List<_CommentTextRun> _splitPlainCommentLinks(String text) {
+List<_CommentTextRun> _splitPlainCommentLinks(String text,
+    {_CommentRunStyle style = const _CommentRunStyle()}) {
   final urlRe = RegExp(r'https?://[^\s<>"\]]+', caseSensitive: false);
   final runs = <_CommentTextRun>[];
   var last = 0;
   for (final m in urlRe.allMatches(text)) {
     if (m.start > last) {
-      runs.add(_CommentTextRun(text.substring(last, m.start)));
+      runs.add(_CommentTextRun(text.substring(last, m.start), style: style));
     }
     final raw = m.group(0)!;
     final trailing = RegExp(r'[.,;:!?)]*$').firstMatch(raw)?.group(0) ?? '';
     final url =
         trailing.isEmpty ? raw : raw.substring(0, raw.length - trailing.length);
-    if (url.isNotEmpty) runs.add(_CommentTextRun(url, url: url));
-    if (trailing.isNotEmpty) runs.add(_CommentTextRun(trailing));
+    if (url.isNotEmpty) {
+      runs.add(_CommentTextRun(url, url: url, style: style));
+    }
+    if (trailing.isNotEmpty) runs.add(_CommentTextRun(trailing, style: style));
     last = m.end;
   }
-  if (last < text.length) runs.add(_CommentTextRun(text.substring(last)));
+  if (last < text.length) {
+    runs.add(_CommentTextRun(text.substring(last), style: style));
+  }
   return runs;
+}
+
+_CommentRunStyle _commentStyleForElement(
+    html_dom.Element element, _CommentRunStyle parent) {
+  final tag = element.localName?.toLowerCase();
+  var style = parent;
+  if (tag == 'strong' || tag == 'b') {
+    style = style.merge(bold: true);
+  }
+  if (tag == 'em' || tag == 'i') {
+    style = style.merge(italic: true);
+  }
+  if (tag == 'del' || tag == 's' || tag == 'strike') {
+    style = style.merge(strikeThrough: true);
+  }
+  if (tag == 'u') {
+    style = style.merge(underline: true);
+  }
+  final inline = element.attributes['style'];
+  if (inline == null || inline.isEmpty) return style;
+  for (final declaration in inline.split(';')) {
+    final parts = declaration.split(':');
+    if (parts.length < 2) continue;
+    final name = parts.first.trim().toLowerCase();
+    final value = parts.sublist(1).join(':').trim().toLowerCase();
+    if (name == 'color') {
+      final color = _parseCssColor(value);
+      if (color != null) style = style.merge(color: color);
+    } else if (name == 'font-weight' &&
+        (value == 'bold' || (int.tryParse(value) ?? 0) >= 600)) {
+      style = style.merge(bold: true);
+    } else if (name == 'font-style' && value.contains('italic')) {
+      style = style.merge(italic: true);
+    } else if (name == 'text-decoration') {
+      if (value.contains('line-through')) {
+        style = style.merge(strikeThrough: true);
+      }
+      if (value.contains('underline')) {
+        style = style.merge(underline: true);
+      }
+    }
+  }
+  return style;
+}
+
+Color? _parseCssColor(String value) {
+  final hex = RegExp(r'^#([0-9a-f]{3}|[0-9a-f]{6})$', caseSensitive: false)
+      .firstMatch(value);
+  if (hex == null) return null;
+  var raw = hex.group(1)!;
+  if (raw.length == 3) {
+    raw = raw.split('').map((c) => '$c$c').join();
+  }
+  return Color(int.parse(raw, radix: 16) + 0xFF000000);
 }
 
 String _normalizeCommentUrl(String url) {
