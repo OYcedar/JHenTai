@@ -23,6 +23,13 @@ String _webHomeUploaderSearchQuery(String uploader) {
   return 'uploader:"$escaped"';
 }
 
+String _webHomeSimilarTitleQuery(String title) {
+  final cleaned = title.replaceAll(RegExp(r'\[.*?\]|\(.*?\)|{.*?}'), '').trim();
+  if (cleaned.isEmpty) return title.trim();
+  final escaped = cleaned.replaceAll('"', r'\"');
+  return 'title:"$escaped"';
+}
+
 int _galleryInt(Map<String, dynamic> gallery, String key) =>
     (gallery[key] as num?)?.toInt() ?? 0;
 
@@ -94,6 +101,8 @@ void _showWebHomeGalleryMenu(
   Map<String, dynamic> gallery, {
   required bool isLeftPane,
 }) {
+  final title = _galleryString(gallery, 'title').trim();
+  final uploader = _galleryString(gallery, 'uploader').trim();
   showMenu<String>(
     context: context,
     position: RelativeRect.fromLTRB(
@@ -117,6 +126,26 @@ void _showWebHomeGalleryMenu(
           contentPadding: EdgeInsets.zero,
         ),
       ),
+      if (title.isNotEmpty)
+        PopupMenuItem(
+          value: 'similarTitle',
+          child: ListTile(
+            leading: const Icon(Icons.title, size: 20),
+            title: Text('detail.similarByTitle'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      if (uploader.isNotEmpty)
+        PopupMenuItem(
+          value: 'searchUploader',
+          child: ListTile(
+            leading: const Icon(Icons.person_search, size: 20),
+            title: Text('tagVote.searchUploader'.tr),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
       PopupMenuItem(
         value: 'copy',
         child: ListTile(
@@ -134,6 +163,14 @@ void _showWebHomeGalleryMenu(
         break;
       case 'read':
         _readWebHomeGallery(gallery);
+        break;
+      case 'similarTitle':
+        Get.offAllNamed('/web/home',
+            arguments: {'search': _webHomeSimilarTitleQuery(title)});
+        break;
+      case 'searchUploader':
+        Get.offAllNamed('/web/home',
+            arguments: {'search': _webHomeUploaderSearchQuery(uploader)});
         break;
       case 'copy':
         _copyWebHomeGalleryUrl(gallery);
