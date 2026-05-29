@@ -3299,6 +3299,33 @@ class _SearchFieldState extends State<_SearchField> {
     _overlayEntry = null;
   }
 
+  Future<void> _pasteAndSearch() async {
+    _removeOverlay();
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text?.trim() ?? '';
+      if (text.isEmpty) {
+        Get.snackbar(
+          'common.failed'.tr,
+          'home.clipboardEmpty'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      widget.controller.searchController.text = text;
+      widget.controller.searchController.selection =
+          TextSelection.collapsed(offset: text.length);
+      await widget.controller
+          .searchOrOpenGalleryUrl(text, isLeftPane: widget.isLeftPane);
+    } catch (e) {
+      Get.snackbar(
+        'common.failed'.tr,
+        'home.clipboardReadFailed'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
@@ -3310,24 +3337,39 @@ class _SearchFieldState extends State<_SearchField> {
           decoration: InputDecoration(
             hintText: 'home.search'.tr,
             prefixIcon: const Icon(Icons.search),
-            suffixIcon: widget.controller.searchHistory.isEmpty
-                ? null
-                : Tooltip(
-                    message: 'searchHistory.translate'.tr,
+            suffixIcon: SizedBox(
+              width: widget.controller.searchHistory.isEmpty ? 48 : 96,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Tooltip(
+                    message: 'home.pasteAndSearch'.tr,
                     child: IconButton(
-                      icon: Icon(
-                        Icons.translate,
-                        color:
-                            widget.controller.showTranslatedSearchHistory.value
-                                ? Theme.of(context).colorScheme.primary
-                                : null,
-                      ),
-                      onPressed: () {
-                        widget.controller.toggleSearchHistoryTranslation();
-                        _onTextChanged();
-                      },
+                      icon: const Icon(Icons.content_paste_search),
+                      onPressed: _pasteAndSearch,
                     ),
                   ),
+                  if (widget.controller.searchHistory.isNotEmpty)
+                    Tooltip(
+                      message: 'searchHistory.translate'.tr,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.translate,
+                          color: widget
+                                  .controller.showTranslatedSearchHistory.value
+                              ? Theme.of(context).colorScheme.primary
+                              : null,
+                        ),
+                        onPressed: () {
+                          widget.controller.toggleSearchHistoryTranslation();
+                          _onTextChanged();
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

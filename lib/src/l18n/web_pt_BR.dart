@@ -38,6 +38,10 @@ class WebPtBR {
       'restoreTasksAutomatically': 'Restaurar tarefas automaticamente',
       'restoreTasksAutomaticallyHint':
           'Restaura tarefas pelos metadados de download ao iniciar o servidor',
+      'home.pasteAndSearch': 'Colar e buscar ou abrir',
+      'home.clipboardEmpty': 'A área de transferência está vazia',
+      'home.clipboardReadFailed':
+          'Não foi possível ler a área de transferência. Permita o acesso e tente novamente.',
       'restoredGalleryCount': 'Galerias restauradas',
       'restoredArchiveCount': 'Arquivos restaurados',
       'reDownload': 'Baixar novamente',

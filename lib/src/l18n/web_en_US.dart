@@ -40,6 +40,10 @@ class WebEnUS {
       'restoreTasksAutomatically': 'Restore tasks automatically',
       'restoreTasksAutomaticallyHint':
           'Restore tasks from download metadata when the server starts',
+      'home.pasteAndSearch': 'Paste and search or open',
+      'home.clipboardEmpty': 'Clipboard is empty',
+      'home.clipboardReadFailed':
+          'Could not read clipboard. Allow clipboard permission and try again.',
       'restoredGalleryCount': 'Restored galleries',
       'restoredArchiveCount': 'Restored archives',
       'reDownload': 'Re-Download',

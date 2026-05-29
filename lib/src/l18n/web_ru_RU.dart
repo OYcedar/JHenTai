@@ -39,6 +39,10 @@ class WebRuRU {
       'restoreTasksAutomatically': 'Восстанавливать задачи автоматически',
       'restoreTasksAutomaticallyHint':
           'Восстанавливать задачи из метаданных загрузок при запуске сервера',
+      'home.pasteAndSearch': 'Вставить и найти или открыть',
+      'home.clipboardEmpty': 'Буфер обмена пуст',
+      'home.clipboardReadFailed':
+          'Не удалось прочитать буфер обмена. Разрешите доступ и повторите попытку.',
       'restoredGalleryCount': 'Восстановлено галерей',
       'restoredArchiveCount': 'Восстановлено архивов',
       'reDownload': 'Скачать снова',
