@@ -258,6 +258,7 @@ class WebReaderController extends GetxController {
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
+  final keepScreenAwake = true.obs;
   final enableBottomMenu = true.obs;
   final imageSpacing = 0.obs;
   final enablePageTurnAnimation = true.obs;
@@ -304,6 +305,8 @@ class WebReaderController extends GetxController {
   /// Horizontal thumbnail strip at bottom (mouse drag + wheel).
   final stripScrollController = ScrollController();
   final focusNode = FocusNode();
+  web.WakeLockSentinel? _wakeLock;
+  web.EventListener? _visibilityListener;
 
   List<String>? localImages;
   String? localProgressKey;
@@ -322,6 +325,14 @@ class WebReaderController extends GetxController {
     _refreshEhLoggedInForOriginal();
     _loadWheelAction();
     _loadGallery();
+    _visibilityListener = ((web.Event _) {
+      if (!web.document.hidden) {
+        unawaited(_syncWakeLock());
+      } else {
+        unawaited(_releaseWakeLock());
+      }
+    }).toJS;
+    web.document.addEventListener('visibilitychange', _visibilityListener);
     _stripScrollOnPageWorker =
         ever(currentPage, (_) => _scheduleScrollThumbnailStripToCurrent());
   }
@@ -333,6 +344,11 @@ class WebReaderController extends GetxController {
     _autoTimer?.cancel();
     _saveProgressTimer?.cancel();
     _saveProgressNow();
+    final listener = _visibilityListener;
+    if (listener != null) {
+      web.document.removeEventListener('visibilitychange', listener);
+    }
+    unawaited(_releaseWakeLock());
     pageController.dispose();
     scrollController.dispose();
     stripScrollController.dispose();
@@ -474,6 +490,8 @@ class WebReaderController extends GetxController {
       final showStatus =
           await backendApiClient.getSetting(kWebShowStatusInfoKey);
       if (showStatus != null) showStatusInfo.value = showStatus != 'false';
+      final awake = await backendApiClient.getSetting(kWebKeepScreenAwakeKey);
+      if (awake != null) keepScreenAwake.value = awake != 'false';
       final bottomMenu =
           await backendApiClient.getSetting(kWebEnableBottomMenuKey);
       if (bottomMenu != null) {
@@ -513,6 +531,33 @@ class WebReaderController extends GetxController {
       final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       final value = int.tryParse(spacing ?? '');
       if (value != null) imageSpacing.value = value.clamp(0, 32).toInt();
+    } catch (_) {}
+  }
+
+  Future<void> _syncWakeLock() async {
+    if (!keepScreenAwake.value || web.document.hidden) {
+      await _releaseWakeLock();
+      return;
+    }
+    final current = _wakeLock;
+    if (current != null && !current.released) {
+      return;
+    }
+    try {
+      _wakeLock = await web.window.navigator.wakeLock.request('screen').toDart;
+    } catch (e) {
+      debugPrint('Screen wake lock unavailable: $e');
+    }
+  }
+
+  Future<void> _releaseWakeLock() async {
+    final current = _wakeLock;
+    _wakeLock = null;
+    if (current == null || current.released) {
+      return;
+    }
+    try {
+      await current.release().toDart;
     } catch (_) {}
   }
 
@@ -715,6 +760,7 @@ class WebReaderController extends GetxController {
       errorMessage.value = 'reader.loadFailed'.trParams({'error': '$e'});
     } finally {
       isLoading.value = false;
+      unawaited(_syncWakeLock());
       // Strip mounts only after loading; align once if progress was restored earlier.
       _scheduleScrollThumbnailStripToCurrent();
     }

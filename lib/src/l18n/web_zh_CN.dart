@@ -54,6 +54,7 @@ class WebZhCN {
       'showThumbnails': '显示缩略图',
       'showScrollBar': '显示滚动条',
       'showStatusInfo': '底部显示状态信息',
+      'keepScreenAwakeWhenReading': '阅读时屏幕不自动锁定',
       'gestureRegionWidthRatio': '菜单手势区域宽度比例',
       'spaceBetweenImages': '图片间隔',
       'defaultTab': '启动时默认菜单',

@@ -8,6 +8,7 @@ const kWebDisplayFirstPageAloneKey = 'web_display_first_page_alone';
 const kWebShowThumbnailsKey = 'web_show_thumbnails';
 const kWebShowScrollBarKey = 'web_show_scroll_bar';
 const kWebShowStatusInfoKey = 'web_show_status_info';
+const kWebKeepScreenAwakeKey = 'web_keep_screen_awake';
 const kWebEnableBottomMenuKey = 'web_enable_bottom_menu';
 const kWebImageSpacingKey = 'web_image_spacing';
 const kWebEnablePageTurnAnimationKey = 'web_enable_page_turn_animation';

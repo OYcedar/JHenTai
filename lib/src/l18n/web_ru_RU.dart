@@ -57,6 +57,7 @@ class WebRuRU {
       'showThumbnails': 'Показывать миниатюры',
       'showScrollBar': 'Показывать полосу прокрутки',
       'showStatusInfo': 'Показывать статус снизу',
+      'keepScreenAwakeWhenReading': 'Не выключать экран при чтении',
       'gestureRegionWidthRatio': 'Доля ширины области жеста меню',
       'spaceBetweenImages': 'Отступы между изображениями',
       'defaultTab': 'Вкладка по умолчанию',

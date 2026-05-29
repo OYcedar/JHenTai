@@ -58,6 +58,7 @@ class WebEnUS {
       'showThumbnails': 'Show Thumbnails',
       'showScrollBar': 'Show Scroll Bar',
       'showStatusInfo': 'Show Status at Bottom',
+      'keepScreenAwakeWhenReading': 'Keep Screen Awake When Reading',
       'gestureRegionWidthRatio': 'Gesture region width ratio',
       'spaceBetweenImages': 'Space Between Images',
       'defaultTab': 'Default Tab',

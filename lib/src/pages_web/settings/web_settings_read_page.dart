@@ -112,6 +112,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
+  final keepScreenAwake = true.obs;
   final enableBottomMenu = true.obs;
   final enablePageTurnAnimation = true.obs;
   final enableDoubleTapZoom = true.obs;
@@ -159,6 +160,8 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (scrollbar != null) showScrollBar.value = scrollbar != 'false';
       final status = await backendApiClient.getSetting(kWebShowStatusInfoKey);
       if (status != null) showStatusInfo.value = status != 'false';
+      final awake = await backendApiClient.getSetting(kWebKeepScreenAwakeKey);
+      if (awake != null) keepScreenAwake.value = awake != 'false';
       final bottomMenu =
           await backendApiClient.getSetting(kWebEnableBottomMenuKey);
       if (bottomMenu != null) {
@@ -423,6 +426,17 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       showStatusInfo.value = v;
                       backendApiClient
                           .putSetting(kWebShowStatusInfoKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('keepScreenAwakeWhenReading'.tr),
+                    value: keepScreenAwake.value,
+                    onChanged: (v) {
+                      keepScreenAwake.value = v;
+                      backendApiClient
+                          .putSetting(kWebKeepScreenAwakeKey, v)
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,

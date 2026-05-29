@@ -56,6 +56,7 @@ class WebPtBR {
       'showThumbnails': 'Mostrar miniaturas',
       'showScrollBar': 'Mostrar barra de rolagem',
       'showStatusInfo': 'Mostrar status na parte inferior',
+      'keepScreenAwakeWhenReading': 'Manter tela ativa ao ler',
       'gestureRegionWidthRatio':
           'Proporção da largura da área de gesto do menu',
       'spaceBetweenImages': 'Espaçamento entre imagens',
