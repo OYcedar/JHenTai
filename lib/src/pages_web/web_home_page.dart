@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/main_web.dart';
@@ -20,6 +21,125 @@ import 'package:web/web.dart' as web;
 String _webHomeUploaderSearchQuery(String uploader) {
   final escaped = uploader.trim().replaceAll('"', r'\"');
   return 'uploader:"$escaped"';
+}
+
+int _galleryInt(Map<String, dynamic> gallery, String key) =>
+    (gallery[key] as num?)?.toInt() ?? 0;
+
+String _galleryString(Map<String, dynamic> gallery, String key) =>
+    gallery[key]?.toString() ?? '';
+
+String _webHomeGalleryUrl(Map<String, dynamic> gallery) {
+  final exact = _galleryString(gallery, 'galleryUrl').trim();
+  if (exact.isNotEmpty) {
+    return exact;
+  }
+  final gid = _galleryInt(gallery, 'gid');
+  final token = _galleryString(gallery, 'token');
+  if (gid <= 0 || token.isEmpty) {
+    return '';
+  }
+  return 'https://e-hentai.org/g/$gid/$token/';
+}
+
+Future<void> _openWebHomeGallery(
+  Map<String, dynamic> gallery, {
+  required bool isLeftPane,
+}) async {
+  final gid = _galleryInt(gallery, 'gid');
+  final token = _galleryString(gallery, 'token');
+  if (gid <= 0 || token.isEmpty) {
+    return;
+  }
+  if (isLeftPane) {
+    Get.find<WebLayoutController>().selectGallery(gid, token);
+  } else {
+    Get.toNamed('/web/gallery/$gid/$token');
+  }
+}
+
+Future<void> _readWebHomeGallery(Map<String, dynamic> gallery) async {
+  final gid = _galleryInt(gallery, 'gid');
+  final token = _galleryString(gallery, 'token');
+  if (gid <= 0 || token.isEmpty) {
+    return;
+  }
+  final title = _galleryString(gallery, 'title').trim();
+  final saved = await backendApiClient.getSetting('read_progress_$gid');
+  final progress = int.tryParse(saved ?? '') ?? 0;
+  final params = <String>[];
+  if (progress > 0) {
+    params.add('startPage=$progress');
+  }
+  if (title.isNotEmpty) {
+    params.add('title=${Uri.encodeQueryComponent(title)}');
+  }
+  Get.toNamed(
+      '/web/reader/$gid/$token${params.isEmpty ? '' : '?${params.join('&')}'}');
+}
+
+void _copyWebHomeGalleryUrl(Map<String, dynamic> gallery) {
+  final url = _webHomeGalleryUrl(gallery);
+  if (url.isEmpty) {
+    return;
+  }
+  Clipboard.setData(ClipboardData(text: url));
+  Get.snackbar('hasCopiedToClipboard'.tr, url,
+      snackPosition: SnackPosition.BOTTOM);
+}
+
+void _showWebHomeGalleryMenu(
+  BuildContext context,
+  Offset position,
+  Map<String, dynamic> gallery, {
+  required bool isLeftPane,
+}) {
+  showMenu<String>(
+    context: context,
+    position: RelativeRect.fromLTRB(
+        position.dx, position.dy, position.dx + 1, position.dy + 1),
+    items: [
+      PopupMenuItem(
+        value: 'detail',
+        child: ListTile(
+          leading: const Icon(Icons.open_in_new, size: 20),
+          title: Text('common.open'.tr),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      PopupMenuItem(
+        value: 'read',
+        child: ListTile(
+          leading: const Icon(Icons.menu_book, size: 20),
+          title: Text('downloads.read'.tr),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      PopupMenuItem(
+        value: 'copy',
+        child: ListTile(
+          leading: const Icon(Icons.copy, size: 20),
+          title: Text('detail.copyUrl'.tr),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+    ],
+  ).then((value) {
+    switch (value) {
+      case 'detail':
+        _openWebHomeGallery(gallery, isLeftPane: isLeftPane);
+        break;
+      case 'read':
+        _readWebHomeGallery(gallery);
+        break;
+      case 'copy':
+        _copyWebHomeGalleryUrl(gallery);
+        break;
+    }
+  });
 }
 
 class WebHomeController extends GetxController {
@@ -3183,133 +3303,140 @@ class _GalleryListTile extends StatelessWidget {
     final title = gallery['title'] as String? ?? '';
     final category = gallery['category'] as String? ?? '';
     final gid = gallery['gid'];
-    final token = gallery['token'];
     final coverUrl = gallery['coverUrl'] as String? ?? '';
     final uploader = gallery['uploader'] as String? ?? '';
     final rating = (gallery['rating'] as num?)?.toDouble() ?? 0;
     final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
     final tags = gallery['tags'] as Map<String, dynamic>?;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          if (isLeftPane) {
-            Get.find<WebLayoutController>()
-                .selectGallery(gid as int, token as String);
-          } else {
-            Get.toNamed('/web/gallery/$gid/$token');
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _CoverWithBadge(
-                coverUrl: coverUrl,
-                gid: gid is int ? gid : 0,
-                width: 80,
-                height: compact ? 80 : 110,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _categoryColor(category),
-                            borderRadius: BorderRadius.circular(3),
+    return GestureDetector(
+      onLongPressStart: (details) => _showWebHomeGalleryMenu(
+        context,
+        details.globalPosition,
+        gallery,
+        isLeftPane: isLeftPane,
+      ),
+      onSecondaryTapUp: (details) => _showWebHomeGalleryMenu(
+        context,
+        details.globalPosition,
+        gallery,
+        isLeftPane: isLeftPane,
+      ),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _openWebHomeGallery(gallery, isLeftPane: isLeftPane),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CoverWithBadge(
+                  coverUrl: coverUrl,
+                  gid: gid is int ? gid : 0,
+                  width: 80,
+                  height: compact ? 80 : 110,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _categoryColor(category),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(category,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold)),
                           ),
-                          child: Text(category,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                        if (uploader.isNotEmpty)
-                          InkWell(
-                            borderRadius: BorderRadius.circular(4),
-                            onTap: () {
-                              final query =
-                                  _webHomeUploaderSearchQuery(uploader);
-                              homeController.searchController.text = query;
-                              homeController.searchOrOpenGalleryUrl(query,
-                                  isLeftPane: isLeftPane);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 2, vertical: 1),
-                              child: Text(
-                                uploader,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color:
-                                          Theme.of(context).colorScheme.primary,
-                                      decoration: TextDecoration.underline,
-                                    ),
+                          if (uploader.isNotEmpty)
+                            InkWell(
+                              borderRadius: BorderRadius.circular(4),
+                              onTap: () {
+                                final query =
+                                    _webHomeUploaderSearchQuery(uploader);
+                                homeController.searchController.text = query;
+                                homeController.searchOrOpenGalleryUrl(query,
+                                    isLeftPane: isLeftPane);
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 2, vertical: 1),
+                                child: Text(
+                                  uploader,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                ),
                               ),
                             ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star,
+                                  size: 14, color: Colors.amber),
+                              const SizedBox(width: 2),
+                              Text(rating.toStringAsFixed(1),
+                                  style: Theme.of(context).textTheme.bodySmall),
+                            ],
                           ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star,
-                                size: 14, color: Colors.amber),
-                            const SizedBox(width: 2),
-                            Text(rating.toStringAsFixed(1),
-                                style: Theme.of(context).textTheme.bodySmall),
-                          ],
-                        ),
-                        Text('${pageCount}P',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(color: Colors.grey)),
-                        _WebGalleryReadProgressIndicator(
-                          gid: gid is int ? gid : 0,
-                          pageCount: pageCount,
-                        ),
+                          Text('${pageCount}P',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(color: Colors.grey)),
+                          _WebGalleryReadProgressIndicator(
+                            gid: gid is int ? gid : 0,
+                            pageCount: pageCount,
+                          ),
+                        ],
+                      ),
+                      if (!compact && tags != null && tags.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Obx(() => Wrap(
+                              spacing: 3,
+                              runSpacing: 3,
+                              children: _buildHomePageTagChips(
+                                tags,
+                                tagTranslations: homeController.tagTranslations,
+                                accountWatchedBackgroundArgb:
+                                    Get.find<WebWatchedTagStylesController>()
+                                        .backgroundArgbByTagKey
+                                        .value,
+                                maxTags: 12,
+                              ),
+                            )),
                       ],
-                    ),
-                    if (!compact && tags != null && tags.isNotEmpty) ...[
-                      const SizedBox(height: 6),
-                      Obx(() => Wrap(
-                            spacing: 3,
-                            runSpacing: 3,
-                            children: _buildHomePageTagChips(
-                              tags,
-                              tagTranslations: homeController.tagTranslations,
-                              accountWatchedBackgroundArgb:
-                                  Get.find<WebWatchedTagStylesController>()
-                                      .backgroundArgbByTagKey
-                                      .value,
-                              maxTags: 12,
-                            ),
-                          )),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -3349,105 +3476,111 @@ class _GalleryCard extends StatelessWidget {
     final title = gallery['title'] as String? ?? '';
     final category = gallery['category'] as String? ?? '';
     final gid = gallery['gid'];
-    final token = gallery['token'];
     final coverUrl = gallery['coverUrl'] as String? ?? '';
     final tags = gallery['tags'] as Map<String, dynamic>?;
     final pageCount = (gallery['pageCount'] as num?)?.toInt() ?? 0;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          if (isLeftPane) {
-            Get.find<WebLayoutController>()
-                .selectGallery(gid as int, token as String);
-          } else {
-            Get.toNamed('/web/gallery/$gid/$token');
-          }
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              color: _categoryColor(category),
-              child: Text(
-                category,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold),
-                overflow: TextOverflow.ellipsis,
+    return GestureDetector(
+      onLongPressStart: (details) => _showWebHomeGalleryMenu(
+        context,
+        details.globalPosition,
+        gallery,
+        isLeftPane: isLeftPane,
+      ),
+      onSecondaryTapUp: (details) => _showWebHomeGalleryMenu(
+        context,
+        details.globalPosition,
+        gallery,
+        isLeftPane: isLeftPane,
+      ),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _openWebHomeGallery(gallery, isLeftPane: isLeftPane),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                color: _categoryColor(category),
+                child: Text(
+                  category,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  coverUrl.isNotEmpty
-                      ? WebProxiedImage(
-                          sourceUrl: coverUrl,
-                          fit: BoxFit.cover,
-                          surfaceLoadingPlaceholder: true,
-                          readerErrorChild: Container(
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    coverUrl.isNotEmpty
+                        ? WebProxiedImage(
+                            sourceUrl: coverUrl,
+                            fit: BoxFit.cover,
+                            surfaceLoadingPlaceholder: true,
+                            readerErrorChild: Container(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              child: const Center(
+                                child: Icon(Icons.broken_image,
+                                    size: 32, color: Colors.grey),
+                              ),
+                            ),
+                          )
+                        : Container(
                             color: Theme.of(context)
                                 .colorScheme
                                 .surfaceContainerHighest,
                             child: const Center(
-                              child: Icon(Icons.broken_image,
-                                  size: 32, color: Colors.grey),
+                              child: Icon(Icons.photo_library,
+                                  size: 48, color: Colors.grey),
                             ),
                           ),
-                        )
-                      : Container(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                          child: const Center(
-                            child: Icon(Icons.photo_library,
-                                size: 48, color: Colors.grey),
-                          ),
-                        ),
-                  _DownloadBadgeOverlay(gid: gid is int ? gid : 0),
-                  Positioned(
-                    left: 4,
-                    bottom: 4,
-                    child: _WebGalleryReadProgressIndicator(
-                      gid: gid is int ? gid : 0,
-                      pageCount: pageCount,
-                      overlay: true,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-              child: Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ),
-            if (tags != null && tags.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: Obx(() => Wrap(
-                      spacing: 3,
-                      runSpacing: 3,
-                      children: _buildHomePageTagChips(
-                        tags,
-                        tagTranslations: homeController.tagTranslations,
-                        accountWatchedBackgroundArgb:
-                            Get.find<WebWatchedTagStylesController>()
-                                .backgroundArgbByTagKey
-                                .value,
-                        maxTags: 8,
+                    _DownloadBadgeOverlay(gid: gid is int ? gid : 0),
+                    Positioned(
+                      left: 4,
+                      bottom: 4,
+                      child: _WebGalleryReadProgressIndicator(
+                        gid: gid is int ? gid : 0,
+                        pageCount: pageCount,
+                        overlay: true,
                       ),
-                    )),
+                    ),
+                  ],
+                ),
               ),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              if (tags != null && tags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: Obx(() => Wrap(
+                        spacing: 3,
+                        runSpacing: 3,
+                        children: _buildHomePageTagChips(
+                          tags,
+                          tagTranslations: homeController.tagTranslations,
+                          accountWatchedBackgroundArgb:
+                              Get.find<WebWatchedTagStylesController>()
+                                  .backgroundArgbByTagKey
+                                  .value,
+                          maxTags: 8,
+                        ),
+                      )),
+                ),
+            ],
+          ),
         ),
       ),
     );
