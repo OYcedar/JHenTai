@@ -3768,23 +3768,97 @@ class _WebAddTagDialog extends StatefulWidget {
 
 class _WebAddTagDialogState extends State<_WebAddTagDialog> {
   final _controller = TextEditingController();
+  Timer? _searchDebounce;
+  List<Map<String, dynamic>> _suggestions = [];
   bool _isSubmitting = false;
+  bool _isSearching = false;
+  int _searchSeq = 0;
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
+  String get _lastKeyword {
+    final parts = _controller.text.split(',');
+    return parts.isEmpty ? _controller.text.trim() : parts.last.trim();
+  }
+
+  void _scheduleSearch() {
+    _searchDebounce?.cancel();
+    final keyword = _lastKeyword;
+    if (keyword.length < 2) {
+      setState(() {
+        _suggestions = [];
+        _isSearching = false;
+      });
+      return;
+    }
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 300),
+      () => _searchTags(keyword),
+    );
+  }
+
+  Future<void> _searchTags(String keyword) async {
+    final seq = ++_searchSeq;
+    setState(() => _isSearching = true);
+    try {
+      final results = await backendApiClient.searchTags(keyword, limit: 20);
+      if (!mounted || seq != _searchSeq) {
+        return;
+      }
+      setState(() {
+        _suggestions =
+            results.whereType<Map>().map(Map<String, dynamic>.from).toList();
+        _isSearching = false;
+      });
+    } catch (_) {
+      if (!mounted || seq != _searchSeq) {
+        return;
+      }
+      setState(() {
+        _suggestions = [];
+        _isSearching = false;
+      });
+    }
+  }
+
+  void _insertSuggestion(Map<String, dynamic> tag) {
+    final namespace = tag['namespace']?.toString() ?? '';
+    final key = tag['key']?.toString() ?? '';
+    if (namespace.isEmpty || key.isEmpty) {
+      return;
+    }
+    final parts = _controller.text.split(',');
+    if (parts.isNotEmpty) {
+      parts.removeLast();
+    }
+    parts.add('$namespace:$key');
+    _controller.text =
+        parts.map((e) => e.trim()).where((e) => e.isNotEmpty).join(', ');
+    _controller.selection =
+        TextSelection.collapsed(offset: _controller.text.length);
+    setState(() => _suggestions = []);
+  }
+
   Future<void> _submit() async {
     final tags = _controller.text.trim();
-    if (tags.isEmpty) return;
+    if (tags.isEmpty) {
+      return;
+    }
     setState(() => _isSubmitting = true);
     try {
       final ok = await widget.onSubmit(tags);
-      if (ok && mounted) Navigator.pop(context);
+      if (ok && mounted) {
+        Navigator.pop(context);
+      }
     } finally {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -3794,16 +3868,67 @@ class _WebAddTagDialogState extends State<_WebAddTagDialog> {
       title: Text('tagVote.addTag'.tr),
       content: SizedBox(
         width: 420,
-        child: TextField(
-          controller: _controller,
-          autofocus: true,
-          minLines: 1,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: 'tagVote.addTagHint'.tr,
-            border: const OutlineInputBorder(),
-          ),
-          onSubmitted: (_) => _submit(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              minLines: 1,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'tagVote.addTagHint'.tr,
+                border: const OutlineInputBorder(),
+                suffixIcon: _isSearching
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : const Icon(Icons.search),
+              ),
+              onChanged: (_) => _scheduleSearch(),
+              onSubmitted: (_) => _submit(),
+            ),
+            if (_suggestions.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 260),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: _suggestions.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (ctx, index) {
+                    final tag = _suggestions[index];
+                    final namespace = tag['namespace']?.toString() ?? '';
+                    final key = tag['key']?.toString() ?? '';
+                    final tagName = tag['tag_name']?.toString() ?? key;
+                    final hasTranslation = tagName.isNotEmpty && tagName != key;
+                    final fromEh = tag['source']?.toString() == 'eh';
+                    return ListTile(
+                      dense: true,
+                      leading: Icon(fromEh ? Icons.cloud_queue : Icons.label,
+                          size: 18),
+                      title: Text(
+                        hasTranslation ? tagName : '$namespace:$key',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: hasTranslation
+                          ? Text('$namespace:$key',
+                              maxLines: 1, overflow: TextOverflow.ellipsis)
+                          : null,
+                      trailing: const Icon(Icons.add, size: 18),
+                      onTap: () => _insertSuggestion(tag),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ],
         ),
       ),
       actions: [
