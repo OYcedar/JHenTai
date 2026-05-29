@@ -1021,6 +1021,7 @@ class WebReaderController extends GetxController {
     if (page < 0 || page >= totalPages.value) return;
     final dir = readDirection.value;
     if (dir == ReadDirection.vertical || dir == ReadDirection.fitWidth) {
+      _scrollToListImage(page);
       return;
     }
     final target = dir == ReadDirection.doubleColumn
@@ -1371,7 +1372,38 @@ class WebReaderController extends GetxController {
     }
     final context = _imageItemKeys[index]?.currentContext;
     if (context == null) {
-      return _scrollListByViewport(index > currentPage.value ? 1 : -1);
+      final position = scrollController.position;
+      final denominator = math.max(1, totalPages.value - 1);
+      final target = (position.maxScrollExtent * index / denominator)
+          .clamp(0.0, position.maxScrollExtent)
+          .toDouble();
+      final settle = enablePageTurnAnimation.value
+          ? scrollController.animateTo(
+              target,
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeInOut,
+            )
+          : Future<void>(() => scrollController.jumpTo(target));
+      currentPage.value = index;
+      if (mode == ReaderMode.online) {
+        _preloadAround(index);
+      }
+      _scheduleSaveProgress();
+      unawaited(settle.whenComplete(() {
+        final mountedContext = _imageItemKeys[index]?.currentContext;
+        if (mountedContext == null || !scrollController.hasClients) {
+          return;
+        }
+        Scrollable.ensureVisible(
+          mountedContext,
+          alignment: 0,
+          duration: enablePageTurnAnimation.value
+              ? const Duration(milliseconds: 120)
+              : Duration.zero,
+          curve: Curves.easeInOut,
+        );
+      }));
+      return true;
     }
     Scrollable.ensureVisible(
       context,
