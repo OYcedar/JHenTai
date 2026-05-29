@@ -18,9 +18,12 @@ class HistoryRoutes {
   }
 
   Future<Response> _list(Request request) async {
-    final limit = int.tryParse(request.url.queryParameters['limit'] ?? '') ?? 50;
-    final offset = int.tryParse(request.url.queryParameters['offset'] ?? '') ?? 0;
-    final items = db.selectHistory(limit: limit, offset: offset);
+    final limit =
+        int.tryParse(request.url.queryParameters['limit'] ?? '') ?? 50;
+    final offset =
+        int.tryParse(request.url.queryParameters['offset'] ?? '') ?? 0;
+    final query = request.url.queryParameters['q'] ?? '';
+    final items = db.selectHistory(limit: limit, offset: offset, query: query);
     return Response.ok(
       jsonEncode({'items': items}),
       headers: {'Content-Type': 'application/json'},
@@ -42,7 +45,8 @@ class HistoryRoutes {
     final category = body['category'] as String? ?? '';
 
     if (gid == null) {
-      return Response.badRequest(body: jsonEncode({'error': 'gid is required'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'gid is required'}));
     }
 
     db.upsertHistory(gid, token, title, coverUrl, category);

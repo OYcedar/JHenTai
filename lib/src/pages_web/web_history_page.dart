@@ -9,12 +9,15 @@ class WebHistoryController extends GetxController {
   static const pageSize = 100;
   static const viewModeStorageKey = 'jh_web_history_view_mode';
 
+  final searchController = TextEditingController();
   final items = <Map<String, dynamic>>[].obs;
   final isLoading = false.obs;
   final isLoadingMore = false.obs;
   final hasMore = false.obs;
   final errorMessage = ''.obs;
   final viewMode = 'list'.obs;
+  final searchQuery = ''.obs;
+  Worker? _searchWorker;
 
   @override
   void onInit() {
@@ -23,14 +26,29 @@ class WebHistoryController extends GetxController {
     if (savedViewMode == 'grid' || savedViewMode == 'list') {
       viewMode.value = savedViewMode!;
     }
+    _searchWorker = debounce<String>(
+      searchQuery,
+      (_) => loadHistory(),
+      time: const Duration(milliseconds: 350),
+    );
     loadHistory();
+  }
+
+  @override
+  void onClose() {
+    _searchWorker?.dispose();
+    searchController.dispose();
+    super.onClose();
   }
 
   Future<void> loadHistory() async {
     isLoading.value = true;
     errorMessage.value = '';
     try {
-      final result = await backendApiClient.fetchHistory(limit: pageSize);
+      final result = await backendApiClient.fetchHistory(
+        limit: pageSize,
+        query: searchQuery.value,
+      );
       final nextItems =
           ((result['items'] as List?) ?? []).cast<Map<String, dynamic>>();
       items.value = nextItems;
@@ -43,12 +61,15 @@ class WebHistoryController extends GetxController {
   }
 
   Future<void> loadMore() async {
-    if (isLoadingMore.value || !hasMore.value) return;
+    if (isLoadingMore.value || !hasMore.value) {
+      return;
+    }
     isLoadingMore.value = true;
     try {
       final result = await backendApiClient.fetchHistory(
         limit: pageSize,
         offset: items.length,
+        query: searchQuery.value,
       );
       final nextItems =
           ((result['items'] as List?) ?? []).cast<Map<String, dynamic>>();
@@ -81,6 +102,19 @@ class WebHistoryController extends GetxController {
     viewMode.value = next;
     web.window.localStorage.setItem(viewModeStorageKey, next);
   }
+
+  void updateSearch(String value) {
+    searchQuery.value = value.trim();
+  }
+
+  void clearSearch() {
+    searchController.clear();
+    if (searchQuery.value.isEmpty) {
+      loadHistory();
+    } else {
+      searchQuery.value = '';
+    }
+  }
 }
 
 class WebHistoryPage extends GetView<WebHistoryController> {
@@ -106,45 +140,80 @@ class WebHistoryPage extends GetView<WebHistoryController> {
           ),
         ],
       ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.errorMessage.isNotEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                const SizedBox(height: 12),
-                Text(controller.errorMessage.value),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: controller.loadHistory,
-                  label: Text('common.retry'.tr),
-                ),
-              ],
-            ),
-          );
-        }
-        if (controller.items.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.history, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text('history.empty'.tr,
-                    style: Theme.of(context).textTheme.bodyLarge),
-              ],
-            ),
-          );
-        }
-        return controller.viewMode.value == 'grid'
-            ? _buildGrid(context)
-            : _buildList(context);
-      }),
+      body: Column(
+        children: [
+          _buildSearchBar(context),
+          Expanded(
+            child: Obx(() {
+              if (controller.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (controller.errorMessage.isNotEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline,
+                          size: 48, color: Colors.red),
+                      const SizedBox(height: 12),
+                      Text(controller.errorMessage.value),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: controller.loadHistory,
+                        label: Text('common.retry'.tr),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              if (controller.items.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.history, size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text('history.empty'.tr,
+                          style: Theme.of(context).textTheme.bodyLarge),
+                    ],
+                  ),
+                );
+              }
+              return controller.viewMode.value == 'grid'
+                  ? _buildGrid(context)
+                  : _buildList(context);
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: TextField(
+        controller: controller.searchController,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: 'history.search'.tr,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: Obx(
+            () => controller.searchQuery.value.isEmpty
+                ? const SizedBox.shrink()
+                : IconButton(
+                    icon: const Icon(Icons.clear),
+                    tooltip: 'common.clear'.tr,
+                    onPressed: controller.clearSearch,
+                  ),
+          ),
+          border: const OutlineInputBorder(),
+          isDense: true,
+        ),
+        onChanged: controller.updateSearch,
+        onSubmitted: controller.updateSearch,
+      ),
     );
   }
 

@@ -11,6 +11,7 @@ class WebZhCN {
       'common.retry': '重试',
       'common.delete': '删除',
       'common.reset': '重置',
+      'common.clear': '清除',
       'preset': '预设',
       'custom': '自定义',
       'common.refresh': '刷新',
@@ -488,6 +489,7 @@ class WebZhCN {
       'history.clearConfirm': '确定要清空所有浏览记录吗？',
       'history.loadFailed': '加载浏览记录失败: @error',
       'history.loadMore': '加载更多',
+      'history.search': '搜索浏览记录...',
 
       // search history
       'searchHistory.clearAll': '清除搜索记录',

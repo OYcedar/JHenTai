@@ -11,6 +11,7 @@ class WebZhTW {
       'common.retry': '重試',
       'common.delete': '刪除',
       'common.reset': '重設',
+      'common.clear': '清除',
       'preset': '預設',
       'custom': '自訂',
       'common.refresh': '重新整理',
@@ -488,6 +489,7 @@ class WebZhTW {
       'history.clearConfirm': '確定要清除所有瀏覽記錄嗎？',
       'history.loadFailed': '載入瀏覽記錄失敗: @error',
       'history.loadMore': '載入更多',
+      'history.search': '搜尋瀏覽記錄...',
 
       // search history
       'searchHistory.clearAll': '清除搜尋記錄',

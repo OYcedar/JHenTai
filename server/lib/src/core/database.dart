@@ -406,15 +406,44 @@ class ServerDatabase {
     ]);
   }
 
-  List<Map<String, dynamic>> selectHistory({int limit = 50, int offset = 0}) {
+  List<Map<String, dynamic>> selectHistory({
+    int limit = 50,
+    int offset = 0,
+    String query = '',
+  }) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return _db
+          .select(
+            'SELECT * FROM history ORDER BY visit_time DESC LIMIT ? OFFSET ?',
+            [limit, offset],
+          )
+          .map(_rowToMap)
+          .toList();
+    }
+
+    final like = '%${_escapeLike(trimmed.toLowerCase())}%';
     return _db
         .select(
-          'SELECT * FROM history ORDER BY visit_time DESC LIMIT ? OFFSET ?',
-          [limit, offset],
+          '''
+          SELECT * FROM history
+          WHERE CAST(gid AS TEXT) LIKE ? ESCAPE '\'
+             OR lower(token) LIKE ? ESCAPE '\'
+             OR lower(title) LIKE ? ESCAPE '\'
+             OR lower(category) LIKE ? ESCAPE '\'
+          ORDER BY visit_time DESC
+          LIMIT ? OFFSET ?
+        ''',
+          [like, like, like, like, limit, offset],
         )
         .map(_rowToMap)
         .toList();
   }
+
+  String _escapeLike(String value) => value
+      .replaceAll(r'\', r'\\')
+      .replaceAll('%', r'\%')
+      .replaceAll('_', r'\_');
 
   void deleteHistory(int gid) {
     _db.execute('DELETE FROM history WHERE gid = ?', [gid]);

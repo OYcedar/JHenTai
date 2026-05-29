@@ -11,6 +11,7 @@ class WebPtBR {
       'common.retry': 'Tentar novamente',
       'common.delete': 'Excluir',
       'common.reset': 'Redefinir',
+      'common.clear': 'Limpar',
       'preset': 'Preset',
       'custom': 'Custom',
       'common.refresh': 'Atualizar',
@@ -542,6 +543,7 @@ class WebPtBR {
       'history.clearConfirm': 'Tem certeza que deseja limpar todo o histórico?',
       'history.loadFailed': 'Falha ao carregar histórico: @error',
       'history.loadMore': 'Carregar mais',
+      'history.search': 'Pesquisar histórico...',
 
       // search history
       'searchHistory.clearAll': 'Limpar histórico de pesquisa',

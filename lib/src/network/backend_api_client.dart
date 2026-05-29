@@ -798,10 +798,15 @@ class BackendApiClient {
   Future<Map<String, dynamic>> fetchHistory({
     int limit = 50,
     int offset = 0,
+    String query = '',
   }) async {
     final response = await _dio.get(
       '/api/history/list',
-      queryParameters: {'limit': limit, 'offset': offset},
+      queryParameters: {
+        'limit': limit,
+        'offset': offset,
+        if (query.trim().isNotEmpty) 'q': query.trim(),
+      },
     );
     return response.data;
   }

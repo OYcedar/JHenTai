@@ -11,6 +11,7 @@ class WebKoKR {
       'common.retry': '재시도',
       'common.delete': '삭제',
       'common.reset': '초기화',
+      'common.clear': '지우기',
       'preset': '프리셋',
       'custom': '커스텀',
       'common.refresh': '새로고침',
@@ -505,6 +506,7 @@ class WebKoKR {
       'history.clearConfirm': '모든 방문 기록을 삭제하시겠습니까?',
       'history.loadFailed': '방문 기록 로드 실패: @error',
       'history.loadMore': '더 불러오기',
+      'history.search': '방문 기록 검색...',
 
       // search history
       'searchHistory.clearAll': '검색 기록 삭제',

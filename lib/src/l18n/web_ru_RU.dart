@@ -11,6 +11,7 @@ class WebRuRU {
       'common.retry': 'Повторить',
       'common.delete': 'Удалить',
       'common.reset': 'Сбросить',
+      'common.clear': 'Очистить',
       'preset': 'Предустановка',
       'custom': 'Пользовательский',
       'common.refresh': 'Обновить',
@@ -537,6 +538,7 @@ class WebRuRU {
       'history.clearConfirm': 'Вы уверены, что хотите очистить всю историю?',
       'history.loadFailed': 'Ошибка загрузки истории: @error',
       'history.loadMore': 'Загрузить ещё',
+      'history.search': 'Поиск в истории...',
 
       // search history
       'searchHistory.clearAll': 'Очистить историю поиска',

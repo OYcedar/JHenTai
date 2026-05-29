@@ -11,6 +11,7 @@ class WebEnUS {
       'common.retry': 'Retry',
       'common.delete': 'Delete',
       'common.reset': 'Reset',
+      'common.clear': 'Clear',
       'preset': 'Preset',
       'custom': 'Custom',
       'common.refresh': 'Refresh',
@@ -538,6 +539,7 @@ class WebEnUS {
           'Are you sure you want to clear all browsing history?',
       'history.loadFailed': 'Failed to load history: @error',
       'history.loadMore': 'Load more',
+      'history.search': 'Search browsing history...',
 
       // search history
       'searchHistory.clearAll': 'Clear search history',
