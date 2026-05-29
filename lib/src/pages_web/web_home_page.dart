@@ -12,6 +12,7 @@ import 'package:jhentai/src/model/gallery_image_page_url.dart';
 import 'package:jhentai/src/model/gallery_url.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
+import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
@@ -96,6 +97,182 @@ void _copyWebHomeGalleryUrl(Map<String, dynamic> gallery) {
       snackPosition: SnackPosition.BOTTOM);
 }
 
+List<String> _webHomeDownloadGroupCandidates(WebDownloadService svc) {
+  final set = <String>{};
+  for (final task in svc.galleryTasks.values) {
+    set.add((task['group_name'] ?? task['groupName'] ?? 'default').toString());
+  }
+  for (final task in svc.archiveTasks.values) {
+    set.add((task['group_name'] ?? task['groupName'] ?? 'default').toString());
+  }
+  if (set.isEmpty) {
+    set.add('default');
+  }
+  final list = set.toList();
+  list.sort((a, b) {
+    if (a == 'default') {
+      return -1;
+    }
+    if (b == 'default') {
+      return 1;
+    }
+    return a.compareTo(b);
+  });
+  return list;
+}
+
+String _webHomeDownloadTagSearchText(Map<String, dynamic> gallery) {
+  final tags = gallery['tags'];
+  if (tags is! Map) {
+    return '';
+  }
+  final values = <String>{};
+  for (final entry in tags.entries) {
+    final namespace = entry.key.toString();
+    final rawList = entry.value;
+    if (rawList is! List) {
+      continue;
+    }
+    for (final raw in rawList) {
+      final key = _parseTagListEntryKey(raw).trim();
+      final label = _parseTagListEntryLabel(raw).trim();
+      if (key.isNotEmpty) {
+        values.add('$namespace:$key');
+      }
+      if (label.isNotEmpty && label != key) {
+        values.add('$namespace:$label');
+        values.add(label);
+      }
+    }
+  }
+  return values.join('\n');
+}
+
+void _showStartWebHomeGalleryDownloadDialog(
+  BuildContext context,
+  Map<String, dynamic> gallery,
+) {
+  final gid = _galleryInt(gallery, 'gid');
+  final token = _galleryString(gallery, 'token').trim();
+  final title = _galleryString(gallery, 'title').trim();
+  if (gid <= 0 || token.isEmpty || title.isEmpty) {
+    Get.snackbar(
+        'common.error'.tr,
+        'detail.downloadFailed'.trParams({
+          'error': 'Invalid gallery metadata',
+        }),
+        snackPosition: SnackPosition.BOTTOM);
+    return;
+  }
+
+  final svc = Get.find<WebDownloadService>();
+  final candidates = _webHomeDownloadGroupCandidates(svc);
+  final rawGroup =
+      web.window.localStorage.getItem('jh_web_default_gallery_group');
+  var group =
+      rawGroup != null && rawGroup.trim().isNotEmpty ? rawGroup : 'default';
+  var downloadOriginalImage =
+      web.window.localStorage.getItem('jh_web_default_gallery_original') ==
+          'true';
+  final priorityCtrl = TextEditingController(
+    text: web.window.localStorage.getItem('jh_web_default_gallery_priority') ??
+        '0',
+  );
+
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('detail.startDownloadTitle'.tr),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            WebGroupNameSelector(
+              currentGroup: group,
+              candidates: candidates,
+              listener: (value) => group = value,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priorityCtrl,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'detail.downloadPriority'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            StatefulBuilder(
+              builder: (context, setState) => CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: downloadOriginalImage,
+                onChanged: (value) => setState(
+                  () => downloadOriginalImage = value ?? false,
+                ),
+                title: Text('downloadOriginalImage'.tr),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: () async {
+            final selectedGroup =
+                group.trim().isEmpty ? 'default' : group.trim();
+            final priority = int.tryParse(priorityCtrl.text.trim()) ?? 0;
+            web.window.localStorage
+                .setItem('jh_web_default_gallery_group', selectedGroup);
+            web.window.localStorage
+                .setItem('jh_web_default_gallery_priority', '$priority');
+            web.window.localStorage.setItem(
+              'jh_web_default_gallery_original',
+              downloadOriginalImage ? 'true' : 'false',
+            );
+            Navigator.pop(ctx);
+            try {
+              await backendApiClient.startGalleryDownload(
+                gid: gid,
+                token: token,
+                title: title,
+                galleryUrl: _webHomeGalleryUrl(gallery),
+                category: _galleryString(gallery, 'category'),
+                pageCount: _galleryInt(gallery, 'pageCount'),
+                coverUrl: _galleryString(gallery, 'coverUrl'),
+                uploader: _galleryString(gallery, 'uploader'),
+                group: selectedGroup,
+                priority: priority,
+                downloadOriginalImage: downloadOriginalImage,
+                tagSearchText: _webHomeDownloadTagSearchText(gallery),
+              );
+              Get.snackbar(
+                'detail.downloadStarted'.tr,
+                'detail.galleryQueued'.tr,
+                snackPosition: SnackPosition.BOTTOM,
+              );
+              await Get.find<WebDownloadService>().refresh();
+            } catch (e) {
+              Get.snackbar(
+                'common.error'.tr,
+                'detail.downloadFailed'.trParams({'error': '$e'}),
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.red.withValues(alpha: 0.7),
+              );
+            }
+          },
+          child: Text('common.ok'.tr),
+        ),
+      ],
+    ),
+  );
+}
+
 void _showWebHomeGalleryMenu(
   BuildContext context,
   Offset position,
@@ -123,6 +300,15 @@ void _showWebHomeGalleryMenu(
         child: ListTile(
           leading: const Icon(Icons.menu_book, size: 20),
           title: Text('downloads.read'.tr),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+        ),
+      ),
+      PopupMenuItem(
+        value: 'downloadGallery',
+        child: ListTile(
+          leading: const Icon(Icons.file_download, size: 20),
+          title: Text('detail.downloadGallery'.tr),
           dense: true,
           contentPadding: EdgeInsets.zero,
         ),
@@ -164,6 +350,9 @@ void _showWebHomeGalleryMenu(
         break;
       case 'read':
         _readWebHomeGallery(gallery);
+        break;
+      case 'downloadGallery':
+        _showStartWebHomeGalleryDownloadDialog(context, gallery);
         break;
       case 'similarTitle':
         Get.offAllNamed('/web/home',
