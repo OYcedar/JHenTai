@@ -883,6 +883,9 @@ class WebEnUS {
           'Move @count visible tasks to this group.',
       'downloads.changeBatchGroup': 'Change tasks group',
       'downloads.changeBatchGroupConfirm': 'Move @scope to this group.',
+      'downloads.changeVisiblePriority': 'Change visible tasks priority',
+      'downloads.changeBatchPriority': 'Change tasks priority',
+      'downloads.changeBatchPriorityConfirm': 'Set the priority for @scope to:',
       'downloads.deleteVisible': 'Delete visible tasks',
       'downloads.deleteVisibleConfirm':
           'Choose how to delete @count visible tasks.',
@@ -895,6 +898,7 @@ class WebEnUS {
       'downloads.batchRedownloaded': 'Restarted @count tasks',
       'downloads.batchReUnlocked': 'Re-unlocked @count archive tasks',
       'downloads.batchGroupChanged': 'Changed group for @count tasks',
+      'downloads.batchPriorityChanged': 'Changed priority for @count tasks',
       'downloads.batchDeleted': 'Deleted @count tasks',
 
       'detail.startDownloadTitle': 'Start download',

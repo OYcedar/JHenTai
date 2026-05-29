@@ -824,6 +824,9 @@ class WebZhCN {
       'downloads.changeVisibleGroupConfirm': '将当前可见的 @count 个任务移动到此分组。',
       'downloads.changeBatchGroup': '修改任务分组',
       'downloads.changeBatchGroupConfirm': '将 @scope 移动到此分组。',
+      'downloads.changeVisiblePriority': '修改当前列表优先级',
+      'downloads.changeBatchPriority': '修改任务优先级',
+      'downloads.changeBatchPriorityConfirm': '将 @scope 的优先级改为：',
       'downloads.deleteVisible': '删除当前列表任务',
       'downloads.deleteVisibleConfirm': '请选择如何删除当前可见的 @count 个任务。',
       'downloads.deleteBatchConfirm': '请选择如何删除 @scope。',
@@ -835,6 +838,7 @@ class WebZhCN {
       'downloads.batchRedownloaded': '已重新开始 @count 个任务',
       'downloads.batchReUnlocked': '已重新解锁 @count 个归档任务',
       'downloads.batchGroupChanged': '已修改 @count 个任务的分组',
+      'downloads.batchPriorityChanged': '已修改 @count 个任务的优先级',
       'downloads.batchDeleted': '已删除 @count 个任务',
 
       // detail download dialog

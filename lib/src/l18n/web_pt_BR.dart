@@ -887,6 +887,11 @@ class WebPtBR {
           'Mover @count tarefas visíveis para este grupo.',
       'downloads.changeBatchGroup': 'Alterar grupo das tarefas',
       'downloads.changeBatchGroupConfirm': 'Mover @scope para este grupo.',
+      'downloads.changeVisiblePriority':
+          'Alterar prioridade das tarefas visíveis',
+      'downloads.changeBatchPriority': 'Alterar prioridade das tarefas',
+      'downloads.changeBatchPriorityConfirm':
+          'Definir a prioridade de @scope como:',
       'downloads.deleteVisible': 'Excluir tarefas visíveis',
       'downloads.deleteVisibleConfirm':
           'Escolha como excluir @count tarefas visíveis.',
@@ -900,6 +905,8 @@ class WebPtBR {
       'downloads.batchReUnlocked':
           '@count tarefas de arquivo desbloqueadas novamente',
       'downloads.batchGroupChanged': 'Grupo alterado para @count tarefas',
+      'downloads.batchPriorityChanged':
+          'Prioridade alterada para @count tarefas',
       'downloads.batchDeleted': '@count tarefas excluídas',
       'detail.startDownloadTitle': 'Iniciar download',
       'detail.downloadGroup': 'Grupo',

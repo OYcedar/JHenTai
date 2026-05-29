@@ -883,6 +883,9 @@ class WebRuRU {
           'Переместить @count видимых задач в эту группу.',
       'downloads.changeBatchGroup': 'Изменить группу задач',
       'downloads.changeBatchGroupConfirm': 'Переместить @scope в эту группу.',
+      'downloads.changeVisiblePriority': 'Изменить приоритет видимых задач',
+      'downloads.changeBatchPriority': 'Изменить приоритет задач',
+      'downloads.changeBatchPriorityConfirm': 'Задать приоритет для @scope:',
       'downloads.deleteVisible': 'Удалить видимые задачи',
       'downloads.deleteVisibleConfirm':
           'Выберите, как удалить @count видимых задач.',
@@ -895,6 +898,7 @@ class WebRuRU {
       'downloads.batchRedownloaded': 'Перезапущено задач: @count',
       'downloads.batchReUnlocked': 'Архивов разблокировано заново: @count',
       'downloads.batchGroupChanged': 'Группа изменена для задач: @count',
+      'downloads.batchPriorityChanged': 'Приоритет изменён для задач: @count',
       'downloads.batchDeleted': 'Удалено задач: @count',
       'detail.startDownloadTitle': 'Начать загрузку',
       'detail.downloadGroup': 'Группа',

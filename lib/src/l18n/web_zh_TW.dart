@@ -816,6 +816,9 @@ class WebZhTW {
       'downloads.changeVisibleGroupConfirm': '將目前可見的 @count 個任務移動到此分組。',
       'downloads.changeBatchGroup': '修改任務分組',
       'downloads.changeBatchGroupConfirm': '將 @scope 移動到此分組。',
+      'downloads.changeVisiblePriority': '修改目前列表優先度',
+      'downloads.changeBatchPriority': '修改任務優先度',
+      'downloads.changeBatchPriorityConfirm': '將 @scope 的優先度改為：',
       'downloads.deleteVisible': '刪除目前列表任務',
       'downloads.deleteVisibleConfirm': '請選擇如何刪除目前可見的 @count 個任務。',
       'downloads.deleteBatchConfirm': '請選擇如何刪除 @scope。',
@@ -827,6 +830,7 @@ class WebZhTW {
       'downloads.batchRedownloaded': '已重新開始 @count 個任務',
       'downloads.batchReUnlocked': '已重新解鎖 @count 個歸檔任務',
       'downloads.batchGroupChanged': '已修改 @count 個任務的分組',
+      'downloads.batchPriorityChanged': '已修改 @count 個任務的優先度',
       'downloads.batchDeleted': '已刪除 @count 個任務',
 
       'detail.startDownloadTitle': '開始下載',

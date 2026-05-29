@@ -658,6 +658,35 @@ class WebDownloadsController extends GetxController
         snackPosition: SnackPosition.BOTTOM);
   }
 
+  Future<void> changeVisibleTasksPriority(BuildContext context) async {
+    final galleryTab = tabController.index == 0;
+    final tasks = _batchTargetTasks();
+    final ids =
+        tasks.map((t) => (t['gid'] as num?)?.toInt()).whereType<int>().toList();
+    if (ids.isEmpty) {
+      Get.snackbar('common.success'.tr, 'downloads.noBatchTargets'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final priority = await _showBatchPriorityDialog(
+        context, tasks, _batchScopeText(ids.length));
+    if (priority == null) {
+      return;
+    }
+
+    await Future.wait(ids.map((gid) => galleryTab
+        ? patchGalleryTask(gid, priority: priority)
+        : patchArchiveTask(gid, priority: priority)));
+    await refresh();
+    if (selectionMode.value) {
+      exitSelectionMode();
+    }
+    Get.snackbar('common.success'.tr,
+        'downloads.batchPriorityChanged'.trParams({'count': '${ids.length}'}),
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
   Future<void> patchGalleryTask(int gid, {int? priority, String? group}) async {
     await backendApiClient.patchGalleryDownload(gid,
         priority: priority, group: group);
@@ -825,6 +854,11 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
             onPressed: () => controller.changeVisibleTasksGroup(context),
           ),
           IconButton(
+            icon: const Icon(Icons.low_priority),
+            tooltip: 'downloads.changeVisiblePriority'.tr,
+            onPressed: () => controller.changeVisibleTasksPriority(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.delete_sweep_outlined),
             tooltip: 'downloads.deleteVisible'.tr,
             onPressed: controller.deleteVisibleTasks,
@@ -925,6 +959,72 @@ Future<String?> _showBatchGroupDialog(BuildContext context,
               onPressed: () {
                 final group = controller.text.trim();
                 Navigator.pop(ctx, group.isEmpty ? 'default' : group);
+              },
+              child: Text('common.ok'.tr),
+            ),
+          ],
+        );
+      },
+    );
+  } finally {
+    controller.dispose();
+  }
+}
+
+Future<int?> _showBatchPriorityDialog(BuildContext context,
+    List<Map<String, dynamic>> tasks, String scopeText) async {
+  final priorities = tasks
+      .map((t) => (t['priority'] as num?)?.toInt())
+      .whereType<int>()
+      .toSet()
+      .toList()
+    ..sort();
+  final initialPriority = priorities.length == 1 ? priorities.first : 0;
+  final controller = TextEditingController(text: '$initialPriority');
+  try {
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text('downloads.changeBatchPriority'.tr),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('downloads.changeBatchPriorityConfirm'
+                    .trParams({'scope': scopeText})),
+                const SizedBox(height: 12),
+                _PriorityChoiceChips(
+                  selectedPriority: int.tryParse(controller.text.trim()),
+                  onSelected: (priority) => controller.text = '$priority',
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'downloads.setPriority'.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) {
+                    Navigator.pop(
+                        ctx, int.tryParse(controller.text.trim()) ?? 0);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx, int.tryParse(controller.text.trim()) ?? 0);
               },
               child: Text('common.ok'.tr),
             ),
@@ -1271,6 +1371,49 @@ class _DownloadGroupHeader extends StatelessWidget {
 
 enum _DownloadGroupAction { rename, clear }
 
+class _PriorityChoiceChips extends StatefulWidget {
+  final int? selectedPriority;
+  final ValueChanged<int> onSelected;
+
+  const _PriorityChoiceChips({
+    required this.selectedPriority,
+    required this.onSelected,
+  });
+
+  @override
+  State<_PriorityChoiceChips> createState() => _PriorityChoiceChipsState();
+}
+
+class _PriorityChoiceChipsState extends State<_PriorityChoiceChips> {
+  late int? selectedPriority = widget.selectedPriority;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final priority in const [0, 1, 2, 3, 4, 5])
+          ChoiceChip(
+            label: Text(_priorityChoiceLabel(priority)),
+            selected: selectedPriority == priority,
+            onSelected: (_) {
+              setState(() => selectedPriority = priority);
+              widget.onSelected(priority);
+            },
+          ),
+      ],
+    );
+  }
+}
+
+String _priorityChoiceLabel(int priority) {
+  if (priority == 0) {
+    return '${'priority'.tr} : 0 (${'default'.tr})';
+  }
+  return '${'priority'.tr} : $priority';
+}
+
 void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
     Map<String, dynamic> task) {
   final gid = task['gid'] as int;
@@ -1292,6 +1435,11 @@ void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
               labelText: 'downloads.setPriority'.tr,
               border: const OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 8),
+          _PriorityChoiceChips(
+            selectedPriority: int.tryParse(priCtrl.text.trim()),
+            onSelected: (priority) => priCtrl.text = '$priority',
           ),
           const SizedBox(height: 12),
           TextField(
@@ -1346,6 +1494,11 @@ void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl,
               labelText: 'downloads.setPriority'.tr,
               border: const OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 8),
+          _PriorityChoiceChips(
+            selectedPriority: int.tryParse(priCtrl.text.trim()),
+            onSelected: (priority) => priCtrl.text = '$priority',
           ),
           const SizedBox(height: 12),
           TextField(
