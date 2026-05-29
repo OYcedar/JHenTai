@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -23,6 +24,7 @@ class WebSettingsPreferencePage extends StatelessWidget {
             onTap: () => Get.to(() => const _WebLanguageSubPage()),
           ),
           const _WebDefaultSectionTile(),
+          const _WebDefaultFavoriteTile(),
           const _WebDefaultTagSetTile(),
           const _WebGalleryDisplaySection(),
           ListTile(
@@ -51,6 +53,55 @@ class WebSettingsPreferencePage extends StatelessWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Get.toNamed('/web/quick-search'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WebDefaultFavoriteTile extends GetView<WebSettingsController> {
+  const _WebDefaultFavoriteTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => Column(
+        children: [
+          SwitchListTile(
+            secondary: const Icon(Icons.favorite_border),
+            title: Text('enableDefaultFavorite'.tr),
+            subtitle: Text(
+              controller.enableDefaultFavorite.value
+                  ? 'enableDefaultFavoriteHint'.tr
+                  : 'disableDefaultFavoriteHint'.tr,
+            ),
+            value: controller.enableDefaultFavorite.value,
+            onChanged: controller.setEnableDefaultFavorite,
+          ),
+          if (controller.enableDefaultFavorite.value)
+            ListTile(
+              leading: const Icon(Icons.folder_special_outlined),
+              title: Text('settings.defaultFavoriteSlot'.tr),
+              subtitle: Text('settings.defaultFavoriteHint'.tr),
+              trailing: DropdownButton<int?>(
+                value: controller.defaultFavoriteSlot.value,
+                alignment: AlignmentDirectional.centerEnd,
+                items: [
+                  DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('settings.defaultFavoriteNone'.tr),
+                  ),
+                  ...List.generate(
+                    10,
+                    (i) => DropdownMenuItem<int?>(
+                      value: i,
+                      child: Text('detail.favSlot'.trParams({'n': '$i'})),
+                    ),
+                  ),
+                ],
+                onChanged: controller.setDefaultFavoriteSlot,
+              ),
+            ),
         ],
       ),
     );
