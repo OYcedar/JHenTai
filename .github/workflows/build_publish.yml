@@ -1,12 +1,10 @@
 name: Build & Release
 
-# Trigger on push to master branch or with a tag
+# This fork maintains the Docker/Web packaging flow. Keep the upstream
+# multi-platform app release workflow available only for manual runs so regular
+# pushes do not require Android/iOS/macOS/Windows release secrets and toolchains.
 on:
-  push:
-    branches:
-      - 'master'
-    tags:
-      - v*
+  workflow_dispatch:
 
 # If previous workflow is still running, we push again, we will cancel the previous workflow
 concurrency:
@@ -310,4 +308,3 @@ jobs:
           git add altsource/AltSource.json
           git commit -m "Update AltSource.json for version ${{ needs.Build.outputs.version }}"
           git push origin HEAD:master
-
