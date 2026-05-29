@@ -487,6 +487,11 @@ class WebPtBR {
           'Baixe configurações, regras de bloqueio, histórico, histórico de busca e buscas rápidas como JSON. Tokens e cookies são excluídos.',
       'settings.exportDataSuccess': 'Exportação de dados baixada',
       'settings.exportDataFailed': 'Falha ao exportar dados: @error',
+      'settings.exportAppData': 'Exportar para o app',
+      'settings.exportAppDataHint':
+          'Baixe um arquivo JHenTaiConfig compatível com o app com progresso de leitura, buscas rápidas, regras de bloqueio, histórico de busca e histórico de galerias.',
+      'settings.exportAppDataSuccess':
+          'Exportação compatível com o app baixada',
       'settings.importData': 'Importar dados',
       'settings.importDataHint':
           'Importe um JSON exportado pelo Web ou um JHenTaiConfig do app e mescle neste servidor. Configurações e itens nomeados são sobrescritos; regras de bloqueio são deduplicadas.',

@@ -440,6 +440,10 @@ class WebZhTW {
           '將設定、屏蔽規則、瀏覽歷史、搜尋歷史和快速搜尋匯出為 JSON，不包含 Token 和 Cookie。',
       'settings.exportDataSuccess': '資料匯出已下載',
       'settings.exportDataFailed': '匯出資料失敗：@error',
+      'settings.exportAppData': '匯出為 App 格式',
+      'settings.exportAppDataHint':
+          '下載 App 可匯入的 JHenTaiConfig 檔案，包含閱讀進度、快速搜尋、屏蔽規則、搜尋歷史和瀏覽歷史。',
+      'settings.exportAppDataSuccess': 'App 相容資料匯出已下載',
       'settings.importData': '匯入資料',
       'settings.importDataHint':
           '匯入 Web 匯出的 JSON 或 App 的 JHenTaiConfig 檔案並合併到目前伺服器；設定和命名資料會覆蓋，屏蔽規則會自動去重。',

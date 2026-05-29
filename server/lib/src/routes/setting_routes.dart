@@ -246,6 +246,10 @@ class SettingRoutes {
   }
 
   Future<Response> _exportData(Request request) async {
+    if (request.url.queryParameters['format'] == 'app') {
+      return _exportAppData();
+    }
+
     List<Map<String, dynamic>> rows(String sql) =>
         db.raw.select(sql).map(_rowToMap).toList();
 
@@ -296,6 +300,43 @@ class SettingRoutes {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         'Content-Disposition': 'attachment; filename="jhentai-web-export.json"',
+      },
+    );
+  }
+
+  Response _exportAppData() {
+    final now = DateTime.now();
+    final ctime = now.toUtc().millisecondsSinceEpoch;
+    final configs = <Map<String, dynamic>>[];
+
+    void addConfig(int type, Object config) {
+      final encoded = jsonEncode(config);
+      if (encoded == '[]' || encoded == '{}') {
+        return;
+      }
+      configs.add({
+        'id': -1,
+        'shareCode': 'local',
+        'identificationCode': 'local',
+        'type': type,
+        'version': '1.0.0',
+        'config': encoded,
+        'ctime': ctime,
+      });
+    }
+
+    addConfig(1, _exportAppReadProgress());
+    addConfig(2, _exportAppQuickSearch());
+    addConfig(3, _exportAppBlockRules());
+    addConfig(4, _exportAppSearchHistory());
+    addConfig(5, _exportAppHistory());
+
+    return Response.ok(
+      const JsonEncoder.withIndent('  ').convert(configs),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition':
+            'attachment; filename="JHenTaiConfig-${_formatExportTimestamp(now)}.json"',
       },
     );
   }
@@ -642,6 +683,137 @@ class SettingRoutes {
       }
     }
     return imported;
+  }
+
+  List<Map<String, dynamic>> _exportAppReadProgress() {
+    final rows = db.raw.select(
+      '''
+      SELECT key, value, utime
+      FROM config
+      WHERE key LIKE 'read_progress_%'
+        AND key NOT LIKE 'read_progress_local_%'
+      ORDER BY key ASC
+      ''',
+    );
+    return rows.map((row) {
+      final key = _importString(row['key']);
+      return {
+        'configKey': 'readIndexRecord',
+        'subConfigKey': key.replaceFirst('read_progress_', ''),
+        'value': _importString(row['value']),
+        'utime': _importString(row['utime']),
+      };
+    }).toList();
+  }
+
+  Map<String, dynamic> _exportAppQuickSearch() {
+    final out = <String, dynamic>{};
+    for (final row in db.selectAllQuickSearches()) {
+      final name = _importString(row['name']).trim();
+      final raw = _importString(row['config']);
+      if (name.isEmpty || raw.isEmpty) {
+        continue;
+      }
+      try {
+        out[name] = jsonDecode(raw);
+      } catch (_) {
+        out[name] = raw;
+      }
+    }
+    return out;
+  }
+
+  List<Map<String, dynamic>> _exportAppBlockRules() {
+    return db
+        .selectAllBlockRules()
+        .map(_convertWebBlockRuleToApp)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  List<String> _exportAppSearchHistory() {
+    return db.raw
+        .select('SELECT keyword FROM search_history ORDER BY last_used DESC')
+        .map((row) => _importString(row['keyword']).trim())
+        .where((keyword) => keyword.isNotEmpty)
+        .toList();
+  }
+
+  List<Map<String, dynamic>> _exportAppHistory() {
+    return db.raw
+        .select('SELECT * FROM history ORDER BY visit_time DESC LIMIT 10000')
+        .map((row) {
+      final gid = _importInt(row['gid']) ?? 0;
+      final token = _importString(row['token']);
+      return {
+        'gid': gid,
+        'jsonBody': jsonEncode({
+          'galleryUrl': 'https://e-hentai.org/g/$gid/$token/',
+          'title': _importString(row['title']),
+          'category': _importString(row['category']),
+          'coverUrl': _importString(row['cover_url']),
+          'pageCount': 0,
+          'rating': 0.0,
+          'language': '',
+          'uploader': '',
+          'publishTime': '',
+          'isExpunged': false,
+          'tags': <String>[],
+        }),
+        'lastReadTime': _importString(row['visit_time']),
+      };
+    }).toList();
+  }
+
+  Map<String, dynamic>? _convertWebBlockRuleToApp(Map<String, dynamic> row) {
+    const targets = {
+      'gallery': 0,
+      'comment': 1,
+    };
+    const attributes = {
+      'title': 0,
+      'tag': 10,
+      'uploader': 20,
+      'gid': 30,
+      'userName': 100,
+      'userId': 110,
+      'score': 120,
+      'content': 130,
+    };
+    const patterns = {
+      'equal': 0,
+      'gt': 10,
+      'gte': 20,
+      'st': 30,
+      'ste': 40,
+      'like': 50,
+      'notContain': 60,
+      'regex': 70,
+    };
+    final expression = _importString(row['expression']);
+    if (expression.isEmpty) {
+      return null;
+    }
+    final target = targets[_importString(row['target'])];
+    final attribute = attributes[_importString(row['attribute'])];
+    final pattern = patterns[_importString(row['pattern'])];
+    if (target == null || attribute == null || pattern == null) {
+      return null;
+    }
+    return {
+      'id': null,
+      'groupId': _importString(row['group_id']),
+      'target': target,
+      'attribute': attribute,
+      'pattern': pattern,
+      'expression': expression,
+    };
+  }
+
+  static String _formatExportTimestamp(DateTime time) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${time.year}${two(time.month)}${two(time.day)}'
+        '${two(time.hour)}${two(time.minute)}${two(time.second)}';
   }
 
   Map<String, int> _emptyImportCounts() {

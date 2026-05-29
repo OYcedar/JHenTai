@@ -27,6 +27,7 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
   int pageCacheSize = 0;
   int pageCacheCount = 0;
   bool exportingData = false;
+  bool exportingAppData = false;
   bool importingData = false;
 
   @override
@@ -177,6 +178,34 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
     }
   }
 
+  Future<void> _exportAppData() async {
+    setState(() => exportingAppData = true);
+    try {
+      final data = await backendApiClient.exportAppUserData();
+      final json = const JsonEncoder.withIndent('  ').convert(data);
+      final now = DateTime.now().toLocal();
+      String two(int n) => n.toString().padLeft(2, '0');
+      final fileName = 'JHenTaiConfig-${now.year}${two(now.month)}'
+          '${two(now.day)}${two(now.hour)}${two(now.minute)}${two(now.second)}.json';
+      _downloadTextFile(fileName, json, mimeType: 'application/json');
+      Get.snackbar(
+        'common.success'.tr,
+        'settings.exportAppDataSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.exportDataFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => exportingAppData = false);
+      }
+    }
+  }
+
   Future<void> _importData() async {
     final ok = await Get.dialog<bool>(
       AlertDialog(
@@ -318,6 +347,19 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
                           )
                         : const Icon(Icons.download_outlined),
                     onTap: exportingData ? null : _exportData,
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.phone_android_outlined),
+                    title: Text('settings.exportAppData'.tr),
+                    subtitle: Text('settings.exportAppDataHint'.tr),
+                    trailing: exportingAppData
+                        ? const SizedBox.square(
+                            dimension: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_outlined),
+                    onTap: exportingAppData ? null : _exportAppData,
                   ),
                   const Divider(height: 1),
                   ListTile(

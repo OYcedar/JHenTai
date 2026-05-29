@@ -482,6 +482,10 @@ class WebEnUS {
           'Download settings, block rules, history, search history, and quick searches as JSON. Tokens and cookies are excluded.',
       'settings.exportDataSuccess': 'Data export downloaded',
       'settings.exportDataFailed': 'Failed to export data: @error',
+      'settings.exportAppData': 'Export for App',
+      'settings.exportAppDataHint':
+          'Download an App-compatible JHenTaiConfig file with read progress, quick searches, block rules, search history, and gallery history.',
+      'settings.exportAppDataSuccess': 'App-compatible export downloaded',
       'settings.importData': 'Import data',
       'settings.importDataHint':
           'Import a Web export or App JHenTaiConfig JSON and merge it into this server. Settings and named items are overwritten; block rules are de-duplicated.',

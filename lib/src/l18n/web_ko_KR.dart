@@ -454,6 +454,10 @@ class WebKoKR {
           '설정, 차단 규칙, 열람 기록, 검색 기록, 빠른 검색을 JSON으로 다운로드합니다. 토큰과 쿠키는 제외됩니다.',
       'settings.exportDataSuccess': '데이터 내보내기를 다운로드했습니다',
       'settings.exportDataFailed': '데이터 내보내기 실패: @error',
+      'settings.exportAppData': '앱용으로 내보내기',
+      'settings.exportAppDataHint':
+          '읽기 진행률, 빠른 검색, 차단 규칙, 검색 기록, 갤러리 기록이 포함된 앱 호환 JHenTaiConfig 파일을 다운로드합니다.',
+      'settings.exportAppDataSuccess': '앱 호환 내보내기를 다운로드했습니다',
       'settings.importData': '데이터 가져오기',
       'settings.importDataHint':
           '웹 내보내기 또는 앱 JHenTaiConfig JSON을 가져와 이 서버에 병합합니다. 설정과 이름 있는 항목은 덮어쓰고 차단 규칙은 중복 제거됩니다.',

@@ -1232,6 +1232,14 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<List<dynamic>> exportAppUserData() async {
+    final response = await _dio.get(
+      '/api/setting/export',
+      queryParameters: {'format': 'app'},
+    );
+    return response.data is List ? List<dynamic>.from(response.data) : [];
+  }
+
   Future<Map<String, dynamic>> importUserData(Object data) async {
     final response = await _dio.post('/api/setting/import', data: data);
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};

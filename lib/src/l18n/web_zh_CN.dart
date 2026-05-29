@@ -440,6 +440,10 @@ class WebZhCN {
           '将设置、屏蔽规则、浏览历史、搜索历史和快速搜索导出为 JSON，不包含 Token 和 Cookie。',
       'settings.exportDataSuccess': '数据导出已下载',
       'settings.exportDataFailed': '导出数据失败：@error',
+      'settings.exportAppData': '导出为 App 格式',
+      'settings.exportAppDataHint':
+          '下载 App 可导入的 JHenTaiConfig 文件，包含阅读进度、快速搜索、屏蔽规则、搜索历史和浏览历史。',
+      'settings.exportAppDataSuccess': 'App 兼容数据导出已下载',
       'settings.importData': '导入数据',
       'settings.importDataHint':
           '导入 Web 导出的 JSON 或 App 的 JHenTaiConfig 文件并合并到当前服务端；设置和命名数据会覆盖，屏蔽规则会自动去重。',
