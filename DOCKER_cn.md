@@ -31,10 +31,10 @@
 
 示例：fork 版本号为 `310` 时，`310` → 十六进制 `136`，故标签为 `**8.0.12-136**`（在应用版本为 `8.0.12` 的前提下）。
 
-**不再提供 `latest`**，请在 compose / Unraid 里写死具体标签。
+发布脚本也会推送 `latest`，但 compose / Unraid 示例必须固定明确的 **`x.y.z-hhh`** 标签。
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-136
+docker pull hemumoe/jhentai:8.0.12-143
 ```
 
 **docker-compose.yml**（推荐）：
@@ -42,7 +42,7 @@ docker pull hemumoe/jhentai:8.0.12-136
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-136
+    image: hemumoe/jhentai:8.0.12-143
     container_name: jhentai
     ports:
       - "8080:8080"
@@ -237,6 +237,8 @@ labels:
 
 本 fork **不再**通过 GitHub Actions 自动推送镜像。在已执行 **`docker login`** 的机器上本地构建并推送（或使用你自建的 CI）。面向 Cursor 的检查清单见 [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md)。
 
+每次运行发布脚本都会先递增 **`docker/fork_revision`**，并同步更新 README / compose 中的镜像标签，然后再推送镜像。镜像推送成功后，请提交这些文件改动。只有在明确要重推当前标签时，才设置 **`DOCKER_SKIP_VERSION_BUMP=1`**。
+
 **一键脚本**（在仓库根目录执行；会推送 **`x.y.z-hhh`** 与 **`latest`**）：
 
 - **Linux / macOS / Git Bash：** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
@@ -251,7 +253,7 @@ labels:
 | `x.y.z` | `pubspec.yaml` 里 `version:` 中 **`+` 前面** |
 | `hhh` | **`docker/fork_revision`** 的十六进制（三位小写，十进制 **0–4095**）。无该文件时用 `pubspec` 的 **`+` 后构建号** |
 
-**Fork 版本号：** 发布新镜像前修改 **`docker/fork_revision`**（单行十进制）。例：十进制 **311** → 十六进制 **`137`** → 标签 **`8.0.12-137`**（在应用版本为 `8.0.12` 时）。
+**Fork 版本号：** 发布脚本会在发布新镜像时自动递增 **`docker/fork_revision`**（单行十进制）。例：十进制 **311** → 十六进制 **`137`** → 标签 **`8.0.12-137`**（在应用版本为 `8.0.12` 时）。
 
 **登录：** 使用 Docker Hub → Account Settings → Security 中的 **Access Token** 配合 `docker login`（勿用账户密码）。
 
@@ -284,7 +286,7 @@ chmod +x scripts/dockerhub-delete-tags.sh
 → 查看日志：`docker logs jhentai`
 
 **Unraid 上反复重启（exit 255）**
-→ 不要使用 Hub 上的 `latest`（本仓库已不维护该标签）；请使用 **`x.y.z-hhh`** 具体标签并重新拉取镜像。数据目录映射到 `/mnt/user/...` 时，容器内 `chown` 可能失败，新版本 entrypoint 会记录 **WARNING** 后继续启动；请保证宿主机上该目录对 **`PUID`/`PGID`**（Unraid 常用 `99:100`）可写。若在 compose 中设置了 `HTTP_PROXY`/`HTTPS_PROXY`，请保留 `NO_PROXY` 中的 `127.0.0.1,localhost`，否则健康检查或本地请求可能异常。
+→ 不要部署会移动的 `latest` 标签；请使用 **`x.y.z-hhh`** 具体标签并重新拉取镜像。数据目录映射到 `/mnt/user/...` 时，容器内 `chown` 可能失败，新版本 entrypoint 会记录 **WARNING** 后继续启动；请保证宿主机上该目录对 **`PUID`/`PGID`**（Unraid 常用 `99:100`）可写。若在 compose 中设置了 `HTTP_PROXY`/`HTTPS_PROXY`，请保留 `NO_PROXY` 中的 `127.0.0.1,localhost`，否则健康检查或本地请求可能异常。
 
 **写入 `/data` 时提示权限不足**
 → 将 `PUID`/`PGID` 设置为与宿主机用户匹配，或执行：`chown -R 1000:1000 /path/to/data-volume`

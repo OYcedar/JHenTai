@@ -31,10 +31,10 @@ Images are tagged **`x.y.z-hhh`** only:
 
 Example: `8.0.12+309` with fork revision `310` → **`8.0.12-136`** (`310` = `0x136`).
 
-There is **no `latest`** tag; pin an explicit tag in compose or Unraid.
+The publish scripts also push `latest`, but compose / Unraid examples must pin an explicit `x.y.z-hhh` tag.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-136
+docker pull hemumoe/jhentai:8.0.12-143
 ```
 
 **docker-compose.yml** (recommended):
@@ -42,7 +42,7 @@ docker pull hemumoe/jhentai:8.0.12-136
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-136
+    image: hemumoe/jhentai:8.0.12-143
     container_name: jhentai
     ports:
       - "8080:8080"
@@ -237,6 +237,8 @@ labels:
 
 This fork does **not** use GitHub Actions to push Docker images. Build and push from your machine (or any CI you control) after **`docker login`**. A Cursor-oriented checklist lives in [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md).
 
+Every publish script run increments **`docker/fork_revision`** and updates README / compose image tags before pushing. Commit those file changes after a successful image push. Set **`DOCKER_SKIP_VERSION_BUMP=1`** only when intentionally re-pushing the current tag.
+
 **One-shot scripts** (from the repo root; pushes **`x.y.z-hhh`** and **`latest`**):
 
 - **Linux / macOS / Git Bash:** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
@@ -251,7 +253,7 @@ Set **`DOCKERHUB_USERNAME`** if your Hub namespace is not **`hemumoe`**.
 | `x.y.z` | `pubspec.yaml` `version:` before `+` |
 | `hhh` | Lowercase hex of **`docker/fork_revision`** (decimal **0–4095**). If the file is missing, the number after **`+`** in `pubspec.yaml` is used. |
 
-**Fork revision:** Edit **`docker/fork_revision`** when you cut a new Hub image. Example: revision **311** → hex **`137`** → tag **`8.0.12-137`** (with semver `8.0.12`).
+**Fork revision:** The publish scripts increment **`docker/fork_revision`** automatically when cutting a new Hub image. Example: revision **311** → hex **`137`** → tag **`8.0.12-137`** (with semver `8.0.12`).
 
 **Docker Hub token:** create an **Access Token** under Docker Hub → Account Settings → Security if you use `docker login` with token auth (not your account password).
 
@@ -284,7 +286,7 @@ Adjust the tag list to match what still exists on [Docker Hub](https://hub.docke
 → Check logs: `docker logs jhentai`
 
 **Unraid: crash loop (exit 255)**  
-→ Do not use the `latest` tag (this fork publishes **`x.y.z-hhh` only**). Pull an explicit tag. If `/data` is on `/mnt/user/...`, in-container `chown` may fail; the entrypoint logs a **WARNING** and continues—ensure the host path is writable by your **`PUID`/`PGID`** (often `99:100` on Unraid). With `HTTP_PROXY`/`HTTPS_PROXY`, keep `127.0.0.1` and `localhost` in **`NO_PROXY`**.
+→ Do not deploy with the moving `latest` tag; pull an explicit **`x.y.z-hhh`** tag. If `/data` is on `/mnt/user/...`, in-container `chown` may fail; the entrypoint logs a **WARNING** and continues—ensure the host path is writable by your **`PUID`/`PGID`** (often `99:100` on Unraid). With `HTTP_PROXY`/`HTTPS_PROXY`, keep `127.0.0.1` and `localhost` in **`NO_PROXY`**.
 
 **Permission denied writing to `/data`**  
 → Set `PUID`/`PGID` to match your host user, or run: `chown -R 1000:1000 /path/to/data-volume`

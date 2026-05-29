@@ -11,17 +11,18 @@ description: >-
 ## Tag format
 
 - **`x.y.z`**: from `pubspec.yaml` `version:` before `+`.
-- **`hhh`**: three-digit lowercase hex of **`docker/fork_revision`** (decimal 0–4095). If the file is missing, use the build number after `+` in `pubspec.yaml` (same rule as [DOCKER.md](../../DOCKER.md)).
+- **`hhh`**: three-digit lowercase hex of **`docker/fork_revision`** (decimal 0–4095). The publish scripts increment this file before pushing, unless `DOCKER_SKIP_VERSION_BUMP=1` is set.
 - **`latest`**: same image as the versioned tag above; always pushed together.
 
 ## Steps
 
-1. Bump **`docker/fork_revision`** when releasing a new Hub image (optional bump `pubspec` semver if needed).
-2. **`docker login`** to Docker Hub (account must have push access to the namespace, default **`hemumoe`**).
-3. From repo root:
+1. **`docker login`** to Docker Hub (account must have push access to the namespace, default **`hemumoe`**).
+2. From repo root:
    - **Linux/macOS/Git Bash:** `chmod +x scripts/docker-hub-publish.sh && ./scripts/docker-hub-publish.sh`
    - **Windows PowerShell:** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`
-4. Override namespace: set **`DOCKERHUB_USERNAME`** (or edit script default).
+3. The script bumps **`docker/fork_revision`**, updates README / compose image tags, and pushes the image.
+4. Commit the changed **`docker/fork_revision`**, README / DOCKER docs, and compose sample after a successful push.
+5. Override namespace: set **`DOCKERHUB_USERNAME`** (or edit script default).
 
 ## Notes
 

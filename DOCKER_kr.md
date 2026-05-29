@@ -31,10 +31,10 @@
 
 예: fork 버전 `310` → `310` = `0x136` → **`8.0.12-136`**.
 
-**`latest` 태그는 없습니다.** compose/Unraid에서 위와 같이 명시하세요.
+배포 스크립트도 `latest`를 푸시하지만 compose/Unraid 예시는 명시적인 **`x.y.z-hhh`** 태그를 고정해야 합니다.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-136
+docker pull hemumoe/jhentai:8.0.12-143
 ```
 
 **docker-compose.yml**（권장）:
@@ -42,7 +42,7 @@ docker pull hemumoe/jhentai:8.0.12-136
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-136
+    image: hemumoe/jhentai:8.0.12-143
     container_name: jhentai
     ports:
       - "8080:8080"
@@ -222,6 +222,8 @@ labels:
 
 네임스페이스가 **`hemumoe`**가 아니면 **`DOCKERHUB_USERNAME`**을 설정하세요.
 
+배포 스크립트를 실행할 때마다 **`docker/fork_revision`**을 먼저 증가시키고 README / compose의 이미지 태그를 갱신한 뒤 이미지를 푸시합니다. 푸시가 성공하면 이 파일 변경 사항을 커밋하세요. 현재 태그를 의도적으로 다시 푸시할 때만 **`DOCKER_SKIP_VERSION_BUMP=1`**을 설정하세요.
+
 **태그 구성:**
 
 | 부분 | 출처 |
@@ -229,7 +231,7 @@ labels:
 | `x.y.z` | `pubspec.yaml`의 `version:`에서 `+` 앞 |
 | `hhh` | **`docker/fork_revision`**의 16진수(소문자 3자리, 10진수 0–4095). 파일이 없으면 `pubspec`의 `+` 뒤 빌드 번호 |
 
-**Fork 리비전:** 새 이미지를 낼 때 **`docker/fork_revision`**을 갱신하세요.
+**Fork 리비전:** 새 이미지를 낼 때 배포 스크립트가 **`docker/fork_revision`**을 자동으로 증가시킵니다.
 
 **로그인:** Docker Hub → Account Settings → Security의 **Access Token**으로 `docker login`을 사용하세요.
 
