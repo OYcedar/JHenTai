@@ -168,6 +168,7 @@ class WebRuRU {
       // gallery detail
       'detail.copyUrl': 'Копировать URL галереи',
       'detail.copied': 'Скопировано',
+      'detail.switchToSite': 'Переключить на @site',
       'detail.removeFromFav': 'Удалить из избранного',
       'detail.addToFav': 'Добавить в избранное',
       'detail.addToFavTitle': 'Добавить в избранное',

@@ -167,6 +167,7 @@ class WebEnUS {
       // gallery detail
       'detail.copyUrl': 'Copy gallery URL',
       'detail.copied': 'Copied',
+      'detail.switchToSite': 'Switch to @site',
       'detail.removeFromFav': 'Remove from favorites',
       'detail.addToFav': 'Add to favorites',
       'detail.addToFavTitle': 'Add to favorites',

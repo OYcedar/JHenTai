@@ -155,6 +155,7 @@ class WebZhCN {
       // gallery detail
       'detail.copyUrl': '复制画廊链接',
       'detail.copied': '已复制',
+      'detail.switchToSite': '切换到 @site',
       'detail.removeFromFav': '从收藏中移除',
       'detail.addToFav': '添加到收藏',
       'detail.addToFavTitle': '添加到收藏',

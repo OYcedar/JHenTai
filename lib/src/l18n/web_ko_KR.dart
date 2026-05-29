@@ -156,6 +156,7 @@ class WebKoKR {
       // gallery detail
       'detail.copyUrl': '갤러리 URL 복사',
       'detail.copied': '복사됨',
+      'detail.switchToSite': '@site로 전환',
       'detail.removeFromFav': '즐겨찾기에서 제거',
       'detail.addToFav': '즐겨찾기에 추가',
       'detail.addToFavTitle': '즐겨찾기에 추가',

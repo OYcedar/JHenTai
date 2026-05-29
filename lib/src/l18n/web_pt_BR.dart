@@ -172,6 +172,7 @@ class WebPtBR {
       // gallery detail
       'detail.copyUrl': 'Copiar URL da galeria',
       'detail.copied': 'Copiado',
+      'detail.switchToSite': 'Alternar para @site',
       'detail.removeFromFav': 'Remover dos favoritos',
       'detail.addToFav': 'Adicionar aos favoritos',
       'detail.addToFavTitle': 'Adicionar aos favoritos',

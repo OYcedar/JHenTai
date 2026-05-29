@@ -157,6 +157,7 @@ class WebZhTW {
       // gallery detail
       'detail.copyUrl': '複製畫廊連結',
       'detail.copied': '已複製',
+      'detail.switchToSite': '切換到 @site',
       'detail.removeFromFav': '從收藏中移除',
       'detail.addToFav': '新增至收藏',
       'detail.addToFavTitle': '新增至收藏',

@@ -144,6 +144,35 @@ class WebGalleryDetailController extends GetxController {
 
   Future<void> refreshDetail() => _loadDetail();
 
+  Future<void> switchSiteAndRefresh(String newSite) async {
+    if (newSite == site.value) {
+      return;
+    }
+    try {
+      final result = await backendApiClient.setSite(newSite);
+      if (result['success'] == true) {
+        site.value = newSite;
+        Get.snackbar(
+          'common.success'.tr,
+          'settings.siteSwitched'.trParams({'site': newSite}),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        await _loadDetail();
+      } else {
+        final error =
+            result['error']?.toString() ?? 'settings.switchSiteFailed'.tr;
+        Get.snackbar('common.error'.tr, error,
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.switchSiteFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
   /// Query string for `/web/reader/$gid/$token` (includes gallery title when known).
   String buildReaderQuery({int? startPage, String? mode}) {
     final parts = <String>[];
@@ -763,80 +792,91 @@ class WebGalleryDetailPage extends StatelessWidget {
                   : null,
             );
           }),
-          PopupMenuButton<String>(
-            onSelected: (value) => _handleOverflowMenu(context, value),
-            itemBuilder: (ctx) {
-              final svc = Get.find<WebDownloadService>();
-              final hasGallery = svc.getGalleryTask(controller.gid) != null;
-              final hasArchive = svc.getArchiveTask(controller.gid) != null;
-              return [
-                PopupMenuItem(
-                    value: 'share',
-                    child: ListTile(
-                        leading: const Icon(Icons.share, size: 20),
-                        title: Text('detail.shareUrl'.tr),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero)),
-                PopupMenuItem(
-                    value: 'jumpToPage',
-                    child: ListTile(
-                        leading:
-                            const Icon(Icons.format_list_numbered, size: 20),
-                        title: Text('detail.jumpToPage'.tr),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero)),
-                if (controller.apiuid != null && controller.apikey != null)
+          Obx(() {
+            final targetSite = controller.site.value == 'EX' ? 'EH' : 'EX';
+            return PopupMenuButton<String>(
+              onSelected: (value) => _handleOverflowMenu(context, value),
+              itemBuilder: (ctx) {
+                final svc = Get.find<WebDownloadService>();
+                final hasGallery = svc.getGalleryTask(controller.gid) != null;
+                final hasArchive = svc.getArchiveTask(controller.gid) != null;
+                return [
                   PopupMenuItem(
-                      value: 'addTag',
+                      value: 'share',
+                      child: ListTile(
+                          leading: const Icon(Icons.share, size: 20),
+                          title: Text('detail.shareUrl'.tr),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero)),
+                  PopupMenuItem(
+                      value: 'switchSite:$targetSite',
+                      child: ListTile(
+                          leading: const Icon(Icons.public, size: 20),
+                          title: Text('detail.switchToSite'
+                              .trParams({'site': targetSite})),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero)),
+                  PopupMenuItem(
+                      value: 'jumpToPage',
                       child: ListTile(
                           leading:
-                              const Icon(Icons.bookmark_add_outlined, size: 20),
-                          title: Text('tagVote.addTag'.tr),
+                              const Icon(Icons.format_list_numbered, size: 20),
+                          title: Text('detail.jumpToPage'.tr),
                           dense: true,
                           contentPadding: EdgeInsets.zero)),
-                if (hasGallery || hasArchive)
+                  if (controller.apiuid != null && controller.apikey != null)
+                    PopupMenuItem(
+                        value: 'addTag',
+                        child: ListTile(
+                            leading: const Icon(Icons.bookmark_add_outlined,
+                                size: 20),
+                            title: Text('tagVote.addTag'.tr),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero)),
+                  if (hasGallery || hasArchive)
+                    PopupMenuItem(
+                        value: 'deleteDownload',
+                        child: ListTile(
+                            leading: const Icon(Icons.delete_outline,
+                                size: 20, color: Colors.red),
+                            title: Text('detail.deleteDownload'.tr),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero)),
+                  if (controller.parentUrl.value != null ||
+                      controller.childVersions.isNotEmpty)
+                    PopupMenuItem(
+                        value: 'versionHistory',
+                        child: ListTile(
+                            leading: const Icon(Icons.history, size: 20),
+                            title: Text('detail.versionHistory'.tr),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero)),
                   PopupMenuItem(
-                      value: 'deleteDownload',
+                      value: 'stats',
                       child: ListTile(
-                          leading: const Icon(Icons.delete_outline,
-                              size: 20, color: Colors.red),
-                          title: Text('detail.deleteDownload'.tr),
+                          leading: const Icon(Icons.bar_chart, size: 20),
+                          title: Text('detail.stats'.tr),
                           dense: true,
                           contentPadding: EdgeInsets.zero)),
-                if (controller.parentUrl.value != null ||
-                    controller.childVersions.isNotEmpty)
                   PopupMenuItem(
-                      value: 'versionHistory',
+                      value: 'similarSearch',
                       child: ListTile(
-                          leading: const Icon(Icons.history, size: 20),
-                          title: Text('detail.versionHistory'.tr),
+                          leading: const Icon(Icons.title, size: 20),
+                          title: Text('detail.similarByTitle'.tr),
                           dense: true,
                           contentPadding: EdgeInsets.zero)),
-                PopupMenuItem(
-                    value: 'stats',
-                    child: ListTile(
-                        leading: const Icon(Icons.bar_chart, size: 20),
-                        title: Text('detail.stats'.tr),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero)),
-                PopupMenuItem(
-                    value: 'similarSearch',
-                    child: ListTile(
-                        leading: const Icon(Icons.title, size: 20),
-                        title: Text('detail.similarByTitle'.tr),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero)),
-                PopupMenuItem(
-                    value: 'blockGallery',
-                    child: ListTile(
-                        leading: const Icon(Icons.block,
-                            size: 20, color: Colors.orange),
-                        title: Text('detail.blockGallery'.tr),
-                        dense: true,
-                        contentPadding: EdgeInsets.zero)),
-              ];
-            },
-          ),
+                  PopupMenuItem(
+                      value: 'blockGallery',
+                      child: ListTile(
+                          leading: const Icon(Icons.block,
+                              size: 20, color: Colors.orange),
+                          title: Text('detail.blockGallery'.tr),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero)),
+                ];
+              },
+            );
+          }),
         ],
       ),
       body: Obx(() {
@@ -1165,6 +1205,10 @@ class WebGalleryDetailPage extends StatelessWidget {
           Get.snackbar('detail.copied'.tr, url,
               snackPosition: SnackPosition.BOTTOM);
         }
+        break;
+      case final value when value.startsWith('switchSite:'):
+        final site = value.substring('switchSite:'.length);
+        controller.switchSiteAndRefresh(site);
         break;
       case 'jumpToPage':
         _showJumpToPageDialog(context);
