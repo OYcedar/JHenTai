@@ -2747,23 +2747,55 @@ class _HomeDrawer extends StatelessWidget {
           ),
           Obx(() {
             final qsList = controller.quickSearches.toList();
-            if (qsList.isEmpty) return const SizedBox.shrink();
             return ExpansionTile(
               leading: const Icon(Icons.bookmark),
               title: Text('quickSearch.title'.tr),
-              children: qsList.map((item) {
-                final name = item['name'] as String? ?? '';
-                return ListTile(
+              children: [
+                ListTile(
                   dense: true,
                   contentPadding: const EdgeInsets.only(left: 56, right: 16),
-                  title:
-                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  onTap: () {
-                    Navigator.pop(context);
-                    controller.applyQuickSearch(item);
-                  },
-                );
-              }).toList(),
+                  leading: const Icon(Icons.add, size: 20),
+                  title: Text('quickSearch.saveCurrent'.tr),
+                  onTap: () => _showSaveDialog(context),
+                ),
+                if (qsList.isEmpty)
+                  ListTile(
+                    dense: true,
+                    contentPadding: const EdgeInsets.only(left: 56, right: 16),
+                    title: Text('quickSearch.empty'.tr,
+                        style: const TextStyle(color: Colors.grey)),
+                  )
+                else
+                  ...qsList.map((item) {
+                    final name = item['name'] as String? ?? '';
+                    return ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.only(left: 56, right: 8),
+                      title: Text(name,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      onTap: () {
+                        Navigator.pop(context);
+                        controller.applyQuickSearch(item);
+                      },
+                      trailing: Wrap(
+                        spacing: 2,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            tooltip: 'quickSearch.editTitle'.tr,
+                            onPressed: () =>
+                                _showEditQuickSearchDialog(context, item),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18),
+                            tooltip: 'common.delete'.tr,
+                            onPressed: () => controller.deleteQuickSearch(name),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+              ],
             );
           }),
           const Divider(),
@@ -2829,6 +2861,101 @@ class _HomeDrawer extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(child: Text(title)),
+        ],
+      ),
+    );
+  }
+
+  void _showEditQuickSearchDialog(
+      BuildContext parentCtx, Map<String, dynamic> item) {
+    final oldName = item['name']?.toString() ?? '';
+    final config =
+        controller.decodeQuickSearchConfig(item['config']?.toString() ?? '{}');
+    final nameController = TextEditingController(text: oldName);
+    final keywordController =
+        TextEditingController(text: config['keyword']?.toString() ?? '');
+    showDialog(
+      context: parentCtx,
+      builder: (ctx) => AlertDialog(
+        title: Text('quickSearch.editTitle'.tr),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.nameLabel'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: keywordController,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.keywordLabel'.tr,
+                  hintText: 'quickSearch.keywordHint'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () async {
+              await controller.updateQuickSearch(
+                item,
+                name: nameController.text,
+                keyword: keywordController.text,
+              );
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: Text('common.save'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSaveDialog(BuildContext parentCtx) {
+    final nameController = TextEditingController();
+    showDialog(
+      context: parentCtx,
+      builder: (ctx) => AlertDialog(
+        title: Text('quickSearch.saveTitle'.tr),
+        content: TextField(
+          controller: nameController,
+          decoration: InputDecoration(
+            labelText: 'quickSearch.nameLabel'.tr,
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+          onSubmitted: (v) {
+            if (v.trim().isNotEmpty) {
+              controller.saveCurrentAsQuickSearch(v.trim());
+              Navigator.pop(ctx);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                controller.saveCurrentAsQuickSearch(name);
+                Navigator.pop(ctx);
+              }
+            },
+            child: Text('common.ok'.tr),
+          ),
         ],
       ),
     );
