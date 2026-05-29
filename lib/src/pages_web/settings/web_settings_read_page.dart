@@ -106,6 +106,8 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final direction = 0.obs;
   final preloadPages = 3.obs;
   final preloadPagesLocal = 3.obs;
+  final preloadDistance = 1.obs;
+  final preloadDistanceLocal = 8.obs;
   final autoInterval = 5.0.obs;
   final autoModeStyle = 'turnPage'.obs;
   final turnPageMode = 'adaptive'.obs;
@@ -151,6 +153,18 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       final local = await backendApiClient.getSetting(kWebPreloadPagesLocalKey);
       if (local != null) {
         preloadPagesLocal.value = int.tryParse(local) ?? 3;
+      }
+      final distance = await backendApiClient.getSetting(
+        kWebPreloadDistanceKey,
+      );
+      if (distance != null) {
+        preloadDistance.value = int.tryParse(distance) ?? 1;
+      }
+      final distanceLocal = await backendApiClient.getSetting(
+        kWebPreloadDistanceLocalKey,
+      );
+      if (distanceLocal != null) {
+        preloadDistanceLocal.value = int.tryParse(distanceLocal) ?? 8;
       }
       final a = await backendApiClient.getSetting(kWebAutoIntervalKey);
       if (a != null) autoInterval.value = double.tryParse(a) ?? 5.0;
@@ -281,7 +295,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
               const SizedBox(height: 16),
               Obx(() => Row(
                     children: [
-                      Expanded(child: Text('settings.preloadPages'.tr)),
+                      Expanded(child: Text('preloadPageCount'.tr)),
                       Text('${preloadPages.value}'),
                     ],
                   )),
@@ -391,7 +405,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
               const SizedBox(height: 8),
               Obx(() => Row(
                     children: [
-                      Expanded(child: Text('settings.preloadPagesLocal'.tr)),
+                      Expanded(child: Text('preloadPageCountInLocalMode'.tr)),
                       Text('${preloadPagesLocal.value}'),
                     ],
                   )),
@@ -405,6 +419,50 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       preloadPagesLocal.value = v.round();
                       backendApiClient
                           .putSetting(kWebPreloadPagesLocalKey, v.round())
+                          .catchError((_) {});
+                    },
+                  )),
+              const SizedBox(height: 8),
+              Obx(() => Row(
+                    children: [
+                      Expanded(child: Text('preloadDistanceInOnlineMode'.tr)),
+                      Text(
+                        '${preloadDistance.value} ${'ScreenHeight'.tr}',
+                      ),
+                    ],
+                  )),
+              Obx(() => Slider(
+                    value: preloadDistance.value.toDouble(),
+                    min: 0,
+                    max: 10,
+                    divisions: 10,
+                    label: '${preloadDistance.value}',
+                    onChanged: (v) {
+                      preloadDistance.value = v.round();
+                      backendApiClient
+                          .putSetting(kWebPreloadDistanceKey, v.round())
+                          .catchError((_) {});
+                    },
+                  )),
+              const SizedBox(height: 8),
+              Obx(() => Row(
+                    children: [
+                      Expanded(child: Text('preloadDistanceInLocalMode'.tr)),
+                      Text(
+                        '${preloadDistanceLocal.value} ${'ScreenHeight'.tr}',
+                      ),
+                    ],
+                  )),
+              Obx(() => Slider(
+                    value: preloadDistanceLocal.value.toDouble(),
+                    min: 0,
+                    max: 10,
+                    divisions: 10,
+                    label: '${preloadDistanceLocal.value}',
+                    onChanged: (v) {
+                      preloadDistanceLocal.value = v.round();
+                      backendApiClient
+                          .putSetting(kWebPreloadDistanceLocalKey, v.round())
                           .catchError((_) {});
                     },
                   )),

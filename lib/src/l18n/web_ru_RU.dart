@@ -851,6 +851,12 @@ class WebRuRU {
       'settings.imageSpacing': 'Отступы изображений',
       'settings.preloadPages': 'Предзагрузка страниц (онлайн)',
       'settings.preloadPagesLocal': 'Предзагрузка страниц (локально)',
+      'preloadPageCount': 'Кол-во предзагружаемых страниц (онлайн)',
+      'preloadPageCountInLocalMode':
+          'Кол-во предзагружаемых страниц (локально)',
+      'preloadDistanceInOnlineMode': 'Дистанция предзагрузки (онлайн)',
+      'preloadDistanceInLocalMode': 'Дистанция предзагрузки (локально)',
+      'ScreenHeight': 'Экран',
       'settings.imageRegionWidthRatioHint':
           'Влияет только на вертикальное чтение. Режим по ширине по-прежнему занимает всю ширину окна.',
       'settings.autoInterval': 'Интервал автопролистывания',

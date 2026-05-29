@@ -849,6 +849,11 @@ class WebEnUS {
       'settings.imageSpacing': 'Image Spacing',
       'settings.preloadPages': 'Preload Pages (Online)',
       'settings.preloadPagesLocal': 'Preload Pages (Local)',
+      'preloadPageCount': 'Preload Page Count (Online)',
+      'preloadPageCountInLocalMode': 'Preload Page Count (Local)',
+      'preloadDistanceInOnlineMode': 'Preload Distance (Online)',
+      'preloadDistanceInLocalMode': 'Preload Distance (Local)',
+      'ScreenHeight': 'Screen',
       'settings.imageRegionWidthRatioHint':
           'Only affects vertical reading. Fit Width still uses the full viewport width.',
       'settings.autoInterval': 'Auto-mode Interval',

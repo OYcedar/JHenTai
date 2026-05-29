@@ -282,6 +282,8 @@ class WebReaderController extends GetxController {
   final turnPageMode = 'adaptive'.obs;
   final preloadPages = 3.obs;
   final preloadPagesLocal = 3.obs;
+  final preloadDistance = 1.obs;
+  final preloadDistanceLocal = 8.obs;
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
@@ -575,11 +577,33 @@ class WebReaderController extends GetxController {
       if (localValue != null) {
         preloadPagesLocal.value = localValue.clamp(0, 10).toInt();
       }
+      final distance =
+          await backendApiClient.getSetting(kWebPreloadDistanceKey);
+      final distanceValue = int.tryParse(distance ?? '');
+      if (distanceValue != null) {
+        preloadDistance.value = distanceValue.clamp(0, 10).toInt();
+      }
+      final distanceLocal =
+          await backendApiClient.getSetting(kWebPreloadDistanceLocalKey);
+      final distanceLocalValue = int.tryParse(distanceLocal ?? '');
+      if (distanceLocalValue != null) {
+        preloadDistanceLocal.value = distanceLocalValue.clamp(0, 10).toInt();
+      }
     } catch (_) {}
   }
 
   int get cachePreloadPages =>
       mode == ReaderMode.online ? preloadPages.value : preloadPagesLocal.value;
+
+  int get cachePreloadScreens => mode == ReaderMode.online
+      ? preloadDistance.value
+      : preloadDistanceLocal.value;
+
+  int get imageResolvePreloadWindow =>
+      readDirection.value == ReadDirection.vertical ||
+              readDirection.value == ReadDirection.fitWidth
+          ? preloadDistance.value
+          : preloadPages.value;
 
   Future<void> _loadDisplaySettings() async {
     try {
@@ -1028,7 +1052,7 @@ class WebReaderController extends GetxController {
   void _preloadAround(int center) {
     if (mode != ReaderMode.online) return;
     if (_imagePageUrls.isEmpty) return;
-    final window = preloadPages.value;
+    final window = imageResolvePreloadWindow;
     final start = math.max(0, center - window);
     final end = math.min(_imagePageUrls.length - 1, center + window);
     for (int i = start; i <= end; i++) {
@@ -1827,7 +1851,7 @@ class _ReaderBody extends StatelessWidget {
                       cacheExtent: math.max(
                         MediaQuery.sizeOf(context).height,
                         MediaQuery.sizeOf(context).height *
-                            (controller.cachePreloadPages + 1),
+                            (controller.cachePreloadScreens + 1),
                       ),
                       itemBuilder: (context, index) => Obx(() => Padding(
                             key: controller._imageItemKey(index),
@@ -1881,7 +1905,7 @@ class _ReaderBody extends StatelessWidget {
                       cacheExtent: math.max(
                         MediaQuery.sizeOf(context).height,
                         MediaQuery.sizeOf(context).height *
-                            (controller.cachePreloadPages + 1),
+                            (controller.cachePreloadScreens + 1),
                       ),
                       itemBuilder: (context, index) => Obx(() => Padding(
                             key: controller._imageItemKey(index),

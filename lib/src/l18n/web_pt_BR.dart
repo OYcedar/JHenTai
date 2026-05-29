@@ -860,6 +860,11 @@ class WebPtBR {
       'settings.imageSpacing': 'Espaçamento de Imagem',
       'settings.preloadPages': 'Páginas Pré-carregadas (Online)',
       'settings.preloadPagesLocal': 'Páginas Pré-carregadas (Local)',
+      'preloadPageCount': 'Páginas pré-carregadas (Online)',
+      'preloadPageCountInLocalMode': 'Páginas pré-carregadas (Local)',
+      'preloadDistanceInOnlineMode': 'Distância de pré-carga (Online)',
+      'preloadDistanceInLocalMode': 'Distância de pré-carga (Local)',
+      'ScreenHeight': 'Tela',
       'settings.imageRegionWidthRatioHint':
           'Afeta apenas a leitura vertical. Ajustar Largura ainda usa toda a largura da janela.',
       'settings.autoInterval': 'Intervalo Auto-leitura',

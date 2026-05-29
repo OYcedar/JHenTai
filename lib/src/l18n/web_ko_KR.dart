@@ -809,6 +809,11 @@ class WebKoKR {
       'settings.imageSpacing': '이미지 간격',
       'settings.preloadPages': '미리 로드 페이지(온라인)',
       'settings.preloadPagesLocal': '미리 로드 페이지(로컬)',
+      'preloadPageCount': '미리 로드할 페이지 수(온라인)',
+      'preloadPageCountInLocalMode': '미리 로드할 페이지 수(로컬)',
+      'preloadDistanceInOnlineMode': '미리 로드 거리(온라인)',
+      'preloadDistanceInLocalMode': '미리 로드 거리(로컬)',
+      'ScreenHeight': '화면',
       'settings.imageRegionWidthRatioHint':
           '세로 읽기에만 적용됩니다. 너비 맞춤 모드는 계속 전체 화면 너비를 사용합니다.',
       'settings.autoInterval': '자동 넘기기 간격',
