@@ -1,26 +1,29 @@
-![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux%20%7C%20Docker-brightgreen)
+![platform](https://img.shields.io/badge/Platform-Docker%20%7C%20Web-brightgreen)
 [![docker](https://img.shields.io/docker/pulls/hemumoe/jhentai)](https://hub.docker.com/r/hemumoe/jhentai)
-![last-commit](https://img.shields.io/github/last-commit/jiangtian616/JHenTai)
-[![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/total)](https://github.com/jiangtian616/JHenTai/releases)
-[![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/latest/total)](https://github.com/jiangtian616/JHenTai/releases)
-![star](https://img.shields.io/github/stars/jiangtian616/JHenTai)
-[![issue](https://img.shields.io/badge/chat-issue-brightgreen)](https://github.com/jiangtian616/JHenTai/issues/new)
+![last-commit](https://img.shields.io/github/last-commit/OYcedar/JHenTai-Docker/docker)
+[![issue](https://img.shields.io/badge/chat-issue-brightgreen)](https://github.com/OYcedar/JHenTai-Docker/issues/new)
 [![telegram](https://img.shields.io/badge/chat-telegram(Chinese_Mainly)-brightgreen)](https://t.me/+PindoE9yvIpmOWI9)
 
 # JHenTai
 
-[English](https://github.com/OYcedar/JHenTai/blob/master/README.md) | 简体中文
-| [한국어](https://github.com/OYcedar/JHenTai/blob/master/README_kr.md)
+[English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/README.md) | 简体中文
+| [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/README_kr.md)
 
 [常见问题，提问前必看](https://github.com/jiangtian616/JHenTai/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
 
 ## 定位
 
-E-hentai 的一个多端app，现支持Android、iOS、Windows、MacOS、Linux系统以及 **Docker（Web）** 部署。
+本仓库是 JHenTai 的 **Docker/Web 专用 fork**，只维护浏览器端自托管体验、Docker 镜像、服务端能力和部署文档。
+
+本 fork **不维护也不发布** Android、iOS、Windows、macOS、Linux 原生客户端安装包。如需原生 App，请使用上游 JHenTai 项目。下方原生客户端相关内容仅作为上游历史/参考信息保留。
+
+JHenTai-Docker 是面向 E-Hentai 的 Docker/Web 漫画客户端，适用于 NAS、服务器和任意设备浏览器访问。
 
 仍在发展阶段，十分欢迎提交各种bug反馈或Feature Request。
 
 ## 下载&安装
+
+> 本 fork 是 Docker/Web 专用项目。以下原生客户端下载/安装说明来自上游项目，不是本 fork 的发布目标。
 
 [<img src="https://raw.githubusercontent.com/jiangtian616/JHenTai/master/badges/download_from_github.png" 
       alt="Download from GitHub" 
@@ -103,7 +106,7 @@ docker-compose up -d
 
 **详细的 Docker 部署文档**（配置、备份、反向代理、CI/CD、安全、常见问题）请参阅：
 
-> **[Docker 部署指南（简体中文）](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md)** | [English](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md) | [한국어](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)
+> **[Docker 部署指南（简体中文）](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md)** | [English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)
 
 ## 更新
 

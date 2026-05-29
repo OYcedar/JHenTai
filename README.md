@@ -1,25 +1,30 @@
-![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux%20%7C%20Docker-brightgreen)
+![platform](https://img.shields.io/badge/Platform-Docker%20%7C%20Web-brightgreen)
 [![docker](https://img.shields.io/docker/pulls/hemumoe/jhentai)](https://hub.docker.com/r/hemumoe/jhentai)
-![last-commit](https://img.shields.io/github/last-commit/jiangtian616/JHenTai)
-[![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/total)](https://github.com/jiangtian616/JHenTai/releases)
-[![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/latest/total)](https://github.com/jiangtian616/JHenTai/releases)
-![star](https://img.shields.io/github/stars/jiangtian616/JHenTai)
-[![issue](https://img.shields.io/badge/chat-issue-brightgreen)](https://github.com/jiangtian616/JHenTai/issues/new)
+![last-commit](https://img.shields.io/github/last-commit/OYcedar/JHenTai-Docker/docker)
+[![issue](https://img.shields.io/badge/chat-issue-brightgreen)](https://github.com/OYcedar/JHenTai-Docker/issues/new)
 [![telegram](https://img.shields.io/badge/chat-telegram(Chinese_Mainly)-brightgreen)](https://t.me/+PindoE9yvIpmOWI9)
 
 # JHenTai
 
-English | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/README_cn.md) | [한국어](https://github.com/OYcedar/JHenTai/blob/master/README_kr.md)
+English | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/README_cn.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/README_kr.md)
 
 [Q&A](https://github.com/jiangtian616/JHenTai/wiki/Common-Questions)
 
+## Project Scope
+
+This repository is a **Docker/Web-only fork** of JHenTai. It focuses on the browser-based self-hosted experience, Docker packaging, server-side services, and deployment documentation.
+
+Native Android, iOS, Windows, macOS, and Linux app releases are **not maintained or published by this fork**. If you need the native app packages, please use the upstream JHenTai project. The upstream native-app content below is kept only as historical/reference material.
+
 ## Description
 
-A manga app for E-Hentai, supporting Android & iOS & Windows & MacOS & Linux & **Docker (Web)**.
+A Docker/Web manga client for E-Hentai, intended for NAS, servers, and browser access from any device.
 
 Still in development stage, welcome to submit issues or feature requests.
 
 ## Download & Install
+
+> This fork is Docker/Web-only. The native app download/install notes in this section refer to the upstream project and are not release targets of this fork.
 
 [<img src="https://raw.githubusercontent.com/jiangtian616/JHenTai/master/badges/download_from_github.png" 
       alt="Download from GitHub" 
@@ -103,7 +108,7 @@ Then open `http://<your-server-ip>:8080` in any browser and enter the API token 
 
 **For detailed Docker documentation** (configuration, backup, reverse proxy, CI/CD, security, troubleshooting), see:
 
-> **[Docker Deployment Guide (English)](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md)** | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md) | [한국어](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)
+> **[Docker Deployment Guide (English)](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md)** | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)
 
 ## Update
 

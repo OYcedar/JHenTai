@@ -1,8 +1,10 @@
 # JHenTai — Docker 배포 가이드
 
-[English](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md) | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md) | 한국어
+[English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md) | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md) | 한국어
 
 ---
+
+> 이 저장소는 JHenTai의 **Docker/Web 전용 fork**입니다. 브라우저 UI, 서버 런타임, Docker 이미지, 배포 흐름만 유지합니다. Android/iOS/desktop 네이티브 앱 패키지는 이 fork의 배포 대상이 아닙니다.
 
 ## 목차
 
@@ -63,8 +65,8 @@ docker-compose up -d
 ### 소스 코드에서 빌드
 
 ```bash
-git clone https://github.com/OYcedar/JHenTai.git
-cd JHenTai
+git clone https://github.com/OYcedar/JHenTai-Docker.git
+cd JHenTai-Docker
 docker-compose up -d --build
 ```
 
@@ -231,7 +233,7 @@ labels:
 
 **로그인:** Docker Hub → Account Settings → Security의 **Access Token**으로 `docker login`을 사용하세요.
 
-**구 태그 삭제**(`latest`, `8.0.12`, `8.0`, `*-web` 등): `scripts/dockerhub-delete-tags.sh` 및 [DOCKER.md](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md)의 예시를 참고하세요.
+**구 태그 삭제**(`latest`, `8.0.12`, `8.0`, `*-web` 등): `scripts/dockerhub-delete-tags.sh` 및 [DOCKER.md](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md)의 예시를 참고하세요.
 
 ---
 

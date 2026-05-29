@@ -1,8 +1,10 @@
 # JHenTai — Docker Deployment Guide
 
-English | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md) | [한국어](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)
+English | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)
 
 ---
+
+> This repository is the **Docker/Web-only fork** of JHenTai. It maintains the browser UI, server runtime, Docker image, and deployment workflow only. Native Android/iOS/desktop app packages are not release targets of this fork.
 
 ## Table of Contents
 
@@ -63,8 +65,8 @@ docker-compose up -d
 ### Build from source
 
 ```bash
-git clone https://github.com/OYcedar/JHenTai.git
-cd JHenTai
+git clone https://github.com/OYcedar/JHenTai-Docker.git
+cd JHenTai-Docker
 docker-compose up -d --build
 ```
 

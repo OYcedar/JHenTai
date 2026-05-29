@@ -1,8 +1,10 @@
 # JHenTai — Docker 部署指南
 
-[English](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md) | 简体中文 | [한국어](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)
+[English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md) | 简体中文 | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)
 
 ---
+
+> 本仓库是 JHenTai 的 **Docker/Web 专用 fork**，只维护浏览器端界面、服务端运行时、Docker 镜像和部署流程。Android/iOS/桌面端原生安装包不是本 fork 的发布目标。
 
 ## 目录
 
@@ -63,8 +65,8 @@ docker-compose up -d
 ### 从源码构建
 
 ```bash
-git clone https://github.com/OYcedar/JHenTai.git
-cd JHenTai
+git clone https://github.com/OYcedar/JHenTai-Docker.git
+cd JHenTai-Docker
 docker-compose up -d --build
 ```
 

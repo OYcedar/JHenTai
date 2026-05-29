@@ -1,25 +1,28 @@
-![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux%20%7C%20Docker-brightgreen)
+![platform](https://img.shields.io/badge/Platform-Docker%20%7C%20Web-brightgreen)
 [![docker](https://img.shields.io/docker/pulls/hemumoe/jhentai)](https://hub.docker.com/r/hemumoe/jhentai)
-![last-commit](https://img.shields.io/github/last-commit/jiangtian616/JHenTai)
-[![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/total)](https://github.com/jiangtian616/JHenTai/releases)
-[![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/latest/total)](https://github.com/jiangtian616/JHenTai/releases)
-![star](https://img.shields.io/github/stars/jiangtian616/JHenTai)
-[![issue](https://img.shields.io/badge/chat-issue-brightgreen)](https://github.com/jiangtian616/JHenTai/issues/new)
+![last-commit](https://img.shields.io/github/last-commit/OYcedar/JHenTai-Docker/docker)
+[![issue](https://img.shields.io/badge/chat-issue-brightgreen)](https://github.com/OYcedar/JHenTai-Docker/issues/new)
 [![telegram](https://img.shields.io/badge/chat-telegram(Chinese_Mainly)-brightgreen)](https://t.me/+PindoE9yvIpmOWI9)
 
 # JHenTai
 
-[English](https://github.com/OYcedar/JHenTai/blob/master/README.md) | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/README_cn.md) | 한국어
+[English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/README.md) | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/README_cn.md) | 한국어
 
 [Q&A](https://github.com/jiangtian616/JHenTai/wiki/Common-Questions)
 
 ## 개요
 
-Android & iOS & Windows & MacOS & Linux 및 **Docker (Web)** 를 지원하는 E-Hentai 애플리케이션.
+이 저장소는 JHenTai의 **Docker/Web 전용 fork**입니다. 브라우저 기반 셀프 호스팅 경험, Docker 이미지, 서버 기능, 배포 문서만 유지합니다.
+
+이 fork는 Android, iOS, Windows, macOS, Linux 네이티브 앱 패키지를 유지하거나 배포하지 않습니다. 네이티브 앱이 필요하면 upstream JHenTai 프로젝트를 사용하세요. 아래 네이티브 앱 내용은 upstream 참고용으로만 남겨 둡니다.
+
+JHenTai-Docker는 NAS, 서버, 모든 기기의 브라우저 접근을 위한 E-Hentai Docker/Web 클라이언트입니다.
 
 아직 개발 중입니다. 오류 제보나 기능 요청은 언제나 환영합니다.
 
 ## 다운로드 & 설치
+
+> 이 fork는 Docker/Web 전용입니다. 아래 네이티브 앱 다운로드/설치 안내는 upstream 참고용이며 이 fork의 배포 대상이 아닙니다.
 
 [<img src="https://raw.githubusercontent.com/jiangtian616/JHenTai/master/badges/download_from_github.png" 
       alt="Download from GitHub" 
@@ -92,7 +95,7 @@ docker-compose up -d
 
 **상세 Docker 배포 문서** (설정, 백업, 리버스 프록시, CI/CD, 보안, 문제 해결)는 아래를 참조하세요:
 
-> **[Docker 배포 가이드 (한국어)](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)** | [English](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md) | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md)
+> **[Docker 배포 가이드 (한국어)](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)** | [English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md) | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md)
 
 ## 개발 동기
 
