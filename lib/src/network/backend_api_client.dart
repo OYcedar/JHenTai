@@ -165,8 +165,8 @@ class BackendApiClient {
   /// Long GET URLs break some reverse proxies (414 / header buffer). Use [fetchProxiedImageBytes] when true.
   static const int proxyImageGetMaxSafeLength = 2000;
 
-  String proxyImageUrl(String imageUrl) {
-    return '$_baseUrl/api/proxy/image?url=${Uri.encodeComponent(imageUrl)}&token=${Uri.encodeComponent(_token ?? '')}';
+  String proxyImageUrl(String imageUrl, {int? maxBytes}) {
+    return '$_baseUrl/api/proxy/image?url=${Uri.encodeComponent(imageUrl)}&token=${Uri.encodeComponent(_token ?? '')}${maxBytes != null ? '&maxBytes=$maxBytes' : ''}';
   }
 
   bool shouldProxyImageUsePost(String imageUrl) {
@@ -174,7 +174,8 @@ class BackendApiClient {
     return proxyImageUrl(imageUrl).length > proxyImageGetMaxSafeLength;
   }
 
-  Future<Uint8List> fetchProxiedImageBytes(String imageUrl) async {
+  Future<Uint8List> fetchProxiedImageBytes(String imageUrl,
+      {int? maxBytes}) async {
     webImageClientLogVerbose(
       'POST /api/proxy/image len(url)=${imageUrl.length}',
     );
@@ -183,7 +184,10 @@ class BackendApiClient {
         '/api/proxy/image',
         queryParameters:
             _token != null && _token!.isNotEmpty ? {'token': _token} : null,
-        data: jsonEncode({'url': imageUrl}),
+        data: jsonEncode({
+          'url': imageUrl,
+          if (maxBytes != null) 'maxBytes': maxBytes,
+        }),
         options: Options(
           responseType: ResponseType.bytes,
           contentType: Headers.jsonContentType,

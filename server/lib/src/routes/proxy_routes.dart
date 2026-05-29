@@ -55,17 +55,21 @@ class ProxyRoutes {
   Future<Response> _proxyGet(Request request) async {
     final url = request.url.queryParameters['url'];
     if (url == null || url.isEmpty) {
-      return Response.badRequest(body: jsonEncode({'error': 'Missing url parameter'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Missing url parameter'}));
     }
 
     if (!_isAllowedUrl(url)) {
-      return Response.forbidden(jsonEncode({'error': 'URL host not in allowlist'}));
+      return Response.forbidden(
+          jsonEncode({'error': 'URL host not in allowlist'}));
     }
 
-    final queryParams = Map<String, dynamic>.from(request.url.queryParameters)..remove('url');
+    final queryParams = Map<String, dynamic>.from(request.url.queryParameters)
+      ..remove('url');
 
     try {
-      final result = await _client.proxyGet(url, queryParams: queryParams.isNotEmpty ? queryParams : null);
+      final result = await _client.proxyGet(url,
+          queryParams: queryParams.isNotEmpty ? queryParams : null);
       return Response.ok(
         jsonEncode(result),
         headers: {'Content-Type': 'application/json'},
@@ -83,7 +87,8 @@ class ProxyRoutes {
       final bodyStr = await request.readAsString();
       body = jsonDecode(bodyStr) as Map<String, dynamic>;
     } catch (e) {
-      return Response.badRequest(body: jsonEncode({'error': 'Invalid JSON body'}));
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
     }
 
     final url = body['url'] as String?;
@@ -92,7 +97,8 @@ class ProxyRoutes {
     }
 
     if (!_isAllowedUrl(url)) {
-      return Response.forbidden(jsonEncode({'error': 'URL host not in allowlist'}));
+      return Response.forbidden(
+          jsonEncode({'error': 'URL host not in allowlist'}));
     }
 
     final data = body['data'];
@@ -133,11 +139,19 @@ class ProxyRoutes {
       jhStderrLine(m);
       return Response.forbidden('URL host not in allowlist');
     }
+    final maxBytes = _parseMaxBytes(request.url.queryParameters['maxBytes']);
 
     final sw = Stopwatch()..start();
     try {
       final imageBytes = await _client.downloadBytes(url);
       sw.stop();
+      final tooLarge = _imageTooLargeResponse(
+        imageBytes.length,
+        maxBytes,
+        method: 'GET',
+        url: url,
+      );
+      if (tooLarge != null) return tooLarge;
       if (jhImageProxyDebugEnabled()) {
         final m =
             '[proxy/image] GET ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
@@ -190,11 +204,19 @@ class ProxyRoutes {
       jhStderrLine(m);
       return Response.forbidden('URL host not in allowlist');
     }
+    final maxBytes = _parseMaxBytes(body['maxBytes']);
 
     final sw = Stopwatch()..start();
     try {
       final imageBytes = await _client.downloadBytes(url);
       sw.stop();
+      final tooLarge = _imageTooLargeResponse(
+        imageBytes.length,
+        maxBytes,
+        method: 'POST',
+        url: url,
+      );
+      if (tooLarge != null) return tooLarge;
       if (jhImageProxyDebugEnabled()) {
         final m =
             '[proxy/image] POST ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
@@ -226,5 +248,26 @@ class ProxyRoutes {
     if (lower.contains('.gif')) return 'image/gif';
     if (lower.contains('.webp')) return 'image/webp';
     return 'image/jpeg';
+  }
+
+  int? _parseMaxBytes(Object? raw) {
+    if (raw == null) return null;
+    final parsed = raw is int ? raw : int.tryParse(raw.toString());
+    if (parsed == null || parsed <= 0) return null;
+    return parsed;
+  }
+
+  Response? _imageTooLargeResponse(
+    int actualBytes,
+    int? maxBytes, {
+    required String method,
+    required String url,
+  }) {
+    if (maxBytes == null || actualBytes <= maxBytes) return null;
+    final m =
+        '[proxy/image] $method exceeds maxBytes=$maxBytes bytes=$actualBytes ${_urlPreview(url)}';
+    log.info(m);
+    jhStderrLine(m);
+    return Response(413, body: 'Image exceeds maxBytes');
   }
 }

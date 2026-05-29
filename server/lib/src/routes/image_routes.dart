@@ -29,20 +29,22 @@ class ImageRoutes {
       return Response.notFound('Missing path');
     }
 
-    return _serveFile(filePath);
+    return _serveFile(filePath, request);
   }
 
-  Future<Response> _serveGalleryImage(Request request, String gid, String filename) async {
+  Future<Response> _serveGalleryImage(
+      Request request, String gid, String filename) async {
     final filePath = p.join(_config.downloadDir, 'gallery', gid, filename);
-    return _serveFile(filePath);
+    return _serveFile(filePath, request);
   }
 
-  Future<Response> _serveArchiveImage(Request request, String gid, String filename) async {
+  Future<Response> _serveArchiveImage(
+      Request request, String gid, String filename) async {
     final filePath = p.join(_config.downloadDir, 'archive', gid, filename);
-    return _serveFile(filePath);
+    return _serveFile(filePath, request);
   }
 
-  Response _serveFile(String filePath) {
+  Response _serveFile(String filePath, Request request) {
     if (!_isAllowedPath(filePath)) {
       final m = '[api/image] forbidden path not under allowed roots: $filePath';
       log.warning(m);
@@ -60,6 +62,15 @@ class ImageRoutes {
 
     final mimeType = lookupMimeType(filePath) ?? 'application/octet-stream';
     final length = file.lengthSync();
+    final maxBytes =
+        int.tryParse(request.url.queryParameters['maxBytes'] ?? '');
+    if (maxBytes != null && maxBytes > 0 && length > maxBytes) {
+      final m =
+          '[api/image] file exceeds maxBytes=$maxBytes bytes=$length: $filePath';
+      log.info(m);
+      jhStderrLine(m);
+      return Response(413, body: 'Image exceeds maxBytes');
+    }
     if (jhImageProxyDebugEnabled()) {
       final m = '[api/image] ok $filePath bytes=$length type=$mimeType';
       log.info(m);
@@ -79,7 +90,8 @@ class ImageRoutes {
   bool _isAllowedPath(String filePath) {
     final resolved = p.canonicalize(filePath);
     if (resolved.startsWith(p.canonicalize(_config.downloadDir))) return true;
-    if (resolved.startsWith(p.canonicalize(_config.localGalleryDir))) return true;
+    if (resolved.startsWith(p.canonicalize(_config.localGalleryDir)))
+      return true;
     for (final extra in _config.extraScanPaths) {
       if (resolved.startsWith(p.canonicalize(extra))) return true;
     }

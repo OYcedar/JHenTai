@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
@@ -121,13 +122,24 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final disableTapPageTurn = false.obs;
   final gestureRegionWidthRatio = 60.obs;
   final imageRegionWidthRatio = 100.obs;
+  final enableImageMaxKilobytes = false.obs;
+  final imageMaxKilobytes = (1024 * 5).obs;
   final imageSpacing = 0.obs;
   final loaded = false.obs;
+  late final TextEditingController imageMaxKilobytesController;
 
   @override
   void initState() {
     super.initState();
+    imageMaxKilobytesController =
+        TextEditingController(text: imageMaxKilobytes.value.toString());
     _load();
+  }
+
+  @override
+  void dispose() {
+    imageMaxKilobytesController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -200,6 +212,20 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (imageRatio != null) {
         imageRegionWidthRatio.value =
             (int.tryParse(imageRatio) ?? 100).clamp(1, 100).toInt();
+      }
+      final enableMax =
+          await backendApiClient.getSetting(kWebEnableImageMaxKilobytesKey);
+      if (enableMax != null) {
+        enableImageMaxKilobytes.value = enableMax == 'true';
+      }
+      final maxKilobytes =
+          await backendApiClient.getSetting(kWebImageMaxKilobytesKey);
+      if (maxKilobytes != null) {
+        final value = int.tryParse(maxKilobytes);
+        if (value != null && value > 0) {
+          imageMaxKilobytes.value = value;
+          imageMaxKilobytesController.text = value.toString();
+        }
       }
       final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
       if (spacing != null) imageSpacing.value = int.tryParse(spacing) ?? 0;
@@ -324,6 +350,44 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                       ?.copyWith(color: Colors.grey),
                 ),
               ),
+              Obx(() => SwitchListTile(
+                    title: Text('enableImageMaxKilobytes'.tr),
+                    subtitle: Text('imageMaxKilobytesHint'.tr),
+                    value: enableImageMaxKilobytes.value,
+                    onChanged: (v) {
+                      enableImageMaxKilobytes.value = v;
+                      backendApiClient
+                          .putSetting(kWebEnableImageMaxKilobytesKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: enableImageMaxKilobytes.value
+                        ? Padding(
+                            key: const ValueKey('webImageMaxKilobytes'),
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: TextField(
+                              controller: imageMaxKilobytesController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              decoration: InputDecoration(
+                                labelText: 'imageMaxKilobytes'.tr,
+                                suffixText: 'KB',
+                                border: const OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              onSubmitted: _saveImageMaxKilobytes,
+                              onEditingComplete: () => _saveImageMaxKilobytes(
+                                imageMaxKilobytesController.text,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  )),
               const SizedBox(height: 8),
               Obx(() => Row(
                     children: [
@@ -571,5 +635,17 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
         ),
       );
     });
+  }
+
+  void _saveImageMaxKilobytes(String value) {
+    final parsed = int.tryParse(value);
+    if (parsed == null || parsed <= 0) {
+      imageMaxKilobytesController.text = imageMaxKilobytes.value.toString();
+      return;
+    }
+    imageMaxKilobytes.value = parsed;
+    backendApiClient
+        .putSetting(kWebImageMaxKilobytesKey, parsed)
+        .catchError((_) {});
   }
 }

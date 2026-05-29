@@ -27,6 +27,7 @@ class WebProxiedImage extends StatefulWidget {
 
     /// Gallery cards: themed surface + spinner while loading (GET and POST paths).
     this.surfaceLoadingPlaceholder = false,
+    this.maxBytes,
   });
 
   /// Raw image URL (e-hentai CDN / ehgt), not pre-encoded proxy URL.
@@ -43,6 +44,7 @@ class WebProxiedImage extends StatefulWidget {
   final bool readerFillMinLoadingHeight;
   final Widget? readerErrorChild;
   final bool surfaceLoadingPlaceholder;
+  final int? maxBytes;
 
   @override
   State<WebProxiedImage> createState() => _WebProxiedImageState();
@@ -60,7 +62,8 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
   @override
   void didUpdateWidget(WebProxiedImage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.sourceUrl != widget.sourceUrl) {
+    if (oldWidget.sourceUrl != widget.sourceUrl ||
+        oldWidget.maxBytes != widget.maxBytes) {
       _syncPostFuture();
     }
   }
@@ -69,10 +72,13 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
     if (backendApiClient.shouldProxyImageUsePost(widget.sourceUrl)) {
       webImageClientLogVerbose(
           'WebProxiedImage POST path urlLen=${widget.sourceUrl.length}');
-      _postFuture = backendApiClient.fetchProxiedImageBytes(widget.sourceUrl);
+      _postFuture = backendApiClient.fetchProxiedImageBytes(
+        widget.sourceUrl,
+        maxBytes: widget.maxBytes,
+      );
     } else {
       webImageClientLogVerbose(
-        'WebProxiedImage GET path proxyLen=${backendApiClient.proxyImageUrl(widget.sourceUrl).length}',
+        'WebProxiedImage GET path proxyLen=${backendApiClient.proxyImageUrl(widget.sourceUrl, maxBytes: widget.maxBytes).length}',
       );
       _postFuture = null;
     }
@@ -122,7 +128,7 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       webImageClientLogVerbose(
           'WebProxiedImage direct Image.network api/image');
       return Image.network(
-        u,
+        _withMaxBytes(u, widget.maxBytes),
         fit: widget.fit,
         width: widget.width,
         height: widget.height,
@@ -234,7 +240,8 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       );
     }
 
-    final proxied = backendApiClient.proxyImageUrl(u);
+    final proxied =
+        backendApiClient.proxyImageUrl(u, maxBytes: widget.maxBytes);
     webImageClientLogVerbose(
         'WebProxiedImage Image.network GET ${_urlPreview(proxied, max: 160)}');
     return Image.network(
@@ -315,6 +322,21 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       child: child,
     );
   }
+}
+
+String _withMaxBytes(String url, int? maxBytes) {
+  if (maxBytes == null) {
+    return url;
+  }
+  final uri = Uri.tryParse(url);
+  if (uri == null) {
+    final sep = url.contains('?') ? '&' : '?';
+    return '$url${sep}maxBytes=$maxBytes';
+  }
+  return uri.replace(queryParameters: {
+    ...uri.queryParameters,
+    'maxBytes': '$maxBytes',
+  }).toString();
 }
 
 String _urlPreview(String url, {int max = 120}) {

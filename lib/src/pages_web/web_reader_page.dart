@@ -295,6 +295,8 @@ class WebReaderController extends GetxController {
   final reverseTapPageTurn = false.obs;
   final disableTapPageTurn = false.obs;
   final gestureRegionWidthRatio = 60.obs;
+  final enableImageMaxKilobytes = false.obs;
+  final imageMaxKilobytes = (1024 * 5).obs;
   Timer? _autoTimer;
 
   final _imagePageUrls = <String>[];
@@ -317,6 +319,10 @@ class WebReaderController extends GetxController {
 
   /// Gallery title from route args, query `title=`, or API when available.
   final galleryTitle = ''.obs;
+
+  int? get imageMaxBytes => enableImageMaxKilobytes.value
+      ? imageMaxKilobytes.value.clamp(1, 1 << 30).toInt() * 1024
+      : null;
 
   /// Online: user-visible message when HTML parse / image-page fetch fails for a page.
   final imageLoadErrors = <int, String>{}.obs;
@@ -564,6 +570,17 @@ class WebReaderController extends GetxController {
       final ratioValue = int.tryParse(imageRatio ?? '');
       if (ratioValue != null) {
         imageRegionWidthRatio.value = ratioValue.clamp(1, 100).toInt();
+      }
+      final enableMax =
+          await backendApiClient.getSetting(kWebEnableImageMaxKilobytesKey);
+      if (enableMax != null) {
+        enableImageMaxKilobytes.value = enableMax == 'true';
+      }
+      final maxKilobytes =
+          await backendApiClient.getSetting(kWebImageMaxKilobytesKey);
+      final maxValue = int.tryParse(maxKilobytes ?? '');
+      if (maxValue != null && maxValue > 0) {
+        imageMaxKilobytes.value = maxValue;
       }
     } catch (_) {}
   }
@@ -1014,7 +1031,9 @@ class WebReaderController extends GetxController {
         imageUrls.refresh();
       }
       if (!backendApiClient.shouldProxyImageUsePost(imageUrl)) {
-        _precacheNetworkImage(backendApiClient.proxyImageUrl(imageUrl));
+        _precacheNetworkImage(
+          backendApiClient.proxyImageUrl(imageUrl, maxBytes: imageMaxBytes),
+        );
       }
     } else {
       imageLoadErrors[index] = 'reader.imageFailed'.tr;
@@ -2221,6 +2240,7 @@ class _ImageContent extends StatelessWidget {
           readerStyle: true,
           readerTallLoading: isVertical || fitWidth,
           readerFillMinLoadingHeight: !isVertical && !fitWidth,
+          maxBytes: controller.imageMaxBytes,
           readerErrorChild: SizedBox(
             height: isVertical ? 400 : null,
             child: Center(
