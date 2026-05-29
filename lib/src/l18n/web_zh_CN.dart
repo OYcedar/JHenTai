@@ -163,6 +163,7 @@ class WebZhCN {
       'detail.archiveQueued': '归档下载已加入队列',
       'detail.downloadFailed': '下载失败: @error',
       'detail.archiveFailed': '归档下载失败: @error',
+      'detail.loadArchiveInfoFailed': '加载归档信息失败：@error',
       'detail.noArchive': '没有可用的归档',
       'detail.tags': '标签',
       'detail.comments': '评论 (@count)',

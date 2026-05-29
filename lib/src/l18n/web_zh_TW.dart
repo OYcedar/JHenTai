@@ -165,6 +165,7 @@ class WebZhTW {
       'detail.archiveQueued': '封存下載已加入佇列',
       'detail.downloadFailed': '下載失敗: @error',
       'detail.archiveFailed': '封存下載失敗: @error',
+      'detail.loadArchiveInfoFailed': '載入封存資訊失敗：@error',
       'detail.noArchive': '沒有可用的封存',
       'detail.tags': '標籤',
       'detail.comments': '評論 (@count)',

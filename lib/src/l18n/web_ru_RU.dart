@@ -174,6 +174,8 @@ class WebRuRU {
       'detail.archiveQueued': 'Загрузка архива добавлена в очередь',
       'detail.downloadFailed': 'Ошибка загрузки: @error',
       'detail.archiveFailed': 'Ошибка загрузки архива: @error',
+      'detail.loadArchiveInfoFailed':
+          'Не удалось загрузить сведения об архиве: @error',
       'detail.noArchive': 'Архив недоступен',
       'detail.tags': 'Теги',
       'detail.comments': 'Комментарии (@count)',

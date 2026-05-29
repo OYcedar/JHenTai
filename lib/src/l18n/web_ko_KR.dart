@@ -164,6 +164,7 @@ class WebKoKR {
       'detail.archiveQueued': '아카이브 다운로드가 대기열에 추가되었습니다',
       'detail.downloadFailed': '다운로드 시작 실패: @error',
       'detail.archiveFailed': '아카이브 다운로드 시작 실패: @error',
+      'detail.loadArchiveInfoFailed': '아카이브 정보 로드 실패: @error',
       'detail.noArchive': '사용 가능한 아카이브 없음',
       'detail.tags': '태그',
       'detail.comments': '댓글 (@count)',

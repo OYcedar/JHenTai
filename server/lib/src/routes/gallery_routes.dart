@@ -55,6 +55,7 @@ class GalleryRoutes {
     router.get('/torrents/<gid>/<token>', _galleryTorrents);
     router.get('/eh-status', _ehStatus);
     router.post('/reset-image-limit', _resetImageLimit);
+    router.post('/archive-info', _galleryArchiveInfo);
     router.post('/hh-info', _galleryHHInfo);
     router.post('/hh-download', _galleryHHDownload);
     router.post('/image-lookup', _galleryImageLookup);
@@ -332,6 +333,50 @@ class GalleryRoutes {
   int? _parseBalanceCount(String text, String unit) {
     final match = RegExp(r'([\d,]+)\s+' + RegExp.escape(unit)).firstMatch(text);
     return int.tryParse(match?.group(1)?.replaceAll(',', '') ?? '');
+  }
+
+  Future<Response> _galleryArchiveInfo(Request request) async {
+    try {
+      final body =
+          jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+      final archivePageUrl = body['archivePageUrl']?.toString() ?? '';
+      if (archivePageUrl.isEmpty) {
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Missing archivePageUrl'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      final html = await _client.fetchArchivePageHtml(archivePageUrl);
+      return Response.ok(
+        jsonEncode(_parseArchivePageHtml(html)),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to fetch archive info: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Map<String, dynamic> _parseArchivePageHtml(String html) {
+    final doc = html_parser.parse(html);
+    final balanceText = doc.querySelector('#db > p:nth-child(4)')?.text ?? '';
+    String text(String selector) =>
+        doc.querySelector(selector)?.text.trim().replaceAll(',', '') ?? '';
+    String value(String selector) =>
+        doc.querySelector(selector)?.attributes['value']?.trim() ?? '';
+    return {
+      'gpCount': _parseBalanceCount(balanceText, 'GP'),
+      'creditCount': _parseBalanceCount(balanceText, 'Credits'),
+      'originalCost': text('#db > div > div > div > strong'),
+      'originalSize': text('#db > div > div > p > strong'),
+      'downloadOriginalHint': value('#db > div > div > form > div > input'),
+      'resampleCost': text('#db > div > div:nth-child(3) > div > strong'),
+      'resampleSize': text('#db > div > div:nth-child(3) > p > strong'),
+      'downloadResampleHint':
+          value('#db > div > div:nth-child(3) > form > div > input'),
+    };
   }
 
   Future<Response> _galleryListByUrl(Request request) async {

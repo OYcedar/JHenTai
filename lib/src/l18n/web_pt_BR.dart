@@ -176,6 +176,8 @@ class WebPtBR {
       'detail.archiveQueued': 'Download do arquivo foi enfileirado',
       'detail.downloadFailed': 'Falha ao iniciar download: @error',
       'detail.archiveFailed': 'Falha ao iniciar download do arquivo: @error',
+      'detail.loadArchiveInfoFailed':
+          'Falha ao carregar informações do arquivo: @error',
       'detail.noArchive': 'Nenhum arquivo disponível',
       'detail.tags': 'Etiquetas',
       'detail.comments': 'Comentários (@count)',

@@ -174,6 +174,7 @@ class WebEnUS {
       'detail.archiveQueued': 'Archive download has been queued',
       'detail.downloadFailed': 'Failed to start download: @error',
       'detail.archiveFailed': 'Failed to start archive download: @error',
+      'detail.loadArchiveInfoFailed': 'Failed to load archive info: @error',
       'detail.noArchive': 'No archive available',
       'detail.tags': 'Tags',
       'detail.comments': 'Comments (@count)',

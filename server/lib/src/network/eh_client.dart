@@ -1100,6 +1100,12 @@ class EHClient {
     return response.data ?? '';
   }
 
+  Future<String> fetchArchivePageHtml(String archivePageUrl) async {
+    final normalized = archivePageUrl.replaceFirst('--', '-');
+    final response = await _dio.get<String>(normalized);
+    return response.data ?? '';
+  }
+
   Future<String> requestHHDownload(
       String archivePageUrl, String resolution) async {
     final normalized = archivePageUrl.replaceFirst('--', '-');

@@ -891,6 +891,8 @@ class WebGalleryDetailPage extends StatelessWidget {
           web.window.localStorage.getItem('jh_web_default_archive_priority') ??
               '0',
     );
+    final archiveInfoFuture =
+        backendApiClient.fetchGalleryArchiveInfo(controller.archiverUrl.value);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -915,42 +917,107 @@ class WebGalleryDetailPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.archive),
-                    label: Text('detail.archiveResample'.tr),
-                    onPressed: () async {
-                      final g = group.trim().isEmpty ? 'default' : group.trim();
-                      final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
-                      web.window.localStorage
-                          .setItem('jh_web_default_archive_group', g);
-                      web.window.localStorage
-                          .setItem('jh_web_default_archive_priority', '$p');
-                      Navigator.pop(ctx);
-                      await controller.startArchiveDownload(
-                          isOriginal: false, group: g, priority: p);
-                    },
-                  ),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.archive_outlined),
-                    label: Text('detail.archiveOriginal'.tr),
-                    onPressed: () async {
-                      final g = group.trim().isEmpty ? 'default' : group.trim();
-                      final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
-                      web.window.localStorage
-                          .setItem('jh_web_default_archive_group', g);
-                      web.window.localStorage
-                          .setItem('jh_web_default_archive_priority', '$p');
-                      Navigator.pop(ctx);
-                      await controller.startArchiveDownload(
-                          isOriginal: true, group: g, priority: p);
-                    },
-                  ),
-                ],
+              FutureBuilder<Map<String, dynamic>>(
+                future: archiveInfoFuture,
+                builder: (context, snapshot) {
+                  final info = snapshot.data ?? const <String, dynamic>{};
+                  final loading =
+                      snapshot.connectionState != ConnectionState.done &&
+                          !snapshot.hasData;
+                  final error = snapshot.error;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (loading)
+                        const LinearProgressIndicator()
+                      else if (error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            'detail.loadArchiveInfoFailed'
+                                .trParams({'error': '$error'}),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        )
+                      else
+                        _archiveBalanceChips(context, info),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.archive),
+                            label: Text(_archiveOptionLabel(
+                              'detail.archiveResample'.tr,
+                              info['resampleCost'],
+                              info['resampleSize'],
+                            )),
+                            onPressed: _canStartArchiveOption(
+                              cost: info['resampleCost'],
+                              hint: info['downloadResampleHint'],
+                              allowWhenUnknown: error != null,
+                            )
+                                ? () async {
+                                    final g = group.trim().isEmpty
+                                        ? 'default'
+                                        : group.trim();
+                                    final p = int.tryParse(
+                                            priorityCtrl.text.trim()) ??
+                                        0;
+                                    web.window.localStorage.setItem(
+                                        'jh_web_default_archive_group', g);
+                                    web.window.localStorage.setItem(
+                                        'jh_web_default_archive_priority',
+                                        '$p');
+                                    Navigator.pop(ctx);
+                                    await controller.startArchiveDownload(
+                                        isOriginal: false,
+                                        group: g,
+                                        priority: p);
+                                  }
+                                : null,
+                          ),
+                          FilledButton.icon(
+                            icon: const Icon(Icons.archive_outlined),
+                            label: Text(_archiveOptionLabel(
+                              'detail.archiveOriginal'.tr,
+                              info['originalCost'],
+                              info['originalSize'],
+                            )),
+                            onPressed: _canStartArchiveOption(
+                              cost: info['originalCost'],
+                              hint: info['downloadOriginalHint'],
+                              allowWhenUnknown: error != null,
+                            )
+                                ? () async {
+                                    final g = group.trim().isEmpty
+                                        ? 'default'
+                                        : group.trim();
+                                    final p = int.tryParse(
+                                            priorityCtrl.text.trim()) ??
+                                        0;
+                                    web.window.localStorage.setItem(
+                                        'jh_web_default_archive_group', g);
+                                    web.window.localStorage.setItem(
+                                        'jh_web_default_archive_priority',
+                                        '$p');
+                                    Navigator.pop(ctx);
+                                    await controller.startArchiveDownload(
+                                        isOriginal: true,
+                                        group: g,
+                                        priority: p);
+                                  }
+                                : null,
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -962,6 +1029,52 @@ class WebGalleryDetailPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _archiveBalanceChips(BuildContext context, Map<String, dynamic> info) {
+    final gp = info['gpCount'];
+    final credits = info['creditCount'];
+    if (gp == null && credits == null) return const SizedBox.shrink();
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        if (gp != null)
+          Chip(
+            avatar: const Icon(Icons.toll, size: 18),
+            label: Text('GP: $gp'),
+          ),
+        if (credits != null)
+          Chip(
+            avatar: const Icon(Icons.paid_outlined, size: 18),
+            label: Text('Credits: $credits'),
+          ),
+      ],
+    );
+  }
+
+  String _archiveOptionLabel(String title, dynamic cost, dynamic size) {
+    final costText = cost?.toString().trim() ?? '';
+    final sizeText = size?.toString().trim() ?? '';
+    if (costText.isEmpty && sizeText.isEmpty) return title;
+    final parts = [
+      if (sizeText.isNotEmpty) sizeText,
+      if (costText.isNotEmpty) costText,
+    ].join(' / ');
+    return '$title\n$parts';
+  }
+
+  bool _canStartArchiveOption({
+    required dynamic cost,
+    required dynamic hint,
+    required bool allowWhenUnknown,
+  }) {
+    if (allowWhenUnknown) return true;
+    final costText = cost?.toString().trim() ?? '';
+    final hintText = hint?.toString() ?? '';
+    if (hintText.contains('Insufficient Funds')) return false;
+    if (costText.isEmpty || costText == 'N/A') return false;
+    return true;
   }
 
   void _showFavoriteFolderDialog(
