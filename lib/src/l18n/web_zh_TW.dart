@@ -158,6 +158,8 @@ class WebZhTW {
       'detail.ratedMsg': '你的評分: @rating',
       'detail.rateFailed': '評分失敗: @error',
       'detail.rateLoginRequired': '無法評分 — 需要登入',
+      'detail.ratingCount': '@count 次評分',
+      'detail.favoriteCount': '@count 次收藏',
       'detail.readOnline': '線上閱讀',
       'detail.readOnlineResume': '線上閱讀（上次第 @page 頁）',
       'detail.downloadGallery': '下載畫廊',

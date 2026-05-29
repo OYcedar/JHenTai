@@ -170,6 +170,8 @@ class WebPtBR {
       'detail.ratedMsg': 'Sua avaliação: @rating',
       'detail.rateFailed': 'Falha na avaliação: @error',
       'detail.rateLoginRequired': 'Não é possível avaliar — login necessário',
+      'detail.ratingCount': '@count avaliações',
+      'detail.favoriteCount': 'Favoritado @count',
       'detail.readOnline': 'Ler Online',
       'detail.readOnlineResume': 'Ler online (retomar na página @page)',
       'detail.downloadGallery': 'Baixar Galeria',

@@ -168,6 +168,8 @@ class WebRuRU {
       'detail.ratedMsg': 'Ваша оценка: @rating',
       'detail.rateFailed': 'Ошибка оценки: @error',
       'detail.rateLoginRequired': 'Для оценки нужен вход',
+      'detail.ratingCount': 'Оценок: @count',
+      'detail.favoriteCount': 'В избранном: @count',
       'detail.readOnline': 'Читать онлайн',
       'detail.readOnlineResume': 'Читать онлайн (продолжить со стр. @page)',
       'detail.downloadGallery': 'Скачать галерею',

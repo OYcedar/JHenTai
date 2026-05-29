@@ -157,6 +157,8 @@ class WebKoKR {
       'detail.ratedMsg': '당신의 평점: @rating',
       'detail.rateFailed': '평가 실패: @error',
       'detail.rateLoginRequired': '평가할 수 없음 — 로그인 필요',
+      'detail.ratingCount': '@count개 평가',
+      'detail.favoriteCount': '@count회 즐겨찾기',
       'detail.readOnline': '온라인 보기',
       'detail.readOnlineResume': '온라인 보기 (이전 @page페이지부터)',
       'detail.downloadGallery': '갤러리 다운로드',

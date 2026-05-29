@@ -156,6 +156,8 @@ class WebZhCN {
       'detail.ratedMsg': '你的评分: @rating',
       'detail.rateFailed': '评分失败: @error',
       'detail.rateLoginRequired': '无法评分 — 需要登录',
+      'detail.ratingCount': '@count 次评分',
+      'detail.favoriteCount': '@count 次收藏',
       'detail.readOnline': '在线阅读',
       'detail.readOnlineResume': '在线阅读（上次第 @page 页）',
       'detail.downloadGallery': '下载画廊',

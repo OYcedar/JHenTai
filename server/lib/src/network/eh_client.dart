@@ -1232,6 +1232,15 @@ class EHClient {
     final ratingCountText = doc.querySelector('#rating_count')?.text ?? '';
     result.ratingCount = int.tryParse(ratingCountText) ?? 0;
 
+    // Favorite count
+    final favoriteCountText = doc.querySelector('#favcount')?.text.trim() ?? '';
+    if (favoriteCountText == 'Once') {
+      result.favoriteCount = 1;
+    } else if (favoriteCountText.isNotEmpty && favoriteCountText != 'Never') {
+      result.favoriteCount =
+          int.tryParse(favoriteCountText.split(' ').first) ?? 0;
+    }
+
     // Newer version
     final newerEl = doc.querySelector('#gnd a');
     if (newerEl != null) {
@@ -1545,6 +1554,7 @@ class GalleryDetailResult {
   String language = '';
   String? parentUrl;
   int ratingCount = 0;
+  int favoriteCount = 0;
   String? newerVersionUrl;
   List<Map<String, String>> childVersions = [];
   int torrentCount = 0;

@@ -168,6 +168,8 @@ class WebEnUS {
       'detail.ratedMsg': 'Your rating: @rating',
       'detail.rateFailed': 'Rating failed: @error',
       'detail.rateLoginRequired': 'Cannot rate — login required',
+      'detail.ratingCount': '@count ratings',
+      'detail.favoriteCount': 'Favorited @count',
       'detail.readOnline': 'Read Online',
       'detail.readOnlineResume': 'Read online (resume page @page)',
       'detail.downloadGallery': 'Download Gallery',

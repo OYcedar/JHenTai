@@ -711,6 +711,7 @@ class GalleryRoutes {
           'language': detail.language,
           'parentUrl': detail.parentUrl,
           'ratingCount': detail.ratingCount,
+          'favoriteCount': detail.favoriteCount,
           'newerVersionUrl': detail.newerVersionUrl,
           'childVersions': detail.childVersions,
           'torrentCount': detail.torrentCount,

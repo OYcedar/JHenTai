@@ -127,6 +127,7 @@ class WebGalleryDetailController extends GetxController {
   final language = ''.obs;
   final parentUrl = Rxn<String>();
   final ratingCount = 0.obs;
+  final favoriteCount = 0.obs;
   final newerVersionUrl = Rxn<String>();
   final childVersions = <Map<String, dynamic>>[].obs;
   final torrentCount = 0.obs;
@@ -264,7 +265,8 @@ class WebGalleryDetailController extends GetxController {
       fileSize.value = result['fileSize'] as String? ?? '';
       language.value = result['language'] as String? ?? '';
       parentUrl.value = result['parentUrl'] as String?;
-      ratingCount.value = result['ratingCount'] as int? ?? 0;
+      ratingCount.value = (result['ratingCount'] as num?)?.toInt() ?? 0;
+      favoriteCount.value = (result['favoriteCount'] as num?)?.toInt() ?? 0;
       newerVersionUrl.value = result['newerVersionUrl'] as String?;
       final rawChildVersions = result['childVersions'] as List?;
       childVersions.value = rawChildVersions
@@ -1496,15 +1498,33 @@ class WebGalleryDetailPage extends StatelessWidget {
                       .trParams({'count': '${controller.pageCount.value}'})),
                   visualDensity: VisualDensity.compact,
                 )),
-            Obx(() => InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () => _showRatingDialog(context),
-                  child: Chip(
-                    avatar:
-                        const Icon(Icons.star, size: 16, color: Colors.amber),
-                    label: Text(controller.rating.value.toStringAsFixed(1)),
-                    visualDensity: VisualDensity.compact,
-                  ),
+            Obx(() {
+              final ratingText = controller.ratingCount.value > 0
+                  ? '${controller.rating.value.toStringAsFixed(1)} (${controller.ratingCount.value})'
+                  : controller.rating.value.toStringAsFixed(1);
+              final chip = InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _showRatingDialog(context),
+                child: Chip(
+                  avatar: const Icon(Icons.star, size: 16, color: Colors.amber),
+                  label: Text(ratingText),
+                  visualDensity: VisualDensity.compact,
+                ),
+              );
+              if (controller.ratingCount.value <= 0) {
+                return chip;
+              }
+              return Tooltip(
+                message: 'detail.ratingCount'
+                    .trParams({'count': '${controller.ratingCount.value}'}),
+                child: chip,
+              );
+            }),
+            Obx(() => Chip(
+                  avatar: const Icon(Icons.favorite_border, size: 16),
+                  label: Text('detail.favoriteCount'.trParams(
+                      {'count': '${controller.favoriteCount.value}'})),
+                  visualDensity: VisualDensity.compact,
                 )),
             Obx(() {
               final fav = controller.favoriteName.value;
