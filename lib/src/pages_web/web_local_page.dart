@@ -300,6 +300,11 @@ class WebLocalPage extends GetView<WebLocalController> {
                   )),
         title: Text('local.title'.tr),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.folder_copy_outlined),
+            tooltip: 'local.scanRoots'.tr,
+            onPressed: () => _showScanRootsDialog(context),
+          ),
           Obx(() => IconButton(
                 icon: Icon(controller.viewMode.value == 'grid'
                     ? Icons.view_list
@@ -400,6 +405,86 @@ class WebLocalPage extends GetView<WebLocalController> {
         onChanged: (value) => controller.searchQuery.value = value,
       ),
     );
+  }
+
+  Future<void> _showScanRootsDialog(BuildContext context) async {
+    final roots = controller.roots.toList();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('local.scanRoots'.tr),
+        content: SizedBox(
+          width: 520,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'local.scanRootsHint'.tr,
+                style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              if (roots.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text('local.noScanRoots'.tr),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: roots.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final root = roots[index];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.folder_special_outlined),
+                        title: Text(
+                          WebLocalController._displayPath(root),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Text(
+                          root,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.copy),
+                          tooltip: 'local.copyPath'.tr,
+                          onPressed: () => _copyLocalPath(root),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          if (roots.isNotEmpty)
+            TextButton.icon(
+              icon: const Icon(Icons.copy_all),
+              onPressed: () => _copyLocalPath(roots.join('\n')),
+              label: Text('local.copyAllPaths'.tr),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.close'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _copyLocalPath(String path) {
+    if (path.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: path));
+    Get.snackbar('hasCopiedToClipboard'.tr, path,
+        snackPosition: SnackPosition.BOTTOM);
   }
 
   Widget _buildGalleryList(BuildContext context) {
@@ -793,10 +878,7 @@ class WebLocalPage extends GetView<WebLocalController> {
           break;
         case 'copyPath':
           final path = gallery['path']?.toString() ?? '';
-          if (path.isEmpty) return;
-          Clipboard.setData(ClipboardData(text: path));
-          Get.snackbar('hasCopiedToClipboard'.tr, path,
-              snackPosition: SnackPosition.BOTTOM);
+          _copyLocalPath(path);
           break;
         case 'delete':
           _confirmDeleteLocalGallery(context, gallery);

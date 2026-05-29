@@ -280,6 +280,11 @@ class WebPtBR {
       'local.deleteFailed': 'Falha ao excluir galeria local: @error',
       'local.parentDirectory': 'Pasta Pai',
       'local.copyPath': 'Copiar Caminho',
+      'local.copyAllPaths': 'Copiar Todos os Caminhos',
+      'local.scanRoots': 'Raizes de Escaneamento',
+      'local.scanRootsHint':
+          'Estes sao os caminhos do conteiner que o servidor Docker escaneia. Altere os volumes Docker ou JH_EXTRA_SCAN_PATHS para muda-los.',
+      'local.noScanRoots': 'Nenhuma raiz de escaneamento configurada',
 
       // settings
       'settings.title': 'Configurações',

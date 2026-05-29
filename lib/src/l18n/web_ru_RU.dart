@@ -275,6 +275,11 @@ class WebRuRU {
       'local.deleteFailed': 'Не удалось удалить локальную галерею: @error',
       'local.parentDirectory': 'Родительская папка',
       'local.copyPath': 'Копировать путь',
+      'local.copyAllPaths': 'Копировать все пути',
+      'local.scanRoots': 'Корни сканирования',
+      'local.scanRootsHint':
+          'Это пути внутри контейнера, которые сканирует Docker-сервер. Измените тома Docker или JH_EXTRA_SCAN_PATHS, чтобы настроить их.',
+      'local.noScanRoots': 'Корни сканирования не настроены',
 
       // settings
       'settings.title': 'Настройки',

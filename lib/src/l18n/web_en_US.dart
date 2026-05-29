@@ -275,6 +275,11 @@ class WebEnUS {
       'local.deleteFailed': 'Failed to delete local gallery: @error',
       'local.parentDirectory': 'Parent Directory',
       'local.copyPath': 'Copy Path',
+      'local.copyAllPaths': 'Copy All Paths',
+      'local.scanRoots': 'Scan Roots',
+      'local.scanRootsHint':
+          'These are the container paths that the Docker server scans. Update Docker volume mounts or JH_EXTRA_SCAN_PATHS to change them.',
+      'local.noScanRoots': 'No scan roots configured',
 
       // settings
       'settings.title': 'Settings',

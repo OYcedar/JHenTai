@@ -260,6 +260,11 @@ class WebZhTW {
       'local.deleteFailed': '刪除本機畫廊失敗: @error',
       'local.parentDirectory': '上層目錄',
       'local.copyPath': '複製路徑',
+      'local.copyAllPaths': '複製全部路徑',
+      'local.scanRoots': '掃描根目錄',
+      'local.scanRootsHint':
+          '這裡顯示 Docker 服務端目前掃描的容器內路徑。如需調整，請修改 Docker 掛載或 JH_EXTRA_SCAN_PATHS。',
+      'local.noScanRoots': '未設定掃描根目錄',
 
       // settings
       'settings.title': '設定',

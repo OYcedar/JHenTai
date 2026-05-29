@@ -260,6 +260,11 @@ class WebZhCN {
       'local.deleteFailed': '删除本地画廊失败: @error',
       'local.parentDirectory': '上级目录',
       'local.copyPath': '复制路径',
+      'local.copyAllPaths': '复制全部路径',
+      'local.scanRoots': '扫描根目录',
+      'local.scanRootsHint':
+          '这里显示 Docker 服务端当前扫描的容器内路径。如需调整，请修改 Docker 挂载或 JH_EXTRA_SCAN_PATHS。',
+      'local.noScanRoots': '未配置扫描根目录',
 
       // settings
       'settings.title': '设置',

@@ -264,6 +264,11 @@ class WebKoKR {
       'local.deleteFailed': '로컬 갤러리 삭제 실패: @error',
       'local.parentDirectory': '상위 폴더',
       'local.copyPath': '경로 복사',
+      'local.copyAllPaths': '모든 경로 복사',
+      'local.scanRoots': '스캔 루트',
+      'local.scanRootsHint':
+          'Docker 서버가 스캔하는 컨테이너 내부 경로입니다. 변경하려면 Docker 볼륨 마운트 또는 JH_EXTRA_SCAN_PATHS를 수정하세요.',
+      'local.noScanRoots': '설정된 스캔 루트가 없습니다',
 
       // settings
       'settings.title': '설정',
