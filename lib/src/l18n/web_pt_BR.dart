@@ -473,6 +473,12 @@ class WebPtBR {
       'settings.defaultGalleryDownload': 'Download de galeria',
       'settings.defaultArchiveDownload': 'Download de arquivo',
       'settings.customGroupName': 'Nome de grupo personalizado',
+      'speedLimit': 'Limite de velocidade',
+      'settings.speedLimitWebHint':
+          'Limita downloads de imagens de galerias no servidor Docker. Use 99 para ilimitado.',
+      'settings.speedLimitMaximum': 'Imagens',
+      'settings.speedLimitPeriod': 'Por',
+      'settings.unlimited': 'Ilimitado',
       'settings.downloadServerRuntime': 'Execução do servidor',
       'settings.galleryConcurrency': 'Concorrência de galerias',
       'settings.archiveConcurrency': 'Concorrência de arquivos',

@@ -468,6 +468,12 @@ class WebRuRU {
       'settings.defaultGalleryDownload': 'Загрузка галереи',
       'settings.defaultArchiveDownload': 'Загрузка архива',
       'settings.customGroupName': 'Имя пользовательской группы',
+      'speedLimit': 'Ограничение скорости',
+      'settings.speedLimitWebHint':
+          'Ограничивает загрузку изображений галерей на Docker-сервере. 99 означает без ограничения.',
+      'settings.speedLimitMaximum': 'Изображений',
+      'settings.speedLimitPeriod': 'За',
+      'settings.unlimited': 'Без ограничения',
       'settings.downloadServerRuntime': 'Параметры сервера',
       'settings.galleryConcurrency': 'Параллельные галереи',
       'settings.archiveConcurrency': 'Параллельные архивы',

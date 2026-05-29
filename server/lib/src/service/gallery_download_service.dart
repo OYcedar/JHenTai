@@ -12,6 +12,7 @@ import '../core/log.dart';
 import '../network/eh_client.dart';
 import '../network/jh_public_client.dart';
 import '../service/event_bus.dart';
+import 'download_rate_limiter.dart';
 
 T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
   return (index >= 0 && index < values.length) ? values[index] : fallback;
@@ -107,6 +108,7 @@ class GalleryDownloadService {
 
   final Map<int, GalleryDownloadTask> _tasks = {};
   final Set<int> _activeDownloads = {};
+  final DownloadRateLimiter _rateLimiter = DownloadRateLimiter();
 
   int get _maxConcurrent => _config.maxConcurrentGalleryDownloads;
 
@@ -705,6 +707,8 @@ class GalleryDownloadService {
         final savePath =
             p.join(dir.path, '${index.toString().padLeft(5, '0')}.$ext');
 
+        await _rateLimiter.waitForSlot();
+        cancelTokenThrowIfCancelled(task._cancelToken);
         await _client.downloadFile(
           imagePage.imageUrl,
           savePath,

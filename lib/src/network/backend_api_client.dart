@@ -1128,6 +1128,10 @@ class BackendApiClient {
 
   static const webUseBuiltInBlockedUsersKey = 'webUseBuiltInBlockedUsers';
   static const webRestoreTasksAutomaticallyKey = 'webRestoreTasksAutomatically';
+  static const webDownloadSpeedLimitMaximumKey =
+      'web_download_speed_limit_maximum';
+  static const webDownloadSpeedLimitPeriodSecondsKey =
+      'web_download_speed_limit_period_seconds';
 
   Future<Map<String, dynamic>> getSettings() async {
     final response = await _dio.get('/api/setting/');
@@ -1198,6 +1202,32 @@ class BackendApiClient {
 
   Future<void> setRestoreTasksAutomatically(bool value) async {
     await putSetting(webRestoreTasksAutomaticallyKey, value);
+  }
+
+  Future<({int maximum, int periodSeconds})> getDownloadSpeedLimit() async {
+    final maximum =
+        int.tryParse(await getSetting(webDownloadSpeedLimitMaximumKey) ?? '') ??
+            99;
+    final periodSeconds = int.tryParse(
+            await getSetting(webDownloadSpeedLimitPeriodSecondsKey) ?? '') ??
+        1;
+    return (
+      maximum: maximum.clamp(1, 99).toInt(),
+      periodSeconds: periodSeconds.clamp(1, 3).toInt(),
+    );
+  }
+
+  Future<void> setDownloadSpeedLimit({
+    required int maximum,
+    required int periodSeconds,
+  }) async {
+    await Future.wait([
+      putSetting(webDownloadSpeedLimitMaximumKey, maximum.clamp(1, 99).toInt()),
+      putSetting(
+        webDownloadSpeedLimitPeriodSecondsKey,
+        periodSeconds.clamp(1, 3).toInt(),
+      ),
+    ]);
   }
 
   Future<Map<String, dynamic>> listServerLogs() async {

@@ -469,6 +469,12 @@ class WebEnUS {
       'settings.defaultGalleryDownload': 'Gallery download',
       'settings.defaultArchiveDownload': 'Archive download',
       'settings.customGroupName': 'Custom group name',
+      'speedLimit': 'Speed limit',
+      'settings.speedLimitWebHint':
+          'Limits gallery image downloads on the Docker server. Use 99 for unlimited.',
+      'settings.speedLimitMaximum': 'Images',
+      'settings.speedLimitPeriod': 'Per',
+      'settings.unlimited': 'Unlimited',
       'settings.downloadServerRuntime': 'Server runtime',
       'settings.galleryConcurrency': 'Gallery concurrency',
       'settings.archiveConcurrency': 'Archive concurrency',

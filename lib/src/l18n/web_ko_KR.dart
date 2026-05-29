@@ -442,6 +442,12 @@ class WebKoKR {
       'settings.defaultGalleryDownload': '갤러리 다운로드',
       'settings.defaultArchiveDownload': '아카이브 다운로드',
       'settings.customGroupName': '사용자 지정 그룹 이름',
+      'speedLimit': '다운로드 속도 제한',
+      'settings.speedLimitWebHint':
+          'Docker 서버의 갤러리 이미지 다운로드 속도를 제한합니다. 99는 무제한입니다.',
+      'settings.speedLimitMaximum': '이미지 수',
+      'settings.speedLimitPeriod': '당',
+      'settings.unlimited': '무제한',
       'settings.downloadServerRuntime': '서버 런타임',
       'settings.galleryConcurrency': '갤러리 동시 다운로드',
       'settings.archiveConcurrency': '아카이브 동시 다운로드',

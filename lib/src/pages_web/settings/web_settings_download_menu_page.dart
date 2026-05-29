@@ -30,6 +30,9 @@ class _WebSettingsDownloadMenuPageState
   bool restoreTasksAutomatically = false;
   bool isLoadingRestoreTasksAutomatically = true;
   bool restoreRunning = false;
+  int speedLimitMaximum = 99;
+  int speedLimitPeriodSeconds = 1;
+  bool isLoadingSpeedLimit = true;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _WebSettingsDownloadMenuPageState
     archiveGroupController.text = _readStorage(_archiveGroupKey, 'default');
     archivePriorityController.text = _readStorage(_archivePriorityKey, '0');
     _loadRestoreTasksAutomatically();
+    _loadSpeedLimit();
   }
 
   @override
@@ -90,6 +94,51 @@ class _WebSettingsDownloadMenuPageState
       if (mounted) {
         setState(() => isLoadingRestoreTasksAutomatically = false);
       }
+    }
+  }
+
+  Future<void> _loadSpeedLimit() async {
+    try {
+      final value = await backendApiClient.getDownloadSpeedLimit();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        speedLimitMaximum = value.maximum;
+        speedLimitPeriodSeconds = value.periodSeconds;
+      });
+    } catch (_) {
+      // Keep unlimited default.
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingSpeedLimit = false);
+      }
+    }
+  }
+
+  Future<void> _saveSpeedLimit({
+    int? maximum,
+    int? periodSeconds,
+  }) async {
+    final nextMaximum = maximum ?? speedLimitMaximum;
+    final nextPeriodSeconds = periodSeconds ?? speedLimitPeriodSeconds;
+    setState(() {
+      speedLimitMaximum = nextMaximum;
+      speedLimitPeriodSeconds = nextPeriodSeconds;
+    });
+    try {
+      await backendApiClient.setDownloadSpeedLimit(
+        maximum: nextMaximum,
+        periodSeconds: nextPeriodSeconds,
+      );
+    } catch (e) {
+      await _loadSpeedLimit();
+      Get.snackbar(
+        'common.error'.tr,
+        '${'common.failed'.tr}: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
     }
   }
 
@@ -192,6 +241,10 @@ class _WebSettingsDownloadMenuPageState
               icon: const Icon(Icons.save_outlined),
               label: Text('common.save'.tr),
             ),
+            const SizedBox(height: 24),
+            _sectionTitle(context, 'speedLimit'.tr),
+            const SizedBox(height: 8),
+            _speedLimitCard(),
             const SizedBox(height: 24),
             _sectionTitle(context, 'settings.downloadServerRuntime'.tr),
             const SizedBox(height: 8),
@@ -329,6 +382,74 @@ class _WebSettingsDownloadMenuPageState
     );
   }
 
+  Widget _speedLimitCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('settings.speedLimitWebHint'.tr,
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: speedLimitMaximum,
+                    decoration: InputDecoration(
+                      labelText: 'settings.speedLimitMaximum'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final value in [1, 2, 3, 5, 10, 99])
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text(
+                              value == 99 ? 'settings.unlimited'.tr : '$value'),
+                        ),
+                    ],
+                    onChanged: isLoadingSpeedLimit
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              _saveSpeedLimit(maximum: value);
+                            }
+                          },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    initialValue: speedLimitPeriodSeconds,
+                    decoration: InputDecoration(
+                      labelText: 'settings.speedLimitPeriod'.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final value in [1, 2, 3])
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text('${value}s'),
+                        ),
+                    ],
+                    onChanged: isLoadingSpeedLimit
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              _saveSpeedLimit(periodSeconds: value);
+                            }
+                          },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _downloadDefaultEditor({
     required BuildContext context,
     required String title,
@@ -350,7 +471,7 @@ class _WebSettingsDownloadMenuPageState
             Expanded(
               flex: 3,
               child: DropdownButtonFormField<String>(
-                value: selectedGroup,
+                initialValue: selectedGroup,
                 decoration: InputDecoration(
                   labelText: 'downloads.groupLabel'.tr,
                   border: const OutlineInputBorder(),
