@@ -2232,6 +2232,72 @@ String _webReadDirectionLabel(ReadDirection d) => switch (d) {
       ReadDirection.doubleColumn => 'reader.doubleColumn'.tr,
     };
 
+Future<void> _showWebReaderJumpDialog(
+  BuildContext context,
+  WebReaderController controller,
+) async {
+  final total = controller.totalPages.value;
+  if (total <= 0) {
+    return;
+  }
+  final textController =
+      TextEditingController(text: '${controller.currentPage.value + 1}');
+  final formKey = GlobalKey<FormState>();
+  try {
+    final page = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('detail.jumpToPage'.tr),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: textController,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              hintText: 'detail.jumpPageHint'.trParams({'max': '$total'}),
+            ),
+            validator: (value) {
+              final pageNo = int.tryParse(value?.trim() ?? '');
+              if (pageNo == null || pageNo < 1 || pageNo > total) {
+                return 'detail.jumpPageHint'.trParams({'max': '$total'});
+              }
+              return null;
+            },
+            onFieldSubmitted: (_) {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext)
+                    .pop(int.parse(textController.text.trim()) - 1);
+              }
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(dialogContext)
+                    .pop(int.parse(textController.text.trim()) - 1);
+              }
+            },
+            child: Text('common.ok'.tr),
+          ),
+        ],
+      ),
+    );
+    if (page != null) {
+      controller.goToPage(page);
+    }
+  } finally {
+    textController.dispose();
+  }
+}
+
 class _TopOverlay extends StatelessWidget {
   final WebReaderController controller;
   const _TopOverlay({required this.controller});
@@ -2297,13 +2363,24 @@ class _TopOverlay extends StatelessWidget {
                                     ? '$pageStr · gid:${controller.gid}'
                                     : pageStr)
                                 : '$title · $pageStr';
-                            return Text(
-                              text,
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 15),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                            return Tooltip(
+                              message: 'detail.jumpToPage'.tr,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () => _showWebReaderJumpDialog(
+                                      context, controller),
+                                  child: Text(
+                                    text,
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 15),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
                             );
                           }),
                         ),
