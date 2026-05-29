@@ -635,6 +635,7 @@ class WebZhCN {
 
       // tag voting
       'tagVote.search': '搜索',
+      'tagVote.copyTag': '复制标签',
       'tagVote.searchUploader': '搜索上传者',
       'tagVote.voteUp': '投赞成票',
       'tagVote.voteDown': '投反对票',

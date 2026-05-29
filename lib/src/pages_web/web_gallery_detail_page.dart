@@ -2282,6 +2282,20 @@ class WebGalleryDetailPage extends StatelessWidget {
             Get.offAllNamed('/web/home', arguments: {'search': query});
           },
         ),
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.copy, size: 20),
+            title: Text('tagVote.copyTag'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () async {
+            await Clipboard.setData(ClipboardData(text: '$namespace:"$tag"'));
+            Get.snackbar('detail.copied'.tr, 'hasCopiedToClipboard'.tr,
+                snackPosition: SnackPosition.BOTTOM);
+          },
+        ),
         if (controller.apiuid != null && controller.apikey != null) ...[
           PopupMenuItem(
             child: ListTile(

@@ -631,6 +631,7 @@ class WebZhTW {
 
       // tag voting
       'tagVote.search': '搜尋',
+      'tagVote.copyTag': '複製標籤',
       'tagVote.searchUploader': '搜尋上傳者',
       'tagVote.voteUp': '投贊成票',
       'tagVote.voteDown': '投反對票',

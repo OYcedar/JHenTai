@@ -688,6 +688,7 @@ class WebRuRU {
 
       // tag voting
       'tagVote.search': 'Поиск',
+      'tagVote.copyTag': 'Копировать тег',
       'tagVote.searchUploader': 'Найти загрузчика',
       'tagVote.voteUp': 'За',
       'tagVote.voteDown': 'Против',

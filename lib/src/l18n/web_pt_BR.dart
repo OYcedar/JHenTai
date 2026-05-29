@@ -692,6 +692,7 @@ class WebPtBR {
 
       // tag voting
       'tagVote.search': 'Pesquisar',
+      'tagVote.copyTag': 'Copiar tag',
       'tagVote.searchUploader': 'Pesquisar uploader',
       'tagVote.voteUp': 'Votar Positivo',
       'tagVote.voteDown': 'Votar Negativo',

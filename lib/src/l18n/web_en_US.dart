@@ -686,6 +686,7 @@ class WebEnUS {
 
       // tag voting
       'tagVote.search': 'Search',
+      'tagVote.copyTag': 'Copy tag',
       'tagVote.searchUploader': 'Search uploader',
       'tagVote.voteUp': 'Vote Up',
       'tagVote.voteDown': 'Vote Down',

@@ -652,6 +652,7 @@ class WebKoKR {
 
       // tag voting
       'tagVote.search': '검색',
+      'tagVote.copyTag': '태그 복사',
       'tagVote.searchUploader': '업로더 검색',
       'tagVote.voteUp': '추천',
       'tagVote.voteDown': '비추천',
