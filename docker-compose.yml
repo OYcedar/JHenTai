@@ -1,0 +1,55 @@
+services:
+  jhentai:
+    build: .
+    # To pull from Docker Hub instead of building locally, comment out 'build' above
+    # and uncomment 'image' (tag format x.y.z-hhh, e.g. 8.0.12-136 — see docker/fork_revision):
+    # image: hemumoe/jhentai:8.0.12-136
+    container_name: jhentai
+    ports:
+      - "8080:8080"
+    volumes:
+      - jhentai-data:/data
+      # Optional: store downloads outside /data (Unraid example: comics on array)
+      # - /mnt/user/media/comics/download:/downloads
+      # Optional: mount local gallery directories
+      # - /mnt/user/media/manga:/media/manga:ro
+      # - /mnt/user/media/doujinshi:/media/doujinshi:ro
+    environment:
+      - JH_DATA_DIR=/data
+      # Optional: separate download root (default: /data/download). Must match a volume mount path inside the container.
+      # - JH_DOWNLOAD_DIR=/downloads
+      - JH_PORT=8080
+      - JH_HOST=0.0.0.0
+      - JH_WEB_DIR=/app/web
+      # PUID/PGID for file ownership (default 1000:1000)
+      - PUID=1000
+      - PGID=1000
+      # Comma-separated extra scan paths for local gallery scanning
+      # - JH_EXTRA_SCAN_PATHS=/media/manga,/media/doujinshi
+      # Optional: JHenTai public API secret for gallery upgrade hash reuse (same as app build; see JHenTai docs)
+      # - JH_JHENTAI_API_SECRET=your_secret
+      # - JH_GALLERY_UPGRADE_REUSE_IMAGES=true
+      # - JH_JHENTAI_PUBLIC_API=https://jhentai.top
+      # Optional: set true to download multiple galleries with the same priority at once.
+      # Default false matches the app's safer same-priority queue behavior.
+      # - JH_DOWNLOAD_ALL_GALLERIES_OF_SAME_PRIORITY=false
+      # Optional outbound proxy for EH/EX requests made by the backend server.
+      # Use HTTPS_PROXY for https:// targets. Do not put EH/EX/H@H domains in NO_PROXY,
+      # otherwise gallery detail/image requests will bypass the proxy.
+      # - HTTP_PROXY=http://host.docker.internal:7890
+      # - HTTPS_PROXY=http://host.docker.internal:7890
+      # Optional: force only *.hath.network through a specific proxy, even if NO_PROXY matches it.
+      # - JH_HATH_PROXY=http://host.docker.internal:7890
+      # - NO_PROXY=127.0.0.1,localhost,::1
+      # Unraid / reverse proxy: very long /api/proxy/image?url=... GETs can return 414; increase nginx
+      # large_client_header_buffers or rely on the Web UI POST image proxy for long CDN URLs.
+      # Optional: prefer IPv4 for *.hath.network only (TLS to H@H fails on broken IPv6). Usually omit on local Docker.
+      # - JH_HATH_PREFER_IPV4=1
+      # Verbose server logs for /api/proxy/image and /api/image (success + timing). Browser: localStorage jh_image_debug=1 then reload.
+      # - JH_IMAGE_PROXY_DEBUG=1
+    restart: unless-stopped
+    mem_limit: 1g
+
+volumes:
+  jhentai-data:
+    driver: local

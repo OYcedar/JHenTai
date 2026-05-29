@@ -1,4 +1,5 @@
-![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux-brightgreen)
+![platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20MacOS%20%7C%20Linux%20%7C%20Docker-brightgreen)
+[![docker](https://img.shields.io/docker/pulls/hemumoe/jhentai)](https://hub.docker.com/r/hemumoe/jhentai)
 ![last-commit](https://img.shields.io/github/last-commit/jiangtian616/JHenTai)
 [![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/total)](https://github.com/jiangtian616/JHenTai/releases)
 [![downloads](https://img.shields.io/github/downloads/jiangtian616/JHenTai/latest/total)](https://github.com/jiangtian616/JHenTai/releases)
@@ -8,13 +9,13 @@
 
 # JHenTai
 
-English | [简体中文](https://github.com/jiangtian616/JHenTai/blob/master/README_cn.md) | [한국어](https://github.com/jiangtian616/JHenTai/blob/master/README_kr.md)
+English | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/README_cn.md) | [한국어](https://github.com/OYcedar/JHenTai/blob/master/README_kr.md)
 
 [Q&A](https://github.com/jiangtian616/JHenTai/wiki/Common-Questions)
 
 ## Description
 
-A manga app for E-Hentai, supporting Android & iOS & Windows & MacOS & Linux.
+A manga app for E-Hentai, supporting Android & iOS & Windows & MacOS & Linux & **Docker (Web)**.
 
 Still in development stage, welcome to submit issues or feature requests.
 
@@ -63,6 +64,46 @@ or execute it (You may need to install webkit2gtk-4.1).
 
 
 - If you use a proxy server, set proxy address at network setting page.
+
+## Docker / Web Deployment
+
+JHenTai can also be deployed as a **Docker container** and accessed via a web browser from any device. This is ideal for NAS (Unraid, Synology, etc.), headless servers, or always-on self-hosted setups. Supports **AMD64** and **ARM64** architectures.
+
+Docker images use tags **`x.y.z-hhh`** only (`hhh` = three lowercase hex digits, fork revision 0–4095; see `docker/fork_revision`). There is no `latest` tag.
+
+```bash
+docker pull hemumoe/jhentai:8.0.12-142
+```
+
+**Quick start with docker-compose:**
+
+```yaml
+services:
+  jhentai:
+    image: hemumoe/jhentai:8.0.12-142
+    container_name: jhentai
+    ports:
+      - "8080:8080"
+    volumes:
+      - jhentai-data:/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+    restart: unless-stopped
+
+volumes:
+  jhentai-data:
+```
+
+```bash
+docker-compose up -d
+```
+
+Then open `http://<your-server-ip>:8080` in any browser and enter the API token from `docker logs jhentai`.
+
+**For detailed Docker documentation** (configuration, backup, reverse proxy, CI/CD, security, troubleshooting), see:
+
+> **[Docker Deployment Guide (English)](https://github.com/OYcedar/JHenTai/blob/master/DOCKER.md)** | [简体中文](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_cn.md) | [한국어](https://github.com/OYcedar/JHenTai/blob/master/DOCKER_kr.md)
 
 ## Update
 
@@ -175,6 +216,7 @@ mush thanks to these projects and people🙇‍
 -   [x] vote for Tag, watch and hidden tags
 -   [x] comment, vote for comment
 -   [x] Fingerprint unlock
+-   [x] Docker deployment with Web UI — access from any browser, supports Unraid/NAS
 
 ## Translation
 

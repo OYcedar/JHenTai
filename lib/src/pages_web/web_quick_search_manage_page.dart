@@ -1,0 +1,429 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:jhentai/src/network/backend_api_client.dart';
+
+/// Manage quick searches stored on the server (same format as [WebHomeController.saveCurrentAsQuickSearch]).
+class WebQuickSearchManagePage extends StatefulWidget {
+  const WebQuickSearchManagePage({super.key});
+
+  @override
+  State<WebQuickSearchManagePage> createState() =>
+      _WebQuickSearchManagePageState();
+}
+
+class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
+  List<Map<String, dynamic>> _items = [];
+  bool _loading = true;
+  bool _savingOrder = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await backendApiClient.listQuickSearches();
+      setState(() {
+        _items = list.cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = '$e';
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _delete(String name) async {
+    try {
+      await backendApiClient.deleteQuickSearch(name);
+      await _load();
+      if (mounted) {
+        Get.snackbar('common.success'.tr, 'quickSearch.deleted'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    }
+  }
+
+  Future<void> _add(String name, String keyword) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    final config = jsonEncode({
+      'keyword': keyword.trim(),
+      'categoryFilter': 0,
+      'minimumRating': 0,
+      'searchInName': true,
+      'searchInTags': true,
+      'searchInDesc': false,
+      'showExpunged': false,
+      'onlyShowGalleriesWithTorrents': false,
+      'pageAtLeast': null,
+      'pageAtMost': null,
+      'filterLanguage': null,
+      'disableFilterForLanguage': false,
+      'disableFilterForUploader': false,
+      'disableFilterForTags': false,
+    });
+    try {
+      final nextOrder = _items.length;
+      await backendApiClient.saveQuickSearch(trimmed, config,
+          sortOrder: nextOrder);
+      await _load();
+      if (mounted) Get.back();
+      if (mounted) {
+        Get.snackbar('common.success'.tr, 'quickSearch.saved'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    }
+  }
+
+  Map<String, dynamic> _decodeConfig(String config, {String keyword = ''}) {
+    try {
+      final decoded = jsonDecode(config);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (_) {}
+    return {
+      'keyword': keyword.trim(),
+      'categoryFilter': 0,
+      'minimumRating': 0,
+      'searchInName': true,
+      'searchInTags': true,
+      'searchInDesc': false,
+      'showExpunged': false,
+      'onlyShowGalleriesWithTorrents': false,
+      'pageAtLeast': null,
+      'pageAtMost': null,
+      'filterLanguage': null,
+      'disableFilterForLanguage': false,
+      'disableFilterForUploader': false,
+      'disableFilterForTags': false,
+    };
+  }
+
+  Future<void> _updateQuickSearch({
+    required String oldName,
+    required String newName,
+    required String keyword,
+    required String oldConfig,
+    required int sortOrder,
+  }) async {
+    final trimmedName = newName.trim();
+    if (trimmedName.isEmpty) return;
+    final config = _decodeConfig(oldConfig, keyword: keyword);
+    config['keyword'] = keyword.trim();
+    try {
+      await backendApiClient.saveQuickSearch(
+        trimmedName,
+        jsonEncode(config),
+        sortOrder: sortOrder,
+      );
+      if (trimmedName != oldName) {
+        await backendApiClient.deleteQuickSearch(oldName);
+      }
+      await _load();
+      if (mounted) Get.back();
+      if (mounted) {
+        Get.snackbar('common.success'.tr, 'quickSearch.saved'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    }
+  }
+
+  Future<void> _persistOrder() async {
+    setState(() => _savingOrder = true);
+    try {
+      await Future.wait(_items.asMap().entries.map((entry) {
+        final item = entry.value;
+        final name = item['name']?.toString() ?? '';
+        final config = item['config']?.toString() ?? '';
+        if (name.isEmpty || config.isEmpty) return Future<void>.value();
+        item['sort_order'] = entry.key;
+        return backendApiClient.saveQuickSearch(name, config,
+            sortOrder: entry.key);
+      }));
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        Get.snackbar('common.error'.tr, '$e',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } finally {
+      if (mounted) setState(() => _savingOrder = false);
+    }
+  }
+
+  void _reorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex--;
+      final item = _items.removeAt(oldIndex);
+      _items.insert(newIndex, item);
+    });
+    _persistOrder();
+  }
+
+  void _runQuickSearch(Map<String, dynamic> item) {
+    final config = _decodeConfig(item['config']?.toString() ?? '');
+    Get.offAllNamed('/web/home', arguments: {
+      'quickSearchConfig': jsonEncode(config),
+    });
+  }
+
+  void _showAddDialog() {
+    final nameCtrl = TextEditingController();
+    final kwCtrl = TextEditingController();
+    Get.dialog(
+      AlertDialog(
+        title: Text('quickSearch.addNew'.tr),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.nameLabel'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: kwCtrl,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.keywordLabel'.tr,
+                  hintText: 'quickSearch.keywordHint'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () => _add(nameCtrl.text, kwCtrl.text),
+            child: Text('common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(Map<String, dynamic> item, int index) {
+    final oldName = item['name']?.toString() ?? '';
+    final oldConfig = item['config']?.toString() ?? '';
+    final config = _decodeConfig(oldConfig);
+    final nameCtrl = TextEditingController(text: oldName);
+    final kwCtrl =
+        TextEditingController(text: config['keyword']?.toString() ?? '');
+    final sortOrder = (item['sort_order'] as num?)?.toInt() ?? index;
+
+    Get.dialog(
+      AlertDialog(
+        title: Text('quickSearch.editTitle'.tr),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.nameLabel'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: kwCtrl,
+                decoration: InputDecoration(
+                  labelText: 'quickSearch.keywordLabel'.tr,
+                  hintText: 'quickSearch.keywordHint'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () => _updateQuickSearch(
+              oldName: oldName,
+              newName: nameCtrl.text,
+              keyword: kwCtrl.text,
+              oldConfig: oldConfig,
+              sortOrder: sortOrder,
+            ),
+            child: Text('common.save'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('settings.openQuickSearch'.tr),
+        actions: [
+          if (_savingOrder)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loading || _savingOrder ? null : _load),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddDialog,
+        child: const Icon(Icons.add),
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                            onPressed: _load, child: Text('common.retry'.tr)),
+                      ],
+                    ),
+                  ),
+                )
+              : _items.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('quickSearch.empty'.tr,
+                            style: const TextStyle(color: Colors.grey)),
+                      ),
+                    )
+                  : ReorderableListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _items.length,
+                      onReorder: _savingOrder ? (_, __) {} : _reorder,
+                      itemBuilder: (context, i) {
+                        final item = _items[i];
+                        final name = item['name']?.toString() ?? '';
+                        final cfg = item['config']?.toString() ?? '';
+                        String subtitle = cfg;
+                        try {
+                          final m = jsonDecode(cfg) as Map<String, dynamic>?;
+                          final kw = m?['keyword'] as String? ?? '';
+                          subtitle = kw.isEmpty ? cfg : kw;
+                        } catch (_) {}
+                        if (subtitle.length > 120) {
+                          subtitle = '${subtitle.substring(0, 120)}…';
+                        }
+                        return Card(
+                          key: ValueKey(name),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            onTap: _savingOrder
+                                ? null
+                                : () => _runQuickSearch(item),
+                            leading: ReorderableDragStartListener(
+                              index: i,
+                              child: const Icon(Icons.drag_handle),
+                            ),
+                            title: Text(name),
+                            subtitle: Text(subtitle,
+                                maxLines: 2, overflow: TextOverflow.ellipsis),
+                            trailing: Wrap(
+                              spacing: 4,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.search),
+                                  tooltip: 'tagVote.search'.tr,
+                                  onPressed: _savingOrder
+                                      ? null
+                                      : () => _runQuickSearch(item),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit_outlined),
+                                  tooltip: 'quickSearch.editTitle'.tr,
+                                  onPressed: _savingOrder
+                                      ? null
+                                      : () => _showEditDialog(item, i),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline),
+                                  onPressed: _savingOrder
+                                      ? null
+                                      : () async {
+                                          final ok = await Get.dialog<bool>(
+                                            AlertDialog(
+                                              title: Text(
+                                                  'quickSearch.deleteTitle'.tr),
+                                              content: Text(
+                                                  'quickSearch.deleteConfirm'
+                                                      .trParams(
+                                                          {'name': name})),
+                                              actions: [
+                                                TextButton(
+                                                    onPressed: () =>
+                                                        Get.back(result: false),
+                                                    child: Text(
+                                                        'common.cancel'.tr)),
+                                                FilledButton(
+                                                    onPressed: () =>
+                                                        Get.back(result: true),
+                                                    child: Text(
+                                                        'common.delete'.tr)),
+                                              ],
+                                            ),
+                                          );
+                                          if (ok == true) await _delete(name);
+                                        },
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+    );
+  }
+}

@@ -333,6 +333,8 @@ class en_US {
       'global': 'Global',
       'auto': 'Auto',
       'moveCover2RightSide': 'Move Cover to Right Side',
+      'settings.moveCoverWebHint':
+          'Applies to wide gallery detail pages in this browser.',
       'coverStyle': 'Cover Style',
       'cover': 'Cover',
       'adaptive': 'Adaptive',

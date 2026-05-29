@@ -333,6 +333,7 @@ class zh_TW {
       'global': '全域',
       'auto': '自動',
       'moveCover2RightSide': '移動封面圖至右側',
+      'settings.moveCoverWebHint': '套用到目前瀏覽器中的寬螢幕畫廊詳情頁。',
       'coverStyle': '封面圖片樣式',
       'cover': '覆蓋',
       'adaptive': '自適應',
