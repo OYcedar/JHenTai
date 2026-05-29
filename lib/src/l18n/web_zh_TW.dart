@@ -653,6 +653,7 @@ class WebZhTW {
       'reader.redownloadHint': '請開啟「下載」頁面重試或重新開始此畫廊下載。',
       'reader.deviceOrientation': '裝置方向',
       'reader.deviceOrientationWebHint': '網頁版無法像應用程式一樣鎖定螢幕方向。請使用瀏覽器全螢幕或系統旋轉鎖定。',
+      'toggleFullScreen': '切換全螢幕',
 
       // settings reader
       'settings.defaultFavoriteSlot': '預設收藏夾',

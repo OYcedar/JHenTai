@@ -2328,6 +2328,12 @@ class _TopOverlay extends StatelessWidget {
                         ),
                         IconButton(
                           icon:
+                              const Icon(Icons.fullscreen, color: Colors.white),
+                          tooltip: 'toggleFullScreen'.tr,
+                          onPressed: _toggleWebReaderFullscreen,
+                        ),
+                        IconButton(
+                          icon:
                               const Icon(Icons.grid_view, color: Colors.white),
                           tooltip: 'thumbnails.grid'.tr,
                           onPressed: () => Get.toNamed(

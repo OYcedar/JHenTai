@@ -703,6 +703,7 @@ class WebEnUS {
       'reader.deviceOrientation': 'Device orientation',
       'reader.deviceOrientationWebHint':
           'Browsers cannot lock orientation like the app. Use the browser full-screen or your device rotation lock if needed.',
+      'toggleFullScreen': 'Toggle Full Screen',
 
       // settings reader
       'settings.defaultFavoriteSlot': 'Default favorite folder',

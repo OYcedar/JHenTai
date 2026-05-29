@@ -706,6 +706,7 @@ class WebPtBR {
       'reader.deviceOrientation': 'Orientação do dispositivo',
       'reader.deviceOrientationWebHint':
           'O navegador não pode fixar a orientação como o app. Use tela cheia ou o bloqueio de rotação do sistema.',
+      'toggleFullScreen': 'Alternar tela cheia',
 
       // settings reader
       'settings.defaultFavoriteSlot': 'Pasta de favoritos padrão',

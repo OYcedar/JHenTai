@@ -704,6 +704,7 @@ class WebRuRU {
       'reader.deviceOrientation': 'Ориентация устройства',
       'reader.deviceOrientationWebHint':
           'Браузер не может заблокировать ориентацию как приложение. Используйте полноэкранный режим или системную блокировку поворота.',
+      'toggleFullScreen': 'Переключить полноэкранный режим',
 
       // settings reader
       'settings.defaultFavoriteSlot': 'Папка избранного по умолчанию',

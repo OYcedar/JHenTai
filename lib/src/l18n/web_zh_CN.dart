@@ -657,6 +657,7 @@ class WebZhCN {
       'reader.redownloadHint': '请打开「下载」页面重试或重新开始该画廊下载。',
       'reader.deviceOrientation': '设备方向',
       'reader.deviceOrientationWebHint': '网页版无法像客户端一样锁定屏幕方向。请使用浏览器全屏或系统旋转锁定。',
+      'toggleFullScreen': '切换全屏',
 
       // settings reader
       'settings.defaultFavoriteSlot': '默认收藏夹',

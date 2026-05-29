@@ -674,6 +674,7 @@ class WebKoKR {
       'reader.deviceOrientation': '기기 방향',
       'reader.deviceOrientationWebHint':
           '브라우저에서는 앱처럼 화면 방향을 고정할 수 없습니다. 전체 화면이나 기기 회전 잠금을 사용하세요.',
+      'toggleFullScreen': '전체 화면 전환',
 
       // settings reader
       'settings.defaultFavoriteSlot': '기본 즐겨찾기 폴더',
