@@ -747,7 +747,9 @@ class WebGalleryDetailController extends GetxController {
 
 class WebGalleryDetailPage extends StatelessWidget {
   final String? controllerTag;
-  const WebGalleryDetailPage({super.key, this.controllerTag});
+  final bool embedded;
+  const WebGalleryDetailPage({super.key, this.controllerTag})
+      : embedded = controllerTag != null;
 
   WebGalleryDetailController get controller =>
       Get.find<WebGalleryDetailController>(tag: controllerTag);
@@ -755,132 +757,7 @@ class WebGalleryDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Obx(() =>
-            Text(controller.title.value, overflow: TextOverflow.ellipsis)),
-        actions: [
-          Obx(() {
-            return IconButton(
-              icon: const Icon(Icons.copy),
-              tooltip: 'detail.copyUrl'.tr,
-              onPressed: () {
-                final url = controller.shareableGalleryUrl;
-                Clipboard.setData(ClipboardData(text: url));
-                Get.snackbar('detail.copied'.tr, url,
-                    snackPosition: SnackPosition.BOTTOM);
-              },
-            );
-          }),
-          Obx(() {
-            if (controller.isFavLoading.value) {
-              return const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-              );
-            }
-            final isFav = controller.favoriteSlot.value != null;
-            return IconButton(
-              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
-                  color: isFav
-                      ? _favSlotColor(controller.favoriteSlot.value ?? 0)
-                      : null),
-              tooltip: 'detail.addToFavTitle'.tr,
-              onPressed: () => _handleFavoriteTap(context, controller),
-              onLongPress: WebPreferenceSettings.enableDefaultFavorite
-                  ? () => _showFavoriteFolderDialog(context, controller)
-                  : null,
-            );
-          }),
-          Obx(() {
-            final targetSite = controller.site.value == 'EX' ? 'EH' : 'EX';
-            return PopupMenuButton<String>(
-              onSelected: (value) => _handleOverflowMenu(context, value),
-              itemBuilder: (ctx) {
-                final svc = Get.find<WebDownloadService>();
-                final hasGallery = svc.getGalleryTask(controller.gid) != null;
-                final hasArchive = svc.getArchiveTask(controller.gid) != null;
-                return [
-                  PopupMenuItem(
-                      value: 'share',
-                      child: ListTile(
-                          leading: const Icon(Icons.share, size: 20),
-                          title: Text('detail.shareUrl'.tr),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero)),
-                  PopupMenuItem(
-                      value: 'switchSite:$targetSite',
-                      child: ListTile(
-                          leading: const Icon(Icons.public, size: 20),
-                          title: Text('detail.switchToSite'
-                              .trParams({'site': targetSite})),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero)),
-                  PopupMenuItem(
-                      value: 'jumpToPage',
-                      child: ListTile(
-                          leading:
-                              const Icon(Icons.format_list_numbered, size: 20),
-                          title: Text('detail.jumpToPage'.tr),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero)),
-                  if (controller.apiuid != null && controller.apikey != null)
-                    PopupMenuItem(
-                        value: 'addTag',
-                        child: ListTile(
-                            leading: const Icon(Icons.bookmark_add_outlined,
-                                size: 20),
-                            title: Text('tagVote.addTag'.tr),
-                            dense: true,
-                            contentPadding: EdgeInsets.zero)),
-                  if (hasGallery || hasArchive)
-                    PopupMenuItem(
-                        value: 'deleteDownload',
-                        child: ListTile(
-                            leading: const Icon(Icons.delete_outline,
-                                size: 20, color: Colors.red),
-                            title: Text('detail.deleteDownload'.tr),
-                            dense: true,
-                            contentPadding: EdgeInsets.zero)),
-                  if (controller.parentUrl.value != null ||
-                      controller.childVersions.isNotEmpty)
-                    PopupMenuItem(
-                        value: 'versionHistory',
-                        child: ListTile(
-                            leading: const Icon(Icons.history, size: 20),
-                            title: Text('detail.versionHistory'.tr),
-                            dense: true,
-                            contentPadding: EdgeInsets.zero)),
-                  PopupMenuItem(
-                      value: 'stats',
-                      child: ListTile(
-                          leading: const Icon(Icons.bar_chart, size: 20),
-                          title: Text('detail.stats'.tr),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero)),
-                  PopupMenuItem(
-                      value: 'similarSearch',
-                      child: ListTile(
-                          leading: const Icon(Icons.title, size: 20),
-                          title: Text('detail.similarByTitle'.tr),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero)),
-                  PopupMenuItem(
-                      value: 'blockGallery',
-                      child: ListTile(
-                          leading: const Icon(Icons.block,
-                              size: 20, color: Colors.orange),
-                          title: Text('detail.blockGallery'.tr),
-                          dense: true,
-                          contentPadding: EdgeInsets.zero)),
-                ];
-              },
-            );
-          }),
-        ],
-      ),
+      appBar: embedded ? null : _buildAppBar(context),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -890,6 +767,135 @@ class WebGalleryDetailPage extends StatelessWidget {
         }
         return _buildDetail(context);
       }),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: Obx(
+          () => Text(controller.title.value, overflow: TextOverflow.ellipsis)),
+      actions: [
+        Obx(() {
+          return IconButton(
+            icon: const Icon(Icons.copy),
+            tooltip: 'detail.copyUrl'.tr,
+            onPressed: () {
+              final url = controller.shareableGalleryUrl;
+              Clipboard.setData(ClipboardData(text: url));
+              Get.snackbar('detail.copied'.tr, url,
+                  snackPosition: SnackPosition.BOTTOM);
+            },
+          );
+        }),
+        Obx(() {
+          if (controller.isFavLoading.value) {
+            return const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          final isFav = controller.favoriteSlot.value != null;
+          return IconButton(
+            icon: Icon(isFav ? Icons.favorite : Icons.favorite_border,
+                color: isFav
+                    ? _favSlotColor(controller.favoriteSlot.value ?? 0)
+                    : null),
+            tooltip: 'detail.addToFavTitle'.tr,
+            onPressed: () => _handleFavoriteTap(context, controller),
+            onLongPress: WebPreferenceSettings.enableDefaultFavorite
+                ? () => _showFavoriteFolderDialog(context, controller)
+                : null,
+          );
+        }),
+        Obx(() {
+          final targetSite = controller.site.value == 'EX' ? 'EH' : 'EX';
+          return PopupMenuButton<String>(
+            onSelected: (value) => _handleOverflowMenu(context, value),
+            itemBuilder: (ctx) {
+              final svc = Get.find<WebDownloadService>();
+              final hasGallery = svc.getGalleryTask(controller.gid) != null;
+              final hasArchive = svc.getArchiveTask(controller.gid) != null;
+              return [
+                PopupMenuItem(
+                    value: 'share',
+                    child: ListTile(
+                        leading: const Icon(Icons.share, size: 20),
+                        title: Text('detail.shareUrl'.tr),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
+                PopupMenuItem(
+                    value: 'switchSite:$targetSite',
+                    child: ListTile(
+                        leading: const Icon(Icons.public, size: 20),
+                        title: Text('detail.switchToSite'
+                            .trParams({'site': targetSite})),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
+                PopupMenuItem(
+                    value: 'jumpToPage',
+                    child: ListTile(
+                        leading:
+                            const Icon(Icons.format_list_numbered, size: 20),
+                        title: Text('detail.jumpToPage'.tr),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
+                if (controller.apiuid != null && controller.apikey != null)
+                  PopupMenuItem(
+                      value: 'addTag',
+                      child: ListTile(
+                          leading:
+                              const Icon(Icons.bookmark_add_outlined, size: 20),
+                          title: Text('tagVote.addTag'.tr),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero)),
+                if (hasGallery || hasArchive)
+                  PopupMenuItem(
+                      value: 'deleteDownload',
+                      child: ListTile(
+                          leading: const Icon(Icons.delete_outline,
+                              size: 20, color: Colors.red),
+                          title: Text('detail.deleteDownload'.tr),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero)),
+                if (controller.parentUrl.value != null ||
+                    controller.childVersions.isNotEmpty)
+                  PopupMenuItem(
+                      value: 'versionHistory',
+                      child: ListTile(
+                          leading: const Icon(Icons.history, size: 20),
+                          title: Text('detail.versionHistory'.tr),
+                          dense: true,
+                          contentPadding: EdgeInsets.zero)),
+                PopupMenuItem(
+                    value: 'stats',
+                    child: ListTile(
+                        leading: const Icon(Icons.bar_chart, size: 20),
+                        title: Text('detail.stats'.tr),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
+                PopupMenuItem(
+                    value: 'similarSearch',
+                    child: ListTile(
+                        leading: const Icon(Icons.title, size: 20),
+                        title: Text('detail.similarByTitle'.tr),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
+                PopupMenuItem(
+                    value: 'blockGallery',
+                    child: ListTile(
+                        leading: const Icon(Icons.block,
+                            size: 20, color: Colors.orange),
+                        title: Text('detail.blockGallery'.tr),
+                        dense: true,
+                        contentPadding: EdgeInsets.zero)),
+              ];
+            },
+          );
+        }),
+      ],
     );
   }
 
