@@ -503,6 +503,12 @@ class WebKoKR {
       'settings.cloudConfigEmpty': '클라우드 설정이 없습니다',
       'settings.cloudConfigNotFound': '이 공유 코드에 해당하는 설정을 찾을 수 없습니다',
       'settings.cloudConfigUnknownType': '알 수 없는 설정',
+      'settings.uploadCloudConfig': '클라우드에 업로드',
+      'settings.uploadCloudConfigTitle': '현재 데이터를 클라우드에 업로드할까요?',
+      'settings.uploadCloudConfigConfirm':
+          'JHenTai 클라우드 설정 서비스에 업로드할 로컬 데이터 유형을 선택하세요.',
+      'settings.uploadCloudConfigSuccess': '클라우드 설정을 업로드했습니다',
+      'settings.uploadCloudConfigFailed': '클라우드 설정 업로드 실패: @error',
       'settings.deleteCloudConfigTitle': '클라우드 설정을 삭제할까요?',
       'settings.deleteCloudConfigConfirm': 'JHenTai 클라우드 설정 서비스에서 이 설정을 삭제합니다.',
       'settings.deleteCloudConfigFailed': '클라우드 설정 삭제 실패: @error',

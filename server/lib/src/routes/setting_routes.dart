@@ -30,6 +30,7 @@ class SettingRoutes {
     router.get('/cloud/alive', _cloudAlive);
     router.get('/cloud/configs', _cloudListConfigs);
     router.get('/cloud/config', _cloudGetConfigByShareCode);
+    router.post('/cloud/config/upload', _cloudUploadConfigs);
     router.post('/cloud/config/delete', _cloudDeleteConfig);
     router.get('/export', _exportData);
     router.post('/import', _importData);
@@ -120,6 +121,37 @@ class SettingRoutes {
       return _cloudClient().post(
         '/api/config/delete',
         queryParameters: {'id': id},
+      );
+    });
+  }
+
+  Future<Response> _cloudUploadConfigs(Request request) {
+    return _proxyCloudRequest(() async {
+      final body = jsonDecode(await request.readAsString()) as Map;
+      final rawTypes = body['types'];
+      final selectedTypes = rawTypes is List
+          ? rawTypes
+              .map((value) => (value as num?)?.toInt())
+              .whereType<int>()
+              .toSet()
+          : <int>{};
+      final configs = _exportAppConfigs()
+          .where((config) =>
+              selectedTypes.isEmpty ||
+              selectedTypes.contains((config['type'] as num?)?.toInt()))
+          .map((config) => {
+                'type': config['type'],
+                'version': config['version'],
+                'config': config['config'],
+              })
+          .toList();
+      if (configs.isEmpty) {
+        throw ArgumentError('No config data to upload');
+      }
+      return _cloudClient().post(
+        '/api/config/upload',
+        options: Options(contentType: Headers.jsonContentType),
+        data: {'configs': configs},
       );
     });
   }
@@ -391,7 +423,21 @@ class SettingRoutes {
 
   Response _exportAppData() {
     final now = DateTime.now();
-    final ctime = now.toUtc().millisecondsSinceEpoch;
+    final configs = _exportAppConfigs(now: now);
+
+    return Response.ok(
+      const JsonEncoder.withIndent('  ').convert(configs),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition':
+            'attachment; filename="JHenTaiConfig-${_formatExportTimestamp(now)}.json"',
+      },
+    );
+  }
+
+  List<Map<String, dynamic>> _exportAppConfigs({DateTime? now}) {
+    final time = now ?? DateTime.now();
+    final ctime = time.toUtc().millisecondsSinceEpoch;
     final configs = <Map<String, dynamic>>[];
 
     void addConfig(int type, Object config) {
@@ -416,14 +462,7 @@ class SettingRoutes {
     addConfig(4, _exportAppSearchHistory());
     addConfig(5, _exportAppHistory());
 
-    return Response.ok(
-      const JsonEncoder.withIndent('  ').convert(configs),
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Content-Disposition':
-            'attachment; filename="JHenTaiConfig-${_formatExportTimestamp(now)}.json"',
-      },
-    );
+    return configs;
   }
 
   Future<Response> _importData(Request request) async {

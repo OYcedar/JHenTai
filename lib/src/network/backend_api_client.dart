@@ -1401,6 +1401,14 @@ class BackendApiClient {
     await _dio.post('/api/setting/cloud/config/delete', data: {'id': id});
   }
 
+  Future<Map<String, dynamic>> uploadCloudConfigs(List<int> types) async {
+    final response = await _dio.post(
+      '/api/setting/cloud/config/upload',
+      data: {'types': types},
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   // --- Health ---
 
   Future<Map<String, dynamic>> health() async {

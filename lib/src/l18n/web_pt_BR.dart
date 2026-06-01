@@ -542,6 +542,13 @@ class WebPtBR {
       'settings.cloudConfigNotFound':
           'Nenhuma config encontrada para este código',
       'settings.cloudConfigUnknownType': 'Config desconhecida',
+      'settings.uploadCloudConfig': 'Enviar para a nuvem',
+      'settings.uploadCloudConfigTitle': 'Enviar dados atuais para a nuvem?',
+      'settings.uploadCloudConfigConfirm':
+          'Selecione os tipos de dados locais para enviar ao serviço de config na nuvem do JHenTai.',
+      'settings.uploadCloudConfigSuccess': 'Config enviada para a nuvem',
+      'settings.uploadCloudConfigFailed':
+          'Falha ao enviar config para a nuvem: @error',
       'settings.deleteCloudConfigTitle': 'Excluir config da nuvem?',
       'settings.deleteCloudConfigConfirm':
           'Isso remove a config do serviço de nuvem JHenTai.',

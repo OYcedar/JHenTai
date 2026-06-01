@@ -534,6 +534,13 @@ class WebRuRU {
       'settings.cloudConfigEmpty': 'Нет облачных настроек',
       'settings.cloudConfigNotFound': 'Настройка для этого кода не найдена',
       'settings.cloudConfigUnknownType': 'Неизвестная настройка',
+      'settings.uploadCloudConfig': 'Загрузить в облако',
+      'settings.uploadCloudConfigTitle': 'Загрузить текущие данные в облако?',
+      'settings.uploadCloudConfigConfirm':
+          'Выберите типы локальных данных для загрузки в облачный сервис настроек JHenTai.',
+      'settings.uploadCloudConfigSuccess': 'Облачная настройка загружена',
+      'settings.uploadCloudConfigFailed':
+          'Не удалось загрузить облачную настройку: @error',
       'settings.deleteCloudConfigTitle': 'Удалить облачную настройку?',
       'settings.deleteCloudConfigConfirm':
           'Это удалит настройку из облачного сервиса JHenTai.',

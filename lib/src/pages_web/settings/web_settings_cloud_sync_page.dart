@@ -20,6 +20,7 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
   final shareCodeController = TextEditingController();
   final configs = <Map<String, dynamic>>[];
   bool loading = false;
+  bool uploading = false;
   bool serviceAlive = false;
   String? error;
   int? typeFilter;
@@ -155,6 +156,83 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
     }
   }
 
+  Future<void> _showUploadDialog() async {
+    final selectedTypes = <int>{1, 2, 3, 4, 5};
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('settings.uploadCloudConfigTitle'.tr),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('settings.uploadCloudConfigConfirm'.tr),
+                const SizedBox(height: 12),
+                for (final type in [1, 2, 3, 4, 5])
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: selectedTypes.contains(type),
+                    onChanged: (value) {
+                      setState(() {
+                        if (value == true) {
+                          selectedTypes.add(type);
+                        } else {
+                          selectedTypes.remove(type);
+                        }
+                      });
+                    },
+                    title: Text(_typeLabel(type)),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed:
+                  selectedTypes.isEmpty ? null : () => Navigator.pop(ctx, true),
+              child: Text('settings.uploadCloudConfig'.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) {
+      await _uploadConfigs(selectedTypes.toList()..sort());
+    }
+  }
+
+  Future<void> _uploadConfigs(List<int> types) async {
+    setState(() {
+      uploading = true;
+      error = null;
+    });
+    try {
+      await backendApiClient.uploadCloudConfigs(types);
+      await _refresh();
+      Get.snackbar(
+        'common.success'.tr,
+        'settings.uploadCloudConfigSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.uploadCloudConfigFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => uploading = false);
+      }
+    }
+  }
+
   void _downloadConfig(Map<String, dynamic> config) {
     final type = _typeLabel((config['type'] as num?)?.toInt());
     final version = config['version']?.toString() ?? '1.0.0';
@@ -225,6 +303,19 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
       appBar: AppBar(
         title: Text('settings.cloudSync'.tr),
         actions: [
+          IconButton(
+            tooltip: 'settings.uploadCloudConfig'.tr,
+            onPressed: loading || uploading || !serviceAlive
+                ? null
+                : _showUploadDialog,
+            icon: uploading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cloud_upload_outlined),
+          ),
           IconButton(
             tooltip: 'reload'.tr,
             onPressed: loading ? null : _refresh,

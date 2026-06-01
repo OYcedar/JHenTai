@@ -533,6 +533,13 @@ class WebEnUS {
       'settings.cloudConfigEmpty': 'No cloud configs',
       'settings.cloudConfigNotFound': 'No config found for this share code',
       'settings.cloudConfigUnknownType': 'Unknown config',
+      'settings.uploadCloudConfig': 'Upload to cloud',
+      'settings.uploadCloudConfigTitle': 'Upload current data to cloud?',
+      'settings.uploadCloudConfigConfirm':
+          'Select the local data types to upload to JHenTai cloud config service.',
+      'settings.uploadCloudConfigSuccess': 'Cloud config uploaded',
+      'settings.uploadCloudConfigFailed':
+          'Failed to upload cloud config: @error',
       'settings.deleteCloudConfigTitle': 'Delete cloud config?',
       'settings.deleteCloudConfigConfirm':
           'This removes the config from the JHenTai cloud service.',
