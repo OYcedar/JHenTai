@@ -564,6 +564,8 @@ class WebZhCN {
 
       // search history
       'searchHistory.clearAll': '清除搜索记录',
+      'searchHistory.clearTitle': '清除搜索记录',
+      'searchHistory.clearConfirm': '确定要清除所有搜索记录吗？',
       'searchHistory.translate': '翻译搜索记录',
 
       // comment

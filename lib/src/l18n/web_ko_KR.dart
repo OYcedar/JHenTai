@@ -584,6 +584,8 @@ class WebKoKR {
 
       // search history
       'searchHistory.clearAll': '검색 기록 삭제',
+      'searchHistory.clearTitle': '검색 기록 삭제',
+      'searchHistory.clearConfirm': '모든 검색 기록을 삭제할까요?',
       'searchHistory.translate': '검색 기록 번역',
 
       // comment

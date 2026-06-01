@@ -3903,6 +3903,31 @@ class _SearchFieldState extends State<_SearchField> {
     return '${text.substring(0, query.start)}$replacement ${text.substring(end)}';
   }
 
+  Future<void> _confirmClearSearchHistory() async {
+    _removeOverlay();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('searchHistory.clearTitle'.tr),
+        content: Text('searchHistory.clearConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await backendApiClient.clearSearchHistory();
+      widget.controller.searchHistory.clear();
+    }
+  }
+
   void _showOverlay() {
     _removeOverlay();
     _overlayEntry = OverlayEntry(builder: (context) {
@@ -3978,13 +4003,7 @@ class _SearchFieldState extends State<_SearchField> {
                   ),
                   if (_suggestions.any((s) => !s.isTag))
                     InkWell(
-                      onTap: () {
-                        backendApiClient
-                            .clearSearchHistory()
-                            .catchError((_) {});
-                        widget.controller.searchHistory.clear();
-                        _removeOverlay();
-                      },
+                      onTap: _confirmClearSearchHistory,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: Text('searchHistory.clearAll'.tr,

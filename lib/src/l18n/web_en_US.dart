@@ -624,6 +624,9 @@ class WebEnUS {
 
       // search history
       'searchHistory.clearAll': 'Clear search history',
+      'searchHistory.clearTitle': 'Clear Search History',
+      'searchHistory.clearConfirm':
+          'Are you sure you want to clear all search history?',
       'searchHistory.translate': 'Translate search history',
 
       // comment
