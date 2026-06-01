@@ -733,6 +733,11 @@ class WebEnUS {
       'blockRule.ruleCount': '@count rules',
       'blockRule.ungrouped': 'Ungrouped',
       'blockRule.deleteGroup': 'Delete Group',
+      'blockRule.deleteGroupTitle': 'Delete Block Rule Group',
+      'blockRule.deleteGroupConfirm':
+          'Delete group "@group" and its @count rules?',
+      'blockRule.deleteRuleTitle': 'Delete Block Rule',
+      'blockRule.deleteRuleConfirm': 'Delete rule "@rule"?',
       'blockRule.target': 'Target',
       'blockRule.attribute': 'Attribute',
       'blockRule.pattern': 'Pattern',

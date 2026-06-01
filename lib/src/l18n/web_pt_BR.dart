@@ -742,6 +742,11 @@ class WebPtBR {
       'blockRule.ruleCount': '@count regras',
       'blockRule.ungrouped': 'Sem grupo',
       'blockRule.deleteGroup': 'Excluir Grupo',
+      'blockRule.deleteGroupTitle': 'Excluir grupo de regras',
+      'blockRule.deleteGroupConfirm':
+          'Excluir o grupo "@group" e suas @count regras?',
+      'blockRule.deleteRuleTitle': 'Excluir regra de bloqueio',
+      'blockRule.deleteRuleConfirm': 'Excluir a regra "@rule"?',
       'blockRule.target': 'Alvo',
       'blockRule.attribute': 'Atributo',
       'blockRule.pattern': 'Padrão',

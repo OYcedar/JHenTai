@@ -735,6 +735,11 @@ class WebRuRU {
       'blockRule.ruleCount': '@count правил',
       'blockRule.ungrouped': 'Без группы',
       'blockRule.deleteGroup': 'Удалить группу',
+      'blockRule.deleteGroupTitle': 'Удалить группу правил',
+      'blockRule.deleteGroupConfirm':
+          'Удалить группу «@group» и её правила (@count)?',
+      'blockRule.deleteRuleTitle': 'Удалить правило блокировки',
+      'blockRule.deleteRuleConfirm': 'Удалить правило «@rule»?',
       'blockRule.target': 'Цель',
       'blockRule.attribute': 'Атрибут',
       'blockRule.pattern': 'Шаблон',
