@@ -193,6 +193,8 @@ class EHClient {
   /// Separate client for `*.hath.network` so IPv4 preference does not break EH/EX front domains.
   late Dio _dioHath;
   late ServerCookieManager cookieManager;
+  int _connectTimeoutMs = 6000;
+  int _receiveTimeoutMs = 6000;
 
   Dio _dioForUrl(String url) {
     final host = Uri.tryParse(url)?.host.toLowerCase() ?? '';
@@ -203,6 +205,8 @@ class EHClient {
 
   String get site => _site;
   set site(String s) => _site = s;
+  int get connectTimeoutMs => _connectTimeoutMs;
+  int get receiveTimeoutMs => _receiveTimeoutMs;
 
   String get baseUrl =>
       _site == 'EX' ? 'https://exhentai.org' : 'https://e-hentai.org';
@@ -403,6 +407,8 @@ class EHClient {
     int receiveTimeout = 6000,
   }) async {
     cookieManager = cm;
+    _connectTimeoutMs = connectTimeout;
+    _receiveTimeoutMs = receiveTimeout;
     final opts = BaseOptions(
       connectTimeout: Duration(milliseconds: connectTimeout),
       receiveTimeout: Duration(milliseconds: receiveTimeout),
@@ -424,6 +430,20 @@ class EHClient {
     );
     _dioHath.interceptors.add(cookieManager);
     _dioHath.interceptors.add(_ErrorInterceptor());
+  }
+
+  void updateTimeouts({
+    required int connectTimeout,
+    required int receiveTimeout,
+  }) {
+    _connectTimeoutMs = connectTimeout;
+    _receiveTimeoutMs = receiveTimeout;
+    final connect = Duration(milliseconds: connectTimeout);
+    final receive = Duration(milliseconds: receiveTimeout);
+    _dio.options.connectTimeout = connect;
+    _dio.options.receiveTimeout = receive;
+    _dioHath.options.connectTimeout = connect;
+    _dioHath.options.receiveTimeout = receive;
   }
 
   static bool _parseEnvBool(String? raw) {

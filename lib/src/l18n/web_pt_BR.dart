@@ -465,6 +465,14 @@ class WebPtBR {
           'Apenas protocolo, host e porta aparecem aqui. Credenciais ficam ocultas.',
       'settings.proxyAuthConfigured': 'autenticação configurada',
       'settings.copyNetworkDiagnostics': 'Copiar diagnóstico de rede',
+      'settings.networkTimeouts': 'Tempos limite de rede',
+      'settings.networkTimeoutsSummary':
+          'Conexão @connect ms / Recebimento @receive ms',
+      'settings.networkTimeoutsHint':
+          'Aplica imediatamente a requisições EH/EX e H@H. Intervalo: 1000-600000 ms.',
+      'connectTimeout': 'Tempo limite de conexão',
+      'receiveTimeout': 'Tempo limite de recebimento',
+      'saveSuccess': 'Salvo',
       'settings.networkRuntimeFlags': 'Diagnóstico de rede',
       'settings.networkRestartHint':
           'Esses valores vêm do ambiente de inicialização do servidor. Reinicie o contêiner após alterá-los.',

@@ -459,6 +459,14 @@ class WebEnUS {
           'Only protocol, host, and port are shown here. Credentials are hidden.',
       'settings.proxyAuthConfigured': 'auth configured',
       'settings.copyNetworkDiagnostics': 'Copy network diagnostics',
+      'settings.networkTimeouts': 'Network timeouts',
+      'settings.networkTimeoutsSummary':
+          'Connect @connect ms / Receive @receive ms',
+      'settings.networkTimeoutsHint':
+          'Applies to EH/EX and H@H requests immediately. Range: 1000-600000 ms.',
+      'connectTimeout': 'Connect timeout',
+      'receiveTimeout': 'Receive timeout',
+      'saveSuccess': 'Saved',
       'settings.networkRuntimeFlags': 'Network diagnostics',
       'settings.networkRestartHint':
           'These values come from the server startup environment. Restart the container after changing them.',

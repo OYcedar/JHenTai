@@ -432,6 +432,13 @@ class WebKoKR {
       'settings.proxyEnvironmentHint': '여기에는 프로토콜, 호스트, 포트만 표시되며 인증 정보는 숨깁니다.',
       'settings.proxyAuthConfigured': '인증 설정됨',
       'settings.copyNetworkDiagnostics': '네트워크 진단 복사',
+      'settings.networkTimeouts': '네트워크 시간 제한',
+      'settings.networkTimeoutsSummary': '연결 @connect ms / 수신 @receive ms',
+      'settings.networkTimeoutsHint':
+          'EH/EX 및 H@H 요청에 즉시 적용됩니다. 범위: 1000-600000 ms.',
+      'connectTimeout': '연결 시간 제한',
+      'receiveTimeout': '수신 시간 제한',
+      'saveSuccess': '저장됨',
       'settings.networkRuntimeFlags': '네트워크 진단',
       'settings.networkRestartHint':
           '이 값들은 서버 시작 환경에서 가져옵니다. 변경 후 컨테이너를 재시작하세요.',

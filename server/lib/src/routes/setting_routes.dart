@@ -36,6 +36,8 @@ class SettingRoutes {
     router.post('/import', _importData);
     router.get('/cache/page', _getPageCache);
     router.delete('/cache/page', _clearPageCache);
+    router.get('/network/timeouts', _getNetworkTimeouts);
+    router.put('/network/timeouts', _updateNetworkTimeouts);
     router.get('/logs', _listLogs);
     router.get('/logs/<name>', _readLog);
     router.delete('/logs', _clearLogs);
@@ -265,7 +267,73 @@ class SettingRoutes {
         _envValue('JH_IMAGE_PROXY_DEBUG'),
         defaultValue: false,
       ),
+      'connectTimeout': db.readConfig('web_connect_timeout') ??
+          _defaultNetworkTimeoutMs.toString(),
+      'receiveTimeout': db.readConfig('web_receive_timeout') ??
+          _defaultNetworkTimeoutMs.toString(),
     };
+  }
+
+  static const int _defaultNetworkTimeoutMs = 6000;
+  static const int _minNetworkTimeoutMs = 1000;
+  static const int _maxNetworkTimeoutMs = 600000;
+
+  int _normalizeNetworkTimeout(Object? value, int fallback) {
+    final parsed = value is num ? value.toInt() : int.tryParse('$value');
+    return (parsed ?? fallback)
+        .clamp(_minNetworkTimeoutMs, _maxNetworkTimeoutMs)
+        .toInt();
+  }
+
+  Map<String, int> _currentNetworkTimeouts() {
+    final connect = _normalizeNetworkTimeout(
+      db.readConfig('web_connect_timeout'),
+      _client.connectTimeoutMs,
+    );
+    final receive = _normalizeNetworkTimeout(
+      db.readConfig('web_receive_timeout'),
+      _client.receiveTimeoutMs,
+    );
+    return {'connectTimeout': connect, 'receiveTimeout': receive};
+  }
+
+  Future<Response> _getNetworkTimeouts(Request request) async {
+    return Response.ok(
+      jsonEncode(_currentNetworkTimeouts()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _updateNetworkTimeouts(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid JSON'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final current = _currentNetworkTimeouts();
+    final connect = _normalizeNetworkTimeout(
+      body['connectTimeout'],
+      current['connectTimeout']!,
+    );
+    final receive = _normalizeNetworkTimeout(
+      body['receiveTimeout'],
+      current['receiveTimeout']!,
+    );
+    db.writeConfig('web_connect_timeout', connect.toString());
+    db.writeConfig('web_receive_timeout', receive.toString());
+    _client.updateTimeouts(
+      connectTimeout: connect,
+      receiveTimeout: receive,
+    );
+    return Response.ok(
+      jsonEncode({'connectTimeout': connect, 'receiveTimeout': receive}),
+      headers: {'Content-Type': 'application/json'},
+    );
   }
 
   List<File> _logFiles() {

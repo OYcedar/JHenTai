@@ -458,6 +458,14 @@ class WebRuRU {
           'Здесь показаны только протокол, хост и порт. Учётные данные скрыты.',
       'settings.proxyAuthConfigured': 'авторизация настроена',
       'settings.copyNetworkDiagnostics': 'Копировать диагностику сети',
+      'settings.networkTimeouts': 'Тайм-ауты сети',
+      'settings.networkTimeoutsSummary':
+          'Подключение @connect мс / Получение @receive мс',
+      'settings.networkTimeoutsHint':
+          'Сразу применяется к запросам EH/EX и H@H. Диапазон: 1000-600000 мс.',
+      'connectTimeout': 'Тайм-аут подключения',
+      'receiveTimeout': 'Тайм-аут получения',
+      'saveSuccess': 'Сохранено',
       'settings.networkRuntimeFlags': 'Диагностика сети',
       'settings.networkRestartHint':
           'Эти значения берутся из окружения запуска сервера. После изменения перезапустите контейнер.',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 
 class WebSettingsNetworkPage extends GetView<WebSettingsController> {
@@ -39,6 +40,8 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
               _networkNote(context),
               const SizedBox(height: 16),
               _routingCard(context, info),
+              const SizedBox(height: 16),
+              _networkTimeoutCard(context, info),
               const SizedBox(height: 16),
               _proxyEnvCard(context, proxyEnv),
               const SizedBox(height: 16),
@@ -165,6 +168,35 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
     );
   }
 
+  Widget _networkTimeoutCard(BuildContext context, Map<String, dynamic> info) {
+    final connectTimeout = _timeoutValue(info['connectTimeout']);
+    final receiveTimeout = _timeoutValue(info['receiveTimeout']);
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.timer_outlined),
+        title: Text('settings.networkTimeouts'.tr),
+        subtitle: Text(
+          'settings.networkTimeoutsSummary'.trParams({
+            'connect': '$connectTimeout',
+            'receive': '$receiveTimeout',
+          }),
+        ),
+        trailing: const Icon(Icons.edit_outlined),
+        onTap: () => _showTimeoutDialog(
+          context,
+          connectTimeout: connectTimeout,
+          receiveTimeout: receiveTimeout,
+        ),
+      ),
+    );
+  }
+
+  int _timeoutValue(Object? raw) {
+    final value =
+        raw is num ? raw.toInt() : int.tryParse(raw?.toString() ?? '');
+    return (value ?? 6000).clamp(1000, 600000).toInt();
+  }
+
   Widget _runtimeFlagsCard(BuildContext context, Map<String, dynamic> info) {
     return Card(
       child: Padding(
@@ -225,6 +257,8 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
       '${'settings.networkRuntimeFlags'.tr}:',
       '- JH_HATH_PREFER_IPV4: ${_boolLabel(info['hathPreferIpv4'] == true)}',
       '- JH_IMAGE_PROXY_DEBUG: ${_boolLabel(info['imageProxyDebug'] == true)}',
+      '- ${'connectTimeout'.tr}: ${_timeoutValue(info['connectTimeout'])}ms',
+      '- ${'receiveTimeout'.tr}: ${_timeoutValue(info['receiveTimeout'])}ms',
     ];
     await Clipboard.setData(ClipboardData(text: lines.join('\n')));
     if (!context.mounted) {
@@ -235,6 +269,96 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
       'hasCopiedToClipboard'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
+  }
+
+  Future<void> _showTimeoutDialog(
+    BuildContext context, {
+    required int connectTimeout,
+    required int receiveTimeout,
+  }) async {
+    final connectController =
+        TextEditingController(text: connectTimeout.toString());
+    final receiveController =
+        TextEditingController(text: receiveTimeout.toString());
+    try {
+      final result = await Get.dialog<({int connect, int receive})>(
+        AlertDialog(
+          title: Text('settings.networkTimeouts'.tr),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: connectController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: 'connectTimeout'.tr,
+                  suffixText: 'ms',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: receiveController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: 'receiveTimeout'.tr,
+                  suffixText: 'ms',
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'settings.networkTimeoutsHint'.tr,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () {
+                Get.back(
+                  result: (
+                    connect: _timeoutValue(connectController.text),
+                    receive: _timeoutValue(receiveController.text),
+                  ),
+                );
+              },
+              child: Text('common.save'.tr),
+            ),
+          ],
+        ),
+      );
+      if (result == null) {
+        return;
+      }
+      await backendApiClient.setNetworkTimeouts(
+        connectTimeout: result.connect,
+        receiveTimeout: result.receive,
+      );
+      await controller.refreshStatus();
+      Get.snackbar(
+        'common.success'.tr,
+        'saveSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        '${'common.failed'.tr}: $e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      connectController.dispose();
+      receiveController.dispose();
+    }
   }
 
   Widget _infoRow(

@@ -424,6 +424,13 @@ class WebZhTW {
       'settings.proxyEnvironmentHint': '為安全起見，這裡只顯示協議、主機和連接埠，不顯示帳號密碼。',
       'settings.proxyAuthConfigured': '已設定認證',
       'settings.copyNetworkDiagnostics': '複製網路診斷',
+      'settings.networkTimeouts': '網路逾時',
+      'settings.networkTimeoutsSummary': '連線 @connect ms / 接收 @receive ms',
+      'settings.networkTimeoutsHint':
+          '會立即套用到 EH/EX 和 H@H 請求。範圍：1000-600000 ms。',
+      'connectTimeout': '連線逾時',
+      'receiveTimeout': '接收逾時',
+      'saveSuccess': '儲存成功',
       'settings.networkRuntimeFlags': '網路診斷開關',
       'settings.networkRestartHint': '這些值來自伺服器啟動環境，修改後需要重啟容器生效。',
       'settings.directConnection': '直連',

@@ -1349,6 +1349,25 @@ class BackendApiClient {
     await _dio.delete('/api/setting/cache/page');
   }
 
+  Future<Map<String, dynamic>> getNetworkTimeouts() async {
+    final response = await _dio.get('/api/setting/network/timeouts');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> setNetworkTimeouts({
+    required int connectTimeout,
+    required int receiveTimeout,
+  }) async {
+    final response = await _dio.put(
+      '/api/setting/network/timeouts',
+      data: {
+        'connectTimeout': connectTimeout,
+        'receiveTimeout': receiveTimeout,
+      },
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<Map<String, dynamic>> exportUserData() async {
     final response = await _dio.get('/api/setting/export');
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
