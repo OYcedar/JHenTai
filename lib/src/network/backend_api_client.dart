@@ -1026,10 +1026,14 @@ class BackendApiClient {
     return translations.map((k, v) => MapEntry(k, v.toString()));
   }
 
-  Future<List<dynamic>> searchTags(String query, {int limit = 20}) async {
+  Future<List<dynamic>> searchTags(
+    String query, {
+    int limit = 20,
+    bool local = true,
+  }) async {
     final response = await _dio.get(
       '/api/tag/search',
-      queryParameters: {'q': query, 'limit': limit},
+      queryParameters: {'q': query, 'limit': limit, 'local': local},
     );
     return (response.data['results'] as List?) ?? [];
   }
@@ -1345,6 +1349,25 @@ class BackendApiClient {
     await _dio.delete('/api/setting/cache/page');
   }
 
+  Future<Map<String, dynamic>> getNetworkTimeouts() async {
+    final response = await _dio.get('/api/setting/network/timeouts');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> setNetworkTimeouts({
+    required int connectTimeout,
+    required int receiveTimeout,
+  }) async {
+    final response = await _dio.put(
+      '/api/setting/network/timeouts',
+      data: {
+        'connectTimeout': connectTimeout,
+        'receiveTimeout': receiveTimeout,
+      },
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<Map<String, dynamic>> exportUserData() async {
     final response = await _dio.get('/api/setting/export');
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
@@ -1399,6 +1422,14 @@ class BackendApiClient {
 
   Future<void> deleteCloudConfig(int id) async {
     await _dio.post('/api/setting/cloud/config/delete', data: {'id': id});
+  }
+
+  Future<Map<String, dynamic>> uploadCloudConfigs(List<int> types) async {
+    final response = await _dio.post(
+      '/api/setting/cloud/config/upload',
+      data: {'types': types},
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
   // --- Health ---

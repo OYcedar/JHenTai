@@ -459,6 +459,14 @@ class WebEnUS {
           'Only protocol, host, and port are shown here. Credentials are hidden.',
       'settings.proxyAuthConfigured': 'auth configured',
       'settings.copyNetworkDiagnostics': 'Copy network diagnostics',
+      'settings.networkTimeouts': 'Network timeouts',
+      'settings.networkTimeoutsSummary':
+          'Connect @connect ms / Receive @receive ms',
+      'settings.networkTimeoutsHint':
+          'Applies to EH/EX and H@H requests immediately. Range: 1000-600000 ms.',
+      'connectTimeout': 'Connect timeout',
+      'receiveTimeout': 'Receive timeout',
+      'saveSuccess': 'Saved',
       'settings.networkRuntimeFlags': 'Network diagnostics',
       'settings.networkRestartHint':
           'These values come from the server startup environment. Restart the container after changing them.',
@@ -533,6 +541,13 @@ class WebEnUS {
       'settings.cloudConfigEmpty': 'No cloud configs',
       'settings.cloudConfigNotFound': 'No config found for this share code',
       'settings.cloudConfigUnknownType': 'Unknown config',
+      'settings.uploadCloudConfig': 'Upload to cloud',
+      'settings.uploadCloudConfigTitle': 'Upload current data to cloud?',
+      'settings.uploadCloudConfigConfirm':
+          'Select the local data types to upload to JHenTai cloud config service.',
+      'settings.uploadCloudConfigSuccess': 'Cloud config uploaded',
+      'settings.uploadCloudConfigFailed':
+          'Failed to upload cloud config: @error',
       'settings.deleteCloudConfigTitle': 'Delete cloud config?',
       'settings.deleteCloudConfigConfirm':
           'This removes the config from the JHenTai cloud service.',
@@ -624,6 +639,9 @@ class WebEnUS {
 
       // search history
       'searchHistory.clearAll': 'Clear search history',
+      'searchHistory.clearTitle': 'Clear Search History',
+      'searchHistory.clearConfirm':
+          'Are you sure you want to clear all search history?',
       'searchHistory.translate': 'Translate search history',
 
       // comment
@@ -667,6 +685,9 @@ class WebEnUS {
       'showR18GImageDirectly': 'Show R18G Image Directly',
       'warningImageHint': 'R18G image, click to view',
       'tagTranslation.title': 'Tag Translation',
+      'enableTagZHTranslation': 'Enable Chinese Tag Translation',
+      'settings.enableTagZHTranslationHint':
+          'Translate tags, tag search suggestions, and search history when available',
       'tagTranslation.loaded': '@count tags loaded',
       'tagTranslation.notLoaded': 'Tag database not loaded',
       'tagTranslation.lastUpdate': 'Last update: @time',
@@ -733,6 +754,11 @@ class WebEnUS {
       'blockRule.ruleCount': '@count rules',
       'blockRule.ungrouped': 'Ungrouped',
       'blockRule.deleteGroup': 'Delete Group',
+      'blockRule.deleteGroupTitle': 'Delete Block Rule Group',
+      'blockRule.deleteGroupConfirm':
+          'Delete group "@group" and its @count rules?',
+      'blockRule.deleteRuleTitle': 'Delete Block Rule',
+      'blockRule.deleteRuleConfirm': 'Delete rule "@rule"?',
       'blockRule.target': 'Target',
       'blockRule.attribute': 'Attribute',
       'blockRule.pattern': 'Pattern',

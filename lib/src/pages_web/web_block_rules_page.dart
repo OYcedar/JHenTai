@@ -28,6 +28,13 @@ class WebBlockRulesController extends GetxController {
     } catch (_) {}
   }
 
+  Future<void> deleteGroup(String groupId) async {
+    try {
+      await backendApiClient.deleteBlockRuleGroup(groupId);
+      await loadRules();
+    } catch (_) {}
+  }
+
   Future<void> saveRule({
     int? id,
     String groupId = '',
@@ -38,8 +45,12 @@ class WebBlockRulesController extends GetxController {
   }) async {
     try {
       await backendApiClient.saveBlockRule(
-        id: id, groupId: groupId, target: target,
-        attribute: attribute, pattern: pattern, expression: expression,
+        id: id,
+        groupId: groupId,
+        target: target,
+        attribute: attribute,
+        pattern: pattern,
+        expression: expression,
       );
       await loadRules();
     } catch (_) {}
@@ -82,7 +93,10 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
               children: [
                 const Icon(Icons.block, size: 48, color: Colors.grey),
                 const SizedBox(height: 12),
-                Text('blockRule.empty'.tr, style: const TextStyle(color: Colors.grey)),
+                Text(
+                  'blockRule.empty'.tr,
+                  style: const TextStyle(color: Colors.grey),
+                ),
               ],
             ),
           );
@@ -98,20 +112,27 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
             return Card(
               margin: const EdgeInsets.only(bottom: 12),
               child: ExpansionTile(
-                title: Text(groupId.isEmpty ? 'blockRule.ungrouped'.tr : groupId),
-                subtitle: Text('blockRule.ruleCount'.trParams({'count': '${groupRules.length}'})),
+                title:
+                    Text(groupId.isEmpty ? 'blockRule.ungrouped'.tr : groupId),
+                subtitle: Text(
+                  'blockRule.ruleCount'
+                      .trParams({'count': '${groupRules.length}'}),
+                ),
                 trailing: groupId.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.delete_sweep, size: 20),
                         tooltip: 'blockRule.deleteGroup'.tr,
-                        onPressed: () async {
-                          await backendApiClient.deleteBlockRuleGroup(groupId);
-                          controller.loadRules();
-                        },
+                        onPressed: () => _confirmDeleteGroup(
+                          context,
+                          groupId,
+                          groupRules.length,
+                        ),
                       )
                     : null,
                 initiallyExpanded: true,
-                children: groupRules.map((rule) => _buildRuleTile(context, rule)).toList(),
+                children: groupRules
+                    .map((rule) => _buildRuleTile(context, rule))
+                    .toList(),
               ),
             );
           },
@@ -138,11 +159,84 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
           ),
           IconButton(
             icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-            onPressed: () => controller.deleteRule(rule['id'] as int),
+            onPressed: () => _confirmDeleteRule(context, rule),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteGroup(
+    BuildContext context,
+    String groupId,
+    int count,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('blockRule.deleteGroupTitle'.tr),
+        content: Text(
+          'blockRule.deleteGroupConfirm'.trParams({
+            'group': groupId,
+            'count': '$count',
+          }),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await controller.deleteGroup(groupId);
+    }
+  }
+
+  Future<void> _confirmDeleteRule(
+    BuildContext context,
+    Map<String, dynamic> rule,
+  ) async {
+    final id = (rule['id'] as num?)?.toInt();
+    if (id == null) {
+      return;
+    }
+    final label = _ruleLabel(rule);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('blockRule.deleteRuleTitle'.tr),
+        content: Text(
+          'blockRule.deleteRuleConfirm'.trParams({'rule': label}),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await controller.deleteRule(id);
+    }
+  }
+
+  String _ruleLabel(Map<String, dynamic> rule) {
+    final target = rule['target']?.toString() ?? 'gallery';
+    final attribute = rule['attribute']?.toString() ?? '';
+    final pattern = rule['pattern']?.toString() ?? '';
+    final expression = rule['expression']?.toString() ?? '';
+    return '$target.$attribute $pattern "$expression"';
   }
 
   void _showEditDialog(BuildContext context, {Map<String, dynamic>? rule}) {
@@ -150,13 +244,24 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
     final targets = ['gallery', 'comment'];
     final galleryAttrs = ['title', 'tag', 'uploader', 'category', 'gid'];
     final commentAttrs = ['userName', 'userId', 'score', 'content'];
-    final patterns = ['equal', 'like', 'notContain', 'regex', 'gt', 'gte', 'st', 'ste'];
+    final patterns = [
+      'equal',
+      'like',
+      'notContain',
+      'regex',
+      'gt',
+      'gte',
+      'st',
+      'ste',
+    ];
 
     final selectedTarget = (rule?['target'] as String? ?? 'gallery').obs;
     final selectedAttribute = (rule?['attribute'] as String? ?? 'title').obs;
     final selectedPattern = (rule?['pattern'] as String? ?? 'like').obs;
-    final expressionCtrl = TextEditingController(text: rule?['expression'] as String? ?? '');
-    final groupIdCtrl = TextEditingController(text: rule?['group_id'] as String? ?? '');
+    final expressionCtrl =
+        TextEditingController(text: rule?['expression'] as String? ?? '');
+    final groupIdCtrl =
+        TextEditingController(text: rule?['group_id'] as String? ?? '');
 
     Get.dialog(
       AlertDialog(
@@ -164,7 +269,8 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
         content: SizedBox(
           width: 400,
           child: Obx(() {
-            final attrs = selectedTarget.value == 'comment' ? commentAttrs : galleryAttrs;
+            final attrs =
+                selectedTarget.value == 'comment' ? commentAttrs : galleryAttrs;
             if (!attrs.contains(selectedAttribute.value)) {
               selectedAttribute.value = attrs.first;
             }
@@ -172,23 +278,31 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: selectedTarget.value,
+                  initialValue: selectedTarget.value,
                   decoration: InputDecoration(labelText: 'blockRule.target'.tr),
-                  items: targets.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                  items: targets
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                      .toList(),
                   onChanged: (v) => selectedTarget.value = v!,
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: selectedAttribute.value,
-                  decoration: InputDecoration(labelText: 'blockRule.attribute'.tr),
-                  items: attrs.map((a) => DropdownMenuItem(value: a, child: Text(a))).toList(),
+                  initialValue: selectedAttribute.value,
+                  decoration:
+                      InputDecoration(labelText: 'blockRule.attribute'.tr),
+                  items: attrs
+                      .map((a) => DropdownMenuItem(value: a, child: Text(a)))
+                      .toList(),
                   onChanged: (v) => selectedAttribute.value = v!,
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: selectedPattern.value,
-                  decoration: InputDecoration(labelText: 'blockRule.pattern'.tr),
-                  items: patterns.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+                  initialValue: selectedPattern.value,
+                  decoration:
+                      InputDecoration(labelText: 'blockRule.pattern'.tr),
+                  items: patterns
+                      .map((p) => DropdownMenuItem(value: p, child: Text(p)))
+                      .toList(),
                   onChanged: (v) => selectedPattern.value = v!,
                 ),
                 const SizedBox(height: 8),
@@ -212,7 +326,10 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
           }),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('common.cancel'.tr)),
+          TextButton(
+            onPressed: Get.back,
+            child: Text('common.cancel'.tr),
+          ),
           FilledButton(
             onPressed: () {
               controller.saveRule(

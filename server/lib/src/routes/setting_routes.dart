@@ -30,11 +30,14 @@ class SettingRoutes {
     router.get('/cloud/alive', _cloudAlive);
     router.get('/cloud/configs', _cloudListConfigs);
     router.get('/cloud/config', _cloudGetConfigByShareCode);
+    router.post('/cloud/config/upload', _cloudUploadConfigs);
     router.post('/cloud/config/delete', _cloudDeleteConfig);
     router.get('/export', _exportData);
     router.post('/import', _importData);
     router.get('/cache/page', _getPageCache);
     router.delete('/cache/page', _clearPageCache);
+    router.get('/network/timeouts', _getNetworkTimeouts);
+    router.put('/network/timeouts', _updateNetworkTimeouts);
     router.get('/logs', _listLogs);
     router.get('/logs/<name>', _readLog);
     router.delete('/logs', _clearLogs);
@@ -120,6 +123,37 @@ class SettingRoutes {
       return _cloudClient().post(
         '/api/config/delete',
         queryParameters: {'id': id},
+      );
+    });
+  }
+
+  Future<Response> _cloudUploadConfigs(Request request) {
+    return _proxyCloudRequest(() async {
+      final body = jsonDecode(await request.readAsString()) as Map;
+      final rawTypes = body['types'];
+      final selectedTypes = rawTypes is List
+          ? rawTypes
+              .map((value) => (value as num?)?.toInt())
+              .whereType<int>()
+              .toSet()
+          : <int>{};
+      final configs = _exportAppConfigs()
+          .where((config) =>
+              selectedTypes.isEmpty ||
+              selectedTypes.contains((config['type'] as num?)?.toInt()))
+          .map((config) => {
+                'type': config['type'],
+                'version': config['version'],
+                'config': config['config'],
+              })
+          .toList();
+      if (configs.isEmpty) {
+        throw ArgumentError('No config data to upload');
+      }
+      return _cloudClient().post(
+        '/api/config/upload',
+        options: Options(contentType: Headers.jsonContentType),
+        data: {'configs': configs},
       );
     });
   }
@@ -233,7 +267,73 @@ class SettingRoutes {
         _envValue('JH_IMAGE_PROXY_DEBUG'),
         defaultValue: false,
       ),
+      'connectTimeout': db.readConfig('web_connect_timeout') ??
+          _defaultNetworkTimeoutMs.toString(),
+      'receiveTimeout': db.readConfig('web_receive_timeout') ??
+          _defaultNetworkTimeoutMs.toString(),
     };
+  }
+
+  static const int _defaultNetworkTimeoutMs = 6000;
+  static const int _minNetworkTimeoutMs = 1000;
+  static const int _maxNetworkTimeoutMs = 600000;
+
+  int _normalizeNetworkTimeout(Object? value, int fallback) {
+    final parsed = value is num ? value.toInt() : int.tryParse('$value');
+    return (parsed ?? fallback)
+        .clamp(_minNetworkTimeoutMs, _maxNetworkTimeoutMs)
+        .toInt();
+  }
+
+  Map<String, int> _currentNetworkTimeouts() {
+    final connect = _normalizeNetworkTimeout(
+      db.readConfig('web_connect_timeout'),
+      _client.connectTimeoutMs,
+    );
+    final receive = _normalizeNetworkTimeout(
+      db.readConfig('web_receive_timeout'),
+      _client.receiveTimeoutMs,
+    );
+    return {'connectTimeout': connect, 'receiveTimeout': receive};
+  }
+
+  Future<Response> _getNetworkTimeouts(Request request) async {
+    return Response.ok(
+      jsonEncode(_currentNetworkTimeouts()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _updateNetworkTimeouts(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid JSON'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final current = _currentNetworkTimeouts();
+    final connect = _normalizeNetworkTimeout(
+      body['connectTimeout'],
+      current['connectTimeout']!,
+    );
+    final receive = _normalizeNetworkTimeout(
+      body['receiveTimeout'],
+      current['receiveTimeout']!,
+    );
+    db.writeConfig('web_connect_timeout', connect.toString());
+    db.writeConfig('web_receive_timeout', receive.toString());
+    _client.updateTimeouts(
+      connectTimeout: connect,
+      receiveTimeout: receive,
+    );
+    return Response.ok(
+      jsonEncode({'connectTimeout': connect, 'receiveTimeout': receive}),
+      headers: {'Content-Type': 'application/json'},
+    );
   }
 
   List<File> _logFiles() {
@@ -391,7 +491,21 @@ class SettingRoutes {
 
   Response _exportAppData() {
     final now = DateTime.now();
-    final ctime = now.toUtc().millisecondsSinceEpoch;
+    final configs = _exportAppConfigs(now: now);
+
+    return Response.ok(
+      const JsonEncoder.withIndent('  ').convert(configs),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition':
+            'attachment; filename="JHenTaiConfig-${_formatExportTimestamp(now)}.json"',
+      },
+    );
+  }
+
+  List<Map<String, dynamic>> _exportAppConfigs({DateTime? now}) {
+    final time = now ?? DateTime.now();
+    final ctime = time.toUtc().millisecondsSinceEpoch;
     final configs = <Map<String, dynamic>>[];
 
     void addConfig(int type, Object config) {
@@ -416,14 +530,7 @@ class SettingRoutes {
     addConfig(4, _exportAppSearchHistory());
     addConfig(5, _exportAppHistory());
 
-    return Response.ok(
-      const JsonEncoder.withIndent('  ').convert(configs),
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Content-Disposition':
-            'attachment; filename="JHenTaiConfig-${_formatExportTimestamp(now)}.json"',
-      },
-    );
+    return configs;
   }
 
   Future<Response> _importData(Request request) async {

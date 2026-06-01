@@ -465,6 +465,14 @@ class WebPtBR {
           'Apenas protocolo, host e porta aparecem aqui. Credenciais ficam ocultas.',
       'settings.proxyAuthConfigured': 'autenticação configurada',
       'settings.copyNetworkDiagnostics': 'Copiar diagnóstico de rede',
+      'settings.networkTimeouts': 'Tempos limite de rede',
+      'settings.networkTimeoutsSummary':
+          'Conexão @connect ms / Recebimento @receive ms',
+      'settings.networkTimeoutsHint':
+          'Aplica imediatamente a requisições EH/EX e H@H. Intervalo: 1000-600000 ms.',
+      'connectTimeout': 'Tempo limite de conexão',
+      'receiveTimeout': 'Tempo limite de recebimento',
+      'saveSuccess': 'Salvo',
       'settings.networkRuntimeFlags': 'Diagnóstico de rede',
       'settings.networkRestartHint':
           'Esses valores vêm do ambiente de inicialização do servidor. Reinicie o contêiner após alterá-los.',
@@ -542,6 +550,13 @@ class WebPtBR {
       'settings.cloudConfigNotFound':
           'Nenhuma config encontrada para este código',
       'settings.cloudConfigUnknownType': 'Config desconhecida',
+      'settings.uploadCloudConfig': 'Enviar para a nuvem',
+      'settings.uploadCloudConfigTitle': 'Enviar dados atuais para a nuvem?',
+      'settings.uploadCloudConfigConfirm':
+          'Selecione os tipos de dados locais para enviar ao serviço de config na nuvem do JHenTai.',
+      'settings.uploadCloudConfigSuccess': 'Config enviada para a nuvem',
+      'settings.uploadCloudConfigFailed':
+          'Falha ao enviar config para a nuvem: @error',
       'settings.deleteCloudConfigTitle': 'Excluir config da nuvem?',
       'settings.deleteCloudConfigConfirm':
           'Isso remove a config do serviço de nuvem JHenTai.',
@@ -633,6 +648,9 @@ class WebPtBR {
 
       // search history
       'searchHistory.clearAll': 'Limpar histórico de pesquisa',
+      'searchHistory.clearTitle': 'Limpar histórico de pesquisa',
+      'searchHistory.clearConfirm':
+          'Tem certeza que deseja limpar todo o histórico de pesquisa?',
       'searchHistory.translate': 'Traduzir histórico de pesquisa',
 
       // comment
@@ -672,6 +690,9 @@ class WebPtBR {
       'showR18GImageDirectly': 'Mostrar imagem R18G diretamente',
       'warningImageHint': 'Imagem R18G, clique para ver',
       'tagTranslation.title': 'Tradução de Tags',
+      'enableTagZHTranslation': 'Ativar tradução chinesa de tags',
+      'settings.enableTagZHTranslationHint':
+          'Traduz tags, sugestões de busca e histórico quando disponível',
       'tagTranslation.loaded': '@count tags carregadas',
       'tagTranslation.notLoaded': 'Banco de tags não carregado',
       'tagTranslation.lastUpdate': 'Última atualização: @time',
@@ -742,6 +763,11 @@ class WebPtBR {
       'blockRule.ruleCount': '@count regras',
       'blockRule.ungrouped': 'Sem grupo',
       'blockRule.deleteGroup': 'Excluir Grupo',
+      'blockRule.deleteGroupTitle': 'Excluir grupo de regras',
+      'blockRule.deleteGroupConfirm':
+          'Excluir o grupo "@group" e suas @count regras?',
+      'blockRule.deleteRuleTitle': 'Excluir regra de bloqueio',
+      'blockRule.deleteRuleConfirm': 'Excluir a regra "@rule"?',
       'blockRule.target': 'Alvo',
       'blockRule.attribute': 'Atributo',
       'blockRule.pattern': 'Padrão',

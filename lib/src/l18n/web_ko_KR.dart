@@ -432,6 +432,13 @@ class WebKoKR {
       'settings.proxyEnvironmentHint': '여기에는 프로토콜, 호스트, 포트만 표시되며 인증 정보는 숨깁니다.',
       'settings.proxyAuthConfigured': '인증 설정됨',
       'settings.copyNetworkDiagnostics': '네트워크 진단 복사',
+      'settings.networkTimeouts': '네트워크 시간 제한',
+      'settings.networkTimeoutsSummary': '연결 @connect ms / 수신 @receive ms',
+      'settings.networkTimeoutsHint':
+          'EH/EX 및 H@H 요청에 즉시 적용됩니다. 범위: 1000-600000 ms.',
+      'connectTimeout': '연결 시간 제한',
+      'receiveTimeout': '수신 시간 제한',
+      'saveSuccess': '저장됨',
       'settings.networkRuntimeFlags': '네트워크 진단',
       'settings.networkRestartHint':
           '이 값들은 서버 시작 환경에서 가져옵니다. 변경 후 컨테이너를 재시작하세요.',
@@ -503,6 +510,12 @@ class WebKoKR {
       'settings.cloudConfigEmpty': '클라우드 설정이 없습니다',
       'settings.cloudConfigNotFound': '이 공유 코드에 해당하는 설정을 찾을 수 없습니다',
       'settings.cloudConfigUnknownType': '알 수 없는 설정',
+      'settings.uploadCloudConfig': '클라우드에 업로드',
+      'settings.uploadCloudConfigTitle': '현재 데이터를 클라우드에 업로드할까요?',
+      'settings.uploadCloudConfigConfirm':
+          'JHenTai 클라우드 설정 서비스에 업로드할 로컬 데이터 유형을 선택하세요.',
+      'settings.uploadCloudConfigSuccess': '클라우드 설정을 업로드했습니다',
+      'settings.uploadCloudConfigFailed': '클라우드 설정 업로드 실패: @error',
       'settings.deleteCloudConfigTitle': '클라우드 설정을 삭제할까요?',
       'settings.deleteCloudConfigConfirm': 'JHenTai 클라우드 설정 서비스에서 이 설정을 삭제합니다.',
       'settings.deleteCloudConfigFailed': '클라우드 설정 삭제 실패: @error',
@@ -584,6 +597,8 @@ class WebKoKR {
 
       // search history
       'searchHistory.clearAll': '검색 기록 삭제',
+      'searchHistory.clearTitle': '검색 기록 삭제',
+      'searchHistory.clearConfirm': '모든 검색 기록을 삭제할까요?',
       'searchHistory.translate': '검색 기록 번역',
 
       // comment
@@ -627,6 +642,8 @@ class WebKoKR {
       'showR18GImageDirectly': 'R18G 이미지 표시',
       'warningImageHint': 'R18G 이미지, 클릭하여 보기',
       'tagTranslation.title': '태그 번역',
+      'enableTagZHTranslation': '중국어 태그 번역 사용',
+      'settings.enableTagZHTranslationHint': '가능하면 태그, 태그 검색 제안, 검색 기록을 번역합니다',
       'tagTranslation.loaded': '@count개 태그 로드됨',
       'tagTranslation.notLoaded': '태그 데이터베이스가 로드되지 않음',
       'tagTranslation.lastUpdate': '마지막 업데이트: @time',
@@ -695,6 +712,10 @@ class WebKoKR {
       'blockRule.ruleCount': '@count개 규칙',
       'blockRule.ungrouped': '그룹 없음',
       'blockRule.deleteGroup': '그룹 삭제',
+      'blockRule.deleteGroupTitle': '차단 규칙 그룹 삭제',
+      'blockRule.deleteGroupConfirm': '"@group" 그룹과 규칙 @count개를 삭제할까요?',
+      'blockRule.deleteRuleTitle': '차단 규칙 삭제',
+      'blockRule.deleteRuleConfirm': '"@rule" 규칙을 삭제할까요?',
       'blockRule.target': '대상',
       'blockRule.attribute': '속성',
       'blockRule.pattern': '패턴',

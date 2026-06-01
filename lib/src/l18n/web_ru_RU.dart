@@ -458,6 +458,14 @@ class WebRuRU {
           'Здесь показаны только протокол, хост и порт. Учётные данные скрыты.',
       'settings.proxyAuthConfigured': 'авторизация настроена',
       'settings.copyNetworkDiagnostics': 'Копировать диагностику сети',
+      'settings.networkTimeouts': 'Тайм-ауты сети',
+      'settings.networkTimeoutsSummary':
+          'Подключение @connect мс / Получение @receive мс',
+      'settings.networkTimeoutsHint':
+          'Сразу применяется к запросам EH/EX и H@H. Диапазон: 1000-600000 мс.',
+      'connectTimeout': 'Тайм-аут подключения',
+      'receiveTimeout': 'Тайм-аут получения',
+      'saveSuccess': 'Сохранено',
       'settings.networkRuntimeFlags': 'Диагностика сети',
       'settings.networkRestartHint':
           'Эти значения берутся из окружения запуска сервера. После изменения перезапустите контейнер.',
@@ -534,6 +542,13 @@ class WebRuRU {
       'settings.cloudConfigEmpty': 'Нет облачных настроек',
       'settings.cloudConfigNotFound': 'Настройка для этого кода не найдена',
       'settings.cloudConfigUnknownType': 'Неизвестная настройка',
+      'settings.uploadCloudConfig': 'Загрузить в облако',
+      'settings.uploadCloudConfigTitle': 'Загрузить текущие данные в облако?',
+      'settings.uploadCloudConfigConfirm':
+          'Выберите типы локальных данных для загрузки в облачный сервис настроек JHenTai.',
+      'settings.uploadCloudConfigSuccess': 'Облачная настройка загружена',
+      'settings.uploadCloudConfigFailed':
+          'Не удалось загрузить облачную настройку: @error',
       'settings.deleteCloudConfigTitle': 'Удалить облачную настройку?',
       'settings.deleteCloudConfigConfirm':
           'Это удалит настройку из облачного сервиса JHenTai.',
@@ -625,6 +640,9 @@ class WebRuRU {
 
       // search history
       'searchHistory.clearAll': 'Очистить историю поиска',
+      'searchHistory.clearTitle': 'Очистить историю поиска',
+      'searchHistory.clearConfirm':
+          'Вы уверены, что хотите очистить всю историю поиска?',
       'searchHistory.translate': 'Перевести историю поиска',
 
       // comment
@@ -664,6 +682,9 @@ class WebRuRU {
       'showR18GImageDirectly': 'Показывать R18G изображения сразу',
       'warningImageHint': 'R18G изображение, нажмите для просмотра',
       'tagTranslation.title': 'Перевод тегов',
+      'enableTagZHTranslation': 'Включить китайский перевод тегов',
+      'settings.enableTagZHTranslationHint':
+          'Переводит теги, подсказки поиска и историю, когда доступно',
       'tagTranslation.loaded': '@count тегов загружено',
       'tagTranslation.notLoaded': 'База тегов не загружена',
       'tagTranslation.lastUpdate': 'Последнее обновление: @time',
@@ -735,6 +756,11 @@ class WebRuRU {
       'blockRule.ruleCount': '@count правил',
       'blockRule.ungrouped': 'Без группы',
       'blockRule.deleteGroup': 'Удалить группу',
+      'blockRule.deleteGroupTitle': 'Удалить группу правил',
+      'blockRule.deleteGroupConfirm':
+          'Удалить группу «@group» и её правила (@count)?',
+      'blockRule.deleteRuleTitle': 'Удалить правило блокировки',
+      'blockRule.deleteRuleConfirm': 'Удалить правило «@rule»?',
       'blockRule.target': 'Цель',
       'blockRule.attribute': 'Атрибут',
       'blockRule.pattern': 'Шаблон',

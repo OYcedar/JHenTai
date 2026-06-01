@@ -379,6 +379,10 @@ class WebGalleryDetailController extends GetxController {
   }
 
   Future<void> _loadTagTranslations() async {
+    if (!WebPreferenceSettings.enableTagZHTranslation) {
+      translatedTags.clear();
+      return;
+    }
     try {
       final tagList = <Map<String, String>>[];
       for (final entry in tags.entries) {
@@ -756,19 +760,22 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: embedded ? colorScheme.surface : null,
-      appBar: embedded ? null : _buildAppBar(context),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.errorMessage.isNotEmpty) {
-          return Center(child: Text(controller.errorMessage.value));
-        }
-        return _buildDetail(context);
-      }),
+    final theme = Theme.of(context);
+    return ColoredBox(
+      color: embedded ? theme.scaffoldBackgroundColor : Colors.transparent,
+      child: Scaffold(
+        backgroundColor: embedded ? Colors.transparent : null,
+        appBar: embedded ? null : _buildAppBar(context),
+        body: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.errorMessage.isNotEmpty) {
+            return Center(child: Text(controller.errorMessage.value));
+          }
+          return _buildDetail(context);
+        }),
+      ),
     );
   }
 
@@ -916,7 +923,7 @@ class WebGalleryDetailPage extends StatelessWidget {
     }
     final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: colorScheme.surfaceContainerLow,
+      color: Theme.of(context).scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
@@ -3947,7 +3954,11 @@ class _WebAddTagDialogState extends State<_WebAddTagDialog> {
     final seq = ++_searchSeq;
     setState(() => _isSearching = true);
     try {
-      final results = await backendApiClient.searchTags(keyword, limit: 20);
+      final results = await backendApiClient.searchTags(
+        keyword,
+        limit: 20,
+        local: WebPreferenceSettings.enableTagZHTranslation,
+      );
       if (!mounted || seq != _searchSeq) {
         return;
       }

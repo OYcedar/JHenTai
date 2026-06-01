@@ -52,7 +52,13 @@ Future<void> main(List<String> args) async {
   await cookieManager.init();
 
   final ehClient = EHClient();
-  await ehClient.init(cookieManager);
+  await ehClient.init(
+    cookieManager,
+    connectTimeout:
+        int.tryParse(db.readConfig('web_connect_timeout') ?? '') ?? 6000,
+    receiveTimeout:
+        int.tryParse(db.readConfig('web_receive_timeout') ?? '') ?? 6000,
+  );
 
   // Restore persisted site preference
   final savedSite = db.readConfig('site');

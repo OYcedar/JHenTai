@@ -144,6 +144,38 @@ void _copyWebHomeGalleryUrl(Map<String, dynamic> gallery) {
       snackPosition: SnackPosition.BOTTOM);
 }
 
+Future<void> _confirmDeleteWebQuickSearch(
+  BuildContext context,
+  WebHomeController controller,
+  String name,
+) async {
+  if (name.trim().isEmpty) {
+    return;
+  }
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('quickSearch.deleteTitle'.tr),
+      content: Text(
+        'quickSearch.deleteConfirm'.trParams({'name': name}),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text('common.delete'.tr),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) {
+    await controller.deleteQuickSearch(name);
+  }
+}
+
 List<String> _webHomeDownloadGroupCandidates(WebDownloadService svc) {
   final set = <String>{};
   for (final task in svc.galleryTasks.values) {
@@ -1015,12 +1047,18 @@ class WebHomeController extends GetxController {
   }
 
   String displaySearchHistory(String keyword) {
+    if (!WebPreferenceSettings.enableTagZHTranslation) return keyword;
     if (!showTranslatedSearchHistory.value) return keyword;
     return searchHistoryTranslations[keyword] ?? keyword;
   }
 
   Future<void> _translateSearchHistory() async {
-    if (!showTranslatedSearchHistory.value || searchHistory.isEmpty) return;
+    if (!WebPreferenceSettings.enableTagZHTranslation ||
+        !showTranslatedSearchHistory.value ||
+        searchHistory.isEmpty) {
+      searchHistoryTranslations.clear();
+      return;
+    }
     final requests = <String, Map<String, String>>{};
     final historyMatches = <String, List<RegExpMatch>>{};
     final pattern = RegExp(r'(\w+):"([^"]+)\$"');
@@ -1487,6 +1525,10 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> _fetchGalleryListTagTranslations() async {
+    if (!WebPreferenceSettings.enableTagZHTranslation) {
+      tagTranslations.clear();
+      return;
+    }
     final pending = <String, Map<String, String>>{};
     for (final g in galleries) {
       final rawTags = g['tags'] as Map<String, dynamic>?;
@@ -2561,8 +2603,11 @@ class _SinglePaneHome extends StatelessWidget {
                                 icon:
                                     const Icon(Icons.delete_outline, size: 18),
                                 tooltip: 'common.delete'.tr,
-                                onPressed: () =>
-                                    controller.deleteQuickSearch(name),
+                                onPressed: () => _confirmDeleteWebQuickSearch(
+                                  ctx,
+                                  controller,
+                                  name,
+                                ),
                               ),
                             ],
                           ),
@@ -3211,7 +3256,11 @@ class _HomeDrawer extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.delete_outline, size: 18),
                             tooltip: 'common.delete'.tr,
-                            onPressed: () => controller.deleteQuickSearch(name),
+                            onPressed: () => _confirmDeleteWebQuickSearch(
+                              context,
+                              controller,
+                              name,
+                            ),
                           ),
                         ],
                       ),
@@ -3813,8 +3862,11 @@ class _SearchFieldState extends State<_SearchField> {
       final completionQuery = _extractCompletionQuery(text);
       if (completionQuery.text.length >= 2) {
         try {
-          final tagResults =
-              await backendApiClient.searchTags(completionQuery.text, limit: 8);
+          final tagResults = await backendApiClient.searchTags(
+            completionQuery.text,
+            limit: 8,
+            local: WebPreferenceSettings.enableTagZHTranslation,
+          );
           for (final tag in tagResults) {
             final ns = tag['namespace']?.toString() ?? '';
             final key = tag['key']?.toString() ?? '';
@@ -3862,6 +3914,31 @@ class _SearchFieldState extends State<_SearchField> {
     final query = _extractCompletionQuery(text);
     final end = text.trimRight().length;
     return '${text.substring(0, query.start)}$replacement ${text.substring(end)}';
+  }
+
+  Future<void> _confirmClearSearchHistory() async {
+    _removeOverlay();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('searchHistory.clearTitle'.tr),
+        content: Text('searchHistory.clearConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await backendApiClient.clearSearchHistory();
+      widget.controller.searchHistory.clear();
+    }
   }
 
   void _showOverlay() {
@@ -3939,13 +4016,7 @@ class _SearchFieldState extends State<_SearchField> {
                   ),
                   if (_suggestions.any((s) => !s.isTag))
                     InkWell(
-                      onTap: () {
-                        backendApiClient
-                            .clearSearchHistory()
-                            .catchError((_) {});
-                        widget.controller.searchHistory.clear();
-                        _removeOverlay();
-                      },
+                      onTap: _confirmClearSearchHistory,
                       child: Padding(
                         padding: const EdgeInsets.all(8),
                         child: Text('searchHistory.clearAll'.tr,
@@ -4020,7 +4091,8 @@ class _SearchFieldState extends State<_SearchField> {
                       onPressed: _pasteAndSearch,
                     ),
                   ),
-                  if (widget.controller.searchHistory.isNotEmpty)
+                  if (WebPreferenceSettings.enableTagZHTranslation &&
+                      widget.controller.searchHistory.isNotEmpty)
                     Tooltip(
                       message: 'searchHistory.translate'.tr,
                       child: IconButton(

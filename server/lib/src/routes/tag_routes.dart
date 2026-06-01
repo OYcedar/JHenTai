@@ -111,17 +111,21 @@ class TagRoutes {
     final query = request.url.queryParameters['q'] ?? '';
     final limit =
         int.tryParse(request.url.queryParameters['limit'] ?? '') ?? 20;
+    final includeLocal =
+        request.url.queryParameters['local']?.toLowerCase() != 'false';
     if (query.isEmpty) {
       return Response.ok(jsonEncode({'results': []}),
           headers: {'Content-Type': 'application/json'});
     }
     final useFrequency =
         db.readConfig('web_tag_search_order_optimization_enabled') == 'true';
-    final results = db.searchTagTranslations(
-      query,
-      limit: limit,
-      useFrequency: useFrequency,
-    );
+    final results = includeLocal
+        ? db.searchTagTranslations(
+            query,
+            limit: limit,
+            useFrequency: useFrequency,
+          )
+        : <Map<String, dynamic>>[];
     final ehClient = _ehClient;
     if (results.length < limit && ehClient != null) {
       final onlineLimit = limit - results.length;

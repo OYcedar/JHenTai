@@ -585,12 +585,14 @@ class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
   final orderStatus = <String, dynamic>{}.obs;
   final isRefreshing = false.obs;
   final isOrderRefreshing = false.obs;
+  late bool enableTagZHTranslation;
   late bool showR18GImageDirectly;
   bool enableOrderOptimization = false;
 
   @override
   void initState() {
     super.initState();
+    enableTagZHTranslation = WebPreferenceSettings.enableTagZHTranslation;
     showR18GImageDirectly = WebPreferenceSettings.showR18GImageDirectly;
     _load();
   }
@@ -656,6 +658,20 @@ class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
                     ),
                   ),
                 const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(Icons.translate),
+                  title: Text('enableTagZHTranslation'.tr),
+                  subtitle: Text('settings.enableTagZHTranslationHint'.tr),
+                  value: enableTagZHTranslation,
+                  onChanged: (value) async {
+                    setState(() => enableTagZHTranslation = value);
+                    WebPreferenceSettings.saveEnableTagZHTranslation(value);
+                    if (value && tagStatus['loaded'] != true) {
+                      await _refreshTagTranslation();
+                    }
+                  },
+                ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   secondary: const Icon(Icons.no_adult_content_outlined),
@@ -753,42 +769,42 @@ class _WebTagTranslationSubPageState extends State<_WebTagTranslationSubPage> {
                           child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.refresh),
                   label: Text('tagTranslation.refresh'.tr),
-                  onPressed: isRefreshing.value
-                      ? null
-                      : () async {
-                          isRefreshing.value = true;
-                          try {
-                            final result =
-                                await backendApiClient.refreshTagTranslation();
-                            if (result['success'] == true) {
-                              Get.snackbar(
-                                  'common.success'.tr,
-                                  'tagTranslation.refreshSuccess'.trParams(
-                                      {'count': '${result['count'] ?? 0}'}),
-                                  snackPosition: SnackPosition.BOTTOM);
-                            } else {
-                              Get.snackbar(
-                                  'common.error'.tr,
-                                  result['message']?.toString() ??
-                                      'common.failed'.tr,
-                                  snackPosition: SnackPosition.BOTTOM);
-                            }
-                            await _load();
-                          } catch (e) {
-                            Get.snackbar(
-                                'common.error'.tr,
-                                'tagTranslation.refreshFailed'
-                                    .trParams({'error': '$e'}),
-                                snackPosition: SnackPosition.BOTTOM);
-                          } finally {
-                            isRefreshing.value = false;
-                          }
-                        },
+                  onPressed: isRefreshing.value ? null : _refreshTagTranslation,
                 ),
               ],
             ),
           )),
     );
+  }
+
+  Future<void> _refreshTagTranslation() async {
+    isRefreshing.value = true;
+    try {
+      final result = await backendApiClient.refreshTagTranslation();
+      if (result['success'] == true) {
+        Get.snackbar(
+          'common.success'.tr,
+          'tagTranslation.refreshSuccess'
+              .trParams({'count': '${result['count'] ?? 0}'}),
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } else {
+        Get.snackbar(
+          'common.error'.tr,
+          result['message']?.toString() ?? 'common.failed'.tr,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+      await _load();
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'tagTranslation.refreshFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isRefreshing.value = false;
+    }
   }
 
   Future<void> _refreshTagSearchOrder() async {
