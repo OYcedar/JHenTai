@@ -674,6 +674,9 @@ class WebRuRU {
       'showR18GImageDirectly': 'Показывать R18G изображения сразу',
       'warningImageHint': 'R18G изображение, нажмите для просмотра',
       'tagTranslation.title': 'Перевод тегов',
+      'enableTagZHTranslation': 'Включить китайский перевод тегов',
+      'settings.enableTagZHTranslationHint':
+          'Переводит теги, подсказки поиска и историю, когда доступно',
       'tagTranslation.loaded': '@count тегов загружено',
       'tagTranslation.notLoaded': 'База тегов не загружена',
       'tagTranslation.lastUpdate': 'Последнее обновление: @time',

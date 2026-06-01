@@ -635,6 +635,8 @@ class WebKoKR {
       'showR18GImageDirectly': 'R18G 이미지 표시',
       'warningImageHint': 'R18G 이미지, 클릭하여 보기',
       'tagTranslation.title': '태그 번역',
+      'enableTagZHTranslation': '중국어 태그 번역 사용',
+      'settings.enableTagZHTranslationHint': '가능하면 태그, 태그 검색 제안, 검색 기록을 번역합니다',
       'tagTranslation.loaded': '@count개 태그 로드됨',
       'tagTranslation.notLoaded': '태그 데이터베이스가 로드되지 않음',
       'tagTranslation.lastUpdate': '마지막 업데이트: @time',

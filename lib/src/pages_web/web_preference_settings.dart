@@ -21,6 +21,7 @@ class WebPreferenceSettings {
   static const showDawnInfoKey = 'jh_web_show_dawn_info';
   static const showHvInfoKey = 'jh_web_show_hv_info';
   static const noImageModeKey = 'jh_web_no_image_mode';
+  static const enableTagZHTranslationKey = 'jh_web_enable_tag_zh_translation';
   static const showR18GImageDirectlyKey = 'jh_web_show_r18g_image_directly';
   static const checkClipboardKey = 'jh_web_check_clipboard';
 
@@ -49,6 +50,9 @@ class WebPreferenceSettings {
   static bool get showHvInfo => _readBool(showHvInfoKey, false);
 
   static bool get noImageMode => _readBool(noImageModeKey, false);
+
+  static bool get enableTagZHTranslation =>
+      _readBool(enableTagZHTranslationKey, false);
 
   static bool get showR18GImageDirectly =>
       _readBool(showR18GImageDirectlyKey, false);
@@ -109,6 +113,9 @@ class WebPreferenceSettings {
   static void saveShowHvInfo(bool value) => _writeBool(showHvInfoKey, value);
 
   static void saveNoImageMode(bool value) => _writeBool(noImageModeKey, value);
+
+  static void saveEnableTagZHTranslation(bool value) =>
+      _writeBool(enableTagZHTranslationKey, value);
 
   static void saveShowR18GImageDirectly(bool value) =>
       _writeBool(showR18GImageDirectlyKey, value);

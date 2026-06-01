@@ -610,6 +610,8 @@ class WebZhTW {
       'showR18GImageDirectly': '標籤資料中直接顯示R18G圖片',
       'warningImageHint': 'R18G圖片，點擊以顯示',
       'tagTranslation.title': '標籤翻譯',
+      'enableTagZHTranslation': '啟用標籤中文翻譯',
+      'settings.enableTagZHTranslationHint': '可用時翻譯標籤、標籤搜尋建議和搜尋記錄',
       'tagTranslation.loaded': '已載入 @count 個標籤',
       'tagTranslation.notLoaded': '標籤資料庫未載入',
       'tagTranslation.lastUpdate': '最後更新: @time',

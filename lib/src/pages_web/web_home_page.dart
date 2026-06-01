@@ -1047,12 +1047,18 @@ class WebHomeController extends GetxController {
   }
 
   String displaySearchHistory(String keyword) {
+    if (!WebPreferenceSettings.enableTagZHTranslation) return keyword;
     if (!showTranslatedSearchHistory.value) return keyword;
     return searchHistoryTranslations[keyword] ?? keyword;
   }
 
   Future<void> _translateSearchHistory() async {
-    if (!showTranslatedSearchHistory.value || searchHistory.isEmpty) return;
+    if (!WebPreferenceSettings.enableTagZHTranslation ||
+        !showTranslatedSearchHistory.value ||
+        searchHistory.isEmpty) {
+      searchHistoryTranslations.clear();
+      return;
+    }
     final requests = <String, Map<String, String>>{};
     final historyMatches = <String, List<RegExpMatch>>{};
     final pattern = RegExp(r'(\w+):"([^"]+)\$"');
@@ -1519,6 +1525,10 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> _fetchGalleryListTagTranslations() async {
+    if (!WebPreferenceSettings.enableTagZHTranslation) {
+      tagTranslations.clear();
+      return;
+    }
     final pending = <String, Map<String, String>>{};
     for (final g in galleries) {
       final rawTags = g['tags'] as Map<String, dynamic>?;
@@ -3852,8 +3862,11 @@ class _SearchFieldState extends State<_SearchField> {
       final completionQuery = _extractCompletionQuery(text);
       if (completionQuery.text.length >= 2) {
         try {
-          final tagResults =
-              await backendApiClient.searchTags(completionQuery.text, limit: 8);
+          final tagResults = await backendApiClient.searchTags(
+            completionQuery.text,
+            limit: 8,
+            local: WebPreferenceSettings.enableTagZHTranslation,
+          );
           for (final tag in tagResults) {
             final ns = tag['namespace']?.toString() ?? '';
             final key = tag['key']?.toString() ?? '';
@@ -4078,7 +4091,8 @@ class _SearchFieldState extends State<_SearchField> {
                       onPressed: _pasteAndSearch,
                     ),
                   ),
-                  if (widget.controller.searchHistory.isNotEmpty)
+                  if (WebPreferenceSettings.enableTagZHTranslation &&
+                      widget.controller.searchHistory.isNotEmpty)
                     Tooltip(
                       message: 'searchHistory.translate'.tr,
                       child: IconButton(

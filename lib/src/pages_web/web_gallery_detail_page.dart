@@ -379,6 +379,10 @@ class WebGalleryDetailController extends GetxController {
   }
 
   Future<void> _loadTagTranslations() async {
+    if (!WebPreferenceSettings.enableTagZHTranslation) {
+      translatedTags.clear();
+      return;
+    }
     try {
       final tagList = <Map<String, String>>[];
       for (final entry in tags.entries) {
@@ -3947,7 +3951,11 @@ class _WebAddTagDialogState extends State<_WebAddTagDialog> {
     final seq = ++_searchSeq;
     setState(() => _isSearching = true);
     try {
-      final results = await backendApiClient.searchTags(keyword, limit: 20);
+      final results = await backendApiClient.searchTags(
+        keyword,
+        limit: 20,
+        local: WebPreferenceSettings.enableTagZHTranslation,
+      );
       if (!mounted || seq != _searchSeq) {
         return;
       }

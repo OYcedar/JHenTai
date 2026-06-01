@@ -1026,10 +1026,14 @@ class BackendApiClient {
     return translations.map((k, v) => MapEntry(k, v.toString()));
   }
 
-  Future<List<dynamic>> searchTags(String query, {int limit = 20}) async {
+  Future<List<dynamic>> searchTags(
+    String query, {
+    int limit = 20,
+    bool local = true,
+  }) async {
     final response = await _dio.get(
       '/api/tag/search',
-      queryParameters: {'q': query, 'limit': limit},
+      queryParameters: {'q': query, 'limit': limit, 'local': local},
     );
     return (response.data['results'] as List?) ?? [];
   }

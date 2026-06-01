@@ -614,6 +614,8 @@ class WebZhCN {
       'showR18GImageDirectly': '标签数据中直接显示R18G图片',
       'warningImageHint': 'R18G图片，点击以显示',
       'tagTranslation.title': '标签翻译',
+      'enableTagZHTranslation': '启用标签中文翻译',
+      'settings.enableTagZHTranslationHint': '可用时翻译标签、标签搜索建议和搜索历史',
       'tagTranslation.loaded': '已加载 @count 个标签',
       'tagTranslation.notLoaded': '标签数据库未加载',
       'tagTranslation.lastUpdate': '最后更新: @time',

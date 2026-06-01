@@ -682,6 +682,9 @@ class WebPtBR {
       'showR18GImageDirectly': 'Mostrar imagem R18G diretamente',
       'warningImageHint': 'Imagem R18G, clique para ver',
       'tagTranslation.title': 'Tradução de Tags',
+      'enableTagZHTranslation': 'Ativar tradução chinesa de tags',
+      'settings.enableTagZHTranslationHint':
+          'Traduz tags, sugestões de busca e histórico quando disponível',
       'tagTranslation.loaded': '@count tags carregadas',
       'tagTranslation.notLoaded': 'Banco de tags não carregado',
       'tagTranslation.lastUpdate': 'Última atualização: @time',

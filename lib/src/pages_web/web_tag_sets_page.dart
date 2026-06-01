@@ -73,6 +73,9 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
 
   Future<Map<String, String>> _loadTagTranslations(
       Map<String, dynamic> data) async {
+    if (!WebPreferenceSettings.enableTagZHTranslation) {
+      return const {};
+    }
     final tags = (data['tags'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     final requests = <String, Map<String, String>>{};
     for (final tag in tags) {

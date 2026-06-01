@@ -677,6 +677,9 @@ class WebEnUS {
       'showR18GImageDirectly': 'Show R18G Image Directly',
       'warningImageHint': 'R18G image, click to view',
       'tagTranslation.title': 'Tag Translation',
+      'enableTagZHTranslation': 'Enable Chinese Tag Translation',
+      'settings.enableTagZHTranslationHint':
+          'Translate tags, tag search suggestions, and search history when available',
       'tagTranslation.loaded': '@count tags loaded',
       'tagTranslation.notLoaded': 'Tag database not loaded',
       'tagTranslation.lastUpdate': 'Last update: @time',
