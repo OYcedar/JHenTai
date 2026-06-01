@@ -144,6 +144,38 @@ void _copyWebHomeGalleryUrl(Map<String, dynamic> gallery) {
       snackPosition: SnackPosition.BOTTOM);
 }
 
+Future<void> _confirmDeleteWebQuickSearch(
+  BuildContext context,
+  WebHomeController controller,
+  String name,
+) async {
+  if (name.trim().isEmpty) {
+    return;
+  }
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('quickSearch.deleteTitle'.tr),
+      content: Text(
+        'quickSearch.deleteConfirm'.trParams({'name': name}),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          child: Text('common.delete'.tr),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) {
+    await controller.deleteQuickSearch(name);
+  }
+}
+
 List<String> _webHomeDownloadGroupCandidates(WebDownloadService svc) {
   final set = <String>{};
   for (final task in svc.galleryTasks.values) {
@@ -2561,8 +2593,11 @@ class _SinglePaneHome extends StatelessWidget {
                                 icon:
                                     const Icon(Icons.delete_outline, size: 18),
                                 tooltip: 'common.delete'.tr,
-                                onPressed: () =>
-                                    controller.deleteQuickSearch(name),
+                                onPressed: () => _confirmDeleteWebQuickSearch(
+                                  ctx,
+                                  controller,
+                                  name,
+                                ),
                               ),
                             ],
                           ),
@@ -3211,7 +3246,11 @@ class _HomeDrawer extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.delete_outline, size: 18),
                             tooltip: 'common.delete'.tr,
-                            onPressed: () => controller.deleteQuickSearch(name),
+                            onPressed: () => _confirmDeleteWebQuickSearch(
+                              context,
+                              controller,
+                              name,
+                            ),
                           ),
                         ],
                       ),
