@@ -756,7 +756,9 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
+      backgroundColor: embedded ? colorScheme.surface : null,
       appBar: embedded ? null : _buildAppBar(context),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -912,9 +914,15 @@ class WebGalleryDetailPage extends StatelessWidget {
     if (!embedded) {
       return const SizedBox.shrink();
     }
+    final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(8),
+      color: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsetsDirectional.only(start: 12, end: 4),
         child: SizedBox(
