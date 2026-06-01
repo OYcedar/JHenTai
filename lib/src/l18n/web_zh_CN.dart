@@ -554,6 +554,8 @@ class WebZhCN {
       'history.clearAll': '清空全部',
       'history.clearTitle': '清空浏览记录',
       'history.clearConfirm': '确定要清空所有浏览记录吗？',
+      'history.deleteTitle': '删除浏览记录',
+      'history.deleteConfirm': '确定从浏览记录中删除「@title」？',
       'history.loadFailed': '加载浏览记录失败: @error',
       'history.loadMore': '加载更多',
       'history.search': '搜索浏览记录...',

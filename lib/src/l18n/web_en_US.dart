@@ -614,6 +614,8 @@ class WebEnUS {
       'history.clearTitle': 'Clear History',
       'history.clearConfirm':
           'Are you sure you want to clear all browsing history?',
+      'history.deleteTitle': 'Delete History Item',
+      'history.deleteConfirm': 'Remove "@title" from browsing history?',
       'history.loadFailed': 'Failed to load history: @error',
       'history.loadMore': 'Load more',
       'history.search': 'Search browsing history...',

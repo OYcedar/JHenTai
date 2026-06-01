@@ -554,6 +554,8 @@ class WebZhTW {
       'history.clearAll': '清除全部',
       'history.clearTitle': '清除瀏覽記錄',
       'history.clearConfirm': '確定要清除所有瀏覽記錄嗎？',
+      'history.deleteTitle': '刪除瀏覽記錄',
+      'history.deleteConfirm': '確定從瀏覽記錄中刪除「@title」？',
       'history.loadFailed': '載入瀏覽記錄失敗: @error',
       'history.loadMore': '載入更多',
       'history.search': '搜尋瀏覽記錄...',

@@ -346,7 +346,6 @@ class WebHistoryPage extends GetView<WebHistoryController> {
           );
         }
         final item = controller.items[index];
-        final gid = (item['gid'] as num?)?.toInt() ?? 0;
         final title = item['title'] as String? ?? '';
         final coverUrl = item['cover_url'] as String? ?? '';
         final category = item['category'] as String? ?? '';
@@ -381,7 +380,7 @@ class WebHistoryPage extends GetView<WebHistoryController> {
               ),
               trailing: IconButton(
                 icon: const Icon(Icons.close, size: 18),
-                onPressed: () => controller.deleteItem(gid),
+                onPressed: () => _confirmDeleteItem(context, item),
               ),
               onTap: () => _openHistoryItem(item),
             ),
@@ -446,7 +445,6 @@ class WebHistoryPage extends GetView<WebHistoryController> {
   }
 
   Widget _buildGridItem(BuildContext context, Map<String, dynamic> item) {
-    final gid = (item['gid'] as num?)?.toInt() ?? 0;
     final title = item['title'] as String? ?? '';
     final coverUrl = item['cover_url'] as String? ?? '';
     final category = item['category'] as String? ?? '';
@@ -493,7 +491,7 @@ class WebHistoryPage extends GetView<WebHistoryController> {
                     IconButton(
                       icon: const Icon(Icons.close, size: 18),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => controller.deleteItem(gid),
+                      onPressed: () => _confirmDeleteItem(context, item),
                     ),
                   ],
                 ),
@@ -641,10 +639,45 @@ class WebHistoryPage extends GetView<WebHistoryController> {
           _copyHistoryUrl(item);
           break;
         case 'delete':
-          controller.deleteItem(gid);
+          _confirmDeleteItem(context, item);
           break;
       }
     });
+  }
+
+  Future<void> _confirmDeleteItem(
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
+    final gid = _historyGid(item);
+    if (gid <= 0) {
+      return;
+    }
+    final title = _historyTitle(item);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('history.deleteTitle'.tr),
+        content: Text(
+          'history.deleteConfirm'.trParams({
+            'title': title.isEmpty ? '$gid' : title,
+          }),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await controller.deleteItem(gid);
+    }
   }
 
   String _formatTime(String iso) {

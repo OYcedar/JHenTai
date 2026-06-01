@@ -574,6 +574,8 @@ class WebKoKR {
       'history.clearAll': '전체 삭제',
       'history.clearTitle': '방문 기록 삭제',
       'history.clearConfirm': '모든 방문 기록을 삭제하시겠습니까?',
+      'history.deleteTitle': '방문 기록 항목 삭제',
+      'history.deleteConfirm': '"@title"을(를) 방문 기록에서 삭제할까요?',
       'history.loadFailed': '방문 기록 로드 실패: @error',
       'history.loadMore': '더 불러오기',
       'history.search': '방문 기록 검색...',

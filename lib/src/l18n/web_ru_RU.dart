@@ -615,6 +615,8 @@ class WebRuRU {
       'history.clearAll': 'Очистить всё',
       'history.clearTitle': 'Очистить историю',
       'history.clearConfirm': 'Вы уверены, что хотите очистить всю историю?',
+      'history.deleteTitle': 'Удалить запись истории',
+      'history.deleteConfirm': 'Удалить «@title» из истории просмотров?',
       'history.loadFailed': 'Ошибка загрузки истории: @error',
       'history.loadMore': 'Загрузить ещё',
       'history.search': 'Поиск в истории...',

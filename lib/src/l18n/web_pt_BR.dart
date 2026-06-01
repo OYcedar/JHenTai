@@ -623,6 +623,8 @@ class WebPtBR {
       'history.clearAll': 'Limpar Tudo',
       'history.clearTitle': 'Limpar Histórico',
       'history.clearConfirm': 'Tem certeza que deseja limpar todo o histórico?',
+      'history.deleteTitle': 'Excluir item do histórico',
+      'history.deleteConfirm': 'Remover "@title" do histórico?',
       'history.loadFailed': 'Falha ao carregar histórico: @error',
       'history.loadMore': 'Carregar mais',
       'history.search': 'Pesquisar histórico...',
