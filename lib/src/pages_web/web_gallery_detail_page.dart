@@ -760,19 +760,22 @@ class WebGalleryDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: embedded ? colorScheme.surface : null,
-      appBar: embedded ? null : _buildAppBar(context),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.errorMessage.isNotEmpty) {
-          return Center(child: Text(controller.errorMessage.value));
-        }
-        return _buildDetail(context);
-      }),
+    final theme = Theme.of(context);
+    return ColoredBox(
+      color: embedded ? theme.scaffoldBackgroundColor : Colors.transparent,
+      child: Scaffold(
+        backgroundColor: embedded ? Colors.transparent : null,
+        appBar: embedded ? null : _buildAppBar(context),
+        body: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (controller.errorMessage.isNotEmpty) {
+            return Center(child: Text(controller.errorMessage.value));
+          }
+          return _buildDetail(context);
+        }),
+      ),
     );
   }
 
@@ -920,7 +923,7 @@ class WebGalleryDetailPage extends StatelessWidget {
     }
     final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: colorScheme.surfaceContainerLow,
+      color: Theme.of(context).scaffoldBackgroundColor,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
