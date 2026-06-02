@@ -2484,6 +2484,22 @@ class WebGalleryDetailPage extends StatelessWidget {
         ),
         PopupMenuItem(
           child: ListTile(
+            leading: const Icon(Icons.playlist_add_check,
+                size: 20, color: Colors.red),
+            title: Text('usertags.watchInSet'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _addUsertagFromDetail(
+            namespace,
+            tag,
+            watch: true,
+            forceChooseTagSet: true,
+          ),
+        ),
+        PopupMenuItem(
+          child: ListTile(
             leading: const Icon(Icons.visibility_off_outlined,
                 size: 20, color: Colors.blueGrey),
             title: Text('usertags.hidden'.tr,
@@ -2492,6 +2508,32 @@ class WebGalleryDetailPage extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
           ),
           onTap: () => _addUsertagFromDetail(namespace, tag, watch: false),
+        ),
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.playlist_remove,
+                size: 20, color: Colors.blueGrey),
+            title: Text('usertags.hiddenInSet'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => _addUsertagFromDetail(
+            namespace,
+            tag,
+            watch: false,
+            forceChooseTagSet: true,
+          ),
+        ),
+        PopupMenuItem(
+          child: ListTile(
+            leading: const Icon(Icons.settings, size: 20),
+            title: Text('usertags.manage'.tr,
+                style: const TextStyle(fontSize: 14)),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          onTap: () => Get.toNamed('/web/tag-sets'),
         ),
         PopupMenuItem(
           child: ListTile(
@@ -2534,10 +2576,11 @@ class WebGalleryDetailPage extends StatelessWidget {
     String namespace,
     String tag, {
     required bool watch,
+    bool forceChooseTagSet = false,
   }) async {
     try {
       int? tagSetNo;
-      if (WebPreferenceSettings.enableDefaultTagSet) {
+      if (!forceChooseTagSet && WebPreferenceSettings.enableDefaultTagSet) {
         tagSetNo = WebPreferenceSettings.defaultTagSetNo;
       }
       if (tagSetNo == null) {
