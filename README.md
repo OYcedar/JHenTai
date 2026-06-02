@@ -77,7 +77,7 @@ JHenTai can also be deployed as a **Docker container** and accessed via a web br
 Docker examples pin **`x.y.z-hhh`** tags (`hhh` = three lowercase hex digits, fork revision 0–4095; see `docker/fork_revision`). The publish scripts also push `latest`, but README / compose examples must use explicit tags. Every Docker Hub publish must increment `docker/fork_revision` and update the README image tag; the publish scripts do this automatically before pushing.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-148
+docker pull hemumoe/jhentai:8.0.12-14a
 ```
 
 **Quick start with docker-compose:**
@@ -85,7 +85,7 @@ docker pull hemumoe/jhentai:8.0.12-148
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-148
+    image: hemumoe/jhentai:8.0.12-14a
     container_name: jhentai
     ports:
       - "8080:8080"
