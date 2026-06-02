@@ -3268,8 +3268,13 @@ class _CommentCard extends StatelessWidget {
     final fromMe = comment['fromMe'] == true;
     final body = comment['body'] as String? ?? '';
     final commentId = int.tryParse(comment['id']?.toString() ?? '');
+    final bodyWidget = _LinkedCommentBody(
+      body: body,
+      maxLines: compact ? 4 : 100,
+      showImages: !compact,
+    );
 
-    return Card(
+    final card = Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: Padding(
         padding: EdgeInsets.all(compact ? 10 : 12),
@@ -3400,14 +3405,22 @@ class _CommentCard extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 4),
-            _LinkedCommentBody(
-              body: body,
-              maxLines: compact ? 4 : 100,
-              showImages: !compact,
-            ),
+            compact ? bodyWidget : SelectionArea(child: bodyWidget),
           ],
         ),
       ),
+    );
+
+    if (onBlockUser == null && (!fromMe || onEdit == null)) {
+      return card;
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onLongPress: () => _showActions(context),
+      onSecondaryTapUp: (details) =>
+          _showActions(context, position: details.globalPosition),
+      child: card,
     );
   }
 
@@ -3429,6 +3442,60 @@ class _CommentCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showActions(BuildContext context, {Offset? position}) async {
+    final fromMe = comment['fromMe'] == true;
+    final entries = <PopupMenuEntry<String>>[
+      if (fromMe && onEdit != null)
+        PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.edit_note, size: 20),
+            title: Text('comment.update'.tr),
+          ),
+        ),
+      if (onBlockUser != null)
+        PopupMenuItem(
+          value: 'block',
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.block, size: 20),
+            title: Text('blockRule.blockCommentUser'.tr),
+          ),
+        ),
+    ];
+    if (entries.isEmpty) {
+      return;
+    }
+
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox?;
+    final origin = position ?? _widgetCenter(context);
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(origin.dx, origin.dy, 1, 1),
+        Offset.zero & (overlay?.size ?? MediaQuery.sizeOf(context)),
+      ),
+      items: entries,
+    );
+    if (selected == 'edit') {
+      onEdit?.call(comment);
+    } else if (selected == 'block') {
+      onBlockUser?.call(comment);
+    }
+  }
+
+  Offset _widgetCenter(BuildContext context) {
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) {
+      return Offset.zero;
+    }
+    return box.localToGlobal(box.size.center(Offset.zero));
   }
 }
 
