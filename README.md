@@ -16,6 +16,8 @@ This repository is a **Docker/Web-only fork** of JHenTai. It focuses on the brow
 
 Native Android, iOS, Windows, macOS, and Linux app releases are **not maintained or published by this fork**. If you need the native app packages, please use the upstream JHenTai project. The upstream native-app content below is kept only as historical/reference material.
 
+Web/App experience parity is tracked in [docs/WEB_APP_PARITY_AUDIT.md](docs/WEB_APP_PARITY_AUDIT.md). New parity work should be handled as one scoped theme package rather than scattered small UI-feedback commits.
+
 ## Description
 
 A Docker/Web manga client for E-Hentai, intended for NAS, servers, and browser access from any device.
