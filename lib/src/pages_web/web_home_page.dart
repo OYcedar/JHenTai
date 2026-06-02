@@ -969,6 +969,7 @@ class WebHomeController extends GetxController {
 
   /// Labels for the favorites folder strip (from EH).
   final favoriteFolderNames = <String>[].obs;
+  final isFavoriteFoldersRefreshing = false.obs;
 
   final searchHistory = <String>[].obs;
   final showTranslatedSearchHistory = true.obs;
@@ -1012,10 +1013,29 @@ class WebHomeController extends GetxController {
   }
 
   Future<void> reloadFavoriteFolderNames() async {
+    if (isFavoriteFoldersRefreshing.value) {
+      return;
+    }
+    isFavoriteFoldersRefreshing.value = true;
     try {
       final f = await backendApiClient.fetchFavoriteFolders();
       favoriteFolderNames.value = List<String>.from(f.names);
-    } catch (_) {}
+      Get.snackbar(
+        'common.success'.tr,
+        'reload'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        '${'common.failed'.tr}: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withValues(alpha: 0.7),
+      );
+    } finally {
+      isFavoriteFoldersRefreshing.value = false;
+    }
   }
 
   void loadSearchHistory() async {
@@ -1948,6 +1968,22 @@ class WebHomePage extends GetView<WebHomeController> {
                       tooltip: 'home.favSortTitle'.tr,
                       onPressed: () =>
                           _showFavoriteSortDialog(context, controller),
+                    ),
+                    Obx(
+                      () => IconButton(
+                        icon: controller.isFavoriteFoldersRefreshing.value
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.refresh),
+                        tooltip: 'reload'.tr,
+                        onPressed: controller.isFavoriteFoldersRefreshing.value
+                            ? null
+                            : controller.reloadFavoriteFolderNames,
+                      ),
                     ),
                     Expanded(
                       child: SingleChildScrollView(

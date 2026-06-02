@@ -2720,7 +2720,9 @@ class _TopOverlay extends StatelessWidget {
                               const Icon(Icons.grid_view, color: Colors.white),
                           tooltip: 'thumbnails.grid'.tr,
                           onPressed: () => Get.toNamed(
-                              '/web/thumbnails/${controller.gid}/${controller.token}'),
+                            '/web/thumbnails/${controller.gid}/${controller.token}'
+                            '?page=${controller.currentPage.value + 1}',
+                          ),
                         ),
                         Obx(() {
                           if (controller.readDirection.value !=

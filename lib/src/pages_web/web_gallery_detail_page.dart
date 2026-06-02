@@ -919,6 +919,24 @@ class WebGalleryDetailPage extends StatelessWidget {
                     title: Text('detail.similarByTitle'.tr),
                     dense: true,
                     contentPadding: EdgeInsets.zero)),
+            if (controller.uploader.value.trim().isNotEmpty)
+              PopupMenuItem(
+                  value: 'searchUploader',
+                  child: ListTile(
+                      leading:
+                          const Icon(Icons.person_search_outlined, size: 20),
+                      title: Text('tagVote.searchUploader'.tr),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero)),
+            if (controller.uploader.value.trim().isNotEmpty)
+              PopupMenuItem(
+                  value: 'blockUploader',
+                  child: ListTile(
+                      leading: const Icon(Icons.person_off_outlined,
+                          size: 20, color: Colors.orange),
+                      title: Text('blockRule.blockUploader'.tr),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero)),
             PopupMenuItem(
                 value: 'blockGallery',
                 child: ListTile(
@@ -1318,6 +1336,12 @@ class WebGalleryDetailPage extends StatelessWidget {
         Get.offAllNamed('/web/home', arguments: {
           'search': _webSimilarTitleQuery(controller.title.value)
         });
+        break;
+      case 'searchUploader':
+        _searchUploader(controller.uploader.value);
+        break;
+      case 'blockUploader':
+        _quickBlockUploader(controller.uploader.value);
         break;
       case 'blockGallery':
         _blockGallery();

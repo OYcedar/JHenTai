@@ -1166,6 +1166,8 @@ class BackendApiClient {
       'web_download_all_galleries_of_same_priority';
   static const webGalleryUpgradeReuseImagesKey =
       'web_gallery_upgrade_reuse_images';
+  static const webDeleteArchiveFileAfterDownloadKey =
+      'web_delete_archive_file_after_download';
 
   Future<Map<String, dynamic>> getSettings() async {
     final response = await _dio.get('/api/setting/');
@@ -1272,6 +1274,7 @@ class BackendApiClient {
         int archiveConcurrency,
         bool downloadAllGalleriesOfSamePriority,
         bool galleryUpgradeReuseImages,
+        bool deleteArchiveFileAfterDownload,
       })> getDownloadRuntimeSettings() async {
     final settings = await getSettings();
     final server = settings['server'] is Map
@@ -1289,6 +1292,8 @@ class BackendApiClient {
       downloadAllGalleriesOfSamePriority:
           server['downloadAllGalleriesOfSamePriority'] == true,
       galleryUpgradeReuseImages: server['galleryUpgradeReuseImages'] != false,
+      deleteArchiveFileAfterDownload:
+          server['deleteArchiveFileAfterDownload'] != false,
     );
   }
 
@@ -1297,6 +1302,7 @@ class BackendApiClient {
     int? archiveConcurrency,
     bool? downloadAllGalleriesOfSamePriority,
     bool? galleryUpgradeReuseImages,
+    bool? deleteArchiveFileAfterDownload,
   }) async {
     await Future.wait([
       if (galleryConcurrency != null)
@@ -1318,6 +1324,11 @@ class BackendApiClient {
         putSetting(
           webGalleryUpgradeReuseImagesKey,
           galleryUpgradeReuseImages,
+        ),
+      if (deleteArchiveFileAfterDownload != null)
+        putSetting(
+          webDeleteArchiveFileAfterDownloadKey,
+          deleteArchiveFileAfterDownload,
         ),
     ]);
   }

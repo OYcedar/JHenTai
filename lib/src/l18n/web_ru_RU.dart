@@ -43,6 +43,9 @@ class WebRuRU {
           'По умолчанию одновременно скачивается только одна галерея каждого приоритета.',
       'useJH2UpdateGallery':
           'Использовать сервер JH для ускорения обновления галерей',
+      'deleteArchiveFileAfterDownload': 'Удалять ZIP архива после загрузки',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          'Если включено, Docker-сервер удаляет скачанный ZIP после распаковки; выключите, чтобы сохранить исходный архив.',
       'restoreDownloadTasks': 'Восстановить задачи загрузки',
       'restoreDownloadTasksHint': 'Восстановить задачи загрузки по метаданным',
       'restoreTasksAutomatically': 'Восстанавливать задачи автоматически',
@@ -308,6 +311,8 @@ class WebRuRU {
       'local.scanRootsHint':
           'Это пути внутри контейнера, которые сканирует Docker-сервер. Добавьте смонтированный путь здесь или используйте тома Docker и JH_EXTRA_SCAN_PATHS.',
       'local.addScanRoot': 'Добавить корень сканирования',
+      'local.deleteScanRootTitle': 'Удалить корень сканирования',
+      'local.deleteScanRootConfirm': 'Удалить "@path" из корней сканирования?',
       'local.addScanRootFailed': 'Не удалось добавить корень: @error',
       'local.deleteScanRootFailed': 'Не удалось удалить корень: @error',
       'local.noScanRoots': 'Корни сканирования не настроены',
@@ -317,6 +322,7 @@ class WebRuRU {
       'settings.account': 'Аккаунт',
       'settings.loggedIn': 'Вы вошли как: @user',
       'settings.logout': 'Выйти',
+      'settings.logoutConfirm': 'Вы уверены, что хотите выйти?',
       'settings.logoutSuccess': 'Вы вышли',
       'settings.logoutFailed': 'Ошибка выхода: @error',
       'settings.cookieLogin': 'Вход через cookies (рекомендуется)',
@@ -416,6 +422,8 @@ class WebRuRU {
       'settings.ehResetCost': 'Стоимость сброса',
       'settings.ehQuotaUnavailable':
           'Квота изображений доступна только донаторам',
+      'settings.ehQuotaResetConfirm':
+          'Сброс квоты изображений будет стоить @cost GP. Продолжить?',
       'settings.ehQuotaReset': 'Квота изображений сброшена',
       'settings.ehQuotaResetFailed':
           'Не удалось сбросить квоту изображений: @error',
@@ -888,6 +896,8 @@ class WebRuRU {
       'settings.defaultFavoriteHint':
           'Если включено, нажмите на сердечко для папки по умолчанию или удерживайте, чтобы выбрать другую.',
       'settings.readerSettings': 'Настройки чтения',
+      'settings.loadReadSettingsFailed':
+          'Не удалось загрузить настройки чтения: @error',
       'settings.defaultDirection': 'Направление по умолчанию',
       'settings.imageSpacing': 'Отступы изображений',
       'settings.preloadPages': 'Предзагрузка страниц (онлайн)',
@@ -949,6 +959,8 @@ class WebRuRU {
       'usertags.weight': 'Вес',
       'usertags.editTitle': 'Редактировать тег',
       'usertags.delete': 'Удалить',
+      'usertags.deleteTitle': 'Удалить тег',
+      'usertags.deleteConfirm': 'Удалить «@tag» из этого набора тегов?',
       'usertags.added': 'Добавлено',
       'usertags.updated': 'Обновлено',
       'usertags.deleted': 'Удалено',

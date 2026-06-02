@@ -8,6 +8,8 @@ const webMaxConcurrentArchiveDownloadsKey =
 const webDownloadAllGalleriesOfSamePriorityKey =
     'web_download_all_galleries_of_same_priority';
 const webGalleryUpgradeReuseImagesKey = 'web_gallery_upgrade_reuse_images';
+const webDeleteArchiveFileAfterDownloadKey =
+    'web_delete_archive_file_after_download';
 
 int effectiveMaxConcurrentGalleryDownloads(ServerConfig config) {
   return _readInt(
@@ -38,6 +40,13 @@ bool effectiveGalleryUpgradeReuseImages(ServerConfig config) {
   return _readBool(
     webGalleryUpgradeReuseImagesKey,
     fallback: config.galleryUpgradeReuseImages,
+  );
+}
+
+bool effectiveDeleteArchiveFileAfterDownload() {
+  return _readBool(
+    webDeleteArchiveFileAfterDownloadKey,
+    fallback: true,
   );
 }
 

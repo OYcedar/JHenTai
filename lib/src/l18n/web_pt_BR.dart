@@ -42,6 +42,10 @@ class WebPtBR {
           'Por padrão, apenas uma galeria por prioridade é baixada por vez.',
       'useJH2UpdateGallery':
           'Usar servidor JH para acelerar atualizações de galerias',
+      'deleteArchiveFileAfterDownload':
+          'Excluir ZIP do arquivo após o download',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          'Quando ativado, o servidor Docker remove o ZIP baixado após a extração; desative para manter o arquivo original.',
       'restoreDownloadTasks': 'Restaurar tarefas de download',
       'restoreDownloadTasksHint': 'Restaurar tarefas de download por metadados',
       'restoreTasksAutomatically': 'Restaurar tarefas automaticamente',
@@ -313,6 +317,9 @@ class WebPtBR {
       'local.scanRootsHint':
           'Estes sao os caminhos do conteiner que o servidor Docker escaneia. Adicione aqui um caminho montado ou use volumes Docker e JH_EXTRA_SCAN_PATHS.',
       'local.addScanRoot': 'Adicionar raiz de escaneamento',
+      'local.deleteScanRootTitle': 'Remover raiz de escaneamento',
+      'local.deleteScanRootConfirm':
+          'Remover "@path" das raizes de escaneamento?',
       'local.addScanRootFailed':
           'Falha ao adicionar raiz de escaneamento: @error',
       'local.deleteScanRootFailed':
@@ -324,6 +331,7 @@ class WebPtBR {
       'settings.account': 'Conta',
       'settings.loggedIn': 'Conectado como: @user',
       'settings.logout': 'Sair',
+      'settings.logoutConfirm': 'Tem certeza de que deseja sair?',
       'settings.logoutSuccess': 'Desconectado',
       'settings.logoutFailed': 'Falha ao sair: @error',
       'settings.cookieLogin': 'Login com cookies (recomendado)',
@@ -423,6 +431,8 @@ class WebPtBR {
       'settings.ehResetCost': 'Custo para redefinir',
       'settings.ehQuotaUnavailable':
           'A cota de imagens está disponível apenas para doadores',
+      'settings.ehQuotaResetConfirm':
+          'Redefinir a cota de imagens custará @cost GP. Continuar?',
       'settings.ehQuotaReset': 'A cota de imagens foi redefinida',
       'settings.ehQuotaResetFailed':
           'Falha ao redefinir a cota de imagens: @error',
@@ -897,6 +907,8 @@ class WebPtBR {
       'settings.defaultFavoriteHint':
           'Quando ativado, clique no coração para usar a pasta padrão e pressione e segure para escolher outra.',
       'settings.readerSettings': 'Configurações do Leitor',
+      'settings.loadReadSettingsFailed':
+          'Falha ao carregar configurações do leitor: @error',
       'settings.defaultDirection': 'Direção Padrão',
       'settings.imageSpacing': 'Espaçamento de Imagem',
       'settings.preloadPages': 'Páginas Pré-carregadas (Online)',
@@ -957,6 +969,8 @@ class WebPtBR {
       'usertags.weight': 'Peso',
       'usertags.editTitle': 'Editar tag',
       'usertags.delete': 'Excluir',
+      'usertags.deleteTitle': 'Excluir tag',
+      'usertags.deleteConfirm': 'Excluir "@tag" deste conjunto de tags?',
       'usertags.added': 'Adicionada',
       'usertags.updated': 'Atualizada',
       'usertags.deleted': 'Excluída',

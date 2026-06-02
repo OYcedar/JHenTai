@@ -129,6 +129,7 @@ class _WebDefaultTagSetTileState extends State<_WebDefaultTagSetTile> {
   bool enableDefaultTagSet = true;
   int? defaultTagSetNo;
   bool loading = true;
+  String errorMessage = '';
   List<Map<String, dynamic>> tagSets = const [];
 
   @override
@@ -140,6 +141,10 @@ class _WebDefaultTagSetTileState extends State<_WebDefaultTagSetTile> {
   }
 
   Future<void> _loadTagSets() async {
+    setState(() {
+      loading = true;
+      errorMessage = '';
+    });
     try {
       final data = await backendApiClient.listUsertags(
         tagset: defaultTagSetNo ?? 1,
@@ -161,8 +166,13 @@ class _WebDefaultTagSetTileState extends State<_WebDefaultTagSetTile> {
           WebPreferenceSettings.saveDefaultTagSetNo(null);
         }
       });
-    } catch (_) {
-      // Keep local preferences editable even when the tag-set list cannot load.
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        errorMessage = 'usertags.loadFailed'.trParams({'error': '$e'});
+      });
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -172,6 +182,11 @@ class _WebDefaultTagSetTileState extends State<_WebDefaultTagSetTile> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedDefaultTagSetNo = tagSets.any(
+            (set) => ((set['number'] as num?)?.toInt() ?? 1) == defaultTagSetNo)
+        ? defaultTagSetNo
+        : null;
+
     return Column(
       children: [
         SwitchListTile(
@@ -182,7 +197,12 @@ class _WebDefaultTagSetTileState extends State<_WebDefaultTagSetTile> {
               : 'disableDefaultTagSetHint'.tr),
           value: enableDefaultTagSet,
           onChanged: (value) {
-            setState(() => enableDefaultTagSet = value);
+            setState(() {
+              enableDefaultTagSet = value;
+              if (!value) {
+                defaultTagSetNo = null;
+              }
+            });
             WebPreferenceSettings.saveEnableDefaultTagSet(value);
           },
         ),
@@ -190,27 +210,42 @@ class _WebDefaultTagSetTileState extends State<_WebDefaultTagSetTile> {
           ListTile(
             leading: const Icon(Icons.label_important_outline),
             title: Text('usertags.defaultTagSet'.tr),
-            subtitle: loading ? Text('common.loading'.tr) : null,
-            trailing: DropdownButton<int?>(
-              value: defaultTagSetNo,
-              alignment: AlignmentDirectional.centerEnd,
-              items: [
-                DropdownMenuItem<int?>(
-                  value: null,
-                  child: Text('usertags.defaultTagSetNone'.tr),
-                ),
-                for (final set in tagSets)
-                  DropdownMenuItem<int?>(
-                    value: (set['number'] as num?)?.toInt() ?? 1,
-                    child: Text(set['name']?.toString() ?? ''),
+            subtitle: errorMessage.isNotEmpty
+                ? Text(errorMessage)
+                : loading
+                    ? Text('common.loading'.tr)
+                    : null,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (errorMessage.isNotEmpty)
+                  IconButton(
+                    tooltip: 'common.retry'.tr,
+                    icon: const Icon(Icons.refresh),
+                    onPressed: loading ? null : _loadTagSets,
                   ),
+                DropdownButton<int?>(
+                  value: selectedDefaultTagSetNo,
+                  alignment: AlignmentDirectional.centerEnd,
+                  items: [
+                    DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('usertags.defaultTagSetNone'.tr),
+                    ),
+                    for (final set in tagSets)
+                      DropdownMenuItem<int?>(
+                        value: (set['number'] as num?)?.toInt() ?? 1,
+                        child: Text(set['name']?.toString() ?? ''),
+                      ),
+                  ],
+                  onChanged: loading
+                      ? null
+                      : (value) {
+                          setState(() => defaultTagSetNo = value);
+                          WebPreferenceSettings.saveDefaultTagSetNo(value);
+                        },
+                ),
               ],
-              onChanged: loading
-                  ? null
-                  : (value) {
-                      setState(() => defaultTagSetNo = value);
-                      WebPreferenceSettings.saveDefaultTagSetNo(value);
-                    },
             ),
           ),
       ],

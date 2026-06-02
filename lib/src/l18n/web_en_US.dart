@@ -43,6 +43,10 @@ class WebEnUS {
       'downloadAllGallerysOfSamePriorityHint':
           'By default, only one gallery per priority is downloaded at a time.',
       'useJH2UpdateGallery': 'Use JH server to accelerate gallery updates',
+      'deleteArchiveFileAfterDownload':
+          'Delete archive ZIP file after download',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          'When enabled, the Docker server removes the downloaded ZIP after extraction; disable it to keep the original archive file.',
       'restoreDownloadTasks': 'Restore download tasks',
       'restoreDownloadTasksHint': 'Restore download tasks from metadata',
       'restoreTasksAutomatically': 'Restore tasks automatically',
@@ -308,6 +312,8 @@ class WebEnUS {
       'local.scanRootsHint':
           'These are the container paths that the Docker server scans. Add a mounted path here, or use Docker volume mounts and JH_EXTRA_SCAN_PATHS.',
       'local.addScanRoot': 'Add scan root',
+      'local.deleteScanRootTitle': 'Remove Scan Root',
+      'local.deleteScanRootConfirm': 'Remove "@path" from scan roots?',
       'local.addScanRootFailed': 'Failed to add scan root: @error',
       'local.deleteScanRootFailed': 'Failed to remove scan root: @error',
       'local.noScanRoots': 'No scan roots configured',
@@ -317,6 +323,7 @@ class WebEnUS {
       'settings.account': 'Account',
       'settings.loggedIn': 'Logged in as: @user',
       'settings.logout': 'Logout',
+      'settings.logoutConfirm': 'Are you sure you want to log out?',
       'settings.logoutSuccess': 'Logged out',
       'settings.logoutFailed': 'Logout failed: @error',
       'settings.cookieLogin': 'Login with cookies (recommended)',
@@ -417,6 +424,8 @@ class WebEnUS {
       'settings.ehResetCost': 'Reset cost',
       'settings.ehQuotaUnavailable':
           'Image quota is available to donators only',
+      'settings.ehQuotaResetConfirm':
+          'Resetting the image quota will cost @cost GP. Continue?',
       'settings.ehQuotaReset': 'Image quota has been reset',
       'settings.ehQuotaResetFailed': 'Failed to reset image quota: @error',
       'settings.ehStatusFailed': 'Failed to load EH status: @error',
@@ -886,6 +895,8 @@ class WebEnUS {
           'When enabled, click the heart to use the default folder and long-press to choose another.',
       'settings.usertags': 'Watched / hidden tags',
       'settings.readerSettings': 'Reader Settings',
+      'settings.loadReadSettingsFailed':
+          'Failed to load reader settings: @error',
       'settings.defaultDirection': 'Default Direction',
       'settings.imageSpacing': 'Image Spacing',
       'settings.preloadPages': 'Preload Pages (Online)',
@@ -948,6 +959,8 @@ class WebEnUS {
       'usertags.weight': 'Weight',
       'usertags.editTitle': 'Edit tag',
       'usertags.delete': 'Delete',
+      'usertags.deleteTitle': 'Delete tag',
+      'usertags.deleteConfirm': 'Delete "@tag" from this tag set?',
       'usertags.added': 'Added',
       'usertags.updated': 'Updated',
       'usertags.deleted': 'Deleted',

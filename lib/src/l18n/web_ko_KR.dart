@@ -40,6 +40,9 @@ class WebKoKR {
       'downloadAllGallerysOfSamePriorityHint':
           '기본적으로 각 우선순위마다 갤러리 하나만 동시에 다운로드합니다.',
       'useJH2UpdateGallery': 'JH 서버로 갤러리 업데이트 가속',
+      'deleteArchiveFileAfterDownload': '다운로드 완료 후 아카이브 ZIP 파일 삭제',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          '켜면 Docker 서버가 압축 해제 후 다운로드한 ZIP을 삭제합니다. 끄면 원본 아카이브 파일을 보관합니다.',
       'restoreDownloadTasks': '다운로드 작업 복원',
       'restoreDownloadTasksHint': '메타데이터로 다운로드 작업 복원',
       'restoreTasksAutomatically': '작업 자동 복원',
@@ -295,6 +298,8 @@ class WebKoKR {
       'local.scanRootsHint':
           'Docker 서버가 스캔하는 컨테이너 내부 경로입니다. 마운트된 경로를 여기에서 추가하거나 Docker 볼륨과 JH_EXTRA_SCAN_PATHS를 사용하세요.',
       'local.addScanRoot': '스캔 루트 추가',
+      'local.deleteScanRootTitle': '스캔 루트 제거',
+      'local.deleteScanRootConfirm': '스캔 루트에서 "@path"을(를) 제거할까요?',
       'local.addScanRootFailed': '스캔 루트 추가 실패: @error',
       'local.deleteScanRootFailed': '스캔 루트 제거 실패: @error',
       'local.noScanRoots': '설정된 스캔 루트가 없습니다',
@@ -304,6 +309,7 @@ class WebKoKR {
       'settings.account': '계정',
       'settings.loggedIn': '로그인됨: @user',
       'settings.logout': '로그아웃',
+      'settings.logoutConfirm': '현재 계정에서 로그아웃할까요?',
       'settings.logoutSuccess': '로그아웃되었습니다',
       'settings.logoutFailed': '로그아웃 실패: @error',
       'settings.cookieLogin': '쿠키로 로그인 (권장)',
@@ -396,6 +402,7 @@ class WebKoKR {
       'settings.ehImageQuota': '이미지 할당량',
       'settings.ehResetCost': '초기화 비용',
       'settings.ehQuotaUnavailable': '이미지 할당량은 기부자만 볼 수 있습니다',
+      'settings.ehQuotaResetConfirm': '이미지 할당량을 초기화하면 @cost GP가 소모됩니다. 계속할까요?',
       'settings.ehQuotaReset': '이미지 할당량이 초기화되었습니다',
       'settings.ehQuotaResetFailed': '이미지 할당량 초기화 실패: @error',
       'settings.ehStatusFailed': 'EH 상태 로드 실패: @error',
@@ -839,6 +846,7 @@ class WebKoKR {
       'settings.defaultFavoriteHint':
           '활성화하면 하트 클릭 시 기본 폴더를 사용하고, 길게 눌러 다른 폴더를 선택합니다.',
       'settings.readerSettings': '리더 설정',
+      'settings.loadReadSettingsFailed': '리더 설정 로드 실패: @error',
       'settings.defaultDirection': '기본 방향',
       'settings.imageSpacing': '이미지 간격',
       'settings.preloadPages': '미리 로드 페이지(온라인)',
@@ -898,6 +906,8 @@ class WebKoKR {
       'usertags.weight': '가중치',
       'usertags.editTitle': '태그 편집',
       'usertags.delete': '삭제',
+      'usertags.deleteTitle': '태그 삭제',
+      'usertags.deleteConfirm': '이 태그 세트에서 "@tag"을(를) 삭제할까요?',
       'usertags.added': '추가됨',
       'usertags.updated': '업데이트됨',
       'usertags.deleted': '삭제됨',

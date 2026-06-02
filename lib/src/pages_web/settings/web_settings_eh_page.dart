@@ -355,6 +355,32 @@ class _EhStatusTileState extends State<_EhStatusTile> {
     }
   }
 
+  Future<void> _confirmResetLimit(Object? resetCost) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('common.reset'.tr),
+        content: Text(
+          'settings.ehQuotaResetConfirm'.trParams({
+            'cost': resetCost?.toString() ?? '-',
+          }),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _resetLimit();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDonator = _status['isDonator'] == true;
@@ -399,7 +425,8 @@ class _EhStatusTileState extends State<_EhStatusTile> {
             IconButton(
               tooltip: 'common.reset'.tr,
               icon: const Icon(Icons.restart_alt),
-              onPressed: _resetting ? null : _resetLimit,
+              onPressed:
+                  _resetting ? null : () => _confirmResetLimit(resetCost),
             ),
         ],
       ),
