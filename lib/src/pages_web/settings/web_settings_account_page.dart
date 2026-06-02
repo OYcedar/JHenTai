@@ -58,7 +58,7 @@ class _WebSettingsAccountPageState extends State<WebSettingsAccountPage>
                   .trParams({'user': controller.userName.value}))),
             ),
             TextButton.icon(
-              onPressed: controller.logout,
+              onPressed: _confirmLogout,
               icon: const Icon(Icons.logout, size: 18),
               label: Text('settings.logout'.tr),
             ),
@@ -142,6 +142,28 @@ class _WebSettingsAccountPageState extends State<WebSettingsAccountPage>
     await Clipboard.setData(ClipboardData(text: text));
     Get.snackbar('common.success'.tr, 'hasCopiedToClipboard'.tr,
         snackPosition: SnackPosition.BOTTOM);
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('settings.logout'.tr),
+        content: Text('settings.logoutConfirm'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.logout();
+    }
   }
 
   Future<void> _pasteCookies() async {

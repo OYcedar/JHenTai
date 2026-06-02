@@ -322,6 +322,7 @@ class WebRuRU {
       'settings.account': 'Аккаунт',
       'settings.loggedIn': 'Вы вошли как: @user',
       'settings.logout': 'Выйти',
+      'settings.logoutConfirm': 'Вы уверены, что хотите выйти?',
       'settings.logoutSuccess': 'Вы вышли',
       'settings.logoutFailed': 'Ошибка выхода: @error',
       'settings.cookieLogin': 'Вход через cookies (рекомендуется)',
@@ -421,6 +422,8 @@ class WebRuRU {
       'settings.ehResetCost': 'Стоимость сброса',
       'settings.ehQuotaUnavailable':
           'Квота изображений доступна только донаторам',
+      'settings.ehQuotaResetConfirm':
+          'Сброс квоты изображений будет стоить @cost GP. Продолжить?',
       'settings.ehQuotaReset': 'Квота изображений сброшена',
       'settings.ehQuotaResetFailed':
           'Не удалось сбросить квоту изображений: @error',

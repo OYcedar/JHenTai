@@ -323,6 +323,7 @@ class WebEnUS {
       'settings.account': 'Account',
       'settings.loggedIn': 'Logged in as: @user',
       'settings.logout': 'Logout',
+      'settings.logoutConfirm': 'Are you sure you want to log out?',
       'settings.logoutSuccess': 'Logged out',
       'settings.logoutFailed': 'Logout failed: @error',
       'settings.cookieLogin': 'Login with cookies (recommended)',
@@ -423,6 +424,8 @@ class WebEnUS {
       'settings.ehResetCost': 'Reset cost',
       'settings.ehQuotaUnavailable':
           'Image quota is available to donators only',
+      'settings.ehQuotaResetConfirm':
+          'Resetting the image quota will cost @cost GP. Continue?',
       'settings.ehQuotaReset': 'Image quota has been reset',
       'settings.ehQuotaResetFailed': 'Failed to reset image quota: @error',
       'settings.ehStatusFailed': 'Failed to load EH status: @error',

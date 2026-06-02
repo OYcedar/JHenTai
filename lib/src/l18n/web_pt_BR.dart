@@ -331,6 +331,7 @@ class WebPtBR {
       'settings.account': 'Conta',
       'settings.loggedIn': 'Conectado como: @user',
       'settings.logout': 'Sair',
+      'settings.logoutConfirm': 'Tem certeza de que deseja sair?',
       'settings.logoutSuccess': 'Desconectado',
       'settings.logoutFailed': 'Falha ao sair: @error',
       'settings.cookieLogin': 'Login com cookies (recomendado)',
@@ -430,6 +431,8 @@ class WebPtBR {
       'settings.ehResetCost': 'Custo para redefinir',
       'settings.ehQuotaUnavailable':
           'A cota de imagens está disponível apenas para doadores',
+      'settings.ehQuotaResetConfirm':
+          'Redefinir a cota de imagens custará @cost GP. Continuar?',
       'settings.ehQuotaReset': 'A cota de imagens foi redefinida',
       'settings.ehQuotaResetFailed':
           'Falha ao redefinir a cota de imagens: @error',
