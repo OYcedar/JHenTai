@@ -40,6 +40,9 @@ class WebZhCN {
       'downloadAllGallerysOfSamePriorityHint':
           '默认情况下逐优先级下载画廊，且每个优先级下只会同时下载一个画廊',
       'useJH2UpdateGallery': '使用 JH 服务器加速画廊更新',
+      'deleteArchiveFileAfterDownload': '归档下载完成后删除原压缩包',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          '开启后 Docker 服务端会在解压完成后删除下载的 ZIP；关闭则保留原压缩包。',
       'restoreDownloadTasks': '恢复下载任务',
       'restoreDownloadTasksHint': '通过下载元数据来恢复下载记录',
       'restoreTasksAutomatically': '自动恢复下载任务',

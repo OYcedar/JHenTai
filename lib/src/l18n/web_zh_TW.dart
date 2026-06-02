@@ -40,6 +40,9 @@ class WebZhTW {
       'downloadAllGallerysOfSamePriorityHint':
           '預設情況下逐優先級下載畫廊，且每個優先級下只會同時下載一個畫廊',
       'useJH2UpdateGallery': '使用 JH 伺服器加速畫廊更新',
+      'deleteArchiveFileAfterDownload': '歸檔下載完成後刪除原壓縮檔',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          '開啟後 Docker 服務端會在解壓完成後刪除下載的 ZIP；關閉則保留原壓縮檔。',
       'restoreDownloadTasks': '復原下載任務',
       'restoreDownloadTasksHint': '透過下載中繼資料來復原下載記錄',
       'restoreTasksAutomatically': '自動復原下載任務',

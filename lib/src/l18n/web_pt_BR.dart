@@ -42,6 +42,10 @@ class WebPtBR {
           'Por padrão, apenas uma galeria por prioridade é baixada por vez.',
       'useJH2UpdateGallery':
           'Usar servidor JH para acelerar atualizações de galerias',
+      'deleteArchiveFileAfterDownload':
+          'Excluir ZIP do arquivo após o download',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          'Quando ativado, o servidor Docker remove o ZIP baixado após a extração; desative para manter o arquivo original.',
       'restoreDownloadTasks': 'Restaurar tarefas de download',
       'restoreDownloadTasksHint': 'Restaurar tarefas de download por metadados',
       'restoreTasksAutomatically': 'Restaurar tarefas automaticamente',

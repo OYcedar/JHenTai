@@ -529,9 +529,11 @@ class ArchiveDownloadService {
         throw Exception('Failed to extract archive');
       }
 
-      try {
-        await File(zipPath).delete();
-      } catch (_) {}
+      if (effectiveDeleteArchiveFileAfterDownload()) {
+        try {
+          await File(zipPath).delete();
+        } catch (_) {}
+      }
 
       task.status = ArchiveStatus.completed;
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.completed.index);

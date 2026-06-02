@@ -43,6 +43,9 @@ class WebRuRU {
           'По умолчанию одновременно скачивается только одна галерея каждого приоритета.',
       'useJH2UpdateGallery':
           'Использовать сервер JH для ускорения обновления галерей',
+      'deleteArchiveFileAfterDownload': 'Удалять ZIP архива после загрузки',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          'Если включено, Docker-сервер удаляет скачанный ZIP после распаковки; выключите, чтобы сохранить исходный архив.',
       'restoreDownloadTasks': 'Восстановить задачи загрузки',
       'restoreDownloadTasksHint': 'Восстановить задачи загрузки по метаданным',
       'restoreTasksAutomatically': 'Восстанавливать задачи автоматически',

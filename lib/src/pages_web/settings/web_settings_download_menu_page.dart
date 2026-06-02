@@ -40,6 +40,7 @@ class _WebSettingsDownloadMenuPageState
   int archiveConcurrency = 2;
   bool downloadAllGalleriesOfSamePriority = false;
   bool galleryUpgradeReuseImages = true;
+  bool deleteArchiveFileAfterDownload = true;
   bool isLoadingRuntimeSettings = true;
 
   @override
@@ -141,6 +142,7 @@ class _WebSettingsDownloadMenuPageState
         downloadAllGalleriesOfSamePriority =
             value.downloadAllGalleriesOfSamePriority;
         galleryUpgradeReuseImages = value.galleryUpgradeReuseImages;
+        deleteArchiveFileAfterDownload = value.deleteArchiveFileAfterDownload;
       });
       await controller.refreshStatus();
     } catch (_) {
@@ -157,12 +159,15 @@ class _WebSettingsDownloadMenuPageState
     int? archiveConcurrency,
     bool? downloadAllGalleriesOfSamePriority,
     bool? galleryUpgradeReuseImages,
+    bool? deleteArchiveFileAfterDownload,
   }) async {
     final previousGalleryConcurrency = this.galleryConcurrency;
     final previousArchiveConcurrency = this.archiveConcurrency;
     final previousDownloadAllGalleriesOfSamePriority =
         this.downloadAllGalleriesOfSamePriority;
     final previousGalleryUpgradeReuseImages = this.galleryUpgradeReuseImages;
+    final previousDeleteArchiveFileAfterDownload =
+        this.deleteArchiveFileAfterDownload;
     setState(() {
       if (galleryConcurrency != null) {
         this.galleryConcurrency = galleryConcurrency;
@@ -177,6 +182,9 @@ class _WebSettingsDownloadMenuPageState
       if (galleryUpgradeReuseImages != null) {
         this.galleryUpgradeReuseImages = galleryUpgradeReuseImages;
       }
+      if (deleteArchiveFileAfterDownload != null) {
+        this.deleteArchiveFileAfterDownload = deleteArchiveFileAfterDownload;
+      }
     });
     try {
       await backendApiClient.setDownloadRuntimeSettings(
@@ -184,6 +192,7 @@ class _WebSettingsDownloadMenuPageState
         archiveConcurrency: archiveConcurrency,
         downloadAllGalleriesOfSamePriority: downloadAllGalleriesOfSamePriority,
         galleryUpgradeReuseImages: galleryUpgradeReuseImages,
+        deleteArchiveFileAfterDownload: deleteArchiveFileAfterDownload,
       );
       await controller.refreshStatus();
     } catch (e) {
@@ -194,6 +203,8 @@ class _WebSettingsDownloadMenuPageState
           this.downloadAllGalleriesOfSamePriority =
               previousDownloadAllGalleriesOfSamePriority;
           this.galleryUpgradeReuseImages = previousGalleryUpgradeReuseImages;
+          this.deleteArchiveFileAfterDownload =
+              previousDeleteArchiveFileAfterDownload;
         });
       }
       Get.snackbar(
@@ -591,6 +602,18 @@ class _WebSettingsDownloadMenuPageState
                   ? null
                   : (value) => _saveRuntimeSettings(
                         galleryUpgradeReuseImages: value,
+                      ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.archive_outlined),
+              title: Text('deleteArchiveFileAfterDownload'.tr),
+              subtitle: Text('settings.deleteArchiveZipAfterDownloadHint'.tr),
+              value: deleteArchiveFileAfterDownload,
+              onChanged: isLoadingRuntimeSettings
+                  ? null
+                  : (value) => _saveRuntimeSettings(
+                        deleteArchiveFileAfterDownload: value,
                       ),
             ),
             const Divider(height: 24),

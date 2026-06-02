@@ -43,6 +43,10 @@ class WebEnUS {
       'downloadAllGallerysOfSamePriorityHint':
           'By default, only one gallery per priority is downloaded at a time.',
       'useJH2UpdateGallery': 'Use JH server to accelerate gallery updates',
+      'deleteArchiveFileAfterDownload':
+          'Delete archive ZIP file after download',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          'When enabled, the Docker server removes the downloaded ZIP after extraction; disable it to keep the original archive file.',
       'restoreDownloadTasks': 'Restore download tasks',
       'restoreDownloadTasksHint': 'Restore download tasks from metadata',
       'restoreTasksAutomatically': 'Restore tasks automatically',

@@ -40,6 +40,9 @@ class WebKoKR {
       'downloadAllGallerysOfSamePriorityHint':
           '기본적으로 각 우선순위마다 갤러리 하나만 동시에 다운로드합니다.',
       'useJH2UpdateGallery': 'JH 서버로 갤러리 업데이트 가속',
+      'deleteArchiveFileAfterDownload': '다운로드 완료 후 아카이브 ZIP 파일 삭제',
+      'settings.deleteArchiveZipAfterDownloadHint':
+          '켜면 Docker 서버가 압축 해제 후 다운로드한 ZIP을 삭제합니다. 끄면 원본 아카이브 파일을 보관합니다.',
       'restoreDownloadTasks': '다운로드 작업 복원',
       'restoreDownloadTasksHint': '메타데이터로 다운로드 작업 복원',
       'restoreTasksAutomatically': '작업 자동 복원',

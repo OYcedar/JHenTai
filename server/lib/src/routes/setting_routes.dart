@@ -614,6 +614,8 @@ class SettingRoutes {
       'downloadAllGalleriesOfSamePriority':
           effectiveDownloadAllGalleriesOfSamePriority(_config),
       'galleryUpgradeReuseImages': effectiveGalleryUpgradeReuseImages(_config),
+      'deleteArchiveFileAfterDownload':
+          effectiveDeleteArchiveFileAfterDownload(),
       'jhPublicApiBaseUrl': _config.jhPublicApiBaseUrl,
       'jhAppId': _config.jhAppId,
       'jhApiSecretConfigured': _config.jhApiSecret.trim().isNotEmpty,
