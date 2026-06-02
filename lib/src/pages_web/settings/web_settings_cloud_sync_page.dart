@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsCloudSyncPage extends StatefulWidget {
@@ -16,7 +17,8 @@ class WebSettingsCloudSyncPage extends StatefulWidget {
       _WebSettingsCloudSyncPageState();
 }
 
-class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
+class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
+    with WebScrollToTopState<WebSettingsCloudSyncPage> {
   final shareCodeController = TextEditingController();
   final configs = <Map<String, dynamic>>[];
   bool loading = false;
@@ -38,6 +40,7 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
   }
 
   Future<void> _refresh() async {
+    resetScrollToTopState();
     setState(() {
       loading = true;
       error = null;
@@ -63,6 +66,7 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
     if (code.isEmpty) {
       return;
     }
+    resetScrollToTopState();
     setState(() {
       loading = true;
       error = null;
@@ -304,19 +308,6 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
         title: Text('settings.cloudSync'.tr),
         actions: [
           IconButton(
-            tooltip: 'settings.uploadCloudConfig'.tr,
-            onPressed: loading || uploading || !serviceAlive
-                ? null
-                : _showUploadDialog,
-            icon: uploading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.cloud_upload_outlined),
-          ),
-          IconButton(
             tooltip: 'reload'.tr,
             onPressed: loading ? null : _refresh,
             icon: const Icon(Icons.refresh),
@@ -324,6 +315,7 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
         ],
       ),
       body: ListView(
+        controller: scrollController,
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -410,6 +402,41 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage> {
             ...configs.map(_buildConfigTile),
         ],
       ),
+      floatingActionButton: _buildFloatingActionButtons(),
+    );
+  }
+
+  Widget? _buildFloatingActionButtons() {
+    final canUpload = serviceAlive;
+    if (!shouldShowScrollToTop && !canUpload) {
+      return null;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (shouldShowScrollToTop) ...[
+          FloatingActionButton.small(
+            heroTag: 'cloudSyncScrollToTop',
+            tooltip: 'home.scrollToTop'.tr,
+            onPressed: scrollToTop,
+            child: const Icon(Icons.arrow_upward),
+          ),
+          if (canUpload) const SizedBox(height: 12),
+        ],
+        if (canUpload)
+          FloatingActionButton(
+            heroTag: 'cloudSyncUpload',
+            tooltip: 'settings.uploadCloudConfig'.tr,
+            onPressed: loading || uploading ? null : _showUploadDialog,
+            child: uploading
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cloud_upload_outlined),
+          ),
+      ],
     );
   }
 

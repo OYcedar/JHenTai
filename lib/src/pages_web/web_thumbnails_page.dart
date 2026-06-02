@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
 Map<String, dynamic> _thumbMapForThumbsPage(
@@ -33,7 +34,8 @@ int? _webDetailThumbnailColumnsSetting() {
   return value != null && value >= 2 && value <= 8 ? value : null;
 }
 
-class WebThumbnailsController extends GetxController {
+class WebThumbnailsController extends GetxController
+    with WebScrollToTopControllerMixin {
   late int gid;
   late String token;
 
@@ -45,7 +47,6 @@ class WebThumbnailsController extends GetxController {
   final galleryTitle = ''.obs;
   final isLoading = true.obs;
   final errorMessage = ''.obs;
-  final scrollController = ScrollController();
 
   int? _initialPageNo;
   int _crossAxisCount = 3;
@@ -54,6 +55,7 @@ class WebThumbnailsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    bindScrollToTop();
     gid = int.tryParse(Get.parameters['gid'] ?? '') ?? 0;
     token = Get.parameters['token'] ?? '';
     _initialPageNo = _readInitialPageNo();
@@ -159,7 +161,7 @@ class WebThumbnailsController extends GetxController {
 
   @override
   void onClose() {
-    scrollController.dispose();
+    unbindScrollToTop();
     super.onClose();
   }
 }
@@ -184,6 +186,15 @@ class WebThumbnailsPage extends GetView<WebThumbnailsController> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: Obx(
+        () => controller.showScrollToTop.value
+            ? FloatingActionButton.small(
+                tooltip: 'home.scrollToTop'.tr,
+                onPressed: controller.scrollToTop,
+                child: const Icon(Icons.vertical_align_top),
+              )
+            : const SizedBox.shrink(),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {

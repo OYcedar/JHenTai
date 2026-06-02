@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/utils/color_util.dart';
 
@@ -16,7 +17,8 @@ class WebTagSetsPage extends StatefulWidget {
   State<WebTagSetsPage> createState() => _WebTagSetsPageState();
 }
 
-class _WebTagSetsPageState extends State<WebTagSetsPage> {
+class _WebTagSetsPageState extends State<WebTagSetsPage>
+    with WebScrollToTopState<WebTagSetsPage> {
   int _tagSetNo = 1;
   bool _enableDefaultTagSet = true;
   int? _defaultTagSetNo;
@@ -48,6 +50,7 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
   }
 
   Future<void> _load() async {
+    resetScrollToTopState();
     setState(() {
       _loading = true;
       _error = null;
@@ -393,6 +396,7 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
               icon: const Icon(Icons.refresh), onPressed: _busy ? null : _load),
         ],
       ),
+      floatingActionButton: buildScrollToTopFab(),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
@@ -409,6 +413,7 @@ class _WebTagSetsPageState extends State<WebTagSetsPage> {
         (_data!['tagSets'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     return ListView(
+      controller: scrollController,
       padding: const EdgeInsets.all(16),
       children: [
         if (sets.length > 1)

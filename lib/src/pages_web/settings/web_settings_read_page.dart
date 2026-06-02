@@ -5,15 +5,25 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:jhentai/src/pages_web/web_reader_setting_keys.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
-class WebSettingsReadPage extends GetView<WebSettingsController> {
+class WebSettingsReadPage extends StatefulWidget {
   const WebSettingsReadPage({super.key});
+
+  @override
+  State<WebSettingsReadPage> createState() => _WebSettingsReadPageState();
+}
+
+class _WebSettingsReadPageState extends State<WebSettingsReadPage>
+    with WebScrollToTopState<WebSettingsReadPage> {
+  final controller = Get.find<WebSettingsController>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('settings.menuRead'.tr)),
       body: SingleChildScrollView(
+        controller: scrollController,
         padding: const EdgeInsets.all(16),
         child: Center(
           child: ConstrainedBox(
@@ -21,9 +31,9 @@ class WebSettingsReadPage extends GetView<WebSettingsController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Card(
+                const Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     child: WebReaderWheelSettingSection(),
                   ),
                 ),
@@ -63,7 +73,8 @@ class WebSettingsReadPage extends GetView<WebSettingsController> {
                                 labelText: 'settings.defaultFavoriteSlot'.tr,
                                 border: const OutlineInputBorder(),
                               ),
-                              value: controller.defaultFavoriteSlot.value,
+                              initialValue:
+                                  controller.defaultFavoriteSlot.value,
                               items: [
                                 DropdownMenuItem<int?>(
                                   value: null,
@@ -79,8 +90,7 @@ class WebSettingsReadPage extends GetView<WebSettingsController> {
                                   ),
                                 ),
                               ],
-                              onChanged: (v) =>
-                                  controller.setDefaultFavoriteSlot(v),
+                              onChanged: controller.setDefaultFavoriteSlot,
                             )),
                       ],
                     ),
@@ -91,6 +101,7 @@ class WebSettingsReadPage extends GetView<WebSettingsController> {
           ),
         ),
       ),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 }

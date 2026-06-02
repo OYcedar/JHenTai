@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
-class WebHistoryController extends GetxController {
+class WebHistoryController extends GetxController
+    with WebScrollToTopControllerMixin {
   static const pageSize = 100;
   static const viewModeStorageKey = 'jh_web_history_view_mode';
 
@@ -24,6 +26,7 @@ class WebHistoryController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    bindScrollToTop();
     final savedViewMode = web.window.localStorage.getItem(viewModeStorageKey);
     if (savedViewMode == 'grid' || savedViewMode == 'list') {
       viewMode.value = savedViewMode!;
@@ -39,6 +42,7 @@ class WebHistoryController extends GetxController {
   @override
   void onClose() {
     _searchWorker?.dispose();
+    unbindScrollToTop();
     searchController.dispose();
     super.onClose();
   }
@@ -96,6 +100,8 @@ class WebHistoryController extends GetxController {
       isLoadingMore.value = false;
     }
   }
+
+  Future<void> refreshCurrentPage() => loadHistory(offset: currentOffset.value);
 
   Future<void> deleteItem(int gid) async {
     await backendApiClient.deleteHistoryItem(gid);
@@ -156,6 +162,13 @@ class WebHistoryPage extends GetView<WebHistoryController> {
                     : () => _jumpToPage(context),
               )),
           Obx(() => IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'reload'.tr,
+                onPressed: controller.isLoading.value
+                    ? null
+                    : controller.refreshCurrentPage,
+              )),
+          Obx(() => IconButton(
                 icon: Icon(controller.viewMode.value == 'grid'
                     ? Icons.view_list
                     : Icons.grid_view),
@@ -168,6 +181,15 @@ class WebHistoryPage extends GetView<WebHistoryController> {
             onPressed: () => _confirmClear(context),
           ),
         ],
+      ),
+      floatingActionButton: Obx(
+        () => controller.showScrollToTop.value
+            ? FloatingActionButton.small(
+                tooltip: 'home.scrollToTop'.tr,
+                onPressed: controller.scrollToTop,
+                child: const Icon(Icons.vertical_align_top),
+              )
+            : const SizedBox.shrink(),
       ),
       body: Column(
         children: [
@@ -320,6 +342,7 @@ class WebHistoryPage extends GetView<WebHistoryController> {
 
   Widget _buildList(BuildContext context) {
     return ListView.builder(
+      controller: controller.scrollController,
       padding: const EdgeInsets.all(12),
       itemCount: controller.items.length + (controller.hasMore.value ? 1 : 0),
       itemBuilder: (context, index) {
@@ -405,6 +428,7 @@ class WebHistoryPage extends GetView<WebHistoryController> {
       final itemCount =
           controller.items.length + (controller.hasMore.value ? 1 : 0);
       return GridView.builder(
+        controller: controller.scrollController,
         padding: const EdgeInsets.all(10),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,

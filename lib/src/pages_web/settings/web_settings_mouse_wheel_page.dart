@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_reader_wheel.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:jhentai/src/pages_web/web_wheel_speed_controller.dart';
 
 class WebSettingsMouseWheelPage extends StatefulWidget {
@@ -13,7 +14,8 @@ class WebSettingsMouseWheelPage extends StatefulWidget {
       _WebSettingsMouseWheelPageState();
 }
 
-class _WebSettingsMouseWheelPageState extends State<WebSettingsMouseWheelPage> {
+class _WebSettingsMouseWheelPageState extends State<WebSettingsMouseWheelPage>
+    with WebScrollToTopState<WebSettingsMouseWheelPage> {
   double _wheelScrollSpeed = 5.0;
   bool _loaded = false;
 
@@ -53,6 +55,7 @@ class _WebSettingsMouseWheelPageState extends State<WebSettingsMouseWheelPage> {
     return Scaffold(
       appBar: AppBar(title: Text('settings.menuMouseWheel'.tr)),
       body: ListView(
+        controller: scrollController,
         padding: const EdgeInsets.all(16),
         children: [
           Text('settings.mouseWheelIntro'.tr,
@@ -112,6 +115,7 @@ class _WebSettingsMouseWheelPageState extends State<WebSettingsMouseWheelPage> {
           ),
         ],
       ),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_local_page.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:jhentai/src/pages_web/web_theme_controller.dart';
 import 'package:web/web.dart' as web;
 
@@ -15,7 +16,8 @@ class WebSettingsStylePage extends StatefulWidget {
   State<WebSettingsStylePage> createState() => _WebSettingsStylePageState();
 }
 
-class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
+class _WebSettingsStylePageState extends State<WebSettingsStylePage>
+    with WebScrollToTopState<WebSettingsStylePage> {
   static const detailThumbnailColumnsStorageKey =
       'jh_web_detail_thumbnail_columns';
   static const moveCoverToRightStorageKey = 'jh_web_move_cover_to_right';
@@ -84,7 +86,9 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
   }
 
   void _setListMode(String mode) {
-    if (!WebHomeController.listModes.contains(mode)) return;
+    if (!WebHomeController.listModes.contains(mode)) {
+      return;
+    }
     setState(() => listMode = mode);
     if (Get.isRegistered<WebHomeController>()) {
       Get.find<WebHomeController>().setListMode(mode);
@@ -172,8 +176,12 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
   }
 
   void _setPageListMode(String section, String? mode) {
-    if (!WebHomeController.defaultSections.contains(section)) return;
-    if (mode != null && !WebHomeController.listModes.contains(mode)) return;
+    if (!WebHomeController.defaultSections.contains(section)) {
+      return;
+    }
+    if (mode != null && !WebHomeController.listModes.contains(mode)) {
+      return;
+    }
     setState(() {
       if (mode == null) {
         pageListModes.remove(section);
@@ -211,6 +219,7 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
     return Scaffold(
       appBar: AppBar(title: Text('settings.menuStyle'.tr)),
       body: SingleChildScrollView(
+        controller: scrollController,
         padding: const EdgeInsets.all(16),
         child: Center(
           child: ConstrainedBox(
@@ -486,6 +495,7 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage> {
           ),
         ),
       ),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 }

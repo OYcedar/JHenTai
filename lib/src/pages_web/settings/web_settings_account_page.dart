@@ -2,9 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
-class WebSettingsAccountPage extends GetView<WebSettingsController> {
+class WebSettingsAccountPage extends StatefulWidget {
   const WebSettingsAccountPage({super.key});
+
+  @override
+  State<WebSettingsAccountPage> createState() => _WebSettingsAccountPageState();
+}
+
+class _WebSettingsAccountPageState extends State<WebSettingsAccountPage>
+    with WebScrollToTopState<WebSettingsAccountPage> {
+  final WebSettingsController controller = Get.find<WebSettingsController>();
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +24,7 @@ class WebSettingsAccountPage extends GetView<WebSettingsController> {
           return const Center(child: CircularProgressIndicator());
         }
         return SingleChildScrollView(
+          controller: scrollController,
           padding: const EdgeInsets.all(16),
           child: Center(
             child: ConstrainedBox(
@@ -31,6 +41,7 @@ class WebSettingsAccountPage extends GetView<WebSettingsController> {
           ),
         );
       }),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 

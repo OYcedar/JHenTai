@@ -4,17 +4,26 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:jhentai/src/pages_web/web_home_page.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:web/web.dart' as web;
 
-class WebSettingsPreferencePage extends StatelessWidget {
+class WebSettingsPreferencePage extends StatefulWidget {
   const WebSettingsPreferencePage({super.key});
 
+  @override
+  State<WebSettingsPreferencePage> createState() =>
+      _WebSettingsPreferencePageState();
+}
+
+class _WebSettingsPreferencePageState extends State<WebSettingsPreferencePage>
+    with WebScrollToTopState<WebSettingsPreferencePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('settings.menuPreference'.tr)),
       body: ListView(
+        controller: scrollController,
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           ListTile(
@@ -55,6 +64,7 @@ class WebSettingsPreferencePage extends StatelessWidget {
           ),
         ],
       ),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 }
@@ -522,7 +532,9 @@ class _WebDefaultSectionTileState extends State<_WebDefaultSectionTile> {
             DropdownMenuItem(value: value, child: Text(_label(value))),
         ],
         onChanged: (value) {
-          if (value == null) return;
+          if (value == null) {
+            return;
+          }
           setState(() => section = value);
           web.window.localStorage
               .setItem(WebHomeController.defaultSectionStorageKey, value);
@@ -538,32 +550,40 @@ class _WebLanguageSubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentLocale = Get.locale ?? const Locale('en', 'US');
-    final options = <MapEntry<Locale, String>>[
-      MapEntry(const Locale('en', 'US'), 'English'),
-      MapEntry(const Locale('zh', 'CN'), '简体中文'),
-      MapEntry(const Locale('zh', 'TW'), '繁體中文'),
-      MapEntry(const Locale('ko', 'KR'), '한국어'),
-      MapEntry(const Locale('pt', 'BR'), 'Português (BR)'),
-      MapEntry(const Locale('ru', 'RU'), 'Русский'),
+    const options = <MapEntry<Locale, String>>[
+      MapEntry(Locale('en', 'US'), 'English'),
+      MapEntry(Locale('zh', 'CN'), '简体中文'),
+      MapEntry(Locale('zh', 'TW'), '繁體中文'),
+      MapEntry(Locale('ko', 'KR'), '한국어'),
+      MapEntry(Locale('pt', 'BR'), 'Português (BR)'),
+      MapEntry(Locale('ru', 'RU'), 'Русский'),
     ];
 
     return Scaffold(
       appBar: AppBar(title: Text('settings.language'.tr)),
-      body: ListView(
-        children: options
-            .map((entry) => RadioListTile<String>(
-                  title: Text(entry.value),
-                  value: '${entry.key.languageCode}_${entry.key.countryCode}',
-                  groupValue:
-                      '${currentLocale.languageCode}_${currentLocale.countryCode}',
-                  onChanged: (v) {
-                    Get.updateLocale(entry.key);
-                    web.window.localStorage.setItem('jh_web_locale',
-                        '${entry.key.languageCode}_${entry.key.countryCode}');
-                    Get.back();
-                  },
-                ))
-            .toList(),
+      body: RadioGroup<String>(
+        groupValue:
+            '${currentLocale.languageCode}_${currentLocale.countryCode}',
+        onChanged: (value) {
+          if (value == null) {
+            return;
+          }
+          final locale = options
+              .firstWhere((entry) =>
+                  '${entry.key.languageCode}_${entry.key.countryCode}' == value)
+              .key;
+          Get.updateLocale(locale);
+          web.window.localStorage.setItem('jh_web_locale', value);
+          Get.back();
+        },
+        child: ListView(
+          children: options
+              .map((entry) => RadioListTile<String>(
+                    title: Text(entry.value),
+                    value: '${entry.key.languageCode}_${entry.key.countryCode}',
+                  ))
+              .toList(),
+        ),
       ),
     );
   }

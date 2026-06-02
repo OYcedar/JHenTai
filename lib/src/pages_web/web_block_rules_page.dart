@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
-class WebBlockRulesController extends GetxController {
+class WebBlockRulesController extends GetxController
+    with WebScrollToTopControllerMixin {
   final rules = <Map<String, dynamic>>[].obs;
   final isLoading = true.obs;
 
   @override
   void onInit() {
     super.onInit();
+    bindScrollToTop();
     loadRules();
   }
 
+  @override
+  void onClose() {
+    unbindScrollToTop();
+    super.onClose();
+  }
+
   Future<void> loadRules() async {
+    resetScrollToTopState();
     isLoading.value = true;
     try {
       final list = await backendApiClient.listBlockRules();
@@ -82,6 +92,15 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
           ),
         ],
       ),
+      floatingActionButton: Obx(
+        () => controller.showScrollToTop.value
+            ? FloatingActionButton.small(
+                tooltip: 'home.scrollToTop'.tr,
+                onPressed: controller.scrollToTop,
+                child: const Icon(Icons.vertical_align_top),
+              )
+            : const SizedBox.shrink(),
+      ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
@@ -104,6 +123,7 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
         final grouped = controller.groupedRules;
         final groupKeys = grouped.keys.toList();
         return ListView.builder(
+          controller: controller.scrollController,
           padding: const EdgeInsets.all(16),
           itemCount: groupKeys.length,
           itemBuilder: (context, i) {

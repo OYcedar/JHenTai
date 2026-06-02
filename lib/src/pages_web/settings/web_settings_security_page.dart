@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_app_lock.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:pinput/pinput.dart';
 import 'package:web/web.dart' as web;
 
@@ -13,7 +14,8 @@ class WebSettingsSecurityPage extends StatefulWidget {
       _WebSettingsSecurityPageState();
 }
 
-class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
+class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage>
+    with WebScrollToTopState<WebSettingsSecurityPage> {
   bool _checking = false;
   bool? _tokenValid;
   final WebAppLockController _lockController = Get.find<WebAppLockController>();
@@ -25,6 +27,7 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
     return Scaffold(
       appBar: AppBar(title: Text('settings.menuSecurity'.tr)),
       body: ListView(
+        controller: scrollController,
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -149,6 +152,7 @@ class _WebSettingsSecurityPageState extends State<WebSettingsSecurityPage> {
           ),
         ],
       ),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 

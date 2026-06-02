@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 enum _GraphSeg { allTime, year, month, day }
@@ -24,7 +25,8 @@ class WebStatsPage extends StatefulWidget {
   State<WebStatsPage> createState() => _WebStatsPageState();
 }
 
-class _WebStatsPageState extends State<WebStatsPage> {
+class _WebStatsPageState extends State<WebStatsPage>
+    with WebScrollToTopState<WebStatsPage> {
   _GraphSeg _seg = _GraphSeg.allTime;
   Map<String, dynamic>? _data;
   String? _error;
@@ -90,6 +92,7 @@ class _WebStatsPageState extends State<WebStatsPage> {
                   ),
                 )
               : _buildBody(context),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 
@@ -97,6 +100,7 @@ class _WebStatsPageState extends State<WebStatsPage> {
     final d = _data!;
     final total = d['totalVisits'];
     return ListView(
+      controller: scrollController,
       padding: const EdgeInsets.all(16),
       children: [
         Text('stats.totalVisits'.trParams({'n': '$total'}),
@@ -171,7 +175,7 @@ class _WebStatsPageState extends State<WebStatsPage> {
     };
     final list = ((d[key] as List?) ?? [])
         .whereType<Map>()
-        .map((item) => Map<String, dynamic>.from(item))
+        .map(Map<String, dynamic>.from)
         .toList();
     final points = list
         .map((e) => _StatPoint(
@@ -261,14 +265,20 @@ class _WebStatsPageState extends State<WebStatsPage> {
   }
 
   int _asInt(dynamic v) {
-    if (v is num) return v.toInt();
+    if (v is num) {
+      return v.toInt();
+    }
     return int.tryParse('$v') ?? 0;
   }
 
   String _fmtNum(dynamic v) {
     if (v is num) {
-      if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)}M';
-      if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(1)}K';
+      if (v >= 1e6) {
+        return '${(v / 1e6).toStringAsFixed(1)}M';
+      }
+      if (v >= 1e3) {
+        return '${(v / 1e3).toStringAsFixed(1)}K';
+      }
       return v.toStringAsFixed(0);
     }
     return '$v';

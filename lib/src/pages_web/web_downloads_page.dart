@@ -29,6 +29,8 @@ class WebDownloadsController extends GetxController
   static const _kViewMode = 'jh_web_downloads_view_mode';
   static const _kSearchMode = 'jh_web_downloads_search_mode';
 
+  final galleryScrollController = ScrollController();
+  final archiveScrollController = ScrollController();
   final searchQuery = ''.obs;
   final searchMode = WebDownloadSearchMode.simple.obs;
   final selectedCategoryFilter = Rxn<String>();
@@ -38,9 +40,14 @@ class WebDownloadsController extends GetxController
   final selectionMode = false.obs;
   final gallerySelectedGids = <int>{}.obs;
   final archiveSelectedGids = <int>{}.obs;
+  final activeTabIndex = 0.obs;
+  final showScrollToTop = false.obs;
 
   final galleryGroupExpanded = RxMap<String, bool>();
   final archiveGroupExpanded = RxMap<String, bool>();
+
+  double _lastGalleryScrollOffset = 0;
+  double _lastArchiveScrollOffset = 0;
 
   WebDownloadService get _svc => Get.find<WebDownloadService>();
 
@@ -133,6 +140,7 @@ class WebDownloadsController extends GetxController
 
   void setSearchMode(WebDownloadSearchMode mode) {
     searchMode.value = mode;
+    resetActiveScrollState();
     web.window.localStorage.setItem(
       _kSearchMode,
       mode == WebDownloadSearchMode.regex ? 'regex' : 'simple',
@@ -142,7 +150,27 @@ class WebDownloadsController extends GetxController
   void toggleViewMode() {
     final next = viewMode.value == 'grid' ? 'list' : 'grid';
     viewMode.value = next;
+    resetActiveScrollState();
     web.window.localStorage.setItem(_kViewMode, next);
+  }
+
+  void updateSearchQuery(String value) {
+    searchQuery.value = value;
+    resetActiveScrollState();
+  }
+
+  void setCategoryFilter(String? value) {
+    selectedCategoryFilter.value = value;
+    resetActiveScrollState();
+  }
+
+  void setActiveSort(WebDownloadSort value) {
+    if (tabController.index == 0) {
+      gallerySort.value = value;
+    } else {
+      archiveSort.value = value;
+    }
+    resetActiveScrollState();
   }
 
   Set<int> get activeSelectedGids =>
@@ -426,19 +454,89 @@ class WebDownloadsController extends GetxController
     }
   }
 
+  ScrollController get activeScrollController => tabController.index == 0
+      ? galleryScrollController
+      : archiveScrollController;
+
+  void _handleTabControllerChanged() {
+    activeTabIndex.value = tabController.index;
+    _syncCategoryFilterWithTab();
+    resetActiveScrollState();
+  }
+
+  void _onScroll() {
+    final controller = activeScrollController;
+    if (!controller.hasClients) {
+      showScrollToTop.value = false;
+      return;
+    }
+    final offset = controller.offset;
+    final isGalleryTab = tabController.index == 0;
+    final previous =
+        isGalleryTab ? _lastGalleryScrollOffset : _lastArchiveScrollOffset;
+    final isScrollingDown = offset > previous;
+    if (isGalleryTab) {
+      _lastGalleryScrollOffset = offset;
+    } else {
+      _lastArchiveScrollOffset = offset;
+    }
+    if (offset <= 300) {
+      showScrollToTop.value = false;
+      return;
+    }
+    showScrollToTop.value =
+        switch (WebPreferenceSettings.scrollToTopButtonMode) {
+      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
+      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
+      WebScrollToTopButtonMode.never => false,
+      WebScrollToTopButtonMode.always => true,
+    };
+  }
+
+  void resetActiveScrollState() {
+    if (tabController.index == 0) {
+      _lastGalleryScrollOffset = 0;
+    } else {
+      _lastArchiveScrollOffset = 0;
+    }
+    showScrollToTop.value = false;
+    final controller = activeScrollController;
+    if (controller.hasClients) {
+      controller.jumpTo(0);
+    }
+  }
+
+  Future<void> scrollToTop() async {
+    final controller = activeScrollController;
+    if (!controller.hasClients) {
+      return;
+    }
+    await controller.animateTo(
+      0,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   @override
   void onInit() {
     super.onInit();
     tabController = TabController(length: 2, vsync: this);
+    galleryScrollController.addListener(_onScroll);
+    archiveScrollController.addListener(_onScroll);
     _loadExpandedFromStorage();
     _loadViewModeFromStorage();
     _loadSearchModeFromStorage();
-    tabController.addListener(_syncCategoryFilterWithTab);
+    tabController.addListener(_handleTabControllerChanged);
   }
 
   @override
   void onClose() {
-    tabController.removeListener(_syncCategoryFilterWithTab);
+    tabController.removeListener(_handleTabControllerChanged);
+    galleryScrollController.removeListener(_onScroll);
+    archiveScrollController.removeListener(_onScroll);
+    galleryScrollController.dispose();
+    archiveScrollController.dispose();
     tabController.dispose();
     super.onClose();
   }
@@ -880,6 +978,15 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
           ],
         ),
       ),
+      floatingActionButton: Obx(
+        () => controller.showScrollToTop.value
+            ? FloatingActionButton.small(
+                tooltip: 'home.scrollToTop'.tr,
+                onPressed: controller.scrollToTop,
+                child: const Icon(Icons.vertical_align_top),
+              )
+            : const SizedBox.shrink(),
+      ),
       body: Obx(() {
         final svc = Get.find<WebDownloadService>();
         if (!svc.isLoaded.value) {
@@ -1186,7 +1293,7 @@ class _DownloadFilterBar extends StatelessWidget {
                                 horizontal: 12, vertical: 8),
                             border: const OutlineInputBorder(),
                           ),
-                          onChanged: (v) => controller.searchQuery.value = v,
+                          onChanged: controller.updateSearchQuery,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1224,11 +1331,8 @@ class _DownloadFilterBar extends StatelessWidget {
                             ),
                           ],
                           onChanged: (v) {
-                            if (v == null) return;
-                            if (galleryTab) {
-                              controller.gallerySort.value = v;
-                            } else {
-                              controller.archiveSort.value = v;
+                            if (v != null) {
+                              controller.setActiveSort(v);
                             }
                           },
                         ),
@@ -1258,8 +1362,7 @@ class _DownloadFilterBar extends StatelessWidget {
                           ),
                         ),
                       ],
-                      onChanged: (v) =>
-                          controller.selectedCategoryFilter.value = v,
+                      onChanged: controller.setCategoryFilter,
                     ),
                   ],
                 ],
@@ -1643,6 +1746,7 @@ Future<void> _clearDownloadGroup(
 }
 
 class _GroupedDownloadGrid extends StatelessWidget {
+  final ScrollController scrollController;
   final List<String> groups;
   final Map<String, List<Map<String, dynamic>>> byGroup;
   final Map<String, bool> expanded;
@@ -1652,6 +1756,7 @@ class _GroupedDownloadGrid extends StatelessWidget {
   final Widget Function(Map<String, dynamic> task) itemBuilder;
 
   const _GroupedDownloadGrid({
+    required this.scrollController,
     required this.groups,
     required this.byGroup,
     required this.expanded,
@@ -1677,6 +1782,7 @@ class _GroupedDownloadGrid extends StatelessWidget {
                             ? 3
                             : 2);
         return ListView(
+          controller: scrollController,
           padding: const EdgeInsets.all(8),
           children: [
             for (final group in groups) ...[
@@ -2320,6 +2426,7 @@ class _GalleryTaskList extends StatelessWidget {
       final groups = WebDownloadsController.sortedGroupNames(byGroup.keys);
       if (controller.viewMode.value == 'grid') {
         return _GroupedDownloadGrid(
+          scrollController: controller.galleryScrollController,
           groups: groups,
           byGroup: byGroup,
           expanded: controller.galleryGroupExpanded,
@@ -2342,6 +2449,7 @@ class _GalleryTaskList extends StatelessWidget {
         );
       }
       return ListView(
+        controller: controller.galleryScrollController,
         padding: const EdgeInsets.all(8),
         children: [
           for (final g in groups) ...[
@@ -2700,6 +2808,7 @@ class _ArchiveTaskList extends StatelessWidget {
       final groups = WebDownloadsController.sortedGroupNames(byGroup.keys);
       if (controller.viewMode.value == 'grid') {
         return _GroupedDownloadGrid(
+          scrollController: controller.archiveScrollController,
           groups: groups,
           byGroup: byGroup,
           expanded: controller.archiveGroupExpanded,
@@ -2722,6 +2831,7 @@ class _ArchiveTaskList extends StatelessWidget {
         );
       }
       return ListView(
+        controller: controller.archiveScrollController,
         padding: const EdgeInsets.all(8),
         children: [
           for (final g in groups) ...[

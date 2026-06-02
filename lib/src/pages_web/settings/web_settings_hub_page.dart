@@ -1,10 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 
 /// Settings hub: entries that are not duplicated from the home drawer (downloads, history, local).
-class WebSettingsPage extends GetView<WebSettingsController> {
+class WebSettingsPage extends StatefulWidget {
   const WebSettingsPage({super.key});
+
+  @override
+  State<WebSettingsPage> createState() => _WebSettingsPageState();
+}
+
+class _WebSettingsPageState extends State<WebSettingsPage> {
+  final WebSettingsController controller = Get.find<WebSettingsController>();
+  final scrollController = ScrollController();
+  bool showScrollToTop = false;
+  double lastScrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_onScroll);
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  void _setShowScrollToTop(bool value) {
+    if (!mounted || showScrollToTop == value) {
+      return;
+    }
+    setState(() => showScrollToTop = value);
+  }
+
+  void _onScroll() {
+    if (!scrollController.hasClients) {
+      _setShowScrollToTop(false);
+      return;
+    }
+    final offset = scrollController.offset;
+    final isScrollingDown = offset > lastScrollOffset;
+    lastScrollOffset = offset;
+    if (offset <= 300) {
+      _setShowScrollToTop(false);
+      return;
+    }
+    final show = switch (WebPreferenceSettings.scrollToTopButtonMode) {
+      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
+      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
+      WebScrollToTopButtonMode.never => false,
+      WebScrollToTopButtonMode.always => true,
+    };
+    _setShowScrollToTop(show);
+  }
+
+  Future<void> _scrollToTop() async {
+    if (!scrollController.hasClients) {
+      return;
+    }
+    await scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +78,7 @@ class WebSettingsPage extends GetView<WebSettingsController> {
           return const Center(child: CircularProgressIndicator());
         }
         return ListView(
+          controller: scrollController,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           children: [
             ListTile(
@@ -24,7 +88,9 @@ class WebSettingsPage extends GetView<WebSettingsController> {
               onTap: () => Get.toNamed('/web/settings/account'),
             ),
             Obx(() {
-              if (!controller.isLoggedIn.value) return const SizedBox.shrink();
+              if (!controller.isLoggedIn.value) {
+                return const SizedBox.shrink();
+              }
               return ListTile(
                 leading: const Icon(Icons.mood),
                 title: Text('settings.menuEH'.tr),
@@ -107,6 +173,13 @@ class WebSettingsPage extends GetView<WebSettingsController> {
           ],
         );
       }),
+      floatingActionButton: showScrollToTop
+          ? FloatingActionButton.small(
+              tooltip: 'home.scrollToTop'.tr,
+              onPressed: _scrollToTop,
+              child: const Icon(Icons.arrow_upward),
+            )
+          : null,
     );
   }
 }

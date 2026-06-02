@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/web_downloads_page.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
 class WebSettingsPerformancePage extends StatefulWidget {
   const WebSettingsPerformancePage({super.key});
@@ -11,8 +12,8 @@ class WebSettingsPerformancePage extends StatefulWidget {
       _WebSettingsPerformancePageState();
 }
 
-class _WebSettingsPerformancePageState
-    extends State<WebSettingsPerformancePage> {
+class _WebSettingsPerformancePageState extends State<WebSettingsPerformancePage>
+    with WebScrollToTopState<WebSettingsPerformancePage> {
   late final TextEditingController _maxGalleryNumController;
 
   @override
@@ -34,6 +35,7 @@ class _WebSettingsPerformancePageState
     return Scaffold(
       appBar: AppBar(title: Text('settings.menuPerformance'.tr)),
       body: ListView(
+        controller: scrollController,
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -93,12 +95,15 @@ class _WebSettingsPerformancePageState
           ),
         ],
       ),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 
   void _save() {
     final value = int.tryParse(_maxGalleryNumController.text.trim());
-    if (value == null) return;
+    if (value == null) {
+      return;
+    }
     WebDownloadsController.setMaxGalleryNum4Animation(value);
     _maxGalleryNumController.text = '$value';
     Get.snackbar(
@@ -109,7 +114,7 @@ class _WebSettingsPerformancePageState
   }
 
   void _reset() {
-    final value = WebDownloadsController.defaultMaxGalleryNum4Animation;
+    const value = WebDownloadsController.defaultMaxGalleryNum4Animation;
     WebDownloadsController.setMaxGalleryNum4Animation(value);
     _maxGalleryNumController.text = '$value';
     Get.snackbar(

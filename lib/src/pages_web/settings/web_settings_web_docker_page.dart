@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
 /// Web-only / Docker operations hub.
-class WebSettingsWebDockerPage extends GetView<WebSettingsController> {
+class WebSettingsWebDockerPage extends StatefulWidget {
   const WebSettingsWebDockerPage({super.key});
+
+  @override
+  State<WebSettingsWebDockerPage> createState() =>
+      _WebSettingsWebDockerPageState();
+}
+
+class _WebSettingsWebDockerPageState extends State<WebSettingsWebDockerPage>
+    with WebScrollToTopState<WebSettingsWebDockerPage> {
+  final WebSettingsController controller = Get.find<WebSettingsController>();
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +26,7 @@ class WebSettingsWebDockerPage extends GetView<WebSettingsController> {
         }
         final info = controller.serverInfo;
         return ListView(
+          controller: scrollController,
           padding: const EdgeInsets.all(16),
           children: [
             Text(
@@ -70,6 +81,7 @@ class WebSettingsWebDockerPage extends GetView<WebSettingsController> {
           ],
         );
       }),
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 

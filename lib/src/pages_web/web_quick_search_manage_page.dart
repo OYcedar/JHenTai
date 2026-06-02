@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/consts/locale_consts.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
 /// Manage quick searches stored on the server (same format as [WebHomeController.saveCurrentAsQuickSearch]).
 class WebQuickSearchManagePage extends StatefulWidget {
@@ -14,7 +15,8 @@ class WebQuickSearchManagePage extends StatefulWidget {
       _WebQuickSearchManagePageState();
 }
 
-class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
+class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage>
+    with WebScrollToTopState<WebQuickSearchManagePage> {
   List<Map<String, dynamic>> _items = [];
   bool _loading = true;
   bool _savingOrder = false;
@@ -57,6 +59,7 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
   }
 
   Future<void> _load() async {
+    resetScrollToTopState();
     setState(() {
       _loading = true;
       _error = null;
@@ -354,9 +357,24 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
               onPressed: _loading || _savingOrder ? null : _load),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        child: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (shouldShowScrollToTop) ...[
+            FloatingActionButton.small(
+              heroTag: 'quickSearchScrollToTop',
+              tooltip: 'home.scrollToTop'.tr,
+              onPressed: scrollToTop,
+              child: const Icon(Icons.vertical_align_top),
+            ),
+            const SizedBox(height: 12),
+          ],
+          FloatingActionButton(
+            heroTag: 'quickSearchAdd',
+            onPressed: _showAddDialog,
+            child: const Icon(Icons.add),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -384,6 +402,7 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage> {
                       ),
                     )
                   : ReorderableListView.builder(
+                      scrollController: scrollController,
                       padding: const EdgeInsets.all(16),
                       itemCount: _items.length,
                       onReorder: _savingOrder ? (_, __) {} : _reorder,

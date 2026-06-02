@@ -3,9 +3,72 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 
-class WebSettingsNetworkPage extends GetView<WebSettingsController> {
+class WebSettingsNetworkPage extends StatefulWidget {
   const WebSettingsNetworkPage({super.key});
+
+  @override
+  State<WebSettingsNetworkPage> createState() => _WebSettingsNetworkPageState();
+}
+
+class _WebSettingsNetworkPageState extends State<WebSettingsNetworkPage> {
+  final WebSettingsController controller = Get.find<WebSettingsController>();
+  final scrollController = ScrollController();
+  bool showScrollToTop = false;
+  double lastScrollOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    scrollController.removeListener(_onScroll);
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  void _setShowScrollToTop(bool value) {
+    if (!mounted || showScrollToTop == value) {
+      return;
+    }
+    setState(() => showScrollToTop = value);
+  }
+
+  void _onScroll() {
+    if (!scrollController.hasClients) {
+      _setShowScrollToTop(false);
+      return;
+    }
+    final offset = scrollController.offset;
+    final isScrollingDown = offset > lastScrollOffset;
+    lastScrollOffset = offset;
+    if (offset <= 300) {
+      _setShowScrollToTop(false);
+      return;
+    }
+    final show = switch (WebPreferenceSettings.scrollToTopButtonMode) {
+      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
+      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
+      WebScrollToTopButtonMode.never => false,
+      WebScrollToTopButtonMode.always => true,
+    };
+    _setShowScrollToTop(show);
+  }
+
+  Future<void> _scrollToTop() async {
+    if (!scrollController.hasClients) {
+      return;
+    }
+    await scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +98,7 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
         return RefreshIndicator(
           onRefresh: controller.refreshStatus,
           child: ListView(
+            controller: scrollController,
             padding: const EdgeInsets.all(16),
             children: [
               _networkNote(context),
@@ -50,6 +114,13 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
           ),
         );
       }),
+      floatingActionButton: showScrollToTop
+          ? FloatingActionButton.small(
+              tooltip: 'home.scrollToTop'.tr,
+              onPressed: _scrollToTop,
+              child: const Icon(Icons.arrow_upward),
+            )
+          : null,
     );
   }
 
@@ -319,7 +390,7 @@ class WebSettingsNetworkPage extends GetView<WebSettingsController> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Get.back(),
+              onPressed: Get.back,
               child: Text('common.cancel'.tr),
             ),
             FilledButton(

@@ -14,6 +14,7 @@ import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:jhentai/src/utils/date_util.dart';
 import 'package:html/dom.dart' as html_dom;
 import 'package:html/parser.dart' as html_parser;
@@ -85,7 +86,8 @@ String _webPreferredTime(String value) {
   }
 }
 
-class WebGalleryDetailController extends GetxController {
+class WebGalleryDetailController extends GetxController
+    with WebScrollToTopControllerMixin {
   late int gid;
   late String token;
 
@@ -204,9 +206,16 @@ class WebGalleryDetailController extends GetxController {
     super.onInit();
     gid = _paramGid ?? (int.tryParse(Get.parameters['gid'] ?? '') ?? 0);
     token = _paramToken ?? (Get.parameters['token'] ?? '');
+    bindScrollToTop();
     _loadDetail().then((_) => _loadReadProgress());
     _loadSiteAndFavNames();
     unawaited(Get.find<WebWatchedTagStylesController>().refresh());
+  }
+
+  @override
+  void onClose() {
+    unbindScrollToTop();
+    super.onClose();
   }
 
   Future<void> _loadSiteAndFavNames() async {
@@ -766,6 +775,13 @@ class WebGalleryDetailPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: embedded ? Colors.transparent : null,
         appBar: embedded ? null : _buildAppBar(context),
+        floatingActionButton: Obx(() => controller.showScrollToTop.value
+            ? FloatingActionButton.small(
+                tooltip: 'home.scrollToTop'.tr,
+                onPressed: controller.scrollToTop,
+                child: const Icon(Icons.vertical_align_top),
+              )
+            : const SizedBox.shrink()),
         body: Obx(() {
           if (controller.isLoading.value) {
             return const Center(child: CircularProgressIndicator());
@@ -1453,6 +1469,7 @@ class WebGalleryDetailPage extends StatelessWidget {
     return RefreshIndicator(
       onRefresh: () => controller.refreshDetail(),
       child: SingleChildScrollView(
+        controller: controller.scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         child: Center(

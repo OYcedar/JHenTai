@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
-class WebLocalController extends GetxController {
+class WebLocalController extends GetxController
+    with WebScrollToTopControllerMixin {
   static const viewModeStorageKey = 'jh_web_local_view_mode';
   static const gridColumnsStorageKey = 'jh_web_local_grid_columns';
 
@@ -24,6 +26,7 @@ class WebLocalController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    bindScrollToTop();
     final savedViewMode = web.window.localStorage.getItem(viewModeStorageKey);
     if (savedViewMode == 'grid' || savedViewMode == 'list') {
       viewMode.value = savedViewMode!;
@@ -33,6 +36,7 @@ class WebLocalController extends GetxController {
 
   @override
   void onClose() {
+    unbindScrollToTop();
     searchTextController.dispose();
     super.onClose();
   }
@@ -125,7 +129,9 @@ class WebLocalController extends GetxController {
 
   Future<void> deleteGallery(Map<String, dynamic> gallery) async {
     final path = gallery['path'] as String? ?? '';
-    if (path.isEmpty) return;
+    if (path.isEmpty) {
+      return;
+    }
     try {
       await backendApiClient.deleteLocalGallery(path);
       galleries.removeWhere((item) => item['path'] == path);
@@ -143,7 +149,9 @@ class WebLocalController extends GetxController {
 
   List<Map<String, dynamic>> get filteredGalleries {
     final q = searchQuery.value.trim().toLowerCase();
-    if (q.isEmpty) return galleries.toList();
+    if (q.isEmpty) {
+      return galleries.toList();
+    }
     return galleries.where((gallery) {
       final title = gallery['title']?.toString().toLowerCase() ?? '';
       final path = gallery['path']?.toString().toLowerCase() ?? '';
@@ -178,6 +186,7 @@ class WebLocalController extends GetxController {
   void toggleViewMode() {
     final next = viewMode.value == 'grid' ? 'list' : 'grid';
     viewMode.value = next;
+    _resetScrollState();
     web.window.localStorage.setItem(viewModeStorageKey, next);
   }
 
@@ -197,31 +206,55 @@ class WebLocalController extends GetxController {
 
   void enterDirectory(String path) {
     currentPath.value = _normalizePath(path);
+    _resetScrollState();
   }
 
   void goUpDirectory() {
     final current = currentPath.value;
-    if (current.isEmpty) return;
+    if (current.isEmpty) {
+      return;
+    }
     if (roots.contains(current)) {
       currentPath.value = '';
+      _resetScrollState();
       return;
     }
     final parent = _parentPath(current);
     currentPath.value = _isAtOrUnderRoot(parent) ? parent : '';
+    _resetScrollState();
+  }
+
+  void updateSearchQuery(String value) {
+    searchQuery.value = value;
+    _resetScrollState();
+  }
+
+  void clearSearchQuery() {
+    searchTextController.clear();
+    searchQuery.value = '';
+    _resetScrollState();
+  }
+
+  void _resetScrollState() {
+    resetScrollToTopState();
   }
 
   List<String> get childDirectories {
     final dirs = <String>{};
     final current = currentPath.value;
     if (current.isEmpty) {
-      if (roots.isNotEmpty) return roots.toList();
+      if (roots.isNotEmpty) {
+        return roots.toList();
+      }
       dirs.addAll(
           galleries.map((g) => _topDerivedRoot(g['path']?.toString() ?? '')));
     } else {
       for (final gallery in galleries) {
         final galleryPath = _normalizePath(gallery['path']?.toString() ?? '');
         final child = _nextChildDirectory(current, galleryPath);
-        if (child != null) dirs.add(child);
+        if (child != null) {
+          dirs.add(child);
+        }
       }
     }
     return dirs.where((path) => path.isNotEmpty).toList()
@@ -230,7 +263,9 @@ class WebLocalController extends GetxController {
 
   List<Map<String, dynamic>> get currentDirectoryGalleries {
     final current = currentPath.value;
-    if (current.isEmpty) return const [];
+    if (current.isEmpty) {
+      return const [];
+    }
     final items = galleries
         .where((gallery) =>
             _parentPath(gallery['path']?.toString() ?? '') == current)
@@ -243,7 +278,9 @@ class WebLocalController extends GetxController {
   }
 
   bool _isCurrentPathStillVisible(String path) {
-    if (roots.contains(path)) return true;
+    if (roots.contains(path)) {
+      return true;
+    }
     return galleries.any((gallery) {
       final galleryPath = _normalizePath(gallery['path']?.toString() ?? '');
       return galleryPath == path || galleryPath.startsWith('$path/');
@@ -251,39 +288,59 @@ class WebLocalController extends GetxController {
   }
 
   bool _isAtOrUnderRoot(String path) {
-    if (path.isEmpty) return false;
-    if (roots.isEmpty) return true;
+    if (path.isEmpty) {
+      return false;
+    }
+    if (roots.isEmpty) {
+      return true;
+    }
     return roots.any((root) => path == root || path.startsWith('$root/'));
   }
 
   static String? _nextChildDirectory(String parent, String galleryPath) {
-    if (parent.isEmpty || galleryPath.isEmpty) return null;
-    if (!galleryPath.startsWith('$parent/')) return null;
+    if (parent.isEmpty || galleryPath.isEmpty) {
+      return null;
+    }
+    if (!galleryPath.startsWith('$parent/')) {
+      return null;
+    }
     final rest = galleryPath.substring(parent.length + 1);
-    if (rest.isEmpty || !rest.contains('/')) return null;
+    if (rest.isEmpty || !rest.contains('/')) {
+      return null;
+    }
     return '$parent/${rest.split('/').first}';
   }
 
   static String _topDerivedRoot(String path) {
     final parent = _parentPath(path);
-    if (parent.isEmpty) return '';
+    if (parent.isEmpty) {
+      return '';
+    }
     final parts = parent.split('/').where((p) => p.isNotEmpty).toList();
-    if (parts.length <= 2) return parent;
+    if (parts.length <= 2) {
+      return parent;
+    }
     return '/${parts.take(2).join('/')}';
   }
 
   static String _parentPath(String path) {
     final normalized = _normalizePath(path);
     final index = normalized.lastIndexOf('/');
-    if (index <= 0) return normalized;
+    if (index <= 0) {
+      return normalized;
+    }
     return normalized.substring(0, index);
   }
 
   static String _displayPath(String path) {
     final normalized = _normalizePath(path);
-    if (normalized.isEmpty) return '/';
+    if (normalized.isEmpty) {
+      return '/';
+    }
     final parts = normalized.split('/').where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return normalized;
+    if (parts.isEmpty) {
+      return normalized;
+    }
     final tail = parts.length >= 2
         ? '${parts[parts.length - 2]}/${parts.last}'
         : parts.last;
@@ -303,17 +360,23 @@ class WebLocalController extends GetxController {
     for (var i = 0; i < len; i++) {
       final aPart = aParts[i].group(0)!;
       final bPart = bParts[i].group(0)!;
-      if (aPart == bPart) continue;
+      if (aPart == bPart) {
+        continue;
+      }
 
       final aNum = int.tryParse(aPart);
       final bNum = int.tryParse(bPart);
       if (aNum != null && bNum != null) {
         final cmp = aNum.compareTo(bNum);
-        if (cmp != 0) return cmp;
+        if (cmp != 0) {
+          return cmp;
+        }
       }
 
       final cmp = aPart.compareTo(bPart);
-      if (cmp != 0) return cmp;
+      if (cmp != 0) {
+        return cmp;
+      }
     }
 
     return aParts.length.compareTo(bParts.length);
@@ -361,6 +424,15 @@ class WebLocalPage extends GetView<WebLocalController> {
                   icon: const Icon(Icons.refresh),
                   onPressed: controller.refreshGalleries)),
         ],
+      ),
+      floatingActionButton: Obx(
+        () => controller.showScrollToTop.value
+            ? FloatingActionButton.small(
+                tooltip: 'home.scrollToTop'.tr,
+                onPressed: controller.scrollToTop,
+                child: const Icon(Icons.vertical_align_top),
+              )
+            : const SizedBox.shrink(),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -431,15 +503,12 @@ class WebLocalPage extends GetView<WebLocalController> {
               ? const SizedBox.shrink()
               : IconButton(
                   icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    controller.searchTextController.clear();
-                    controller.searchQuery.value = '';
-                  },
+                  onPressed: controller.clearSearchQuery,
                 )),
           border: const OutlineInputBorder(),
           isDense: true,
         ),
-        onChanged: (value) => controller.searchQuery.value = value,
+        onChanged: controller.updateSearchQuery,
       ),
     );
   }
@@ -607,7 +676,9 @@ class WebLocalPage extends GetView<WebLocalController> {
   }
 
   void _copyLocalPath(String path) {
-    if (path.isEmpty) return;
+    if (path.isEmpty) {
+      return;
+    }
     Clipboard.setData(ClipboardData(text: path));
     Get.snackbar('hasCopiedToClipboard'.tr, path,
         snackPosition: SnackPosition.BOTTOM);
@@ -632,6 +703,7 @@ class WebLocalPage extends GetView<WebLocalController> {
         return Center(child: Text('home.noGalleries'.tr));
       }
       return ListView(
+        controller: controller.scrollController,
         padding: const EdgeInsets.all(8),
         children: [
           for (final entry in groups.entries)
@@ -670,6 +742,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                                   ? 3
                                   : 2);
               return GridView(
+                controller: controller.scrollController,
                 padding: const EdgeInsets.all(8),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columns,
@@ -707,6 +780,7 @@ class WebLocalPage extends GetView<WebLocalController> {
     }
 
     return ListView(
+      controller: controller.scrollController,
       padding: const EdgeInsets.all(8),
       children: [
         if (currentPath.isNotEmpty)
@@ -887,6 +961,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                           ? 3
                           : 2);
       return GridView.builder(
+        controller: controller.scrollController,
         padding: const EdgeInsets.all(10),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,
