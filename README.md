@@ -16,6 +16,8 @@ This repository is a **Docker/Web-only fork** of JHenTai. It focuses on the brow
 
 Native Android, iOS, Windows, macOS, and Linux app releases are **not maintained or published by this fork**. If you need the native app packages, please use the upstream JHenTai project. The upstream native-app content below is kept only as historical/reference material.
 
+Web/App experience parity is tracked in [docs/WEB_APP_PARITY_AUDIT.md](docs/WEB_APP_PARITY_AUDIT.md). New parity work should be handled as one scoped theme package rather than scattered small UI-feedback commits.
+
 ## Description
 
 A Docker/Web manga client for E-Hentai, intended for NAS, servers, and browser access from any device.
@@ -77,7 +79,7 @@ JHenTai can also be deployed as a **Docker container** and accessed via a web br
 Docker examples pin **`x.y.z-hhh`** tags (`hhh` = three lowercase hex digits, fork revision 0–4095; see `docker/fork_revision`). The publish scripts also push `latest`, but README / compose examples must use explicit tags. Every Docker Hub publish must increment `docker/fork_revision` and update the README image tag; the publish scripts do this automatically before pushing.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.12-14b
+docker pull hemumoe/jhentai:8.0.12-14c
 ```
 
 **Quick start with docker-compose:**
@@ -85,7 +87,7 @@ docker pull hemumoe/jhentai:8.0.12-14b
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.12-14b
+    image: hemumoe/jhentai:8.0.12-14c
     container_name: jhentai
     ports:
       - "8080:8080"
