@@ -76,6 +76,8 @@ class WebLayoutController extends GetxController {
 class WebDownloadService extends GetxController {
   final galleryTasks = <int, Map<String, dynamic>>{}.obs;
   final archiveTasks = <int, Map<String, dynamic>>{}.obs;
+  final galleryTasksVersion = 0.obs;
+  final archiveTasksVersion = 0.obs;
   final isLoaded = false.obs;
 
   WebSocketChannel? _wsChannel;
@@ -116,6 +118,7 @@ class WebDownloadService extends GetxController {
         gMap[gid] = task;
       }
       galleryTasks.value = gMap;
+      galleryTasksVersion.value++;
 
       final aTasks = await backendApiClient.listArchiveDownloads();
       final aMap = <int, Map<String, dynamic>>{};
@@ -125,6 +128,7 @@ class WebDownloadService extends GetxController {
         aMap[gid] = task;
       }
       archiveTasks.value = aMap;
+      archiveTasksVersion.value++;
       isLoaded.value = true;
     } catch (e) {
       debugPrint('WebDownloadService load failed: $e');
@@ -176,9 +180,11 @@ class WebDownloadService extends GetxController {
       if (eventType == 'gallery_download_progress') {
         final gid = data['gid'] as int;
         galleryTasks[gid] = data;
+        galleryTasksVersion.value++;
       } else if (eventType == 'archive_download_progress') {
         final gid = data['gid'] as int;
         archiveTasks[gid] = data;
+        archiveTasksVersion.value++;
       } else if (eventType == 'download_removed') {
         _loadTasks();
       }

@@ -24,6 +24,12 @@ class WebLocalController extends GetxController
   final isScanning = false.obs;
   final errorMessage = ''.obs;
 
+  int _dataVersion = 0;
+  _LocalFilteredCache? _filteredCache;
+  _LocalGroupedCache? _groupedCache;
+  _LocalPathListCache? _childDirectoriesCache;
+  _LocalPathGalleryCache? _currentDirectoryGalleriesCache;
+
   @override
   void onInit() {
     super.onInit();
@@ -61,6 +67,7 @@ class WebLocalController extends GetxController
         ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
 
       galleries.value = galleryData.cast<Map<String, dynamic>>();
+      _markDataChanged();
       if (currentPath.value.isNotEmpty &&
           !_isCurrentPathStillVisible(currentPath.value)) {
         currentPath.value = '';
@@ -160,6 +167,7 @@ class WebLocalController extends GetxController
       await backendApiClient.deleteLocalGallery(path);
       galleries.removeWhere((item) => item['path'] == path);
       galleries.refresh();
+      _markDataChanged();
       Get.snackbar('common.success'.tr, 'local.deleteSuccess'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
@@ -173,17 +181,31 @@ class WebLocalController extends GetxController
 
   List<Map<String, dynamic>> get filteredGalleries {
     final q = searchQuery.value.trim().toLowerCase();
-    if (q.isEmpty) {
-      return galleries.toList();
+    final cached = _filteredCache;
+    if (cached != null && cached.version == _dataVersion && cached.query == q) {
+      return cached.items;
     }
-    return galleries.where((gallery) {
+    if (q.isEmpty) {
+      final items = List<Map<String, dynamic>>.unmodifiable(galleries);
+      _filteredCache = _LocalFilteredCache(_dataVersion, q, items);
+      return items;
+    }
+    final items = galleries.where((gallery) {
       final title = gallery['title']?.toString().toLowerCase() ?? '';
       final path = gallery['path']?.toString().toLowerCase() ?? '';
       return title.contains(q) || path.contains(q);
     }).toList();
+    final result = List<Map<String, dynamic>>.unmodifiable(items);
+    _filteredCache = _LocalFilteredCache(_dataVersion, q, result);
+    return result;
   }
 
   Map<String, List<Map<String, dynamic>>> get groupedGalleries {
+    final q = searchQuery.value.trim().toLowerCase();
+    final cached = _groupedCache;
+    if (cached != null && cached.version == _dataVersion && cached.query == q) {
+      return cached.groups;
+    }
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final gallery in filteredGalleries) {
       final path = gallery['path']?.toString() ?? '';
@@ -192,14 +214,18 @@ class WebLocalController extends GetxController
     }
     final sortedKeys = groups.keys.toList()
       ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
-    return {
+    final result = {
       for (final key in sortedKeys)
-        key: (groups[key]!
-          ..sort((a, b) => _naturalCompare(
-                a['title']?.toString() ?? '',
-                b['title']?.toString() ?? '',
-              )))
+        key: List<Map<String, dynamic>>.unmodifiable(groups[key]!
+          ..sort(
+            (a, b) => _naturalCompare(
+              a['title']?.toString() ?? '',
+              b['title']?.toString() ?? '',
+            ),
+          ))
     };
+    _groupedCache = _LocalGroupedCache(_dataVersion, q, result);
+    return result;
   }
 
   void toggleGroup(String group) {
@@ -264,11 +290,20 @@ class WebLocalController extends GetxController
   }
 
   List<String> get childDirectories {
-    final dirs = <String>{};
     final current = currentPath.value;
+    final cached = _childDirectoriesCache;
+    if (cached != null &&
+        cached.version == _dataVersion &&
+        cached.currentPath == current) {
+      return cached.paths;
+    }
+    final dirs = <String>{};
     if (current.isEmpty) {
       if (roots.isNotEmpty) {
-        return roots.toList();
+        final paths = List<String>.unmodifiable(roots);
+        _childDirectoriesCache =
+            _LocalPathListCache(_dataVersion, current, paths);
+        return paths;
       }
       dirs.addAll(
           galleries.map((g) => _topDerivedRoot(g['path']?.toString() ?? '')));
@@ -281,8 +316,11 @@ class WebLocalController extends GetxController
         }
       }
     }
-    return dirs.where((path) => path.isNotEmpty).toList()
+    final paths = dirs.where((path) => path.isNotEmpty).toList()
       ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
+    final result = List<String>.unmodifiable(paths);
+    _childDirectoriesCache = _LocalPathListCache(_dataVersion, current, result);
+    return result;
   }
 
   List<Map<String, dynamic>> get currentDirectoryGalleries {
@@ -290,15 +328,32 @@ class WebLocalController extends GetxController
     if (current.isEmpty) {
       return const [];
     }
+    final cached = _currentDirectoryGalleriesCache;
+    if (cached != null &&
+        cached.version == _dataVersion &&
+        cached.currentPath == current) {
+      return cached.items;
+    }
     final items = galleries
         .where((gallery) =>
             _parentPath(gallery['path']?.toString() ?? '') == current)
         .toList();
-    return items
-      ..sort((a, b) => _naturalCompare(
-            a['title']?.toString() ?? '',
-            b['title']?.toString() ?? '',
-          ));
+    items.sort((a, b) => _naturalCompare(
+          a['title']?.toString() ?? '',
+          b['title']?.toString() ?? '',
+        ));
+    final result = List<Map<String, dynamic>>.unmodifiable(items);
+    _currentDirectoryGalleriesCache =
+        _LocalPathGalleryCache(_dataVersion, current, result);
+    return result;
+  }
+
+  void _markDataChanged() {
+    _dataVersion++;
+    _filteredCache = null;
+    _groupedCache = null;
+    _childDirectoriesCache = null;
+    _currentDirectoryGalleriesCache = null;
   }
 
   bool _isCurrentPathStillVisible(String path) {
@@ -405,6 +460,42 @@ class WebLocalController extends GetxController
 
     return aParts.length.compareTo(bParts.length);
   }
+}
+
+class _LocalFilteredCache {
+  const _LocalFilteredCache(this.version, this.query, this.items);
+
+  final int version;
+  final String query;
+  final List<Map<String, dynamic>> items;
+}
+
+class _LocalGroupedCache {
+  _LocalGroupedCache(
+    this.version,
+    this.query,
+    Map<String, List<Map<String, dynamic>>> groups,
+  ) : groups = Map.unmodifiable(groups);
+
+  final int version;
+  final String query;
+  final Map<String, List<Map<String, dynamic>>> groups;
+}
+
+class _LocalPathListCache {
+  const _LocalPathListCache(this.version, this.currentPath, this.paths);
+
+  final int version;
+  final String currentPath;
+  final List<String> paths;
+}
+
+class _LocalPathGalleryCache {
+  const _LocalPathGalleryCache(this.version, this.currentPath, this.items);
+
+  final int version;
+  final String currentPath;
+  final List<Map<String, dynamic>> items;
 }
 
 class WebLocalPage extends GetView<WebLocalController> {
