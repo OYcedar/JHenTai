@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+import 'dart:js_interop';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,6 +6,7 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_image_client_log.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:web/web.dart' as web;
 
 /// Loads an EH/EX CDN image through the API proxy. Uses POST with body when the GET URL would be too long
 /// for reverse proxies (Unraid + Nginx, etc.).
@@ -53,7 +54,9 @@ class WebProxiedImage extends StatefulWidget {
 }
 
 class _WebProxiedImageState extends State<WebProxiedImage> {
-  Future<Uint8List>? _postFuture;
+  Future<String>? _postObjectUrlFuture;
+  String? _postObjectUrl;
+  int _postGeneration = 0;
 
   @override
   void initState() {
@@ -71,19 +74,60 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
   }
 
   void _syncPostFuture() {
+    final generation = ++_postGeneration;
+    _revokePostObjectUrl();
     if (backendApiClient.shouldProxyImageUsePost(widget.sourceUrl)) {
       webImageClientLogVerbose(
           'WebProxiedImage POST path urlLen=${widget.sourceUrl.length}');
-      _postFuture = backendApiClient.fetchProxiedImageBytes(
+      _postObjectUrlFuture = _fetchPostObjectUrl(
         widget.sourceUrl,
         maxBytes: widget.maxBytes,
+        generation: generation,
       );
     } else {
       webImageClientLogVerbose(
         'WebProxiedImage GET path proxyLen=${backendApiClient.proxyImageUrl(widget.sourceUrl, maxBytes: widget.maxBytes).length}',
       );
-      _postFuture = null;
+      _postObjectUrlFuture = null;
     }
+  }
+
+  Future<String> _fetchPostObjectUrl(
+    String sourceUrl, {
+    int? maxBytes,
+    required int generation,
+  }) async {
+    final bytes = await backendApiClient.fetchProxiedImageBytes(
+      sourceUrl,
+      maxBytes: maxBytes,
+    );
+    if (bytes.isEmpty) return '';
+    final parts = [bytes.toJS].toJS;
+    final blob = web.Blob(parts);
+    final objectUrl = web.URL.createObjectURL(blob);
+    if (!mounted || generation != _postGeneration) {
+      web.URL.revokeObjectURL(objectUrl);
+      return '';
+    }
+    if (_postObjectUrl != null && _postObjectUrl != objectUrl) {
+      web.URL.revokeObjectURL(_postObjectUrl!);
+    }
+    _postObjectUrl = objectUrl;
+    return objectUrl;
+  }
+
+  void _revokePostObjectUrl() {
+    final objectUrl = _postObjectUrl;
+    if (objectUrl != null) {
+      web.URL.revokeObjectURL(objectUrl);
+      _postObjectUrl = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _revokePostObjectUrl();
+    super.dispose();
   }
 
   double? _readerLoadingBoxHeight(BuildContext context) {
@@ -175,9 +219,9 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       );
     }
 
-    if (_postFuture != null) {
-      return FutureBuilder<Uint8List>(
-        future: _postFuture,
+    if (_postObjectUrlFuture != null) {
+      return FutureBuilder<String>(
+        future: _postObjectUrlFuture,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting ||
               snap.connectionState == ConnectionState.active) {
@@ -224,15 +268,15 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
             );
             return widget.readerErrorChild ?? _defaultError();
           }
-          final bytes = snap.data;
-          if (bytes == null || bytes.isEmpty) {
+          final objectUrl = snap.data;
+          if (objectUrl == null || objectUrl.isEmpty) {
             webImageClientLogError(
-              'WebProxiedImage POST empty bytes ${_urlPreview(widget.sourceUrl)}',
+              'WebProxiedImage POST empty objectUrl ${_urlPreview(widget.sourceUrl)}',
             );
             return widget.readerErrorChild ?? _defaultError();
           }
           return _ImageWithSizeCallback(
-            provider: MemoryImage(bytes),
+            provider: NetworkImage(objectUrl),
             fit: widget.fit,
             width: widget.width,
             height: widget.height,

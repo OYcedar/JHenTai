@@ -33,6 +33,7 @@ class LocalGalleryService {
 
   List<LocalGallery> _galleries = [];
   bool _scanning = false;
+  Future<void>? _scanFuture;
 
   List<LocalGallery> get galleries => List.unmodifiable(_galleries);
   bool get isScanning => _scanning;
@@ -44,28 +45,38 @@ class LocalGalleryService {
   }
 
   Future<void> refresh() async {
-    if (_scanning) return;
+    if (_scanFuture != null) {
+      return _scanFuture!;
+    }
     _scanning = true;
+    _scanFuture = _refreshInternal();
+    try {
+      await _scanFuture;
+    } finally {
+      _scanFuture = null;
+      _scanning = false;
+    }
+  }
 
+  Future<void> _refreshInternal() async {
     try {
       final start = DateTime.now();
-      _galleries = [];
+      final nextGalleries = <LocalGallery>[];
 
       final scanPaths = effectiveLocalGalleryScanPaths(_config);
 
       for (final scanPath in scanPaths) {
         final dir = Directory(scanPath);
         if (!await dir.exists()) continue;
-        await _scanDirectory(dir);
+        await _scanDirectory(dir, nextGalleries);
       }
 
+      _galleries = nextGalleries;
       final elapsed = DateTime.now().difference(start).inMilliseconds;
       log.info(
           'Local gallery scan complete: ${_galleries.length} galleries found in ${elapsed}ms');
     } catch (e, s) {
       log.error('Failed to scan local galleries', e, s);
-    } finally {
-      _scanning = false;
     }
   }
 
@@ -118,7 +129,10 @@ class LocalGalleryService {
         (g) => p.canonicalize(g.path) == p.canonicalize(galleryPath));
   }
 
-  Future<void> _scanDirectory(Directory dir) async {
+  Future<void> _scanDirectory(
+    Directory dir,
+    List<LocalGallery> nextGalleries,
+  ) async {
     try {
       final entities = await dir.list().toList();
       final subDirs = entities.whereType<Directory>().toList();
@@ -134,7 +148,7 @@ class LocalGalleryService {
                 .path
             : null;
 
-        _galleries.add(LocalGallery(
+        nextGalleries.add(LocalGallery(
           path: dir.path,
           title: p.basename(dir.path),
           imageCount: imageFiles.length,
@@ -143,7 +157,7 @@ class LocalGalleryService {
       }
 
       for (final subDir in subDirs) {
-        await _scanDirectory(subDir);
+        await _scanDirectory(subDir, nextGalleries);
       }
     } catch (e) {
       log.warning('Failed to scan directory: ${dir.path}', e);

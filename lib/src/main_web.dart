@@ -198,7 +198,7 @@ class WebDownloadService extends GetxController {
 
   Future<void> _runDownloadMutation(
     Future<void> Function() action, {
-    bool refresh = true,
+    bool refresh = false,
   }) async {
     await action();
     if (refresh) {
@@ -206,17 +206,17 @@ class WebDownloadService extends GetxController {
     }
   }
 
-  Future<void> pauseGallery(int gid, {bool refresh = true}) =>
+  Future<void> pauseGallery(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.pauseGalleryDownload(gid),
         refresh: refresh,
       );
-  Future<void> resumeGallery(int gid, {bool refresh = true}) =>
+  Future<void> resumeGallery(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.resumeGalleryDownload(gid),
         refresh: refresh,
       );
-  Future<void> reDownloadGallery(int gid, {bool refresh = true}) =>
+  Future<void> reDownloadGallery(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.reDownloadGallery(gid),
         refresh: refresh,
@@ -224,7 +224,7 @@ class WebDownloadService extends GetxController {
   Future<void> deleteGallery(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _runDownloadMutation(
         () => backendApiClient.deleteGalleryDownload(
@@ -233,17 +233,17 @@ class WebDownloadService extends GetxController {
         ),
         refresh: refresh,
       );
-  Future<void> pauseArchive(int gid, {bool refresh = true}) =>
+  Future<void> pauseArchive(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.pauseArchiveDownload(gid),
         refresh: refresh,
       );
-  Future<void> resumeArchive(int gid, {bool refresh = true}) =>
+  Future<void> resumeArchive(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.resumeArchiveDownload(gid),
         refresh: refresh,
       );
-  Future<void> reUnlockArchive(int gid, {bool refresh = true}) =>
+  Future<void> reUnlockArchive(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.reUnlockArchiveDownload(gid),
         refresh: refresh,
@@ -251,7 +251,7 @@ class WebDownloadService extends GetxController {
   Future<void> deleteArchive(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _runDownloadMutation(
         () => backendApiClient.deleteArchiveDownload(

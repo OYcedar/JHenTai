@@ -115,10 +115,10 @@ class _WebReaderCoreSettings extends StatefulWidget {
 
 class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final direction = 0.obs;
-  final preloadPages = 3.obs;
-  final preloadPagesLocal = 3.obs;
+  final preloadPages = 2.obs;
+  final preloadPagesLocal = 4.obs;
   final preloadDistance = 1.obs;
-  final preloadDistanceLocal = 8.obs;
+  final preloadDistanceLocal = 4.obs;
   final autoInterval = 5.0.obs;
   final autoModeStyle = 'turnPage'.obs;
   final turnPageMode = 'adaptive'.obs;
@@ -168,11 +168,11 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       }
       final p = await backendApiClient.getSetting(kWebPreloadPagesKey);
       if (p != null) {
-        preloadPages.value = int.tryParse(p) ?? 3;
+        preloadPages.value = int.tryParse(p) ?? 2;
       }
       final local = await backendApiClient.getSetting(kWebPreloadPagesLocalKey);
       if (local != null) {
-        preloadPagesLocal.value = int.tryParse(local) ?? 3;
+        preloadPagesLocal.value = int.tryParse(local) ?? 4;
       }
       final distance = await backendApiClient.getSetting(
         kWebPreloadDistanceKey,
@@ -184,7 +184,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
         kWebPreloadDistanceLocalKey,
       );
       if (distanceLocal != null) {
-        preloadDistanceLocal.value = int.tryParse(distanceLocal) ?? 8;
+        preloadDistanceLocal.value = int.tryParse(distanceLocal) ?? 4;
       }
       final a = await backendApiClient.getSetting(kWebAutoIntervalKey);
       if (a != null) {

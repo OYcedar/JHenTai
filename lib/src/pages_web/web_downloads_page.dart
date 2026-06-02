@@ -542,28 +542,28 @@ class WebDownloadsController extends GetxController
     super.onClose();
   }
 
-  Future<void> pauseGallery(int gid, {bool refresh = true}) =>
+  Future<void> pauseGallery(int gid, {bool refresh = false}) =>
       _svc.pauseGallery(gid, refresh: refresh);
-  Future<void> resumeGallery(int gid, {bool refresh = true}) =>
+  Future<void> resumeGallery(int gid, {bool refresh = false}) =>
       _svc.resumeGallery(gid, refresh: refresh);
-  Future<void> reDownloadGallery(int gid, {bool refresh = true}) =>
+  Future<void> reDownloadGallery(int gid, {bool refresh = false}) =>
       _svc.reDownloadGallery(gid, refresh: refresh);
   Future<void> deleteGallery(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _svc.deleteGallery(gid, deleteFiles: deleteFiles, refresh: refresh);
-  Future<void> pauseArchive(int gid, {bool refresh = true}) =>
+  Future<void> pauseArchive(int gid, {bool refresh = false}) =>
       _svc.pauseArchive(gid, refresh: refresh);
-  Future<void> resumeArchive(int gid, {bool refresh = true}) =>
+  Future<void> resumeArchive(int gid, {bool refresh = false}) =>
       _svc.resumeArchive(gid, refresh: refresh);
-  Future<void> reUnlockArchive(int gid, {bool refresh = true}) =>
+  Future<void> reUnlockArchive(int gid, {bool refresh = false}) =>
       _svc.reUnlockArchive(gid, refresh: refresh);
   Future<void> deleteArchive(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _svc.deleteArchive(gid, deleteFiles: deleteFiles, refresh: refresh);
 
@@ -770,8 +770,8 @@ class WebDownloadsController extends GetxController
     if (group == null) return;
 
     await Future.wait(ids.map((gid) => galleryTab
-        ? patchGalleryTask(gid, group: group)
-        : patchArchiveTask(gid, group: group)));
+        ? patchGalleryTask(gid, group: group, refresh: false)
+        : patchArchiveTask(gid, group: group, refresh: false)));
     await refresh();
     if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
@@ -797,8 +797,8 @@ class WebDownloadsController extends GetxController
     }
 
     await Future.wait(ids.map((gid) => galleryTab
-        ? patchGalleryTask(gid, priority: priority)
-        : patchArchiveTask(gid, priority: priority)));
+        ? patchGalleryTask(gid, priority: priority, refresh: false)
+        : patchArchiveTask(gid, priority: priority, refresh: false)));
     await refresh();
     if (selectionMode.value) {
       exitSelectionMode();
@@ -808,16 +808,30 @@ class WebDownloadsController extends GetxController
         snackPosition: SnackPosition.BOTTOM);
   }
 
-  Future<void> patchGalleryTask(int gid, {int? priority, String? group}) async {
+  Future<void> patchGalleryTask(
+    int gid, {
+    int? priority,
+    String? group,
+    bool refresh = true,
+  }) async {
     await backendApiClient.patchGalleryDownload(gid,
         priority: priority, group: group);
-    await _svc.refresh();
+    if (refresh) {
+      await _svc.refresh();
+    }
   }
 
-  Future<void> patchArchiveTask(int gid, {int? priority, String? group}) async {
+  Future<void> patchArchiveTask(
+    int gid, {
+    int? priority,
+    String? group,
+    bool refresh = true,
+  }) async {
     await backendApiClient.patchArchiveDownload(gid,
         priority: priority, group: group);
-    await _svc.refresh();
+    if (refresh) {
+      await _svc.refresh();
+    }
   }
 
   Future<void> renameTaskGroup({

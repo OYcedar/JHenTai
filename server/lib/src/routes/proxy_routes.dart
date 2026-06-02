@@ -140,41 +140,7 @@ class ProxyRoutes {
       return Response.forbidden('URL host not in allowlist');
     }
     final maxBytes = _parseMaxBytes(request.url.queryParameters['maxBytes']);
-
-    final sw = Stopwatch()..start();
-    try {
-      final imageBytes = await _client.downloadBytes(url);
-      sw.stop();
-      final tooLarge = _imageTooLargeResponse(
-        imageBytes.length,
-        maxBytes,
-        method: 'GET',
-        url: url,
-      );
-      if (tooLarge != null) return tooLarge;
-      if (jhImageProxyDebugEnabled()) {
-        final m =
-            '[proxy/image] GET ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
-            '${_urlPreview(url)}';
-        log.info(m);
-        jhStderrLine(m);
-      }
-      final contentType = _guessImageContentType(url);
-      return Response.ok(
-        imageBytes,
-        headers: {
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=86400',
-        },
-      );
-    } catch (e, st) {
-      sw.stop();
-      final m =
-          '[proxy/image] GET failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st';
-      log.warning(m);
-      jhStderrLine(m);
-      return Response.internalServerError(body: 'Failed to proxy image: $e');
-    }
+    return _proxyImageUrl(url, maxBytes: maxBytes, method: 'GET');
   }
 
   /// Same as [_proxyImage] but reads the target URL from JSON body so long CDN URLs are not in the query string
@@ -206,36 +172,70 @@ class ProxyRoutes {
     }
     final maxBytes = _parseMaxBytes(body['maxBytes']);
 
+    return _proxyImageUrl(url, maxBytes: maxBytes, method: 'POST');
+  }
+
+  Future<Response> _proxyImageUrl(
+    String url, {
+    required int? maxBytes,
+    required String method,
+  }) async {
     final sw = Stopwatch()..start();
     try {
-      final imageBytes = await _client.downloadBytes(url);
+      if (maxBytes != null) {
+        final imageBytes = await _client.downloadBytes(url);
+        sw.stop();
+        final tooLarge = _imageTooLargeResponse(
+          imageBytes.length,
+          maxBytes,
+          method: method,
+          url: url,
+        );
+        if (tooLarge != null) return tooLarge;
+        if (jhImageProxyDebugEnabled()) {
+          final m =
+              '[proxy/image] $method ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
+              '${_urlPreview(url)}';
+          log.info(m);
+          jhStderrLine(m);
+        }
+        return Response.ok(
+          imageBytes,
+          headers: {
+            'Content-Type': _guessImageContentType(url),
+            'Cache-Control': 'public, max-age=86400',
+          },
+        );
+      }
+
+      final response = await _client.downloadStream(url);
       sw.stop();
-      final tooLarge = _imageTooLargeResponse(
-        imageBytes.length,
-        maxBytes,
-        method: 'POST',
-        url: url,
-      );
-      if (tooLarge != null) return tooLarge;
+      final body = response.data;
+      if (body == null) {
+        return Response.internalServerError(body: 'Failed to proxy image');
+      }
+      final contentType =
+          response.headers.value('content-type') ?? _guessImageContentType(url);
+      final contentLength = response.headers.value('content-length');
       if (jhImageProxyDebugEnabled()) {
-        final m =
-            '[proxy/image] POST ok bytes=${imageBytes.length} ${sw.elapsedMilliseconds}ms '
-            '${_urlPreview(url)}';
+        final m = '[proxy/image] $method stream ${sw.elapsedMilliseconds}ms '
+            'type=$contentType bytes=${contentLength ?? 'unknown'} ${_urlPreview(url)}';
         log.info(m);
         jhStderrLine(m);
       }
-      final contentType = _guessImageContentType(url);
+      final headers = {
+        'Content-Type': contentType,
+        'Cache-Control': 'public, max-age=86400',
+        if (contentLength != null) 'Content-Length': contentLength,
+      };
       return Response.ok(
-        imageBytes,
-        headers: {
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=86400',
-        },
+        body.stream,
+        headers: headers,
       );
     } catch (e, st) {
       sw.stop();
       final m =
-          '[proxy/image] POST failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st';
+          '[proxy/image] $method failed ${sw.elapsedMilliseconds}ms ${_urlPreview(url)}: $e\n$st';
       log.warning(m);
       jhStderrLine(m);
       return Response.internalServerError(body: 'Failed to proxy image: $e');
