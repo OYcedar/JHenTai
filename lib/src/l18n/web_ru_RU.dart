@@ -86,6 +86,10 @@ class WebRuRU {
       'showScrollBar': 'Показывать полосу прокрутки',
       'showStatusInfo': 'Показывать статус снизу',
       'keepScreenAwakeWhenReading': 'Не выключать экран при чтении',
+      'enableCustomReadBrightness': 'Своя яркость читалки',
+      'customBrightness': 'Яркость',
+      'webCustomReadBrightnessHint':
+          'Затемняет читалку веб-слоем, не меняя яркость устройства.',
       'gestureRegionWidthRatio': 'Доля ширины области жеста меню',
       'imageRegionWidthRatio': 'Доля ширины области изображения',
       'spaceBetweenImages': 'Отступы между изображениями',

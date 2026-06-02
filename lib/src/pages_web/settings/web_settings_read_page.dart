@@ -127,6 +127,8 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
   final keepScreenAwake = true.obs;
+  final enableCustomReadBrightness = false.obs;
+  final customReadBrightness = 50.obs;
   final enableBottomMenu = true.obs;
   final enablePageTurnAnimation = true.obs;
   final enableDoubleTapZoom = true.obs;
@@ -200,6 +202,18 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       if (status != null) showStatusInfo.value = status != 'false';
       final awake = await backendApiClient.getSetting(kWebKeepScreenAwakeKey);
       if (awake != null) keepScreenAwake.value = awake != 'false';
+      final enableBrightness = await backendApiClient.getSetting(
+        kWebEnableCustomReadBrightnessKey,
+      );
+      if (enableBrightness != null) {
+        enableCustomReadBrightness.value = enableBrightness == 'true';
+      }
+      final brightness =
+          await backendApiClient.getSetting(kWebCustomReadBrightnessKey);
+      if (brightness != null) {
+        customReadBrightness.value =
+            (int.tryParse(brightness) ?? 50).clamp(0, 100).toInt();
+      }
       final bottomMenu =
           await backendApiClient.getSetting(kWebEnableBottomMenuKey);
       if (bottomMenu != null) {
@@ -611,6 +625,51 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
                           .catchError((_) {});
                     },
                     contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => SwitchListTile(
+                    title: Text('enableCustomReadBrightness'.tr),
+                    subtitle: Text('webCustomReadBrightnessHint'.tr),
+                    value: enableCustomReadBrightness.value,
+                    onChanged: (v) {
+                      enableCustomReadBrightness.value = v;
+                      backendApiClient
+                          .putSetting(kWebEnableCustomReadBrightnessKey, v)
+                          .catchError((_) {});
+                    },
+                    contentPadding: EdgeInsets.zero,
+                  )),
+              Obx(() => AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: enableCustomReadBrightness.value
+                        ? Column(
+                            key: const ValueKey('webCustomReadBrightness'),
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(child: Text('customBrightness'.tr)),
+                                  Text('${customReadBrightness.value}%'),
+                                ],
+                              ),
+                              Slider(
+                                value: customReadBrightness.value.toDouble(),
+                                min: 0,
+                                max: 100,
+                                divisions: 100,
+                                label: '${customReadBrightness.value}%',
+                                onChanged: (v) {
+                                  final rounded = v.round();
+                                  customReadBrightness.value = rounded;
+                                  backendApiClient
+                                      .putSetting(
+                                        kWebCustomReadBrightnessKey,
+                                        rounded,
+                                      )
+                                      .catchError((_) {});
+                                },
+                              ),
+                            ],
+                          )
+                        : const SizedBox.shrink(),
                   )),
               Obx(() => SwitchListTile(
                     title: Text('enableBottomMenu'.tr),

@@ -288,6 +288,8 @@ class WebReaderController extends GetxController {
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
   final keepScreenAwake = true.obs;
+  final enableCustomReadBrightness = false.obs;
+  final customReadBrightness = 50.obs;
   final enableBottomMenu = true.obs;
   final imageSpacing = 0.obs;
   final imageRegionWidthRatio = 100.obs;
@@ -618,6 +620,18 @@ class WebReaderController extends GetxController {
       if (showStatus != null) showStatusInfo.value = showStatus != 'false';
       final awake = await backendApiClient.getSetting(kWebKeepScreenAwakeKey);
       if (awake != null) keepScreenAwake.value = awake != 'false';
+      final enableBrightness = await backendApiClient.getSetting(
+        kWebEnableCustomReadBrightnessKey,
+      );
+      if (enableBrightness != null) {
+        enableCustomReadBrightness.value = enableBrightness == 'true';
+      }
+      final brightness =
+          await backendApiClient.getSetting(kWebCustomReadBrightnessKey);
+      final brightnessValue = int.tryParse(brightness ?? '');
+      if (brightnessValue != null) {
+        customReadBrightness.value = brightnessValue.clamp(0, 100).toInt();
+      }
       final bottomMenu =
           await backendApiClient.getSetting(kWebEnableBottomMenuKey);
       if (bottomMenu != null) {
@@ -1777,6 +1791,25 @@ class _ReaderBody extends StatelessWidget {
           ),
           _TopOverlay(controller: controller),
           _BottomOverlay(controller: controller),
+          Obx(() {
+            if (!controller.enableCustomReadBrightness.value) {
+              return const SizedBox.shrink();
+            }
+            final brightness =
+                controller.customReadBrightness.value.clamp(0, 100).toInt();
+            final opacity =
+                ((100 - brightness) / 100 * 0.85).clamp(0.0, 0.85).toDouble();
+            if (opacity <= 0) {
+              return const SizedBox.shrink();
+            }
+            return Positioned.fill(
+              child: IgnorePointer(
+                child: Container(
+                  color: Colors.black.withValues(alpha: opacity),
+                ),
+              ),
+            );
+          }),
           Obx(() {
             if (!controller.showStatusInfo.value) {
               return const SizedBox.shrink();

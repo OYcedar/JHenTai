@@ -86,6 +86,10 @@ class WebPtBR {
       'showScrollBar': 'Mostrar barra de rolagem',
       'showStatusInfo': 'Mostrar status na parte inferior',
       'keepScreenAwakeWhenReading': 'Manter tela ativa ao ler',
+      'enableCustomReadBrightness': 'Brilho personalizado do leitor',
+      'customBrightness': 'Brilho',
+      'webCustomReadBrightnessHint':
+          'Usa uma sobreposição web para escurecer o leitor sem alterar o brilho do dispositivo.',
       'gestureRegionWidthRatio':
           'Proporção da largura da área de gesto do menu',
       'imageRegionWidthRatio': 'Proporção da largura da área da imagem',

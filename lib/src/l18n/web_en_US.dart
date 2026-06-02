@@ -86,6 +86,10 @@ class WebEnUS {
       'showScrollBar': 'Show Scroll Bar',
       'showStatusInfo': 'Show Status at Bottom',
       'keepScreenAwakeWhenReading': 'Keep Screen Awake When Reading',
+      'enableCustomReadBrightness': 'Custom Reader Brightness',
+      'customBrightness': 'Brightness',
+      'webCustomReadBrightnessHint':
+          'Uses a web overlay to dim the reader without changing device brightness.',
       'gestureRegionWidthRatio': 'Gesture region width ratio',
       'imageRegionWidthRatio': 'Image region width ratio',
       'spaceBetweenImages': 'Space Between Images',
