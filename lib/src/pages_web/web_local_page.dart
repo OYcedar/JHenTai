@@ -77,14 +77,29 @@ class WebLocalController extends GetxController
 
   Future<void> refreshGalleries() async {
     isScanning.value = true;
+    final previousCount = galleries.length;
     try {
       await backendApiClient.refreshLocalGalleries();
       await Future.delayed(const Duration(seconds: 2));
       await _loadGalleries();
       currentPath.value = '';
+      Get.snackbar(
+        'common.success'.tr,
+        '${'newGalleryCount'.tr}: ${galleries.length - previousCount}',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isScanning.value = false;
     }
+  }
+
+  void showHelp() {
+    Get.snackbar(
+      'local.title'.tr,
+      'local.helpText'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 8),
+    );
   }
 
   Future<void> reloadGalleries() => _loadGalleries();
@@ -403,6 +418,11 @@ class WebLocalPage extends GetView<WebLocalController> {
                   )),
         title: Text('local.title'.tr),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'local.helpText'.tr,
+            onPressed: controller.showHelp,
+          ),
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'local.scanRoots'.tr,
