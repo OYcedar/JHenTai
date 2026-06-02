@@ -28,8 +28,7 @@ class _WebTagSetsPageState extends State<WebTagSetsPage>
   bool _loading = true;
 
   final _tagCtrl = TextEditingController();
-  bool _watch = true;
-  bool _hidden = false;
+  String _addStatus = 'watch';
   bool _busy = false;
 
   @override
@@ -112,8 +111,8 @@ class _WebTagSetsPageState extends State<WebTagSetsPage>
       await backendApiClient.addUsertag(
         tag: t,
         tagSetNo: targetTagSetNo,
-        watch: _watch,
-        hidden: _hidden,
+        watch: _addStatus == 'watch',
+        hidden: _addStatus == 'hidden',
       );
       _tagCtrl.clear();
       Get.snackbar('common.success'.tr, 'usertags.added'.tr,
@@ -489,23 +488,85 @@ class _WebTagSetsPageState extends State<WebTagSetsPage>
           enabled: !_busy,
         ),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            FilterChip(
-              label: Text('usertags.watch'.tr),
-              selected: _watch,
-              onSelected: _busy ? null : (v) => setState(() => _watch = v),
-            ),
-            const SizedBox(width: 8),
-            FilterChip(
-              label: Text('usertags.hidden'.tr),
-              selected: _hidden,
-              onSelected: _busy ? null : (v) => setState(() => _hidden = v),
-            ),
-            const Spacer(),
-            FilledButton(
-                onPressed: _busy ? null : _add, child: Text('usertags.add'.tr)),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final statusControl = SegmentedButton<String>(
+              segments: [
+                ButtonSegment(
+                  value: 'watch',
+                  icon: const Icon(Icons.favorite_outline),
+                  label: Text('usertags.watch'.tr),
+                ),
+                ButtonSegment(
+                  value: 'hidden',
+                  icon: const Icon(Icons.visibility_off_outlined),
+                  label: Text('usertags.hidden'.tr),
+                ),
+                ButtonSegment(
+                  value: 'none',
+                  icon: const Icon(Icons.remove_circle_outline),
+                  label: Text('usertags.none'.tr),
+                ),
+              ],
+              selected: {_addStatus},
+              onSelectionChanged: _busy
+                  ? null
+                  : (values) => setState(() => _addStatus = values.first),
+            );
+            final addButton = FilledButton(
+              onPressed: _busy ? null : _add,
+              child: Text('usertags.add'.tr),
+            );
+            if (constraints.maxWidth < 520) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ChoiceChip(
+                        avatar: const Icon(Icons.favorite_outline, size: 18),
+                        label: Text('usertags.watch'.tr),
+                        selected: _addStatus == 'watch',
+                        onSelected: _busy
+                            ? null
+                            : (_) => setState(() => _addStatus = 'watch'),
+                      ),
+                      ChoiceChip(
+                        avatar:
+                            const Icon(Icons.visibility_off_outlined, size: 18),
+                        label: Text('usertags.hidden'.tr),
+                        selected: _addStatus == 'hidden',
+                        onSelected: _busy
+                            ? null
+                            : (_) => setState(() => _addStatus = 'hidden'),
+                      ),
+                      ChoiceChip(
+                        avatar:
+                            const Icon(Icons.remove_circle_outline, size: 18),
+                        label: Text('usertags.none'.tr),
+                        selected: _addStatus == 'none',
+                        onSelected: _busy
+                            ? null
+                            : (_) => setState(() => _addStatus = 'none'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: addButton),
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: statusControl),
+                const SizedBox(width: 12),
+                addButton,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 24),
         Text('usertags.currentList'.tr,
