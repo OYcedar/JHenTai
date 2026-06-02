@@ -126,8 +126,12 @@ class WebPreferenceSettings {
   static void saveEnableDefaultFavorite(bool value) =>
       _writeBool(enableDefaultFavoriteKey, value);
 
-  static void saveEnableDefaultTagSet(bool value) =>
-      _writeBool(enableDefaultTagSetKey, value);
+  static void saveEnableDefaultTagSet(bool value) {
+    _writeBool(enableDefaultTagSetKey, value);
+    if (!value) {
+      saveDefaultTagSetNo(null);
+    }
+  }
 
   static void saveDefaultTagSetNo(int? value) {
     if (value == null || value <= 0) {
