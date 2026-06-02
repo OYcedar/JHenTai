@@ -104,20 +104,46 @@ class WebHistoryController extends GetxController
   Future<void> refreshCurrentPage() => loadHistory(offset: currentOffset.value);
 
   Future<void> deleteItem(int gid) async {
-    await backendApiClient.deleteHistoryItem(gid);
-    items.removeWhere((e) => e['gid'] == gid);
-    if (totalCount.value > 0) {
-      totalCount.value -= 1;
+    try {
+      await backendApiClient.deleteHistoryItem(gid);
+      items.removeWhere((e) => e['gid'] == gid);
+      if (totalCount.value > 0) {
+        totalCount.value -= 1;
+      }
+      hasMore.value = currentOffset.value + items.length < totalCount.value;
+      Get.snackbar(
+        'common.success'.tr,
+        'history.deleteSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'history.deleteFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
-    hasMore.value = currentOffset.value + items.length < totalCount.value;
   }
 
   Future<void> clearAll() async {
-    await backendApiClient.clearHistory();
-    items.clear();
-    totalCount.value = 0;
-    currentOffset.value = 0;
-    hasMore.value = false;
+    try {
+      await backendApiClient.clearHistory();
+      items.clear();
+      totalCount.value = 0;
+      currentOffset.value = 0;
+      hasMore.value = false;
+      Get.snackbar(
+        'common.success'.tr,
+        'history.clearSuccess'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'history.clearFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   void toggleViewMode() {

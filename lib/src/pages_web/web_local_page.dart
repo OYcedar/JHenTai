@@ -88,6 +88,12 @@ class WebLocalController extends GetxController
         '${'newGalleryCount'.tr}: ${galleries.length - previousCount}',
         snackPosition: SnackPosition.BOTTOM,
       );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'local.scanFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isScanning.value = false;
     }
@@ -473,7 +479,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   icon: const Icon(Icons.refresh),
-                  onPressed: () => controller.refreshGalleries(),
+                  onPressed: () => controller.reloadGalleries(),
                   label: Text('common.retry'.tr),
                 ),
               ],

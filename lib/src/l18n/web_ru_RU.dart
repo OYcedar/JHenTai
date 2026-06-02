@@ -296,6 +296,7 @@ class WebRuRU {
       'local.helpText':
           'Смонтируйте каталоги в Docker-контейнер\nили поместите галереи в папку local_gallery',
       'local.scanNow': 'Сканировать',
+      'local.scanFailed': 'Ошибка сканирования локальных галерей: @error',
       'local.empty': 'Пусто',
       'local.noImages': 'Нет изображений в этой галерее',
       'local.loadFailed': 'Ошибка загрузки изображений: @error',
@@ -504,7 +505,13 @@ class WebRuRU {
       'settings.speedLimitMaximum': 'Изображений',
       'settings.speedLimitPeriod': 'За',
       'settings.unlimited': 'Без ограничения',
+      'settings.restoreTasksLoadFailed':
+          'Не удалось загрузить настройку восстановления задач: @error',
+      'settings.speedLimitLoadFailed':
+          'Не удалось загрузить ограничение скорости: @error',
       'settings.downloadServerRuntime': 'Параметры сервера',
+      'settings.runtimeLoadFailed':
+          'Не удалось загрузить параметры сервера: @error',
       'settings.galleryConcurrency': 'Параллельные галереи',
       'settings.archiveConcurrency': 'Параллельные архивы',
       'settings.jhPublicApiBaseUrl': 'Публичный API JH',
@@ -557,6 +564,10 @@ class WebRuRU {
       'settings.cloudConfigEmpty': 'Нет облачных настроек',
       'settings.cloudConfigNotFound': 'Настройка для этого кода не найдена',
       'settings.cloudConfigUnknownType': 'Неизвестная настройка',
+      'settings.cloudConfigLoadFailed':
+          'Не удалось загрузить облачные настройки: @error',
+      'settings.cloudShareCodeLoadFailed':
+          'Не удалось найти код обмена: @error',
       'settings.uploadCloudConfig': 'Загрузить в облако',
       'settings.uploadCloudConfigTitle': 'Загрузить текущие данные в облако?',
       'settings.uploadCloudConfigConfirm':
@@ -636,6 +647,10 @@ class WebRuRU {
       'settings.webWheelScrollSpeedHint':
           'Управляет скоростью прокрутки колёсиком в списках галерей Web.',
       'settings.mouseWheelReadHint': 'Направление, предзагрузка и другое',
+      'settings.loadWheelSettingsFailed':
+          'Не удалось загрузить настройки колёсика: @error',
+      'settings.saveWheelSettingsFailed':
+          'Не удалось сохранить настройки колёсика: @error',
       'settings.aboutVersionLabel': 'Версия',
       'settings.aboutAuthorLabel': 'Автор',
       'settings.aboutTelegramTitle': 'Telegram (в основном китайский)',
@@ -652,6 +667,10 @@ class WebRuRU {
       'history.clearConfirm': 'Вы уверены, что хотите очистить всю историю?',
       'history.deleteTitle': 'Удалить запись истории',
       'history.deleteConfirm': 'Удалить «@title» из истории просмотров?',
+      'history.deleteSuccess': 'Запись истории удалена',
+      'history.deleteFailed': 'Не удалось удалить запись истории: @error',
+      'history.clearSuccess': 'История очищена',
+      'history.clearFailed': 'Не удалось очистить историю: @error',
       'history.loadFailed': 'Ошибка загрузки истории: @error',
       'history.loadMore': 'Загрузить ещё',
       'history.search': 'Поиск в истории...',
@@ -744,6 +763,8 @@ class WebRuRU {
       'quickSearch.deleted': 'Удалено',
       'quickSearch.deleteTitle': 'Удалить быстрый поиск',
       'quickSearch.deleteConfirm': 'Удалить «@name»?',
+      'quickSearch.orderSaveFailed':
+          'Не удалось сохранить порядок быстрого поиска: @error',
 
       // tag suggest
       'tagSuggest.tag': 'Тег',
@@ -776,6 +797,8 @@ class WebRuRU {
           'Включить встроенный список заблокированных пользователей',
       'useBuiltInBlockedUsersHint':
           'Фильтровать комментарии пользователей из встроенного списка',
+      'useBuiltInBlockedUsersLoadFailed':
+          'Не удалось загрузить настройку встроенного списка блокировки: @error',
       'blockRule.ruleCount': '@count правил',
       'blockRule.ungrouped': 'Без группы',
       'blockRule.deleteGroup': 'Удалить группу',
@@ -784,6 +807,11 @@ class WebRuRU {
           'Удалить группу «@group» и её правила (@count)?',
       'blockRule.deleteRuleTitle': 'Удалить правило блокировки',
       'blockRule.deleteRuleConfirm': 'Удалить правило «@rule»?',
+      'blockRule.loadFailed': 'Не удалось загрузить правила блокировки: @error',
+      'blockRule.saveFailed': 'Не удалось сохранить правило блокировки: @error',
+      'blockRule.deleteFailed': 'Не удалось удалить правило блокировки: @error',
+      'blockRule.saveSuccess': 'Правило блокировки сохранено',
+      'blockRule.deleteSuccess': 'Правило блокировки удалено',
       'blockRule.target': 'Цель',
       'blockRule.attribute': 'Атрибут',
       'blockRule.pattern': 'Шаблон',

@@ -297,6 +297,7 @@ class WebEnUS {
       'local.helpText':
           'Mount directories into the Docker container\nor place galleries in the local_gallery folder',
       'local.scanNow': 'Scan Now',
+      'local.scanFailed': 'Failed to scan local galleries: @error',
       'local.empty': 'Empty',
       'local.noImages': 'No images found in this gallery',
       'local.loadFailed': 'Failed to load gallery images: @error',
@@ -506,7 +507,12 @@ class WebEnUS {
       'settings.speedLimitMaximum': 'Images',
       'settings.speedLimitPeriod': 'Per',
       'settings.unlimited': 'Unlimited',
+      'settings.restoreTasksLoadFailed':
+          'Failed to load task restore setting: @error',
+      'settings.speedLimitLoadFailed': 'Failed to load speed limit: @error',
       'settings.downloadServerRuntime': 'Server runtime',
+      'settings.runtimeLoadFailed':
+          'Failed to load server runtime settings: @error',
       'settings.galleryConcurrency': 'Gallery concurrency',
       'settings.archiveConcurrency': 'Archive concurrency',
       'settings.jhPublicApiBaseUrl': 'JH public API',
@@ -557,6 +563,9 @@ class WebEnUS {
       'settings.cloudConfigEmpty': 'No cloud configs',
       'settings.cloudConfigNotFound': 'No config found for this share code',
       'settings.cloudConfigUnknownType': 'Unknown config',
+      'settings.cloudConfigLoadFailed': 'Failed to load cloud configs: @error',
+      'settings.cloudShareCodeLoadFailed':
+          'Failed to look up share code: @error',
       'settings.uploadCloudConfig': 'Upload to cloud',
       'settings.uploadCloudConfigTitle': 'Upload current data to cloud?',
       'settings.uploadCloudConfigConfirm':
@@ -635,6 +644,10 @@ class WebEnUS {
       'settings.webWheelScrollSpeedHint':
           'Controls mouse wheel speed for Web gallery lists.',
       'settings.mouseWheelReadHint': 'Direction, preload, and more',
+      'settings.loadWheelSettingsFailed':
+          'Failed to load mouse wheel settings: @error',
+      'settings.saveWheelSettingsFailed':
+          'Failed to save mouse wheel settings: @error',
       'settings.aboutVersionLabel': 'Version',
       'settings.aboutAuthorLabel': 'Author',
       'settings.aboutTelegramTitle': 'Telegram (Chinese mainly)',
@@ -652,6 +665,10 @@ class WebEnUS {
           'Are you sure you want to clear all browsing history?',
       'history.deleteTitle': 'Delete History Item',
       'history.deleteConfirm': 'Remove "@title" from browsing history?',
+      'history.deleteSuccess': 'History item deleted',
+      'history.deleteFailed': 'Failed to delete history item: @error',
+      'history.clearSuccess': 'Browsing history cleared',
+      'history.clearFailed': 'Failed to clear browsing history: @error',
       'history.loadFailed': 'Failed to load history: @error',
       'history.loadMore': 'Load more',
       'history.search': 'Search browsing history...',
@@ -748,6 +765,8 @@ class WebEnUS {
       'quickSearch.deleted': 'Deleted',
       'quickSearch.deleteTitle': 'Delete quick search',
       'quickSearch.deleteConfirm': 'Remove "@name"?',
+      'quickSearch.orderSaveFailed':
+          'Failed to save quick search order: @error',
 
       // tag suggest
       'tagSuggest.tag': 'Tag',
@@ -775,6 +794,8 @@ class WebEnUS {
       'useBuiltInBlockedUsers': 'Enable Built-in User Blocklist',
       'useBuiltInBlockedUsersHint':
           'Filter out gallery comments from users on the built-in blocklist',
+      'useBuiltInBlockedUsersLoadFailed':
+          'Failed to load built-in blocklist setting: @error',
       'blockRule.ruleCount': '@count rules',
       'blockRule.ungrouped': 'Ungrouped',
       'blockRule.deleteGroup': 'Delete Group',
@@ -783,6 +804,11 @@ class WebEnUS {
           'Delete group "@group" and its @count rules?',
       'blockRule.deleteRuleTitle': 'Delete Block Rule',
       'blockRule.deleteRuleConfirm': 'Delete rule "@rule"?',
+      'blockRule.loadFailed': 'Failed to load block rules: @error',
+      'blockRule.saveFailed': 'Failed to save block rule: @error',
+      'blockRule.deleteFailed': 'Failed to delete block rule: @error',
+      'blockRule.saveSuccess': 'Block rule saved',
+      'blockRule.deleteSuccess': 'Block rule deleted',
       'blockRule.target': 'Target',
       'blockRule.attribute': 'Attribute',
       'blockRule.pattern': 'Pattern',

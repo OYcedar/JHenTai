@@ -38,6 +38,7 @@ class _WebSettingsMouseWheelPageState extends State<WebSettingsMouseWheelPage>
 
   Future<void> _saveWheelScrollSpeed(double value) async {
     final next = value.clamp(0.5, 12.0);
+    final previous = _wheelScrollSpeed;
     setState(() => _wheelScrollSpeed = next);
     try {
       await backendApiClient.putSetting(
@@ -47,7 +48,16 @@ class _WebSettingsMouseWheelPageState extends State<WebSettingsMouseWheelPage>
       if (Get.isRegistered<WebHomeController>()) {
         Get.find<WebHomeController>().wheelScrollSpeed.value = next;
       }
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        setState(() => _wheelScrollSpeed = previous);
+      }
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.saveWheelSettingsFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   @override

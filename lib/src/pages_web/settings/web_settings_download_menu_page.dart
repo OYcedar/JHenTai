@@ -32,16 +32,19 @@ class _WebSettingsDownloadMenuPageState
   final archivePriorityController = TextEditingController();
   bool restoreTasksAutomatically = false;
   bool isLoadingRestoreTasksAutomatically = true;
+  String restoreTasksAutomaticallyError = '';
   bool restoreRunning = false;
   int speedLimitMaximum = 99;
   int speedLimitPeriodSeconds = 1;
   bool isLoadingSpeedLimit = true;
+  String speedLimitError = '';
   int galleryConcurrency = 3;
   int archiveConcurrency = 2;
   bool downloadAllGalleriesOfSamePriority = false;
   bool galleryUpgradeReuseImages = true;
   bool deleteArchiveFileAfterDownload = true;
   bool isLoadingRuntimeSettings = true;
+  String runtimeSettingsError = '';
 
   @override
   void initState() {
@@ -96,14 +99,23 @@ class _WebSettingsDownloadMenuPageState
   }
 
   Future<void> _loadRestoreTasksAutomatically() async {
+    setState(() {
+      isLoadingRestoreTasksAutomatically = true;
+      restoreTasksAutomaticallyError = '';
+    });
     try {
       final value = await backendApiClient.getRestoreTasksAutomatically();
       if (!mounted) {
         return;
       }
       setState(() => restoreTasksAutomatically = value);
-    } catch (_) {
-      // Keep the server default: disabled.
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => restoreTasksAutomaticallyError =
+              'settings.restoreTasksLoadFailed'.trParams({'error': '$e'}),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => isLoadingRestoreTasksAutomatically = false);
@@ -112,6 +124,10 @@ class _WebSettingsDownloadMenuPageState
   }
 
   Future<void> _loadSpeedLimit() async {
+    setState(() {
+      isLoadingSpeedLimit = true;
+      speedLimitError = '';
+    });
     try {
       final value = await backendApiClient.getDownloadSpeedLimit();
       if (!mounted) {
@@ -121,8 +137,13 @@ class _WebSettingsDownloadMenuPageState
         speedLimitMaximum = value.maximum;
         speedLimitPeriodSeconds = value.periodSeconds;
       });
-    } catch (_) {
-      // Keep unlimited default.
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => speedLimitError =
+              'settings.speedLimitLoadFailed'.trParams({'error': '$e'}),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => isLoadingSpeedLimit = false);
@@ -131,6 +152,10 @@ class _WebSettingsDownloadMenuPageState
   }
 
   Future<void> _loadRuntimeSettings() async {
+    setState(() {
+      isLoadingRuntimeSettings = true;
+      runtimeSettingsError = '';
+    });
     try {
       final value = await backendApiClient.getDownloadRuntimeSettings();
       if (!mounted) {
@@ -145,8 +170,13 @@ class _WebSettingsDownloadMenuPageState
         deleteArchiveFileAfterDownload = value.deleteArchiveFileAfterDownload;
       });
       await controller.refreshStatus();
-    } catch (_) {
-      // Keep server defaults when runtime settings cannot be loaded.
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => runtimeSettingsError =
+              'settings.runtimeLoadFailed'.trParams({'error': '$e'}),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => isLoadingRuntimeSettings = false);
@@ -386,9 +416,15 @@ class _WebSettingsDownloadMenuPageState
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.settings_backup_restore_outlined),
               title: Text('restoreTasksAutomatically'.tr),
-              subtitle: Text('restoreTasksAutomaticallyHint'.tr),
+              subtitle: _settingSubtitle(
+                context,
+                'restoreTasksAutomaticallyHint'.tr,
+                restoreTasksAutomaticallyError,
+                _loadRestoreTasksAutomatically,
+              ),
               value: restoreTasksAutomatically,
-              onChanged: isLoadingRestoreTasksAutomatically
+              onChanged: isLoadingRestoreTasksAutomatically ||
+                      restoreTasksAutomaticallyError.isNotEmpty
                   ? null
                   : (value) async {
                       setState(() => restoreTasksAutomatically = value);
@@ -456,6 +492,10 @@ class _WebSettingsDownloadMenuPageState
           children: [
             Text('settings.speedLimitWebHint'.tr,
                 style: Theme.of(context).textTheme.bodySmall),
+            if (speedLimitError.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _loadErrorBanner(context, speedLimitError, _loadSpeedLimit),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -474,7 +514,7 @@ class _WebSettingsDownloadMenuPageState
                               value == 99 ? 'settings.unlimited'.tr : '$value'),
                         ),
                     ],
-                    onChanged: isLoadingSpeedLimit
+                    onChanged: isLoadingSpeedLimit || speedLimitError.isNotEmpty
                         ? null
                         : (value) {
                             if (value != null) {
@@ -498,7 +538,7 @@ class _WebSettingsDownloadMenuPageState
                           child: Text('${value}s'),
                         ),
                     ],
-                    onChanged: isLoadingSpeedLimit
+                    onChanged: isLoadingSpeedLimit || speedLimitError.isNotEmpty
                         ? null
                         : (value) {
                             if (value != null) {
@@ -530,6 +570,14 @@ class _WebSettingsDownloadMenuPageState
                 (info['extraScanPaths'] as List).isNotEmpty)
               _infoRow('settings.extraScanPaths'.tr,
                   (info['extraScanPaths'] as List).join(', ')),
+            if (runtimeSettingsError.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _loadErrorBanner(
+                context,
+                runtimeSettingsError,
+                _loadRuntimeSettings,
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -544,7 +592,8 @@ class _WebSettingsDownloadMenuPageState
                       for (var value = 1; value <= 16; value++)
                         DropdownMenuItem(value: value, child: Text('$value')),
                     ],
-                    onChanged: isLoadingRuntimeSettings
+                    onChanged: isLoadingRuntimeSettings ||
+                            runtimeSettingsError.isNotEmpty
                         ? null
                         : (value) {
                             if (value != null) {
@@ -567,7 +616,8 @@ class _WebSettingsDownloadMenuPageState
                       for (final value in [1, 2, 3, 4, 5, 6, 7, 8])
                         DropdownMenuItem(value: value, child: Text('$value')),
                     ],
-                    onChanged: isLoadingRuntimeSettings
+                    onChanged: isLoadingRuntimeSettings ||
+                            runtimeSettingsError.isNotEmpty
                         ? null
                         : (value) {
                             if (value != null) {
@@ -587,22 +637,24 @@ class _WebSettingsDownloadMenuPageState
               title: Text('downloadAllGallerysOfSamePriority'.tr),
               subtitle: Text('downloadAllGallerysOfSamePriorityHint'.tr),
               value: downloadAllGalleriesOfSamePriority,
-              onChanged: isLoadingRuntimeSettings
-                  ? null
-                  : (value) => _saveRuntimeSettings(
-                        downloadAllGalleriesOfSamePriority: value,
-                      ),
+              onChanged:
+                  isLoadingRuntimeSettings || runtimeSettingsError.isNotEmpty
+                      ? null
+                      : (value) => _saveRuntimeSettings(
+                            downloadAllGalleriesOfSamePriority: value,
+                          ),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.published_with_changes_outlined),
               title: Text('useJH2UpdateGallery'.tr),
               value: galleryUpgradeReuseImages,
-              onChanged: isLoadingRuntimeSettings
-                  ? null
-                  : (value) => _saveRuntimeSettings(
-                        galleryUpgradeReuseImages: value,
-                      ),
+              onChanged:
+                  isLoadingRuntimeSettings || runtimeSettingsError.isNotEmpty
+                      ? null
+                      : (value) => _saveRuntimeSettings(
+                            galleryUpgradeReuseImages: value,
+                          ),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -610,11 +662,12 @@ class _WebSettingsDownloadMenuPageState
               title: Text('deleteArchiveFileAfterDownload'.tr),
               subtitle: Text('settings.deleteArchiveZipAfterDownloadHint'.tr),
               value: deleteArchiveFileAfterDownload,
-              onChanged: isLoadingRuntimeSettings
-                  ? null
-                  : (value) => _saveRuntimeSettings(
-                        deleteArchiveFileAfterDownload: value,
-                      ),
+              onChanged:
+                  isLoadingRuntimeSettings || runtimeSettingsError.isNotEmpty
+                      ? null
+                      : (value) => _saveRuntimeSettings(
+                            deleteArchiveFileAfterDownload: value,
+                          ),
             ),
             const Divider(height: 24),
             _infoRow(
@@ -636,6 +689,60 @@ class _WebSettingsDownloadMenuPageState
                 style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _settingSubtitle(
+    BuildContext context,
+    String text,
+    String error,
+    VoidCallback onRetry,
+  ) {
+    if (error.isEmpty) {
+      return Text(text);
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(text),
+        const SizedBox(height: 8),
+        _loadErrorBanner(context, error, onRetry),
+      ],
+    );
+  }
+
+  Widget _loadErrorBanner(
+    BuildContext context,
+    String error,
+    VoidCallback onRetry,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, color: colorScheme.error, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              error,
+              style: TextStyle(color: colorScheme.onErrorContainer),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: Text('common.retry'.tr),
+          ),
+        ],
       ),
     );
   }
