@@ -291,6 +291,8 @@ class WebZhTW {
       'local.scanRootsHint':
           '這裡顯示 Docker 服務端目前掃描的容器內路徑。可以在此新增已掛載路徑，也可以透過 Docker 掛載和 JH_EXTRA_SCAN_PATHS 設定。',
       'local.addScanRoot': '新增掃描根目錄',
+      'local.deleteScanRootTitle': '移除掃描根目錄',
+      'local.deleteScanRootConfirm': '確定從掃描根目錄中移除「@path」？',
       'local.addScanRootFailed': '新增掃描根目錄失敗: @error',
       'local.deleteScanRootFailed': '移除掃描根目錄失敗: @error',
       'local.noScanRoots': '未設定掃描根目錄',
@@ -869,6 +871,8 @@ class WebZhTW {
       'usertags.weight': '權重',
       'usertags.editTitle': '編輯標籤',
       'usertags.delete': '刪除',
+      'usertags.deleteTitle': '刪除標籤',
+      'usertags.deleteConfirm': '確定從目前標籤集中刪除「@tag」？',
       'usertags.added': '已新增',
       'usertags.updated': '已更新',
       'usertags.deleted': '已刪除',

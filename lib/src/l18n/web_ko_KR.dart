@@ -295,6 +295,8 @@ class WebKoKR {
       'local.scanRootsHint':
           'Docker 서버가 스캔하는 컨테이너 내부 경로입니다. 마운트된 경로를 여기에서 추가하거나 Docker 볼륨과 JH_EXTRA_SCAN_PATHS를 사용하세요.',
       'local.addScanRoot': '스캔 루트 추가',
+      'local.deleteScanRootTitle': '스캔 루트 제거',
+      'local.deleteScanRootConfirm': '스캔 루트에서 "@path"을(를) 제거할까요?',
       'local.addScanRootFailed': '스캔 루트 추가 실패: @error',
       'local.deleteScanRootFailed': '스캔 루트 제거 실패: @error',
       'local.noScanRoots': '설정된 스캔 루트가 없습니다',
@@ -898,6 +900,8 @@ class WebKoKR {
       'usertags.weight': '가중치',
       'usertags.editTitle': '태그 편집',
       'usertags.delete': '삭제',
+      'usertags.deleteTitle': '태그 삭제',
+      'usertags.deleteConfirm': '이 태그 세트에서 "@tag"을(를) 삭제할까요?',
       'usertags.added': '추가됨',
       'usertags.updated': '업데이트됨',
       'usertags.deleted': '삭제됨',

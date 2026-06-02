@@ -115,6 +115,31 @@ Future<void> showWebScanRootsDialog(
           }
         }
 
+        Future<void> confirmDeleteRoot(String path) async {
+          final ok = await showDialog<bool>(
+            context: ctx,
+            builder: (dialogContext) => AlertDialog(
+              title: Text('local.deleteScanRootTitle'.tr),
+              content: Text(
+                'local.deleteScanRootConfirm'.trParams({'path': path}),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: Text('common.cancel'.tr),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  child: Text('common.delete'.tr),
+                ),
+              ],
+            ),
+          );
+          if (ok == true) {
+            await deleteRoot(path);
+          }
+        }
+
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!initialized) {
             initialized = true;
@@ -218,8 +243,9 @@ Future<void> showWebScanRootsDialog(
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline),
                                   tooltip: 'common.delete'.tr,
-                                  onPressed:
-                                      saving ? null : () => deleteRoot(root),
+                                  onPressed: saving
+                                      ? null
+                                      : () => confirmDeleteRoot(root),
                                 ),
                             ],
                           ),

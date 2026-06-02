@@ -291,6 +291,8 @@ class WebZhCN {
       'local.scanRootsHint':
           '这里显示 Docker 服务端当前扫描的容器内路径。可以在此添加已挂载路径，也可以通过 Docker 挂载和 JH_EXTRA_SCAN_PATHS 配置。',
       'local.addScanRoot': '添加扫描根目录',
+      'local.deleteScanRootTitle': '移除扫描根目录',
+      'local.deleteScanRootConfirm': '确定从扫描根目录中移除「@path」？',
       'local.addScanRootFailed': '添加扫描根目录失败: @error',
       'local.deleteScanRootFailed': '移除扫描根目录失败: @error',
       'local.noScanRoots': '未配置扫描根目录',
@@ -876,6 +878,8 @@ class WebZhCN {
       'usertags.weight': '权重',
       'usertags.editTitle': '编辑标签',
       'usertags.delete': '删除',
+      'usertags.deleteTitle': '删除标签',
+      'usertags.deleteConfirm': '确定从当前标签集中删除「@tag」？',
       'usertags.added': '已添加',
       'usertags.updated': '已更新',
       'usertags.deleted': '已删除',

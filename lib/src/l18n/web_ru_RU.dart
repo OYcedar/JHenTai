@@ -308,6 +308,8 @@ class WebRuRU {
       'local.scanRootsHint':
           'Это пути внутри контейнера, которые сканирует Docker-сервер. Добавьте смонтированный путь здесь или используйте тома Docker и JH_EXTRA_SCAN_PATHS.',
       'local.addScanRoot': 'Добавить корень сканирования',
+      'local.deleteScanRootTitle': 'Удалить корень сканирования',
+      'local.deleteScanRootConfirm': 'Удалить "@path" из корней сканирования?',
       'local.addScanRootFailed': 'Не удалось добавить корень: @error',
       'local.deleteScanRootFailed': 'Не удалось удалить корень: @error',
       'local.noScanRoots': 'Корни сканирования не настроены',
@@ -949,6 +951,8 @@ class WebRuRU {
       'usertags.weight': 'Вес',
       'usertags.editTitle': 'Редактировать тег',
       'usertags.delete': 'Удалить',
+      'usertags.deleteTitle': 'Удалить тег',
+      'usertags.deleteConfirm': 'Удалить «@tag» из этого набора тегов?',
       'usertags.added': 'Добавлено',
       'usertags.updated': 'Обновлено',
       'usertags.deleted': 'Удалено',

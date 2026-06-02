@@ -153,6 +153,28 @@ class _WebTagSetsPageState extends State<WebTagSetsPage>
     }
   }
 
+  Future<void> _confirmDelete(int watchedTagId, String label) async {
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('usertags.deleteTitle'.tr),
+        content: Text('usertags.deleteConfirm'.trParams({'tag': label})),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('common.delete'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await _delete(watchedTagId);
+    }
+  }
+
   Future<void> _updateTag({
     required int tagId,
     required String apikey,
@@ -641,7 +663,9 @@ class _WebTagSetsPageState extends State<WebTagSetsPage>
                     IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       tooltip: 'usertags.delete'.tr,
-                      onPressed: _busy || id == 0 ? null : () => _delete(id),
+                      onPressed: _busy || id == 0
+                          ? null
+                          : () => _confirmDelete(id, label),
                     ),
                   ],
                 ),

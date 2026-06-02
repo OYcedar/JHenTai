@@ -308,6 +308,8 @@ class WebEnUS {
       'local.scanRootsHint':
           'These are the container paths that the Docker server scans. Add a mounted path here, or use Docker volume mounts and JH_EXTRA_SCAN_PATHS.',
       'local.addScanRoot': 'Add scan root',
+      'local.deleteScanRootTitle': 'Remove Scan Root',
+      'local.deleteScanRootConfirm': 'Remove "@path" from scan roots?',
       'local.addScanRootFailed': 'Failed to add scan root: @error',
       'local.deleteScanRootFailed': 'Failed to remove scan root: @error',
       'local.noScanRoots': 'No scan roots configured',
@@ -948,6 +950,8 @@ class WebEnUS {
       'usertags.weight': 'Weight',
       'usertags.editTitle': 'Edit tag',
       'usertags.delete': 'Delete',
+      'usertags.deleteTitle': 'Delete tag',
+      'usertags.deleteConfirm': 'Delete "@tag" from this tag set?',
       'usertags.added': 'Added',
       'usertags.updated': 'Updated',
       'usertags.deleted': 'Deleted',

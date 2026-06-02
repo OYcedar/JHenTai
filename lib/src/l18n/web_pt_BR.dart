@@ -313,6 +313,9 @@ class WebPtBR {
       'local.scanRootsHint':
           'Estes sao os caminhos do conteiner que o servidor Docker escaneia. Adicione aqui um caminho montado ou use volumes Docker e JH_EXTRA_SCAN_PATHS.',
       'local.addScanRoot': 'Adicionar raiz de escaneamento',
+      'local.deleteScanRootTitle': 'Remover raiz de escaneamento',
+      'local.deleteScanRootConfirm':
+          'Remover "@path" das raizes de escaneamento?',
       'local.addScanRootFailed':
           'Falha ao adicionar raiz de escaneamento: @error',
       'local.deleteScanRootFailed':
@@ -957,6 +960,8 @@ class WebPtBR {
       'usertags.weight': 'Peso',
       'usertags.editTitle': 'Editar tag',
       'usertags.delete': 'Excluir',
+      'usertags.deleteTitle': 'Excluir tag',
+      'usertags.deleteConfirm': 'Excluir "@tag" deste conjunto de tags?',
       'usertags.added': 'Adicionada',
       'usertags.updated': 'Atualizada',
       'usertags.deleted': 'Excluída',
