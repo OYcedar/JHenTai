@@ -907,6 +907,8 @@ class WebPtBR {
       'settings.defaultFavoriteHint':
           'Quando ativado, clique no coração para usar a pasta padrão e pressione e segure para escolher outra.',
       'settings.readerSettings': 'Configurações do Leitor',
+      'settings.loadReadSettingsFailed':
+          'Falha ao carregar configurações do leitor: @error',
       'settings.defaultDirection': 'Direção Padrão',
       'settings.imageSpacing': 'Espaçamento de Imagem',
       'settings.preloadPages': 'Páginas Pré-carregadas (Online)',

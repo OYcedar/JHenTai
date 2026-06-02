@@ -896,6 +896,8 @@ class WebRuRU {
       'settings.defaultFavoriteHint':
           'Если включено, нажмите на сердечко для папки по умолчанию или удерживайте, чтобы выбрать другую.',
       'settings.readerSettings': 'Настройки чтения',
+      'settings.loadReadSettingsFailed':
+          'Не удалось загрузить настройки чтения: @error',
       'settings.defaultDirection': 'Направление по умолчанию',
       'settings.imageSpacing': 'Отступы изображений',
       'settings.preloadPages': 'Предзагрузка страниц (онлайн)',

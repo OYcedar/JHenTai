@@ -816,6 +816,7 @@ class WebZhTW {
       'settings.defaultFavoriteNone': '無（每次詢問）',
       'settings.defaultFavoriteHint': '啟用後點擊愛心按鈕會使用預設收藏夾，長按可重新選擇。',
       'settings.readerSettings': '閱讀器設定',
+      'settings.loadReadSettingsFailed': '載入閱讀器設定失敗: @error',
       'settings.defaultDirection': '預設方向',
       'settings.imageSpacing': '圖片間距',
       'settings.preloadPages': '預載入頁數（線上）',

@@ -846,6 +846,7 @@ class WebKoKR {
       'settings.defaultFavoriteHint':
           '활성화하면 하트 클릭 시 기본 폴더를 사용하고, 길게 눌러 다른 폴더를 선택합니다.',
       'settings.readerSettings': '리더 설정',
+      'settings.loadReadSettingsFailed': '리더 설정 로드 실패: @error',
       'settings.defaultDirection': '기본 방향',
       'settings.imageSpacing': '이미지 간격',
       'settings.preloadPages': '미리 로드 페이지(온라인)',

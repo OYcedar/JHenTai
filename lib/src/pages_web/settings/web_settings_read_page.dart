@@ -141,6 +141,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   final imageMaxKilobytes = (1024 * 5).obs;
   final imageSpacing = 0.obs;
   final loaded = false.obs;
+  final loadError = ''.obs;
   late final TextEditingController imageMaxKilobytesController;
 
   @override
@@ -158,11 +159,17 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
   }
 
   Future<void> _load() async {
+    loaded.value = false;
+    loadError.value = '';
     try {
       final d = await backendApiClient.getSetting(kWebReadDirectionKey);
-      if (d != null) direction.value = int.tryParse(d) ?? 0;
+      if (d != null) {
+        direction.value = int.tryParse(d) ?? 0;
+      }
       final p = await backendApiClient.getSetting(kWebPreloadPagesKey);
-      if (p != null) preloadPages.value = int.tryParse(p) ?? 3;
+      if (p != null) {
+        preloadPages.value = int.tryParse(p) ?? 3;
+      }
       final local = await backendApiClient.getSetting(kWebPreloadPagesLocalKey);
       if (local != null) {
         preloadPagesLocal.value = int.tryParse(local) ?? 3;
@@ -180,7 +187,9 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
         preloadDistanceLocal.value = int.tryParse(distanceLocal) ?? 8;
       }
       final a = await backendApiClient.getSetting(kWebAutoIntervalKey);
-      if (a != null) autoInterval.value = double.tryParse(a) ?? 5.0;
+      if (a != null) {
+        autoInterval.value = double.tryParse(a) ?? 5.0;
+      }
       final autoStyle = await backendApiClient.getSetting(kWebAutoModeStyleKey);
       if (autoStyle == 'scroll' || autoStyle == 'turnPage') {
         autoModeStyle.value = autoStyle!;
@@ -193,15 +202,25 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       }
       final first =
           await backendApiClient.getSetting(kWebDisplayFirstPageAloneKey);
-      if (first != null) displayFirstPageAlone.value = first == 'true';
+      if (first != null) {
+        displayFirstPageAlone.value = first == 'true';
+      }
       final thumbs = await backendApiClient.getSetting(kWebShowThumbnailsKey);
-      if (thumbs != null) showThumbnails.value = thumbs != 'false';
+      if (thumbs != null) {
+        showThumbnails.value = thumbs != 'false';
+      }
       final scrollbar = await backendApiClient.getSetting(kWebShowScrollBarKey);
-      if (scrollbar != null) showScrollBar.value = scrollbar != 'false';
+      if (scrollbar != null) {
+        showScrollBar.value = scrollbar != 'false';
+      }
       final status = await backendApiClient.getSetting(kWebShowStatusInfoKey);
-      if (status != null) showStatusInfo.value = status != 'false';
+      if (status != null) {
+        showStatusInfo.value = status != 'false';
+      }
       final awake = await backendApiClient.getSetting(kWebKeepScreenAwakeKey);
-      if (awake != null) keepScreenAwake.value = awake != 'false';
+      if (awake != null) {
+        keepScreenAwake.value = awake != 'false';
+      }
       final enableBrightness = await backendApiClient.getSetting(
         kWebEnableCustomReadBrightnessKey,
       );
@@ -236,10 +255,14 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
       }
       final reverse =
           await backendApiClient.getSetting(kWebReverseTapPageTurnKey);
-      if (reverse != null) reverseTapPageTurn.value = reverse == 'true';
+      if (reverse != null) {
+        reverseTapPageTurn.value = reverse == 'true';
+      }
       final disable =
           await backendApiClient.getSetting(kWebDisableTapPageTurnKey);
-      if (disable != null) disableTapPageTurn.value = disable == 'true';
+      if (disable != null) {
+        disableTapPageTurn.value = disable == 'true';
+      }
       final gestureRatio =
           await backendApiClient.getSetting(kWebGestureRegionWidthRatioKey);
       if (gestureRatio != null) {
@@ -267,9 +290,15 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
         }
       }
       final spacing = await backendApiClient.getSetting(kWebImageSpacingKey);
-      if (spacing != null) imageSpacing.value = int.tryParse(spacing) ?? 0;
-    } catch (_) {}
-    loaded.value = true;
+      if (spacing != null) {
+        imageSpacing.value = int.tryParse(spacing) ?? 0;
+      }
+    } catch (e) {
+      loadError.value =
+          'settings.loadReadSettingsFailed'.trParams({'error': '$e'});
+    } finally {
+      loaded.value = true;
+    }
   }
 
   @override
@@ -291,7 +320,7 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
           ),
         );
       }
-      return Card(
+      final settingsCard = Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -761,6 +790,36 @@ class _WebReaderCoreSettingsState extends State<_WebReaderCoreSettings> {
             ],
           ),
         ),
+      );
+      if (loadError.value.isEmpty) {
+        return settingsCard;
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_outlined,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(loadError.value)),
+                  TextButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh),
+                    label: Text('common.retry'.tr),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          settingsCard,
+        ],
       );
     });
   }

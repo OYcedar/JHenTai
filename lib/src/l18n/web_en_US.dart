@@ -895,6 +895,8 @@ class WebEnUS {
           'When enabled, click the heart to use the default folder and long-press to choose another.',
       'settings.usertags': 'Watched / hidden tags',
       'settings.readerSettings': 'Reader Settings',
+      'settings.loadReadSettingsFailed':
+          'Failed to load reader settings: @error',
       'settings.defaultDirection': 'Default Direction',
       'settings.imageSpacing': 'Image Spacing',
       'settings.preloadPages': 'Preload Pages (Online)',
