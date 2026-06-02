@@ -361,11 +361,10 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage>
         mainAxisSize: MainAxisSize.min,
         children: [
           if (shouldShowScrollToTop) ...[
-            FloatingActionButton.small(
+            buildWebScrollToTopFab(
+              visible: true,
               heroTag: 'quickSearchScrollToTop',
-              tooltip: 'home.scrollToTop'.tr,
               onPressed: scrollToTop,
-              child: const Icon(Icons.vertical_align_top),
             ),
             const SizedBox(height: 12),
           ],

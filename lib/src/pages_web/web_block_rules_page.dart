@@ -93,13 +93,10 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
         ],
       ),
       floatingActionButton: Obx(
-        () => controller.showScrollToTop.value
-            ? FloatingActionButton.small(
-                tooltip: 'home.scrollToTop'.tr,
-                onPressed: controller.scrollToTop,
-                child: const Icon(Icons.vertical_align_top),
-              )
-            : const SizedBox.shrink(),
+        () => buildWebScrollToTopFab(
+          visible: controller.showScrollToTop.value,
+          onPressed: controller.scrollToTop,
+        ),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {

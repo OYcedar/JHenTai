@@ -596,6 +596,8 @@ class WebZhTW {
       'searchHistory.clearTitle': '清除搜尋記錄',
       'searchHistory.clearConfirm': '確定要清除所有搜尋記錄嗎？',
       'searchHistory.translate': '翻譯搜尋記錄',
+      'searchHistory.hide': '隱藏搜尋記錄',
+      'searchHistory.show': '顯示搜尋記錄',
 
       // comment
       'comment.placeholder': '寫下評論...',

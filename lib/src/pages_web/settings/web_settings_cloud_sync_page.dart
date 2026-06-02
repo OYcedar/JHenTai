@@ -415,11 +415,10 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
       mainAxisSize: MainAxisSize.min,
       children: [
         if (shouldShowScrollToTop) ...[
-          FloatingActionButton.small(
+          buildWebScrollToTopFab(
+            visible: true,
             heroTag: 'cloudSyncScrollToTop',
-            tooltip: 'home.scrollToTop'.tr,
             onPressed: scrollToTop,
-            child: const Icon(Icons.arrow_upward),
           ),
           if (canUpload) const SizedBox(height: 12),
         ],

@@ -664,6 +664,8 @@ class WebRuRU {
       'searchHistory.clearConfirm':
           'Вы уверены, что хотите очистить всю историю поиска?',
       'searchHistory.translate': 'Перевести историю поиска',
+      'searchHistory.hide': 'Скрыть историю поиска',
+      'searchHistory.show': 'Показать историю поиска',
 
       // comment
       'comment.placeholder': 'Напишите комментарий...',

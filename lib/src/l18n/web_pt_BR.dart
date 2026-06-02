@@ -674,6 +674,8 @@ class WebPtBR {
       'searchHistory.clearConfirm':
           'Tem certeza que deseja limpar todo o histórico de pesquisa?',
       'searchHistory.translate': 'Traduzir histórico de pesquisa',
+      'searchHistory.hide': 'Ocultar histórico de pesquisa',
+      'searchHistory.show': 'Mostrar histórico de pesquisa',
 
       // comment
       'comment.placeholder': 'Escreva um comentário...',

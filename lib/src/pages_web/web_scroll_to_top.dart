@@ -2,6 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 
+Widget buildWebScrollToTopFab({
+  required bool visible,
+  required VoidCallback onPressed,
+  String? heroTag,
+}) {
+  return visible
+      ? FloatingActionButton.small(
+          heroTag: heroTag,
+          tooltip: 'home.scrollToTop'.tr,
+          onPressed: onPressed,
+          child: const Icon(Icons.vertical_align_top),
+        )
+      : const SizedBox.shrink();
+}
+
+bool shouldShowWebScrollToTop({
+  required double offset,
+  required double lastOffset,
+  double threshold = 300,
+}) {
+  if (offset <= threshold) {
+    return false;
+  }
+  final isScrollingDown = offset > lastOffset;
+  return switch (WebPreferenceSettings.scrollToTopButtonMode) {
+    WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
+    WebScrollToTopButtonMode.scrollDown => isScrollingDown,
+    WebScrollToTopButtonMode.never => false,
+    WebScrollToTopButtonMode.always => true,
+  };
+}
+
 mixin WebScrollToTopState<T extends StatefulWidget> on State<T> {
   final scrollController = ScrollController();
   bool _showScrollToTop = false;
@@ -24,11 +56,10 @@ mixin WebScrollToTopState<T extends StatefulWidget> on State<T> {
 
   Widget? buildScrollToTopFab({String? heroTag}) {
     return _showScrollToTop
-        ? FloatingActionButton.small(
+        ? buildWebScrollToTopFab(
+            visible: true,
             heroTag: heroTag,
-            tooltip: 'home.scrollToTop'.tr,
             onPressed: scrollToTop,
-            child: const Icon(Icons.arrow_upward),
           )
         : null;
   }
@@ -65,19 +96,11 @@ mixin WebScrollToTopState<T extends StatefulWidget> on State<T> {
       return;
     }
     final offset = scrollController.offset;
-    final isScrollingDown = offset > _lastScrollOffset;
+    final previousOffset = _lastScrollOffset;
     _lastScrollOffset = offset;
-    if (offset <= 300) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final show = switch (WebPreferenceSettings.scrollToTopButtonMode) {
-      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
-      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
-      WebScrollToTopButtonMode.never => false,
-      WebScrollToTopButtonMode.always => true,
-    };
-    _setShowScrollToTop(show);
+    _setShowScrollToTop(
+      shouldShowWebScrollToTop(offset: offset, lastOffset: previousOffset),
+    );
   }
 }
 
@@ -120,18 +143,9 @@ mixin WebScrollToTopControllerMixin on GetxController {
       return;
     }
     final offset = scrollController.offset;
-    final isScrollingDown = offset > _lastScrollOffset;
+    final previousOffset = _lastScrollOffset;
     _lastScrollOffset = offset;
-    if (offset <= 300) {
-      showScrollToTop.value = false;
-      return;
-    }
     showScrollToTop.value =
-        switch (WebPreferenceSettings.scrollToTopButtonMode) {
-      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
-      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
-      WebScrollToTopButtonMode.never => false,
-      WebScrollToTopButtonMode.always => true,
-    };
+        shouldShowWebScrollToTop(offset: offset, lastOffset: previousOffset);
   }
 }
