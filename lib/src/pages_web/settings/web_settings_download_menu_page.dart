@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
-import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/pages_web/web_scan_roots_dialog.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsDownloadMenuPage extends StatefulWidget {
@@ -15,7 +16,8 @@ class WebSettingsDownloadMenuPage extends StatefulWidget {
 }
 
 class _WebSettingsDownloadMenuPageState
-    extends State<WebSettingsDownloadMenuPage> {
+    extends State<WebSettingsDownloadMenuPage>
+    with WebScrollToTopState<WebSettingsDownloadMenuPage> {
   static const _galleryGroupKey = 'jh_web_default_gallery_group';
   static const _galleryPriorityKey = 'jh_web_default_gallery_priority';
   static const _galleryOriginalKey = 'jh_web_default_gallery_original';
@@ -23,7 +25,6 @@ class _WebSettingsDownloadMenuPageState
   static const _archivePriorityKey = 'jh_web_default_archive_priority';
 
   final WebSettingsController controller = Get.find<WebSettingsController>();
-  final scrollController = ScrollController();
   final galleryGroupController = TextEditingController();
   final galleryPriorityController = TextEditingController();
   bool galleryDownloadOriginalImage = false;
@@ -40,13 +41,10 @@ class _WebSettingsDownloadMenuPageState
   bool downloadAllGalleriesOfSamePriority = false;
   bool galleryUpgradeReuseImages = true;
   bool isLoadingRuntimeSettings = true;
-  bool showScrollToTop = false;
-  double lastScrollOffset = 0;
 
   @override
   void initState() {
     super.initState();
-    scrollController.addListener(_onScroll);
     galleryGroupController.text = _readStorage(_galleryGroupKey, 'default');
     galleryPriorityController.text = _readStorage(_galleryPriorityKey, '0');
     galleryDownloadOriginalImage =
@@ -60,52 +58,11 @@ class _WebSettingsDownloadMenuPageState
 
   @override
   void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
     galleryGroupController.dispose();
     galleryPriorityController.dispose();
     archiveGroupController.dispose();
     archivePriorityController.dispose();
     super.dispose();
-  }
-
-  void _setShowScrollToTop(bool value) {
-    if (!mounted || showScrollToTop == value) {
-      return;
-    }
-    setState(() => showScrollToTop = value);
-  }
-
-  void _onScroll() {
-    if (!scrollController.hasClients) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final offset = scrollController.offset;
-    final isScrollingDown = offset > lastScrollOffset;
-    lastScrollOffset = offset;
-    if (offset <= 300) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final show = switch (WebPreferenceSettings.scrollToTopButtonMode) {
-      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
-      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
-      WebScrollToTopButtonMode.never => false,
-      WebScrollToTopButtonMode.always => true,
-    };
-    _setShowScrollToTop(show);
-  }
-
-  Future<void> _scrollToTop() async {
-    if (!scrollController.hasClients) {
-      return;
-    }
-    await scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   String _readStorage(String key, String fallback) {
@@ -386,6 +343,15 @@ class _WebSettingsDownloadMenuPageState
             _sectionTitle(context, 'settings.downloadServerRuntime'.tr),
             const SizedBox(height: 8),
             _runtimeCard(info),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => showWebScanRootsDialog(
+                context,
+                onChanged: controller.refreshStatus,
+              ),
+              icon: const Icon(Icons.folder_copy_outlined),
+              label: Text('local.scanRoots'.tr),
+            ),
             const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: () => Get.toNamed('/web/downloads'),
@@ -435,13 +401,7 @@ class _WebSettingsDownloadMenuPageState
           ],
         );
       }),
-      floatingActionButton: showScrollToTop
-          ? FloatingActionButton.small(
-              tooltip: 'home.scrollToTop'.tr,
-              onPressed: _scrollToTop,
-              child: const Icon(Icons.arrow_upward),
-            )
-          : null,
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 

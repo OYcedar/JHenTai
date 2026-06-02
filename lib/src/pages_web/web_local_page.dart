@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_scan_roots_dialog.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
@@ -85,6 +86,8 @@ class WebLocalController extends GetxController
       isScanning.value = false;
     }
   }
+
+  Future<void> reloadGalleries() => _loadGalleries();
 
   Future<void> addScanRoot(String path) async {
     final normalized = _normalizePath(path);
@@ -403,7 +406,10 @@ class WebLocalPage extends GetView<WebLocalController> {
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'local.scanRoots'.tr,
-            onPressed: () => _showScanRootsDialog(context),
+            onPressed: () => showWebScanRootsDialog(
+              context,
+              onChanged: controller.reloadGalleries,
+            ),
           ),
           Obx(() => IconButton(
                 icon: Icon(controller.viewMode.value == 'grid'
@@ -511,168 +517,6 @@ class WebLocalPage extends GetView<WebLocalController> {
         onChanged: controller.updateSearchQuery,
       ),
     );
-  }
-
-  Future<void> _showScanRootsDialog(BuildContext context) async {
-    final pathController = TextEditingController();
-    var saving = false;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          final roots = controller.roots.toList();
-          final extraRoots = controller.extraRoots.toSet();
-          Future<void> addRoot() async {
-            final path = pathController.text.trim();
-            if (path.isEmpty) {
-              return;
-            }
-            setDialogState(() => saving = true);
-            try {
-              await controller.addScanRoot(path);
-              pathController.clear();
-            } catch (e) {
-              Get.snackbar(
-                'common.error'.tr,
-                'local.addScanRootFailed'.trParams({'error': '$e'}),
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            } finally {
-              setDialogState(() => saving = false);
-            }
-          }
-
-          return AlertDialog(
-            title: Text('local.scanRoots'.tr),
-            content: SizedBox(
-              width: 560,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'local.scanRootsHint'.tr,
-                    style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: pathController,
-                          enabled: !saving,
-                          decoration: InputDecoration(
-                            labelText: 'local.addScanRoot'.tr,
-                            hintText: '/data/local_gallery_extra',
-                            border: const OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          onSubmitted: (_) => addRoot(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        onPressed: saving ? null : addRoot,
-                        icon: saving
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.add),
-                        label: Text('common.add'.tr),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (roots.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text('local.noScanRoots'.tr),
-                    )
-                  else
-                    Flexible(
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: roots.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final root = roots[index];
-                          final isExtra = extraRoots.contains(root);
-                          return ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.folder_special_outlined),
-                            title: Text(
-                              WebLocalController._displayPath(root),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            subtitle: Text(
-                              root,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: Wrap(
-                              spacing: 4,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.copy),
-                                  tooltip: 'local.copyPath'.tr,
-                                  onPressed: () => _copyLocalPath(root),
-                                ),
-                                if (isExtra)
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline),
-                                    tooltip: 'common.delete'.tr,
-                                    onPressed: saving
-                                        ? null
-                                        : () async {
-                                            setDialogState(() => saving = true);
-                                            try {
-                                              await controller
-                                                  .deleteScanRoot(root);
-                                            } catch (e) {
-                                              Get.snackbar(
-                                                'common.error'.tr,
-                                                'local.deleteScanRootFailed'
-                                                    .trParams({'error': '$e'}),
-                                                snackPosition:
-                                                    SnackPosition.BOTTOM,
-                                              );
-                                            } finally {
-                                              setDialogState(
-                                                  () => saving = false);
-                                            }
-                                          },
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            actions: [
-              if (roots.isNotEmpty)
-                TextButton.icon(
-                  icon: const Icon(Icons.copy_all),
-                  onPressed: () => _copyLocalPath(roots.join('\n')),
-                  label: Text('local.copyAllPaths'.tr),
-                ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('common.close'.tr),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    pathController.dispose();
   }
 
   void _copyLocalPath(String path) {
