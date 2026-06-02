@@ -457,6 +457,9 @@ class WebEnUS {
           'No proxy environment values were reported.',
       'settings.proxyEnvironmentHint':
           'Only protocol, host, and port are shown here. Credentials are hidden.',
+      'settings.copyProxyEnvTemplate': 'Copy Docker proxy template',
+      'settings.proxyEnvTemplateCopied':
+          'Docker proxy environment template copied',
       'settings.proxyAuthConfigured': 'auth configured',
       'settings.copyNetworkDiagnostics': 'Copy network diagnostics',
       'settings.networkTimeouts': 'Network timeouts',

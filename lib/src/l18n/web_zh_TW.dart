@@ -422,6 +422,8 @@ class WebZhTW {
       'settings.proxyEnvironment': '代理環境變數',
       'settings.proxyEnvironmentEmpty': '未讀取到代理環境變數。',
       'settings.proxyEnvironmentHint': '為安全起見，這裡只顯示協議、主機和連接埠，不顯示帳號密碼。',
+      'settings.copyProxyEnvTemplate': '複製 Docker 代理模板',
+      'settings.proxyEnvTemplateCopied': '已複製 Docker 代理環境變數模板',
       'settings.proxyAuthConfigured': '已設定認證',
       'settings.copyNetworkDiagnostics': '複製網路診斷',
       'settings.networkTimeouts': '網路逾時',

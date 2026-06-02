@@ -463,6 +463,9 @@ class WebPtBR {
       'settings.proxyEnvironmentEmpty': 'Nenhum valor de proxy foi informado.',
       'settings.proxyEnvironmentHint':
           'Apenas protocolo, host e porta aparecem aqui. Credenciais ficam ocultas.',
+      'settings.copyProxyEnvTemplate': 'Copiar modelo de proxy Docker',
+      'settings.proxyEnvTemplateCopied':
+          'Modelo de ambiente de proxy Docker copiado',
       'settings.proxyAuthConfigured': 'autenticação configurada',
       'settings.copyNetworkDiagnostics': 'Copiar diagnóstico de rede',
       'settings.networkTimeouts': 'Tempos limite de rede',

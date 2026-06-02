@@ -456,6 +456,9 @@ class WebRuRU {
       'settings.proxyEnvironmentEmpty': 'Значения прокси не обнаружены.',
       'settings.proxyEnvironmentHint':
           'Здесь показаны только протокол, хост и порт. Учётные данные скрыты.',
+      'settings.copyProxyEnvTemplate': 'Копировать шаблон прокси Docker',
+      'settings.proxyEnvTemplateCopied':
+          'Шаблон переменных окружения прокси Docker скопирован',
       'settings.proxyAuthConfigured': 'авторизация настроена',
       'settings.copyNetworkDiagnostics': 'Копировать диагностику сети',
       'settings.networkTimeouts': 'Тайм-ауты сети',

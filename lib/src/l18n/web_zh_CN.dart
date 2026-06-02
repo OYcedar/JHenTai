@@ -422,6 +422,8 @@ class WebZhCN {
       'settings.proxyEnvironment': '代理环境变量',
       'settings.proxyEnvironmentEmpty': '未读取到代理环境变量。',
       'settings.proxyEnvironmentHint': '为安全起见，这里只显示协议、主机和端口，不显示账号密码。',
+      'settings.copyProxyEnvTemplate': '复制 Docker 代理模板',
+      'settings.proxyEnvTemplateCopied': '已复制 Docker 代理环境变量模板',
       'settings.proxyAuthConfigured': '已配置认证',
       'settings.copyNetworkDiagnostics': '复制网络诊断',
       'settings.networkTimeouts': '网络超时',

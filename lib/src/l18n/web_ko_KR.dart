@@ -430,6 +430,8 @@ class WebKoKR {
       'settings.proxyEnvironment': '프록시 환경',
       'settings.proxyEnvironmentEmpty': '보고된 프록시 환경 값이 없습니다.',
       'settings.proxyEnvironmentHint': '여기에는 프로토콜, 호스트, 포트만 표시되며 인증 정보는 숨깁니다.',
+      'settings.copyProxyEnvTemplate': 'Docker 프록시 템플릿 복사',
+      'settings.proxyEnvTemplateCopied': 'Docker 프록시 환경 템플릿을 복사했습니다',
       'settings.proxyAuthConfigured': '인증 설정됨',
       'settings.copyNetworkDiagnostics': '네트워크 진단 복사',
       'settings.networkTimeouts': '네트워크 시간 제한',

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
-import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
 class WebSettingsNetworkPage extends StatefulWidget {
   const WebSettingsNetworkPage({super.key});
@@ -12,63 +12,9 @@ class WebSettingsNetworkPage extends StatefulWidget {
   State<WebSettingsNetworkPage> createState() => _WebSettingsNetworkPageState();
 }
 
-class _WebSettingsNetworkPageState extends State<WebSettingsNetworkPage> {
+class _WebSettingsNetworkPageState extends State<WebSettingsNetworkPage>
+    with WebScrollToTopState<WebSettingsNetworkPage> {
   final WebSettingsController controller = Get.find<WebSettingsController>();
-  final scrollController = ScrollController();
-  bool showScrollToTop = false;
-  double lastScrollOffset = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  void _setShowScrollToTop(bool value) {
-    if (!mounted || showScrollToTop == value) {
-      return;
-    }
-    setState(() => showScrollToTop = value);
-  }
-
-  void _onScroll() {
-    if (!scrollController.hasClients) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final offset = scrollController.offset;
-    final isScrollingDown = offset > lastScrollOffset;
-    lastScrollOffset = offset;
-    if (offset <= 300) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final show = switch (WebPreferenceSettings.scrollToTopButtonMode) {
-      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
-      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
-      WebScrollToTopButtonMode.never => false,
-      WebScrollToTopButtonMode.always => true,
-    };
-    _setShowScrollToTop(show);
-  }
-
-  Future<void> _scrollToTop() async {
-    if (!scrollController.hasClients) {
-      return;
-    }
-    await scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -114,13 +60,7 @@ class _WebSettingsNetworkPageState extends State<WebSettingsNetworkPage> {
           ),
         );
       }),
-      floatingActionButton: showScrollToTop
-          ? FloatingActionButton.small(
-              tooltip: 'home.scrollToTop'.tr,
-              onPressed: _scrollToTop,
-              child: const Icon(Icons.arrow_upward),
-            )
-          : null,
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 
@@ -233,6 +173,12 @@ class _WebSettingsNetworkPageState extends State<WebSettingsNetworkPage> {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _copyProxyEnvTemplate,
+              icon: const Icon(Icons.copy_all_outlined),
+              label: Text('settings.copyProxyEnvTemplate'.tr),
+            ),
           ],
         ),
       ),
@@ -338,6 +284,29 @@ class _WebSettingsNetworkPageState extends State<WebSettingsNetworkPage> {
     Get.snackbar(
       'common.success'.tr,
       'hasCopiedToClipboard'.tr,
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  Future<void> _copyProxyEnvTemplate() async {
+    const proxy = 'http://user:password@proxy-host:proxy-port';
+    final lines = [
+      '# docker compose environment:',
+      'HTTP_PROXY=$proxy',
+      'HTTPS_PROXY=$proxy',
+      'JH_HATH_PROXY=$proxy',
+      'NO_PROXY=localhost,127.0.0.1,::1',
+      '',
+      '# docker run example:',
+      '-e HTTP_PROXY=$proxy',
+      '-e HTTPS_PROXY=$proxy',
+      '-e JH_HATH_PROXY=$proxy',
+      '-e NO_PROXY=localhost,127.0.0.1,::1',
+    ];
+    await Clipboard.setData(ClipboardData(text: lines.join('\n')));
+    Get.snackbar(
+      'common.success'.tr,
+      'settings.proxyEnvTemplateCopied'.tr,
       snackPosition: SnackPosition.BOTTOM,
     );
   }
