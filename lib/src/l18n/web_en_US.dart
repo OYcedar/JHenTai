@@ -578,6 +578,11 @@ class WebEnUS {
       'settings.copyLog': 'Copy log',
       'settings.downloadLog': 'Download log',
       'settings.emptyLog': 'This log is empty',
+      'settings.searchLog': 'Search log...',
+      'settings.noLogMatches': 'No matches',
+      'settings.logMatchCounter': '@current / @total',
+      'settings.previousMatch': 'Previous match',
+      'settings.nextMatch': 'Next match',
       'settings.securityWebSummary':
           'Check the API token saved in this browser, verify the connection, or disconnect and reconnect.',
       'settings.webTokenSecurity': 'Web connection security',

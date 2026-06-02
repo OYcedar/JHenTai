@@ -522,6 +522,11 @@ class WebZhTW {
       'settings.copyLog': '複製日誌',
       'settings.downloadLog': '下載日誌',
       'settings.emptyLog': '此日誌為空',
+      'settings.searchLog': '搜尋日誌...',
+      'settings.noLogMatches': '無符合項目',
+      'settings.logMatchCounter': '@current / @total',
+      'settings.previousMatch': '上一個符合項目',
+      'settings.nextMatch': '下一個符合項目',
       'settings.securityWebSummary':
           '查看目前瀏覽器儲存的 API Token 狀態，校驗連線有效性，或斷開後重新連線。',
       'settings.webTokenSecurity': 'Web 連線安全',

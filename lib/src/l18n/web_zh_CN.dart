@@ -522,6 +522,11 @@ class WebZhCN {
       'settings.copyLog': '复制日志',
       'settings.downloadLog': '下载日志',
       'settings.emptyLog': '此日志为空',
+      'settings.searchLog': '搜索日志...',
+      'settings.noLogMatches': '无匹配',
+      'settings.logMatchCounter': '@current / @total',
+      'settings.previousMatch': '上一个匹配',
+      'settings.nextMatch': '下一个匹配',
       'settings.securityWebSummary':
           '查看当前浏览器保存的 API Token 状态，校验连接有效性，或断开后重新连接。',
       'settings.webTokenSecurity': 'Web 连接安全',

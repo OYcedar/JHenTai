@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
-import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
 /// Settings hub: entries that are not duplicated from the home drawer (downloads, history, local).
 class WebSettingsPage extends StatefulWidget {
@@ -11,63 +11,9 @@ class WebSettingsPage extends StatefulWidget {
   State<WebSettingsPage> createState() => _WebSettingsPageState();
 }
 
-class _WebSettingsPageState extends State<WebSettingsPage> {
+class _WebSettingsPageState extends State<WebSettingsPage>
+    with WebScrollToTopState<WebSettingsPage> {
   final WebSettingsController controller = Get.find<WebSettingsController>();
-  final scrollController = ScrollController();
-  bool showScrollToTop = false;
-  double lastScrollOffset = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  void _setShowScrollToTop(bool value) {
-    if (!mounted || showScrollToTop == value) {
-      return;
-    }
-    setState(() => showScrollToTop = value);
-  }
-
-  void _onScroll() {
-    if (!scrollController.hasClients) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final offset = scrollController.offset;
-    final isScrollingDown = offset > lastScrollOffset;
-    lastScrollOffset = offset;
-    if (offset <= 300) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final show = switch (WebPreferenceSettings.scrollToTopButtonMode) {
-      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
-      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
-      WebScrollToTopButtonMode.never => false,
-      WebScrollToTopButtonMode.always => true,
-    };
-    _setShowScrollToTop(show);
-  }
-
-  Future<void> _scrollToTop() async {
-    if (!scrollController.hasClients) {
-      return;
-    }
-    await scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,13 +119,7 @@ class _WebSettingsPageState extends State<WebSettingsPage> {
           ],
         );
       }),
-      floatingActionButton: showScrollToTop
-          ? FloatingActionButton.small(
-              tooltip: 'home.scrollToTop'.tr,
-              onPressed: _scrollToTop,
-              child: const Icon(Icons.arrow_upward),
-            )
-          : null,
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 }

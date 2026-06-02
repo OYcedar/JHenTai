@@ -581,6 +581,11 @@ class WebRuRU {
       'settings.copyLog': 'Копировать журнал',
       'settings.downloadLog': 'Скачать журнал',
       'settings.emptyLog': 'Этот журнал пуст',
+      'settings.searchLog': 'Поиск в журнале...',
+      'settings.noLogMatches': 'Нет совпадений',
+      'settings.logMatchCounter': '@current / @total',
+      'settings.previousMatch': 'Предыдущее совпадение',
+      'settings.nextMatch': 'Следующее совпадение',
       'settings.securityWebSummary':
           'Проверьте API-токен, сохранённый в этом браузере, подтвердите подключение или отключитесь и подключитесь заново.',
       'settings.webTokenSecurity': 'Безопасность веб-подключения',

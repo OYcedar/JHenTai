@@ -6,7 +6,7 @@ import 'dart:js_interop';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
-import 'package:jhentai/src/pages_web/web_preference_settings.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
 class WebSettingsAdvancedPage extends StatefulWidget {
@@ -17,12 +17,10 @@ class WebSettingsAdvancedPage extends StatefulWidget {
       _WebSettingsAdvancedPageState();
 }
 
-class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
+class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
+    with WebScrollToTopState<WebSettingsAdvancedPage> {
   final WebSettingsController controller = Get.find<WebSettingsController>();
-  final scrollController = ScrollController();
   final logs = <Map<String, dynamic>>[];
-  bool showScrollToTop = false;
-  double lastScrollOffset = 0;
   bool logsLoading = false;
   String? logsError;
   int totalLogSize = 0;
@@ -37,55 +35,8 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
   @override
   void initState() {
     super.initState();
-    scrollController.addListener(_onScroll);
     _loadLogs();
     _loadPageCacheStats();
-  }
-
-  @override
-  void dispose() {
-    scrollController.removeListener(_onScroll);
-    scrollController.dispose();
-    super.dispose();
-  }
-
-  void _setShowScrollToTop(bool value) {
-    if (!mounted || showScrollToTop == value) {
-      return;
-    }
-    setState(() => showScrollToTop = value);
-  }
-
-  void _onScroll() {
-    if (!scrollController.hasClients) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final offset = scrollController.offset;
-    final isScrollingDown = offset > lastScrollOffset;
-    lastScrollOffset = offset;
-    if (offset <= 300) {
-      _setShowScrollToTop(false);
-      return;
-    }
-    final show = switch (WebPreferenceSettings.scrollToTopButtonMode) {
-      WebScrollToTopButtonMode.scrollUp => !isScrollingDown,
-      WebScrollToTopButtonMode.scrollDown => isScrollingDown,
-      WebScrollToTopButtonMode.never => false,
-      WebScrollToTopButtonMode.always => true,
-    };
-    _setShowScrollToTop(show);
-  }
-
-  Future<void> _scrollToTop() async {
-    if (!scrollController.hasClients) {
-      return;
-    }
-    await scrollController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 260),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   Future<void> _loadLogs() async {
@@ -478,13 +429,7 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage> {
           ],
         );
       }),
-      floatingActionButton: showScrollToTop
-          ? FloatingActionButton.small(
-              tooltip: 'home.scrollToTop'.tr,
-              onPressed: _scrollToTop,
-              child: const Icon(Icons.arrow_upward),
-            )
-          : null,
+      floatingActionButton: buildScrollToTopFab(),
     );
   }
 
@@ -709,14 +654,32 @@ void _downloadTextFile(
   web.URL.revokeObjectURL(objectUrl);
 }
 
-class _WebLogPage extends StatelessWidget {
+class _WebLogPage extends StatefulWidget {
   const _WebLogPage({required this.name, required this.content});
 
   final String name;
   final String content;
 
+  @override
+  State<_WebLogPage> createState() => _WebLogPageState();
+}
+
+class _WebLogPageState extends State<_WebLogPage> {
+  final _scrollController = ScrollController();
+  final _searchController = TextEditingController();
+  final _matches = <TextRange>[];
+  var _activeMatch = -1;
+  var _query = '';
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _copy() async {
-    await Clipboard.setData(ClipboardData(text: content));
+    await Clipboard.setData(ClipboardData(text: widget.content));
     Get.snackbar(
       'common.success'.tr,
       'hasCopiedToClipboard'.tr,
@@ -725,17 +688,212 @@ class _WebLogPage extends StatelessWidget {
   }
 
   void _download() {
-    if (content.isEmpty) {
+    if (widget.content.isEmpty) {
       return;
     }
-    _downloadTextFile(name, content);
+    _downloadTextFile(widget.name, widget.content);
+  }
+
+  void _updateSearch(String value) {
+    final query = value.trim();
+    final nextMatches = <TextRange>[];
+    if (query.isNotEmpty) {
+      final source = widget.content.toLowerCase();
+      final target = query.toLowerCase();
+      var index = source.indexOf(target);
+      while (index != -1) {
+        nextMatches.add(TextRange(start: index, end: index + target.length));
+        index = source.indexOf(target, index + target.length);
+      }
+    }
+    setState(() {
+      _query = query;
+      _matches
+        ..clear()
+        ..addAll(nextMatches);
+      _activeMatch = _matches.isEmpty ? -1 : 0;
+    });
+    _jumpToActiveMatch();
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    _updateSearch('');
+  }
+
+  void _previousMatch() {
+    if (_matches.isEmpty) {
+      return;
+    }
+    setState(() {
+      _activeMatch = (_activeMatch - 1 + _matches.length) % _matches.length;
+    });
+    _jumpToActiveMatch();
+  }
+
+  void _nextMatch() {
+    if (_matches.isEmpty) {
+      return;
+    }
+    setState(() {
+      _activeMatch = (_activeMatch + 1) % _matches.length;
+    });
+    _jumpToActiveMatch();
+  }
+
+  Future<void> _jumpToActiveMatch() async {
+    if (_activeMatch < 0 || !_scrollController.hasClients) {
+      return;
+    }
+    final offset = _estimateMatchOffset(_matches[_activeMatch].start);
+    await _scrollController.animateTo(
+      offset,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  double _estimateMatchOffset(int charIndex) {
+    final before = widget.content.substring(0, charIndex);
+    final line = '\n'.allMatches(before).length;
+    return (line * 16.2 - 120)
+        .clamp(0, _scrollController.position.maxScrollExtent)
+        .toDouble();
+  }
+
+  Widget _buildSearchBar() {
+    final counter = _query.isEmpty
+        ? ''
+        : _matches.isEmpty
+            ? 'settings.noLogMatches'.tr
+            : 'settings.logMatchCounter'.trParams({
+                'current': '${_activeMatch + 1}',
+                'total': '${_matches.length}',
+              });
+    final searchField = TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.search),
+        hintText: 'settings.searchLog'.tr,
+        isDense: true,
+        border: const OutlineInputBorder(),
+        suffixIcon: _query.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'common.clear'.tr,
+                onPressed: _clearSearch,
+                icon: const Icon(Icons.clear),
+              ),
+      ),
+      onChanged: _updateSearch,
+    );
+    final matchControls = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 92,
+          child: Text(
+            counter,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+        IconButton(
+          tooltip: 'settings.previousMatch'.tr,
+          onPressed: _matches.isEmpty ? null : _previousMatch,
+          icon: const Icon(Icons.keyboard_arrow_up),
+        ),
+        IconButton(
+          tooltip: 'settings.nextMatch'.tr,
+          onPressed: _matches.isEmpty ? null : _nextMatch,
+          icon: const Icon(Icons.keyboard_arrow_down),
+        ),
+      ],
+    );
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 520) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  searchField,
+                  const SizedBox(height: 6),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: matchControls,
+                  ),
+                ],
+              ),
+            );
+          }
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+            child: Row(
+              children: [
+                Expanded(child: searchField),
+                const SizedBox(width: 12),
+                matchControls,
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  SelectableText _buildLogText(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontFamily: 'monospace',
+              fontSize: 12,
+              height: 1.35,
+            ) ??
+        const TextStyle(fontFamily: 'monospace', fontSize: 12, height: 1.35);
+    if (_matches.isEmpty) {
+      return SelectableText(widget.content, style: style);
+    }
+
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    for (var i = 0; i < _matches.length; i++) {
+      final match = _matches[i];
+      if (match.start > cursor) {
+        spans
+            .add(TextSpan(text: widget.content.substring(cursor, match.start)));
+      }
+      final active = i == _activeMatch;
+      spans.add(
+        TextSpan(
+          text: widget.content.substring(match.start, match.end),
+          style: TextStyle(
+            color: active
+                ? Theme.of(context).colorScheme.onPrimary
+                : Theme.of(context).colorScheme.onTertiaryContainer,
+            backgroundColor: active
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.tertiaryContainer,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      );
+      cursor = match.end;
+    }
+    if (cursor < widget.content.length) {
+      spans.add(TextSpan(text: widget.content.substring(cursor)));
+    }
+    return SelectableText.rich(TextSpan(style: style, children: spans));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(name),
+        title: Text(widget.name),
         actions: [
           IconButton(
             tooltip: 'settings.copyLog'.tr,
@@ -744,25 +902,28 @@ class _WebLogPage extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'settings.downloadLog'.tr,
-            onPressed: content.isEmpty ? null : _download,
+            onPressed: widget.content.isEmpty ? null : _download,
             icon: const Icon(Icons.download_outlined),
           ),
         ],
       ),
-      body: content.isEmpty
+      body: widget.content.isEmpty
           ? Center(child: Text('settings.emptyLog'.tr))
-          : Scrollbar(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(12),
-                child: SelectableText(
-                  content,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 12,
-                    height: 1.35,
+          : Column(
+              children: [
+                _buildSearchBar(),
+                const Divider(height: 1),
+                Expanded(
+                  child: Scrollbar(
+                    controller: _scrollController,
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(12),
+                      child: _buildLogText(context),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
     );
   }

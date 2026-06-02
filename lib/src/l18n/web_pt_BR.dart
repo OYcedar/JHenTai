@@ -589,6 +589,11 @@ class WebPtBR {
       'settings.copyLog': 'Copiar log',
       'settings.downloadLog': 'Baixar log',
       'settings.emptyLog': 'Este log está vazio',
+      'settings.searchLog': 'Pesquisar log...',
+      'settings.noLogMatches': 'Sem correspondências',
+      'settings.logMatchCounter': '@current / @total',
+      'settings.previousMatch': 'Correspondência anterior',
+      'settings.nextMatch': 'Próxima correspondência',
       'settings.securityWebSummary':
           'Verifique o token de API salvo neste navegador, valide a conexão ou desconecte e conecte novamente.',
       'settings.webTokenSecurity': 'Segurança da conexão web',
