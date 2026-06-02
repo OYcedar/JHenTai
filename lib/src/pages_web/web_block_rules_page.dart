@@ -7,6 +7,7 @@ class WebBlockRulesController extends GetxController
     with WebScrollToTopControllerMixin {
   final rules = <Map<String, dynamic>>[].obs;
   final isLoading = true.obs;
+  final errorMessage = ''.obs;
 
   @override
   void onInit() {
@@ -21,31 +22,56 @@ class WebBlockRulesController extends GetxController
     super.onClose();
   }
 
-  Future<void> loadRules() async {
+  Future<bool> loadRules() async {
     resetScrollToTopState();
     isLoading.value = true;
+    errorMessage.value = '';
     try {
       final list = await backendApiClient.listBlockRules();
       rules.value = list.cast<Map<String, dynamic>>();
-    } catch (_) {}
-    isLoading.value = false;
+      return true;
+    } catch (e) {
+      errorMessage.value = 'blockRule.loadFailed'.trParams({'error': '$e'});
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
   }
 
-  Future<void> deleteRule(int id) async {
+  Future<bool> deleteRule(int id) async {
     try {
       await backendApiClient.deleteBlockRule(id);
       rules.removeWhere((r) => r['id'] == id);
-    } catch (_) {}
+      Get.snackbar('common.success'.tr, 'blockRule.deleteSuccess'.tr);
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'blockRule.deleteFailed'.trParams({'error': '$e'}),
+      );
+      return false;
+    }
   }
 
-  Future<void> deleteGroup(String groupId) async {
+  Future<bool> deleteGroup(String groupId) async {
     try {
       await backendApiClient.deleteBlockRuleGroup(groupId);
-      await loadRules();
-    } catch (_) {}
+      final loaded = await loadRules();
+      if (!loaded) {
+        return false;
+      }
+      Get.snackbar('common.success'.tr, 'blockRule.deleteSuccess'.tr);
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'blockRule.deleteFailed'.trParams({'error': '$e'}),
+      );
+      return false;
+    }
   }
 
-  Future<void> saveRule({
+  Future<bool> saveRule({
     int? id,
     String groupId = '',
     required String target,
@@ -62,8 +88,19 @@ class WebBlockRulesController extends GetxController
         pattern: pattern,
         expression: expression,
       );
-      await loadRules();
-    } catch (_) {}
+      final loaded = await loadRules();
+      if (!loaded) {
+        return false;
+      }
+      Get.snackbar('common.success'.tr, 'blockRule.saveSuccess'.tr);
+      return true;
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'blockRule.saveFailed'.trParams({'error': '$e'}),
+      );
+      return false;
+    }
   }
 
   Map<String, List<Map<String, dynamic>>> get groupedRules {
@@ -93,17 +130,45 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
         ],
       ),
       floatingActionButton: Obx(
-        () => controller.showScrollToTop.value
-            ? FloatingActionButton.small(
-                tooltip: 'home.scrollToTop'.tr,
-                onPressed: controller.scrollToTop,
-                child: const Icon(Icons.vertical_align_top),
-              )
-            : const SizedBox.shrink(),
+        () => buildWebScrollToTopFab(
+          visible: controller.showScrollToTop.value,
+          onPressed: controller.scrollToTop,
+        ),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(child: CircularProgressIndicator());
+        }
+        if (controller.errorMessage.isNotEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 48,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    controller.errorMessage.value,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: controller.loadRules,
+                    icon: const Icon(Icons.refresh),
+                    label: Text('common.retry'.tr),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
         if (controller.rules.isEmpty) {
           return Center(
@@ -372,16 +437,18 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
             child: Text('common.cancel'.tr),
           ),
           FilledButton(
-            onPressed: () {
-              controller.saveRule(
-                id: rule?['id'] as int?,
+            onPressed: () async {
+              final success = await controller.saveRule(
+                id: (rule?['id'] as num?)?.toInt(),
                 groupId: groupIdCtrl.text.trim(),
                 target: selectedTarget.value,
                 attribute: selectedAttribute.value,
                 pattern: selectedPattern.value,
                 expression: expressionCtrl.text.trim(),
               );
-              Get.back();
+              if (success) {
+                Get.back();
+              }
             },
             child: Text('common.save'.tr),
           ),

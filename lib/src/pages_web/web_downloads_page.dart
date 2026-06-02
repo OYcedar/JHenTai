@@ -6,6 +6,7 @@ import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:jhentai/src/utils/date_util.dart';
 import 'package:web/web.dart' as web;
 
@@ -541,16 +542,30 @@ class WebDownloadsController extends GetxController
     super.onClose();
   }
 
-  Future<void> pauseGallery(int gid) => _svc.pauseGallery(gid);
-  Future<void> resumeGallery(int gid) => _svc.resumeGallery(gid);
-  Future<void> reDownloadGallery(int gid) => _svc.reDownloadGallery(gid);
-  Future<void> deleteGallery(int gid, {bool deleteFiles = true}) =>
-      _svc.deleteGallery(gid, deleteFiles: deleteFiles);
-  Future<void> pauseArchive(int gid) => _svc.pauseArchive(gid);
-  Future<void> resumeArchive(int gid) => _svc.resumeArchive(gid);
-  Future<void> reUnlockArchive(int gid) => _svc.reUnlockArchive(gid);
-  Future<void> deleteArchive(int gid, {bool deleteFiles = true}) =>
-      _svc.deleteArchive(gid, deleteFiles: deleteFiles);
+  Future<void> pauseGallery(int gid, {bool refresh = true}) =>
+      _svc.pauseGallery(gid, refresh: refresh);
+  Future<void> resumeGallery(int gid, {bool refresh = true}) =>
+      _svc.resumeGallery(gid, refresh: refresh);
+  Future<void> reDownloadGallery(int gid, {bool refresh = true}) =>
+      _svc.reDownloadGallery(gid, refresh: refresh);
+  Future<void> deleteGallery(
+    int gid, {
+    bool deleteFiles = true,
+    bool refresh = true,
+  }) =>
+      _svc.deleteGallery(gid, deleteFiles: deleteFiles, refresh: refresh);
+  Future<void> pauseArchive(int gid, {bool refresh = true}) =>
+      _svc.pauseArchive(gid, refresh: refresh);
+  Future<void> resumeArchive(int gid, {bool refresh = true}) =>
+      _svc.resumeArchive(gid, refresh: refresh);
+  Future<void> reUnlockArchive(int gid, {bool refresh = true}) =>
+      _svc.reUnlockArchive(gid, refresh: refresh);
+  Future<void> deleteArchive(
+    int gid, {
+    bool deleteFiles = true,
+    bool refresh = true,
+  }) =>
+      _svc.deleteArchive(gid, deleteFiles: deleteFiles, refresh: refresh);
 
   Future<void> refresh() => _svc.refresh();
 
@@ -569,7 +584,9 @@ class WebDownloadsController extends GetxController
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    await Future.wait(ids.map(galleryTab ? pauseGallery : pauseArchive));
+    await Future.wait(ids.map((gid) => galleryTab
+        ? pauseGallery(gid, refresh: false)
+        : pauseArchive(gid, refresh: false)));
     await refresh();
     if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
@@ -592,7 +609,9 @@ class WebDownloadsController extends GetxController
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    await Future.wait(ids.map(galleryTab ? resumeGallery : resumeArchive));
+    await Future.wait(ids.map((gid) => galleryTab
+        ? resumeGallery(gid, refresh: false)
+        : resumeArchive(gid, refresh: false)));
     await refresh();
     if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
@@ -635,7 +654,7 @@ class WebDownloadsController extends GetxController
       ),
     );
     if (ok != true) return;
-    await Future.wait(ids.map(reDownloadGallery));
+    await Future.wait(ids.map((gid) => reDownloadGallery(gid, refresh: false)));
     await refresh();
     if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
@@ -679,7 +698,7 @@ class WebDownloadsController extends GetxController
       ),
     );
     if (ok != true) return;
-    await Future.wait(ids.map(reUnlockArchive));
+    await Future.wait(ids.map((gid) => reUnlockArchive(gid, refresh: false)));
     await refresh();
     if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
@@ -726,8 +745,8 @@ class WebDownloadsController extends GetxController
     if (deleteFiles == null) return;
 
     await Future.wait(ids.map((gid) => galleryTab
-        ? deleteGallery(gid, deleteFiles: deleteFiles)
-        : deleteArchive(gid, deleteFiles: deleteFiles)));
+        ? deleteGallery(gid, deleteFiles: deleteFiles, refresh: false)
+        : deleteArchive(gid, deleteFiles: deleteFiles, refresh: false)));
     await refresh();
     if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
@@ -979,13 +998,10 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         ),
       ),
       floatingActionButton: Obx(
-        () => controller.showScrollToTop.value
-            ? FloatingActionButton.small(
-                tooltip: 'home.scrollToTop'.tr,
-                onPressed: controller.scrollToTop,
-                child: const Icon(Icons.vertical_align_top),
-              )
-            : const SizedBox.shrink(),
+        () => buildWebScrollToTopFab(
+          visible: controller.showScrollToTop.value,
+          onPressed: controller.scrollToTop,
+        ),
       ),
       body: Obx(() {
         final svc = Get.find<WebDownloadService>();

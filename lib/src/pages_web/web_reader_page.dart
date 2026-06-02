@@ -17,6 +17,7 @@ import 'package:jhentai/src/pages_web/web_online_image_page_parse.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_reader_setting_keys.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
 /// Same intent as UIConfig.scrollBehaviourWithoutScrollBarWithMouse: PageView /
@@ -339,6 +340,8 @@ class WebReaderController extends GetxController {
 
   late PageController pageController;
   final scrollController = ScrollController();
+  final showScrollToTop = false.obs;
+  double _lastScrollOffset = 0;
   final _imageItemKeys = <int, GlobalKey>{};
 
   /// Horizontal thumbnail strip at bottom (mouse drag + wheel).
@@ -361,6 +364,7 @@ class WebReaderController extends GetxController {
     _readWebRouteAndQueryParams();
 
     pageController = PageController();
+    scrollController.addListener(_onScroll);
     _refreshEhLoggedInForOriginal();
     _loadWheelAction();
     _loadGallery();
@@ -389,6 +393,7 @@ class WebReaderController extends GetxController {
     }
     unawaited(_releaseWakeLock());
     pageController.dispose();
+    scrollController.removeListener(_onScroll);
     scrollController.dispose();
     stripScrollController.dispose();
     focusNode.dispose();
@@ -1357,10 +1362,39 @@ class WebReaderController extends GetxController {
 
   void toggleOverlay() => showOverlay.value = !showOverlay.value;
 
+  bool get _hasVerticalScrollReader =>
+      readDirection.value == ReadDirection.vertical ||
+      readDirection.value == ReadDirection.fitWidth;
+
+  void _onScroll() {
+    if (!scrollController.hasClients || !_hasVerticalScrollReader) {
+      showScrollToTop.value = false;
+      return;
+    }
+    final offset = scrollController.offset;
+    final previousOffset = _lastScrollOffset;
+    _lastScrollOffset = offset;
+    showScrollToTop.value =
+        shouldShowWebScrollToTop(offset: offset, lastOffset: previousOffset);
+  }
+
+  Future<void> scrollToTop() async {
+    if (!scrollController.hasClients || !_hasVerticalScrollReader) {
+      return;
+    }
+    await scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   void setReadDirection(ReadDirection newDir) {
     final prev = readDirection.value;
     if (prev == newDir) return;
     readDirection.value = newDir;
+    _lastScrollOffset = 0;
+    showScrollToTop.value = false;
     backendApiClient
         .putSetting(kWebReadDirectionKey, newDir.index)
         .catchError((_) {});
@@ -1538,6 +1572,41 @@ class WebReaderController extends GetxController {
     }
     final top = box.localToGlobal(Offset.zero).dy;
     return (top: top, bottom: top + box.size.height);
+  }
+
+  void updateCurrentListPageFromViewport() {
+    if (!scrollController.hasClients ||
+        totalPages.value <= 0 ||
+        !_hasVerticalScrollReader) {
+      return;
+    }
+    final viewport = scrollController.position.viewportDimension;
+    var bestIndex = currentPage.value.clamp(0, totalPages.value - 1);
+    var bestVisibleHeight = 0.0;
+
+    for (var i = 0; i < totalPages.value; i++) {
+      final bounds = _listPageBounds(i);
+      if (bounds == null) {
+        continue;
+      }
+      final visibleHeight =
+          (math.min(bounds.bottom, viewport) - math.max(bounds.top, 0.0))
+              .clamp(0.0, viewport)
+              .toDouble();
+      if (visibleHeight > bestVisibleHeight) {
+        bestVisibleHeight = visibleHeight;
+        bestIndex = i;
+      }
+    }
+
+    if (bestVisibleHeight <= 0 || bestIndex == currentPage.value) {
+      return;
+    }
+    currentPage.value = bestIndex;
+    _scheduleSaveProgress();
+    if (mode == ReaderMode.online) {
+      _preloadAround(bestIndex);
+    }
   }
 
   bool _toNextListPage() {
@@ -1792,6 +1861,22 @@ class _ReaderBody extends StatelessWidget {
           _TopOverlay(controller: controller),
           _BottomOverlay(controller: controller),
           Obx(() {
+            final bottom = controller.showOverlay.value &&
+                    controller.enableBottomMenu.value
+                ? 156.0
+                : 72.0;
+            return AnimatedPositioned(
+              duration: const Duration(milliseconds: 180),
+              right: 16,
+              bottom: bottom,
+              child: buildWebScrollToTopFab(
+                visible: controller.showScrollToTop.value,
+                heroTag: 'webReaderScrollToTop',
+                onPressed: controller.scrollToTop,
+              ),
+            );
+          }),
+          Obx(() {
             if (!controller.enableCustomReadBrightness.value) {
               return const SizedBox.shrink();
             }
@@ -1854,21 +1939,9 @@ class _ReaderBody extends StatelessWidget {
   Widget _buildVerticalReader(BuildContext context) {
     return Obx(() => NotificationListener<ScrollNotification>(
           onNotification: (notification) {
-            if (notification is ScrollUpdateNotification) {
-              final metrics = notification.metrics;
-              if (metrics.maxScrollExtent > 0) {
-                final page = (metrics.pixels /
-                        metrics.maxScrollExtent *
-                        (controller.totalPages.value - 1))
-                    .round();
-                if (page != controller.currentPage.value) {
-                  controller.currentPage.value = page;
-                  controller._scheduleSaveProgress();
-                  if (controller.mode == ReaderMode.online) {
-                    controller._preloadAround(page);
-                  }
-                }
-              }
+            if (notification is ScrollUpdateNotification ||
+                notification is ScrollEndNotification) {
+              controller.updateCurrentListPageFromViewport();
             }
             return false;
           },
@@ -1908,21 +1981,9 @@ class _ReaderBody extends StatelessWidget {
   Widget _buildFitWidthReader(BuildContext context) {
     return Obx(() => NotificationListener<ScrollNotification>(
           onNotification: (notification) {
-            if (notification is ScrollUpdateNotification) {
-              final metrics = notification.metrics;
-              if (metrics.maxScrollExtent > 0) {
-                final page = (metrics.pixels /
-                        metrics.maxScrollExtent *
-                        (controller.totalPages.value - 1))
-                    .round();
-                if (page != controller.currentPage.value) {
-                  controller.currentPage.value = page;
-                  controller._scheduleSaveProgress();
-                  if (controller.mode == ReaderMode.online) {
-                    controller._preloadAround(page);
-                  }
-                }
-              }
+            if (notification is ScrollUpdateNotification ||
+                notification is ScrollEndNotification) {
+              controller.updateCurrentListPageFromViewport();
             }
             return false;
           },

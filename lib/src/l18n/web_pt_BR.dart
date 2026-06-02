@@ -302,6 +302,7 @@ class WebPtBR {
       'local.helpText':
           'Monte diretórios no contêiner Docker\nou coloque galerias na pasta local_gallery',
       'local.scanNow': 'Escanear Agora',
+      'local.scanFailed': 'Falha ao escanear galerias locais: @error',
       'local.empty': 'Vazio',
       'local.noImages': 'Nenhuma imagem encontrada nesta galeria',
       'local.loadFailed': 'Falha ao carregar imagens: @error',
@@ -513,7 +514,13 @@ class WebPtBR {
       'settings.speedLimitMaximum': 'Imagens',
       'settings.speedLimitPeriod': 'Por',
       'settings.unlimited': 'Ilimitado',
+      'settings.restoreTasksLoadFailed':
+          'Falha ao carregar restauração automática: @error',
+      'settings.speedLimitLoadFailed':
+          'Falha ao carregar limite de velocidade: @error',
       'settings.downloadServerRuntime': 'Execução do servidor',
+      'settings.runtimeLoadFailed':
+          'Falha ao carregar execução do servidor: @error',
       'settings.galleryConcurrency': 'Concorrência de galerias',
       'settings.archiveConcurrency': 'Concorrência de arquivos',
       'settings.jhPublicApiBaseUrl': 'API pública JH',
@@ -567,6 +574,10 @@ class WebPtBR {
       'settings.cloudConfigNotFound':
           'Nenhuma config encontrada para este código',
       'settings.cloudConfigUnknownType': 'Config desconhecida',
+      'settings.cloudConfigLoadFailed':
+          'Falha ao carregar configs na nuvem: @error',
+      'settings.cloudShareCodeLoadFailed':
+          'Falha ao buscar código de compartilhamento: @error',
       'settings.uploadCloudConfig': 'Enviar para a nuvem',
       'settings.uploadCloudConfigTitle': 'Enviar dados atuais para a nuvem?',
       'settings.uploadCloudConfigConfirm':
@@ -646,6 +657,10 @@ class WebPtBR {
       'settings.webWheelScrollSpeedHint':
           'Controla a velocidade da roda do mouse nas listas de galerias Web.',
       'settings.mouseWheelReadHint': 'Direção, pré-carregamento e mais',
+      'settings.loadWheelSettingsFailed':
+          'Falha ao carregar configurações da roda do mouse: @error',
+      'settings.saveWheelSettingsFailed':
+          'Falha ao salvar configurações da roda do mouse: @error',
       'settings.aboutVersionLabel': 'Versão',
       'settings.aboutAuthorLabel': 'Autor',
       'settings.aboutTelegramTitle': 'Telegram (principalmente chinês)',
@@ -662,6 +677,10 @@ class WebPtBR {
       'history.clearConfirm': 'Tem certeza que deseja limpar todo o histórico?',
       'history.deleteTitle': 'Excluir item do histórico',
       'history.deleteConfirm': 'Remover "@title" do histórico?',
+      'history.deleteSuccess': 'Item do histórico excluído',
+      'history.deleteFailed': 'Falha ao excluir item do histórico: @error',
+      'history.clearSuccess': 'Histórico limpo',
+      'history.clearFailed': 'Falha ao limpar histórico: @error',
       'history.loadFailed': 'Falha ao carregar histórico: @error',
       'history.loadMore': 'Carregar mais',
       'history.search': 'Pesquisar histórico...',
@@ -674,6 +693,8 @@ class WebPtBR {
       'searchHistory.clearConfirm':
           'Tem certeza que deseja limpar todo o histórico de pesquisa?',
       'searchHistory.translate': 'Traduzir histórico de pesquisa',
+      'searchHistory.hide': 'Ocultar histórico de pesquisa',
+      'searchHistory.show': 'Mostrar histórico de pesquisa',
 
       // comment
       'comment.placeholder': 'Escreva um comentário...',
@@ -753,6 +774,8 @@ class WebPtBR {
       'quickSearch.deleted': 'Excluído',
       'quickSearch.deleteTitle': 'Excluir busca rápida',
       'quickSearch.deleteConfirm': 'Remover "@name"?',
+      'quickSearch.orderSaveFailed':
+          'Falha ao salvar ordem da busca rápida: @error',
 
       // tag suggest
       'tagSuggest.tag': 'Etiqueta',
@@ -783,6 +806,8 @@ class WebPtBR {
       'useBuiltInBlockedUsers': 'Ativar lista interna de usuários bloqueados',
       'useBuiltInBlockedUsersHint':
           'Filtra comentários de usuários presentes na lista interna',
+      'useBuiltInBlockedUsersLoadFailed':
+          'Falha ao carregar lista interna de bloqueio: @error',
       'blockRule.ruleCount': '@count regras',
       'blockRule.ungrouped': 'Sem grupo',
       'blockRule.deleteGroup': 'Excluir Grupo',
@@ -791,6 +816,11 @@ class WebPtBR {
           'Excluir o grupo "@group" e suas @count regras?',
       'blockRule.deleteRuleTitle': 'Excluir regra de bloqueio',
       'blockRule.deleteRuleConfirm': 'Excluir a regra "@rule"?',
+      'blockRule.loadFailed': 'Falha ao carregar regras de bloqueio: @error',
+      'blockRule.saveFailed': 'Falha ao salvar regra de bloqueio: @error',
+      'blockRule.deleteFailed': 'Falha ao excluir regra de bloqueio: @error',
+      'blockRule.saveSuccess': 'Regra de bloqueio salva',
+      'blockRule.deleteSuccess': 'Regra de bloqueio excluída',
       'blockRule.target': 'Alvo',
       'blockRule.attribute': 'Atributo',
       'blockRule.pattern': 'Padrão',

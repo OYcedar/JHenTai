@@ -196,22 +196,70 @@ class WebDownloadService extends GetxController {
   bool isGalleryDownloaded(int gid) => getGalleryStatus(gid) == 3;
   bool isGalleryDownloading(int gid) => getGalleryStatus(gid) == 1;
 
-  Future<void> pauseGallery(int gid) =>
-      backendApiClient.pauseGalleryDownload(gid);
-  Future<void> resumeGallery(int gid) =>
-      backendApiClient.resumeGalleryDownload(gid);
-  Future<void> reDownloadGallery(int gid) =>
-      backendApiClient.reDownloadGallery(gid);
-  Future<void> deleteGallery(int gid, {bool deleteFiles = true}) =>
-      backendApiClient.deleteGalleryDownload(gid, deleteFiles: deleteFiles);
-  Future<void> pauseArchive(int gid) =>
-      backendApiClient.pauseArchiveDownload(gid);
-  Future<void> resumeArchive(int gid) =>
-      backendApiClient.resumeArchiveDownload(gid);
-  Future<void> reUnlockArchive(int gid) =>
-      backendApiClient.reUnlockArchiveDownload(gid);
-  Future<void> deleteArchive(int gid, {bool deleteFiles = true}) =>
-      backendApiClient.deleteArchiveDownload(gid, deleteFiles: deleteFiles);
+  Future<void> _runDownloadMutation(
+    Future<void> Function() action, {
+    bool refresh = true,
+  }) async {
+    await action();
+    if (refresh) {
+      await _loadTasks();
+    }
+  }
+
+  Future<void> pauseGallery(int gid, {bool refresh = true}) =>
+      _runDownloadMutation(
+        () => backendApiClient.pauseGalleryDownload(gid),
+        refresh: refresh,
+      );
+  Future<void> resumeGallery(int gid, {bool refresh = true}) =>
+      _runDownloadMutation(
+        () => backendApiClient.resumeGalleryDownload(gid),
+        refresh: refresh,
+      );
+  Future<void> reDownloadGallery(int gid, {bool refresh = true}) =>
+      _runDownloadMutation(
+        () => backendApiClient.reDownloadGallery(gid),
+        refresh: refresh,
+      );
+  Future<void> deleteGallery(
+    int gid, {
+    bool deleteFiles = true,
+    bool refresh = true,
+  }) =>
+      _runDownloadMutation(
+        () => backendApiClient.deleteGalleryDownload(
+          gid,
+          deleteFiles: deleteFiles,
+        ),
+        refresh: refresh,
+      );
+  Future<void> pauseArchive(int gid, {bool refresh = true}) =>
+      _runDownloadMutation(
+        () => backendApiClient.pauseArchiveDownload(gid),
+        refresh: refresh,
+      );
+  Future<void> resumeArchive(int gid, {bool refresh = true}) =>
+      _runDownloadMutation(
+        () => backendApiClient.resumeArchiveDownload(gid),
+        refresh: refresh,
+      );
+  Future<void> reUnlockArchive(int gid, {bool refresh = true}) =>
+      _runDownloadMutation(
+        () => backendApiClient.reUnlockArchiveDownload(gid),
+        refresh: refresh,
+      );
+  Future<void> deleteArchive(
+    int gid, {
+    bool deleteFiles = true,
+    bool refresh = true,
+  }) =>
+      _runDownloadMutation(
+        () => backendApiClient.deleteArchiveDownload(
+          gid,
+          deleteFiles: deleteFiles,
+        ),
+        refresh: refresh,
+      );
 
   Future<void> refresh() => _loadTasks();
 }

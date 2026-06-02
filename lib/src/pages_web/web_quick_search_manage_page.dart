@@ -184,14 +184,16 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage>
     }
   }
 
-  Future<void> _persistOrder() async {
+  Future<void> _persistOrder(List<Map<String, dynamic>> previousItems) async {
     setState(() => _savingOrder = true);
     try {
       await Future.wait(_items.asMap().entries.map((entry) {
         final item = entry.value;
         final name = item['name']?.toString() ?? '';
         final config = item['config']?.toString() ?? '';
-        if (name.isEmpty || config.isEmpty) return Future<void>.value();
+        if (name.isEmpty || config.isEmpty) {
+          return Future<void>.value();
+        }
         item['sort_order'] = entry.key;
         return backendApiClient.saveQuickSearch(name, config,
             sortOrder: entry.key);
@@ -199,21 +201,34 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage>
       await _load();
     } catch (e) {
       if (mounted) {
-        Get.snackbar('common.error'.tr, '$e',
-            snackPosition: SnackPosition.BOTTOM);
+        setState(() {
+          _items = previousItems;
+        });
+        Get.snackbar(
+          'common.error'.tr,
+          'quickSearch.orderSaveFailed'.trParams({'error': '$e'}),
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     } finally {
-      if (mounted) setState(() => _savingOrder = false);
+      if (mounted) {
+        setState(() => _savingOrder = false);
+      }
     }
   }
 
   void _reorder(int oldIndex, int newIndex) {
+    final previousItems = _items
+        .map<Map<String, dynamic>>(Map<String, dynamic>.from)
+        .toList(growable: false);
     setState(() {
-      if (newIndex > oldIndex) newIndex--;
+      if (newIndex > oldIndex) {
+        newIndex--;
+      }
       final item = _items.removeAt(oldIndex);
       _items.insert(newIndex, item);
     });
-    _persistOrder();
+    _persistOrder(previousItems);
   }
 
   void _runQuickSearch(Map<String, dynamic> item) {
@@ -361,11 +376,10 @@ class _WebQuickSearchManagePageState extends State<WebQuickSearchManagePage>
         mainAxisSize: MainAxisSize.min,
         children: [
           if (shouldShowScrollToTop) ...[
-            FloatingActionButton.small(
+            buildWebScrollToTopFab(
+              visible: true,
               heroTag: 'quickSearchScrollToTop',
-              tooltip: 'home.scrollToTop'.tr,
               onPressed: scrollToTop,
-              child: const Icon(Icons.vertical_align_top),
             ),
             const SizedBox(height: 12),
           ],

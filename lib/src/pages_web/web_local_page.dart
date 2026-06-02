@@ -88,6 +88,12 @@ class WebLocalController extends GetxController
         '${'newGalleryCount'.tr}: ${galleries.length - previousCount}',
         snackPosition: SnackPosition.BOTTOM,
       );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'local.scanFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isScanning.value = false;
     }
@@ -452,13 +458,10 @@ class WebLocalPage extends GetView<WebLocalController> {
         ],
       ),
       floatingActionButton: Obx(
-        () => controller.showScrollToTop.value
-            ? FloatingActionButton.small(
-                tooltip: 'home.scrollToTop'.tr,
-                onPressed: controller.scrollToTop,
-                child: const Icon(Icons.vertical_align_top),
-              )
-            : const SizedBox.shrink(),
+        () => buildWebScrollToTopFab(
+          visible: controller.showScrollToTop.value,
+          onPressed: controller.scrollToTop,
+        ),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -476,7 +479,7 @@ class WebLocalPage extends GetView<WebLocalController> {
                 const SizedBox(height: 16),
                 FilledButton.icon(
                   icon: const Icon(Icons.refresh),
-                  onPressed: () => controller.refreshGalleries(),
+                  onPressed: () => controller.reloadGalleries(),
                   label: Text('common.retry'.tr),
                 ),
               ],

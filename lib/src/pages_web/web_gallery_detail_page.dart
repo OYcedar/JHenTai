@@ -775,13 +775,12 @@ class WebGalleryDetailPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: embedded ? Colors.transparent : null,
         appBar: embedded ? null : _buildAppBar(context),
-        floatingActionButton: Obx(() => controller.showScrollToTop.value
-            ? FloatingActionButton.small(
-                tooltip: 'home.scrollToTop'.tr,
-                onPressed: controller.scrollToTop,
-                child: const Icon(Icons.vertical_align_top),
-              )
-            : const SizedBox.shrink()),
+        floatingActionButton: Obx(
+          () => buildWebScrollToTopFab(
+            visible: controller.showScrollToTop.value,
+            onPressed: controller.scrollToTop,
+          ),
+        ),
         body: Obx(() {
           if (controller.isLoading.value) {
             return const Center(child: CircularProgressIndicator());

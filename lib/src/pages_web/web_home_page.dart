@@ -15,6 +15,7 @@ import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
 import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_tag_key_normalize.dart';
+import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_wheel_speed_controller.dart';
@@ -972,8 +973,10 @@ class WebHomeController extends GetxController {
   final isFavoriteFoldersRefreshing = false.obs;
 
   final searchHistory = <String>[].obs;
+  final hideSearchHistory = false.obs;
   final showTranslatedSearchHistory = true.obs;
   final searchHistoryTranslations = <String, String>{}.obs;
+  static const _hideSearchHistoryStorageKey = 'jh_web_hide_search_history';
   static const _showTranslatedSearchHistoryStorageKey =
       'jh_web_show_translated_search_history';
 
@@ -1050,9 +1053,24 @@ class WebHomeController extends GetxController {
   }
 
   void _loadSearchHistoryPrefs() {
+    final hideValue =
+        web.window.localStorage.getItem(_hideSearchHistoryStorageKey);
+    if (hideValue == 'true') {
+      hideSearchHistory.value = true;
+    }
     final value =
         web.window.localStorage.getItem(_showTranslatedSearchHistoryStorageKey);
-    if (value == 'false') showTranslatedSearchHistory.value = false;
+    if (value == 'false') {
+      showTranslatedSearchHistory.value = false;
+    }
+  }
+
+  void toggleHideSearchHistory() {
+    hideSearchHistory.value = !hideSearchHistory.value;
+    web.window.localStorage.setItem(
+      _hideSearchHistoryStorageKey,
+      hideSearchHistory.value ? 'true' : 'false',
+    );
   }
 
   void toggleSearchHistoryTranslation() {
@@ -2095,16 +2113,16 @@ class WebHomePage extends GetView<WebHomeController> {
         Positioned(
           right: 16,
           bottom: 16,
-          child: Obx(() => controller.showFab.value
-              ? FloatingActionButton.small(
-                  onPressed: () => controller.scrollController.animateTo(
-                    0,
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeOut,
-                  ),
-                  child: const Icon(Icons.arrow_upward),
-                )
-              : const SizedBox.shrink()),
+          child: Obx(
+            () => buildWebScrollToTopFab(
+              visible: controller.showFab.value,
+              onPressed: () => controller.scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOut,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -3838,6 +3856,15 @@ class _SearchFieldState extends State<_SearchField> {
   final _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
 
+  double get _overlayWidth {
+    final box = context.findRenderObject() as RenderBox?;
+    final width = box?.size.width ?? 0;
+    if (width <= 0) {
+      return widget.isLeftPane ? 360 : 500;
+    }
+    return width.clamp(280.0, 560.0).toDouble();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -3870,8 +3897,9 @@ class _SearchFieldState extends State<_SearchField> {
 
     final history = widget.controller.searchHistory.toList();
     final query = text.toLowerCase();
+    final hideHistory = widget.controller.hideSearchHistory.value;
 
-    if (query.isEmpty) {
+    if (query.isEmpty && !hideHistory) {
       for (final h in history.take(8)) {
         final display = widget.controller.displaySearchHistory(h);
         suggestions.add(_SearchSuggestion(
@@ -3886,13 +3914,15 @@ class _SearchFieldState extends State<_SearchField> {
         return s.toLowerCase().contains(query) ||
             display.toLowerCase().contains(query);
       });
-      for (final h in filteredHistory.take(5)) {
-        final display = widget.controller.displaySearchHistory(h);
-        suggestions.add(_SearchSuggestion(
-          text: h,
-          displayText: display,
-          subtitle: display == h ? null : h,
-        ));
+      if (!hideHistory) {
+        for (final h in filteredHistory.take(5)) {
+          final display = widget.controller.displaySearchHistory(h);
+          suggestions.add(_SearchSuggestion(
+            text: h,
+            displayText: display,
+            subtitle: display == h ? null : h,
+          ));
+        }
       }
 
       final completionQuery = _extractCompletionQuery(text);
@@ -3921,7 +3951,7 @@ class _SearchFieldState extends State<_SearchField> {
     }
 
     _suggestions = suggestions;
-    if (suggestions.isNotEmpty && _focusNode.hasFocus) {
+    if ((suggestions.isNotEmpty || history.isNotEmpty) && _focusNode.hasFocus) {
       _showOverlay();
     } else {
       _removeOverlay();
@@ -3980,8 +4010,11 @@ class _SearchFieldState extends State<_SearchField> {
   void _showOverlay() {
     _removeOverlay();
     _overlayEntry = OverlayEntry(builder: (context) {
+      final hasHistory = widget.controller.searchHistory.isNotEmpty;
+      final showHistoryActions =
+          hasHistory && _suggestions.any((s) => !s.isTag);
       return Positioned(
-        width: 500,
+        width: _overlayWidth,
         child: CompositedTransformFollower(
           link: _layerLink,
           showWhenUnlinked: false,
@@ -3994,71 +4027,125 @@ class _SearchFieldState extends State<_SearchField> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.zero,
-                      itemCount: _suggestions.length,
-                      itemBuilder: (context, index) {
-                        final s = _suggestions[index];
-                        return ListTile(
-                          dense: true,
-                          leading: Icon(s.isTag ? Icons.label : Icons.history,
-                              size: 18),
-                          title: Text(s.displayText,
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
-                          subtitle: (s.isTag || s.subtitle != null)
-                              ? Text(s.subtitle ?? s.text,
-                                  style: const TextStyle(
-                                      fontSize: 11, color: Colors.grey),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis)
-                              : null,
-                          onTap: () {
-                            if (s.isTag) {
-                              widget.controller.searchController.text =
-                                  _replaceCompletionQuery(
-                                      widget.controller.searchController.text,
-                                      s.text);
-                              widget.controller.searchController.selection =
-                                  TextSelection.collapsed(
-                                      offset: widget.controller.searchController
-                                          .text.length);
-                            } else {
-                              widget.controller.searchController.text = s.text;
-                            }
-                            _removeOverlay();
-                            if (!s.isTag) {
-                              widget.controller.searchOrOpenGalleryUrl(s.text,
-                                  isLeftPane: widget.isLeftPane);
-                            }
-                          },
-                          trailing: s.isTag
-                              ? null
-                              : IconButton(
-                                  icon: const Icon(Icons.close, size: 16),
+                  if (_suggestions.isNotEmpty)
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: _suggestions.length,
+                        itemBuilder: (context, index) {
+                          final s = _suggestions[index];
+                          return ListTile(
+                            dense: true,
+                            leading: Icon(s.isTag ? Icons.label : Icons.history,
+                                size: 18),
+                            title: Text(s.displayText,
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: (s.isTag || s.subtitle != null)
+                                ? Text(s.subtitle ?? s.text,
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.grey),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis)
+                                : null,
+                            onTap: () {
+                              if (s.isTag) {
+                                widget.controller.searchController.text =
+                                    _replaceCompletionQuery(
+                                        widget.controller.searchController.text,
+                                        s.text);
+                                widget.controller.searchController.selection =
+                                    TextSelection.collapsed(
+                                        offset: widget.controller
+                                            .searchController.text.length);
+                              } else {
+                                widget.controller.searchController.text =
+                                    s.text;
+                              }
+                              _removeOverlay();
+                              if (!s.isTag) {
+                                widget.controller.searchOrOpenGalleryUrl(s.text,
+                                    isLeftPane: widget.isLeftPane);
+                              }
+                            },
+                            trailing: s.isTag
+                                ? null
+                                : IconButton(
+                                    icon: const Icon(Icons.close, size: 16),
+                                    tooltip: 'common.delete'.tr,
+                                    onPressed: () {
+                                      backendApiClient
+                                          .deleteSearchHistoryItem(s.text)
+                                          .catchError((_) {});
+                                      widget.controller.searchHistory
+                                          .remove(s.text);
+                                      _onTextChanged();
+                                    },
+                                  ),
+                          );
+                        },
+                      ),
+                    ),
+                  if (hasHistory)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Obx(
+                            () => Tooltip(
+                              message: widget.controller.hideSearchHistory.value
+                                  ? 'searchHistory.show'.tr
+                                  : 'searchHistory.hide'.tr,
+                              child: IconButton(
+                                visualDensity: VisualDensity.compact,
+                                icon: Icon(
+                                  widget.controller.hideSearchHistory.value
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  widget.controller.toggleHideSearchHistory();
+                                  _onTextChanged();
+                                },
+                              ),
+                            ),
+                          ),
+                          if (WebPreferenceSettings.enableTagZHTranslation)
+                            Obx(
+                              () => Tooltip(
+                                message: 'searchHistory.translate'.tr,
+                                child: IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  icon: Icon(
+                                    Icons.translate,
+                                    size: 20,
+                                    color: widget.controller
+                                            .showTranslatedSearchHistory.value
+                                        ? Theme.of(context).colorScheme.primary
+                                        : null,
+                                  ),
                                   onPressed: () {
-                                    backendApiClient
-                                        .deleteSearchHistoryItem(s.text)
-                                        .catchError((_) {});
-                                    widget.controller.searchHistory
-                                        .remove(s.text);
+                                    widget.controller
+                                        .toggleSearchHistoryTranslation();
                                     _onTextChanged();
                                   },
                                 ),
-                        );
-                      },
-                    ),
-                  ),
-                  if (_suggestions.any((s) => !s.isTag))
-                    InkWell(
-                      onTap: _confirmClearSearchHistory,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text('searchHistory.clearAll'.tr,
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontSize: 13)),
+                              ),
+                            ),
+                          if (showHistoryActions)
+                            TextButton.icon(
+                              onPressed: _confirmClearSearchHistory,
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              label: Text('searchHistory.clearAll'.tr),
+                              style: TextButton.styleFrom(
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                 ],

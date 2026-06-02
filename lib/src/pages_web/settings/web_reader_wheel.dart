@@ -24,7 +24,9 @@ extension WebReaderWheelActionStorage on WebReaderWheelAction {
 }
 
 WebReaderWheelAction webReaderWheelActionFromStorage(String? v) {
-  if (v == WebReaderWheelAction.zoom.name) return WebReaderWheelAction.zoom;
+  if (v == WebReaderWheelAction.zoom.name) {
+    return WebReaderWheelAction.zoom;
+  }
   return WebReaderWheelAction.page;
 }
 
@@ -54,6 +56,7 @@ class _WebReaderWheelSettingSectionState
   bool _invertPageTurn = false;
   double _scrollSpeed = 5.0;
   bool _loaded = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
@@ -62,6 +65,10 @@ class _WebReaderWheelSettingSectionState
   }
 
   Future<void> _load() async {
+    setState(() {
+      _loaded = false;
+      _errorMessage = '';
+    });
     try {
       final raw = await backendApiClient.getSetting(kWebReaderWheelActionKey);
       final invertRaw =
@@ -76,36 +83,68 @@ class _WebReaderWheelSettingSectionState
           _loaded = true;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loaded = true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage =
+              'settings.loadWheelSettingsFailed'.trParams({'error': '$e'});
+          _loaded = true;
+        });
+      }
     }
   }
 
   Future<void> _save(WebReaderWheelAction v) async {
+    final previous = _value;
     setState(() => _value = v);
     try {
       await backendApiClient.putSetting(
           kWebReaderWheelActionKey, v.storageValue);
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        setState(() => _value = previous);
+      }
+      _showSaveFailed(e);
+    }
   }
 
   Future<void> _saveInvert(bool v) async {
+    final previous = _invertPageTurn;
     setState(() => _invertPageTurn = v);
     try {
       await backendApiClient.putSetting(
           kWebReaderWheelInvertPageKey, v ? '1' : '0');
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        setState(() => _invertPageTurn = previous);
+      }
+      _showSaveFailed(e);
+    }
   }
 
   Future<void> _saveScrollSpeed(double v) async {
     final next = v.clamp(0.5, 12.0);
+    final previous = _scrollSpeed;
     setState(() => _scrollSpeed = next);
     try {
       await backendApiClient.putSetting(
         kWebReaderWheelScrollSpeedKey,
         next.toStringAsFixed(1),
       );
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        setState(() => _scrollSpeed = previous);
+      }
+      _showSaveFailed(e);
+    }
+  }
+
+  void _showSaveFailed(Object error) {
+    Get.snackbar(
+      'common.error'.tr,
+      'settings.saveWheelSettingsFailed'.trParams({'error': '$error'}),
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   @override
@@ -114,6 +153,39 @@ class _WebReaderWheelSettingSectionState
       return const Padding(
         padding: EdgeInsets.all(16),
         child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_errorMessage.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _errorMessage,
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh),
+              label: Text('common.retry'.tr),
+            ),
+          ],
+        ),
       );
     }
     return Column(

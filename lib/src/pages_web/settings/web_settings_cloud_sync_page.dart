@@ -25,6 +25,7 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
   bool uploading = false;
   bool serviceAlive = false;
   String? error;
+  Future<void> Function()? errorRetry;
   int? typeFilter;
 
   @override
@@ -44,6 +45,7 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
     setState(() {
       loading = true;
       error = null;
+      errorRetry = null;
     });
     try {
       final alive = await backendApiClient.checkCloudConfigService();
@@ -53,7 +55,8 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
         ..clear()
         ..addAll(list);
     } catch (e) {
-      error = '$e';
+      error = 'settings.cloudConfigLoadFailed'.trParams({'error': '$e'});
+      errorRetry = _refresh;
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -70,6 +73,7 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
     setState(() {
       loading = true;
       error = null;
+      errorRetry = null;
     });
     try {
       final config = await backendApiClient.getCloudConfigByShareCode(code);
@@ -84,7 +88,8 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
         );
       }
     } catch (e) {
-      error = '$e';
+      error = 'settings.cloudShareCodeLoadFailed'.trParams({'error': '$e'});
+      errorRetry = _fetchShareCode;
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -385,10 +390,33 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
             )
           else if (error != null)
             Card(
-              child: ListTile(
-                leading: const Icon(Icons.error_outline),
-                title: Text('common.error'.tr),
-                subtitle: Text(error!),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: loading || errorRetry == null
+                          ? null
+                          : () => errorRetry!(),
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text('common.retry'.tr),
+                    ),
+                  ],
+                ),
               ),
             )
           else if (configs.isEmpty)
@@ -415,11 +443,10 @@ class _WebSettingsCloudSyncPageState extends State<WebSettingsCloudSyncPage>
       mainAxisSize: MainAxisSize.min,
       children: [
         if (shouldShowScrollToTop) ...[
-          FloatingActionButton.small(
+          buildWebScrollToTopFab(
+            visible: true,
             heroTag: 'cloudSyncScrollToTop',
-            tooltip: 'home.scrollToTop'.tr,
             onPressed: scrollToTop,
-            child: const Icon(Icons.arrow_upward),
           ),
           if (canUpload) const SizedBox(height: 12),
         ],

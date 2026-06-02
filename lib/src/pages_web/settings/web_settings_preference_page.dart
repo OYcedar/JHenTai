@@ -273,6 +273,7 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   late bool showHvInfo;
   bool useBuiltInBlockedUsers = true;
   bool isLoadingBuiltInBlockedUsers = true;
+  String builtInBlockedUsersError = '';
   late WebSearchBehaviour searchBehaviour;
   late WebScrollToTopButtonMode scrollToTopButtonMode;
 
@@ -294,14 +295,23 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
   }
 
   Future<void> _loadBuiltInBlockedUsers() async {
+    setState(() {
+      isLoadingBuiltInBlockedUsers = true;
+      builtInBlockedUsersError = '';
+    });
     try {
       final value = await backendApiClient.getUseBuiltInBlockedUsers();
       if (!mounted) {
         return;
       }
       setState(() => useBuiltInBlockedUsers = value);
-    } catch (_) {
-      // Keep the server default: enabled.
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => builtInBlockedUsersError =
+              'useBuiltInBlockedUsersLoadFailed'.trParams({'error': '$e'}),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => isLoadingBuiltInBlockedUsers = false);
@@ -441,7 +451,12 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
         ListTile(
           leading: const Icon(Icons.verified_user_outlined),
           title: Text('useBuiltInBlockedUsers'.tr),
-          subtitle: Text('useBuiltInBlockedUsersHint'.tr),
+          subtitle: _settingSubtitle(
+            context,
+            'useBuiltInBlockedUsersHint'.tr,
+            builtInBlockedUsersError,
+            _loadBuiltInBlockedUsers,
+          ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -455,7 +470,8 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
               ),
               Switch(
                 value: useBuiltInBlockedUsers,
-                onChanged: isLoadingBuiltInBlockedUsers
+                onChanged: isLoadingBuiltInBlockedUsers ||
+                        builtInBlockedUsersError.isNotEmpty
                     ? null
                     : (value) async {
                         setState(() => useBuiltInBlockedUsers = value);
@@ -513,6 +529,43 @@ class _WebGalleryDisplaySectionState extends State<_WebGalleryDisplaySection> {
           ),
         ),
         const Divider(height: 1),
+      ],
+    );
+  }
+
+  Widget _settingSubtitle(
+    BuildContext context,
+    String text,
+    String error,
+    VoidCallback onRetry,
+  ) {
+    if (error.isEmpty) {
+      return Text(text);
+    }
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(text),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.error_outline, color: colorScheme.error, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                error,
+                style: TextStyle(color: colorScheme.error),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: isLoadingBuiltInBlockedUsers ? null : onRetry,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: Text('common.retry'.tr),
+            ),
+          ],
+        ),
       ],
     );
   }
