@@ -284,10 +284,14 @@ class JHenTaiWebApp extends StatelessWidget {
           title: 'JHenTai',
           translations: WebLocaleText(),
           themeMode: tc.themeMode.value,
-          theme:
-              ThemeController.buildTheme(Brightness.light, tc.seedColor.value),
-          darkTheme:
-              ThemeController.buildTheme(Brightness.dark, tc.seedColor.value),
+          theme: ThemeController.buildTheme(
+            Brightness.light,
+            tc.lightSeedColor.value,
+          ),
+          darkTheme: ThemeController.buildTheme(
+            Brightness.dark,
+            tc.darkSeedColor.value,
+          ),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,

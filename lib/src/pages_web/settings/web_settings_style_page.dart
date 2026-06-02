@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/pages_web/web_downloads_page.dart';
@@ -149,6 +150,209 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage>
         .setItem(moveCoverToRightStorageKey, value ? 'true' : 'false');
   }
 
+  Future<void> _showCustomSeedColorDialog({
+    required Color initialColor,
+    required ValueChanged<Color> onSelected,
+  }) async {
+    Color selectedColor = initialColor;
+    final newColor = await showDialog<Color>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => SimpleDialog(
+          title: Text('custom'.tr),
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: ColorPicker(
+                color: selectedColor,
+                pickersEnabled: const <ColorPickerType, bool>{
+                  ColorPickerType.both: true,
+                  ColorPickerType.primary: false,
+                  ColorPickerType.accent: false,
+                  ColorPickerType.bw: false,
+                  ColorPickerType.custom: false,
+                  ColorPickerType.wheel: true,
+                },
+                pickerTypeLabels: <ColorPickerType, String>{
+                  ColorPickerType.both: 'preset'.tr,
+                  ColorPickerType.wheel: 'custom'.tr,
+                },
+                enableTonalPalette: true,
+                showColorCode: true,
+                colorCodeHasColor: true,
+                colorCodeTextStyle: const TextStyle(fontSize: 18),
+                enableOpacity: false,
+                width: 36,
+                height: 36,
+                columnSpacing: 16,
+                onColorChanged: (color) {
+                  setDialogState(() => selectedColor = color);
+                },
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('common.cancel'.tr),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setDialogState(() {
+                      selectedColor = ThemeController.seedColors.first;
+                    });
+                  },
+                  child: Text('common.reset'.tr),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, selectedColor),
+                  child: Text('common.ok'.tr),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    if (newColor != null) {
+      onSelected(newColor);
+    }
+  }
+
+  Widget _buildSeedColorPicker({
+    required BuildContext context,
+    required Color selectedColor,
+    required ValueChanged<Color> onSelected,
+  }) {
+    final selectedArgb = selectedColor.toARGB32();
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        ...ThemeController.seedColors.map((color) {
+          final colorArgb = color.toARGB32();
+          final isSelected = selectedArgb == colorArgb;
+          return Tooltip(
+            message:
+                '#${colorArgb.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}',
+            child: GestureDetector(
+              onTap: () => onSelected(color),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: isSelected
+                      ? Border.all(
+                          color: Theme.of(context).colorScheme.onSurface,
+                          width: 3,
+                        )
+                      : null,
+                ),
+                child: isSelected
+                    ? const Icon(Icons.check, color: Colors.white, size: 18)
+                    : null,
+              ),
+            ),
+          );
+        }),
+        OutlinedButton.icon(
+          onPressed: () => _showCustomSeedColorDialog(
+            initialColor: selectedColor,
+            onSelected: onSelected,
+          ),
+          icon: Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: selectedColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+          ),
+          label: Text('custom'.tr),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThemePreview({
+    required Brightness brightness,
+    required Color seedColor,
+    required String label,
+  }) {
+    final theme = ThemeController.buildTheme(brightness, seedColor);
+    return Theme(
+      data: theme,
+      child: Builder(
+        builder: (context) {
+          final colors = Theme.of(context).colorScheme;
+          return Container(
+            constraints: const BoxConstraints(minWidth: 220),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              border: Border.all(color: colors.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: colors.primary,
+                      foregroundColor: colors.onPrimary,
+                      child: Icon(
+                        brightness == Brightness.light
+                            ? Icons.light_mode
+                            : Icons.dark_mode,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: 0.64,
+                  backgroundColor: colors.surfaceContainerHighest,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton(
+                      onPressed: () {},
+                      child: Text('common.ok'.tr),
+                    ),
+                    OutlinedButton(
+                      onPressed: () {},
+                      child: Text('common.cancel'.tr),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Map<String, String> _loadPageListModes() {
     final home = Get.isRegistered<WebHomeController>()
         ? Get.find<WebHomeController>()
@@ -262,37 +466,42 @@ class _WebSettingsStylePageState extends State<WebSettingsStylePage>
                         Text('settings.accentColor'.tr,
                             style: Theme.of(context).textTheme.titleSmall),
                         const SizedBox(height: 8),
-                        Obx(() => Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: ThemeController.seedColors.map((color) {
-                                final isSelected =
-                                    tc.seedColor.value.toARGB32() ==
-                                        color.toARGB32();
-                                return GestureDetector(
-                                  onTap: () => tc.setSeedColor(color),
-                                  child: Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: color,
-                                      shape: BoxShape.circle,
-                                      border: isSelected
-                                          ? Border.all(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface,
-                                              width: 3)
-                                          : null,
-                                    ),
-                                    child: isSelected
-                                        ? const Icon(Icons.check,
-                                            color: Colors.white, size: 18)
-                                        : null,
-                                  ),
-                                );
-                              }).toList(),
+                        Text('settings.light'.tr,
+                            style: Theme.of(context).textTheme.bodyMedium),
+                        const SizedBox(height: 8),
+                        Obx(() => _buildSeedColorPicker(
+                              context: context,
+                              selectedColor: tc.lightSeedColor.value,
+                              onSelected: tc.setLightSeedColor,
                             )),
+                        const SizedBox(height: 16),
+                        Text('settings.dark'.tr,
+                            style: Theme.of(context).textTheme.bodyMedium),
+                        const SizedBox(height: 8),
+                        Obx(() => _buildSeedColorPicker(
+                              context: context,
+                              selectedColor: tc.darkSeedColor.value,
+                              onSelected: tc.setDarkSeedColor,
+                            )),
+                        const SizedBox(height: 16),
+                        Obx(
+                          () => Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              _buildThemePreview(
+                                brightness: Brightness.light,
+                                seedColor: tc.lightSeedColor.value,
+                                label: 'settings.light'.tr,
+                              ),
+                              _buildThemePreview(
+                                brightness: Brightness.dark,
+                                seedColor: tc.darkSeedColor.value,
+                                label: 'settings.dark'.tr,
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
