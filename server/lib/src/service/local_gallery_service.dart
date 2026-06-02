@@ -29,11 +29,13 @@ class LocalGallery {
 }
 
 class LocalGalleryService {
+  static const int _maxImagesCacheEntries = 128;
   final ServerConfig _config;
 
   List<LocalGallery> _galleries = [];
   bool _scanning = false;
   Future<void>? _scanFuture;
+  final Map<String, _LocalGalleryImagesCacheEntry> _imagesCache = {};
 
   List<LocalGallery> get galleries => List.unmodifiable(_galleries);
   bool get isScanning => _scanning;
@@ -72,6 +74,7 @@ class LocalGalleryService {
       }
 
       _galleries = nextGalleries;
+      _imagesCache.clear();
       final elapsed = DateTime.now().difference(start).inMilliseconds;
       log.info(
           'Local gallery scan complete: ${_galleries.length} galleries found in ${elapsed}ms');
@@ -91,6 +94,14 @@ class LocalGalleryService {
 
     final dir = Directory(galleryPath);
     if (!dir.existsSync()) return [];
+    final stat = dir.statSync();
+    final cached = _imagesCache[dir.path];
+    if (cached != null &&
+        cached.modified == stat.modified &&
+        cached.entityChanged == stat.changed) {
+      cached.touch();
+      return cached.images;
+    }
 
     final files = dir
         .listSync()
@@ -99,7 +110,14 @@ class LocalGalleryService {
         .toList()
       ..sort((a, b) => naturalCompare(p.basename(a.path), p.basename(b.path)));
 
-    return files.map((f) => f.path).toList();
+    final images = files.map((f) => f.path).toList();
+    _imagesCache[dir.path] = _LocalGalleryImagesCacheEntry(
+      modified: stat.modified,
+      entityChanged: stat.changed,
+      images: images,
+    );
+    _evictImagesCache();
+    return images;
   }
 
   Future<void> deleteGallery(String galleryPath) async {
@@ -108,6 +126,7 @@ class LocalGalleryService {
     }
 
     final dir = Directory(galleryPath);
+    _imagesCache.remove(dir.path);
     if (!await dir.exists()) {
       _galleries.removeWhere(
           (g) => p.canonicalize(g.path) == p.canonicalize(galleryPath));
@@ -168,5 +187,32 @@ class LocalGalleryService {
     return File(p.join(dir.path, 'metadata')).existsSync() ||
         File(p.join(dir.path, 'ametadata')).existsSync() ||
         File(p.join(dir.path, 'metadata.json')).existsSync();
+  }
+
+  void _evictImagesCache() {
+    if (_imagesCache.length <= _maxImagesCacheEntries) return;
+    final entries = _imagesCache.entries.toList()
+      ..sort((a, b) => a.value.lastUsed.compareTo(b.value.lastUsed));
+    for (final entry in entries) {
+      if (_imagesCache.length <= _maxImagesCacheEntries) break;
+      _imagesCache.remove(entry.key);
+    }
+  }
+}
+
+class _LocalGalleryImagesCacheEntry {
+  _LocalGalleryImagesCacheEntry({
+    required this.modified,
+    required this.entityChanged,
+    required this.images,
+  });
+
+  final DateTime modified;
+  final DateTime entityChanged;
+  final List<String> images;
+  int lastUsed = DateTime.now().millisecondsSinceEpoch;
+
+  void touch() {
+    lastUsed = DateTime.now().millisecondsSinceEpoch;
   }
 }

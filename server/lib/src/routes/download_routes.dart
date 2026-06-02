@@ -11,9 +11,11 @@ import '../service/archive_download_service.dart';
 import '../utils/archive_util.dart';
 
 class DownloadRoutes {
+  static const int _maxImageListCacheEntries = 128;
   final GalleryDownloadService _galleryService;
   final ArchiveDownloadService _archiveService;
   final ServerConfig _config;
+  final Map<String, _ImageListCacheEntry> _imageListCache = {};
 
   DownloadRoutes(this._galleryService, this._archiveService, this._config);
 
@@ -185,6 +187,7 @@ class DownloadRoutes {
       return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     }
     final ok = await _galleryService.reDownload(id);
+    _invalidateGalleryImageCache(id);
     if (!ok) {
       return Response.notFound(
         jsonEncode({'success': false, 'error': 'Gallery task not found'}),
@@ -204,6 +207,7 @@ class DownloadRoutes {
           body: jsonEncode({'error': 'Invalid gid or serialNo'}));
     }
     final ok = await _galleryService.reDownloadImage(id, index);
+    _invalidateGalleryImageCache(id);
     if (!ok) {
       return Response.notFound(
         jsonEncode({
@@ -223,6 +227,7 @@ class DownloadRoutes {
       return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     final deleteFiles = request.url.queryParameters['deleteFiles'] != 'false';
     await _galleryService.deleteDownload(id, deleteFiles: deleteFiles);
+    _invalidateGalleryImageCache(id);
     return Response.ok(jsonEncode({'success': true}),
         headers: {'Content-Type': 'application/json'});
   }
@@ -359,6 +364,7 @@ class DownloadRoutes {
       return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
     final deleteFiles = request.url.queryParameters['deleteFiles'] != 'false';
     await _archiveService.deleteDownload(id, deleteFiles: deleteFiles);
+    _invalidateArchiveImageCache(id);
     return Response.ok(jsonEncode({'success': true}),
         headers: {'Content-Type': 'application/json'});
   }
@@ -375,8 +381,20 @@ class DownloadRoutes {
 
   Future<Response> _listImageFiles(Directory dir) async {
     if (!dir.existsSync()) {
+      _imageListCache.remove(dir.path);
       return Response.ok(
         jsonEncode({'images': <String>[]}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    final stat = dir.statSync();
+    final cached = _imageListCache[dir.path];
+    if (cached != null &&
+        cached.modified == stat.modified &&
+        cached.entityChanged == stat.changed) {
+      cached.touch();
+      return Response.ok(
+        jsonEncode({'images': cached.images}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -400,9 +418,52 @@ class DownloadRoutes {
       (a, b) => naturalCompare(p.basename(a.path), p.basename(b.path)),
     );
 
+    final images = files.map((f) => p.basename(f.path)).toList();
+    _imageListCache[dir.path] = _ImageListCacheEntry(
+      modified: stat.modified,
+      entityChanged: stat.changed,
+      images: images,
+    );
+    _evictImageListCache();
+
     return Response.ok(
-      jsonEncode({'images': files.map((f) => p.basename(f.path)).toList()}),
+      jsonEncode({'images': images}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  void _invalidateGalleryImageCache(int gid) {
+    _imageListCache.remove(p.join(_config.downloadDir, 'gallery', '$gid'));
+  }
+
+  void _invalidateArchiveImageCache(int gid) {
+    _imageListCache.remove(p.join(_config.downloadDir, 'archive', '$gid'));
+  }
+
+  void _evictImageListCache() {
+    if (_imageListCache.length <= _maxImageListCacheEntries) return;
+    final entries = _imageListCache.entries.toList()
+      ..sort((a, b) => a.value.lastUsed.compareTo(b.value.lastUsed));
+    for (final entry in entries) {
+      if (_imageListCache.length <= _maxImageListCacheEntries) break;
+      _imageListCache.remove(entry.key);
+    }
+  }
+}
+
+class _ImageListCacheEntry {
+  _ImageListCacheEntry({
+    required this.modified,
+    required this.entityChanged,
+    required this.images,
+  });
+
+  final DateTime modified;
+  final DateTime entityChanged;
+  final List<String> images;
+  int lastUsed = DateTime.now().millisecondsSinceEpoch;
+
+  void touch() {
+    lastUsed = DateTime.now().millisecondsSinceEpoch;
   }
 }

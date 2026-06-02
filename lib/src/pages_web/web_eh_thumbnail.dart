@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -67,34 +68,23 @@ class WebEhThumbnail extends StatefulWidget {
 class _WebEhThumbnailState extends State<WebEhThumbnail> {
   ui.Image? _image;
   String? _loadError;
-  ImageStream? _imageStream;
-  ImageStreamListener? _listener;
 
-  /// Source thumb URL (ehgt) we decoded for sprite mode; GET path uses proxy URL in [_resolveNetworkSprite].
+  /// Source thumb URL (ehgt) we decoded for sprite mode.
   String? _resolvedSourceUrl;
-  bool _spriteImageFromCodec = false;
 
   @override
   void dispose() {
-    _cancelStream();
-    _disposeOwnedSpriteImage();
+    _releaseSpriteImage();
     super.dispose();
   }
 
-  void _disposeOwnedSpriteImage() {
-    if (_spriteImageFromCodec && _image != null) {
-      _image!.dispose();
+  void _releaseSpriteImage() {
+    final url = _resolvedSourceUrl;
+    if (url != null) {
+      _WebSpriteImageCache.release(url);
     }
-    _spriteImageFromCodec = false;
     _image = null;
-  }
-
-  void _cancelStream() {
-    if (_imageStream != null && _listener != null) {
-      _imageStream!.removeListener(_listener!);
-    }
-    _imageStream = null;
-    _listener = null;
+    _resolvedSourceUrl = null;
   }
 
   Future<void> _loadSpriteImage(String thumbUrl) async {
@@ -103,8 +93,7 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
         _loadError == null) {
       return;
     }
-    _cancelStream();
-    _disposeOwnedSpriteImage();
+    _releaseSpriteImage();
     _resolvedSourceUrl = thumbUrl;
     _loadError = null;
 
@@ -113,62 +102,28 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     }
 
     try {
-      if (backendApiClient.shouldProxyImageUsePost(thumbUrl)) {
-        final bytes = await backendApiClient.fetchProxiedImageBytes(thumbUrl);
-        if (!mounted || _resolvedSourceUrl != thumbUrl) {
-          return;
-        }
-        final codec = await ui.instantiateImageCodec(bytes);
-        final frame = await codec.getNextFrame();
-        if (!mounted || _resolvedSourceUrl != thumbUrl) {
-          frame.image.dispose();
-          return;
-        }
-        setState(() {
-          _spriteImageFromCodec = true;
-          _image = frame.image;
-          _loadError = null;
-        });
-      } else {
-        _resolveNetworkSprite(
-            backendApiClient.proxyImageUrl(thumbUrl), thumbUrl);
+      final image = await _WebSpriteImageCache.acquire(
+        context,
+        thumbUrl,
+      );
+      if (!mounted || _resolvedSourceUrl != thumbUrl) {
+        _WebSpriteImageCache.release(thumbUrl);
+        return;
       }
+      setState(() {
+        _image = image;
+        _loadError = null;
+      });
     } catch (e) {
       if (mounted && _resolvedSourceUrl == thumbUrl) {
+        _WebSpriteImageCache.release(thumbUrl);
+        _resolvedSourceUrl = null;
         setState(() {
           _loadError = '$e';
           _image = null;
         });
       }
     }
-  }
-
-  void _resolveNetworkSprite(String proxyUrl, String thumbUrl) {
-    _listener = ImageStreamListener(
-      (ImageInfo info, bool _) {
-        if (!mounted || _resolvedSourceUrl != thumbUrl) {
-          return;
-        }
-        setState(() {
-          _spriteImageFromCodec = false;
-          _image = info.image;
-          _loadError = null;
-        });
-      },
-      onError: (Object e, StackTrace? _) {
-        if (!mounted || _resolvedSourceUrl != thumbUrl) {
-          return;
-        }
-        setState(() {
-          _image = null;
-          _loadError = '$e';
-        });
-      },
-    );
-    final provider = NetworkImage(proxyUrl);
-    final stream = provider.resolve(createLocalImageConfiguration(context));
-    _imageStream = stream;
-    stream.addListener(_listener!);
   }
 
   bool get _noImageMode {
@@ -206,11 +161,9 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
     if (_noImageMode ||
         thumbUrl.isEmpty ||
         !WebEhThumbnail.useSpriteSheet(widget.data)) {
-      _cancelStream();
-      _disposeOwnedSpriteImage();
+      _releaseSpriteImage();
       setState(() {
         _loadError = null;
-        _resolvedSourceUrl = null;
       });
       return;
     }
@@ -339,6 +292,104 @@ class _WebEhThumbnailState extends State<WebEhThumbnail> {
         );
       },
     );
+  }
+}
+
+class _WebSpriteImageCacheEntry {
+  _WebSpriteImageCacheEntry({required this.future, required this.owned});
+
+  final Future<ui.Image> future;
+  final bool owned;
+  ui.Image? image;
+  int refCount = 0;
+  int lastUsed = DateTime.now().millisecondsSinceEpoch;
+}
+
+class _WebSpriteImageCache {
+  static const int _maxEntries = 32;
+  static final Map<String, _WebSpriteImageCacheEntry> _entries = {};
+
+  static Future<ui.Image> acquire(BuildContext context, String thumbUrl) async {
+    final entry = _entries.putIfAbsent(
+      thumbUrl,
+      () {
+        final usePost = backendApiClient.shouldProxyImageUsePost(thumbUrl);
+        late final _WebSpriteImageCacheEntry e;
+        e = _WebSpriteImageCacheEntry(
+          owned: usePost,
+          future: usePost
+              ? _loadPostSprite(thumbUrl)
+              : _loadNetworkSprite(context, thumbUrl),
+        );
+        e.future.then((image) {
+          e.image = image;
+          _evictIdleEntries();
+        }).catchError((_) {
+          _entries.remove(thumbUrl);
+        });
+        return e;
+      },
+    );
+    entry.refCount++;
+    entry.lastUsed = DateTime.now().millisecondsSinceEpoch;
+    try {
+      return await entry.future;
+    } catch (_) {
+      entry.refCount = math.max(0, entry.refCount - 1);
+      rethrow;
+    }
+  }
+
+  static void release(String thumbUrl) {
+    final entry = _entries[thumbUrl];
+    if (entry == null) return;
+    entry.refCount = math.max(0, entry.refCount - 1);
+    entry.lastUsed = DateTime.now().millisecondsSinceEpoch;
+    _evictIdleEntries();
+  }
+
+  static Future<ui.Image> _loadPostSprite(String thumbUrl) async {
+    final bytes = await backendApiClient.fetchProxiedImageBytes(thumbUrl);
+    final codec = await ui.instantiateImageCodec(bytes);
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  }
+
+  static Future<ui.Image> _loadNetworkSprite(
+    BuildContext context,
+    String thumbUrl,
+  ) {
+    final completer = Completer<ui.Image>();
+    final provider = NetworkImage(backendApiClient.proxyImageUrl(thumbUrl));
+    final stream = provider.resolve(createLocalImageConfiguration(context));
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        stream.removeListener(listener);
+        completer.complete(info.image);
+      },
+      onError: (Object e, StackTrace? st) {
+        stream.removeListener(listener);
+        completer.completeError(e, st);
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
+  }
+
+  static void _evictIdleEntries() {
+    if (_entries.length <= _maxEntries) return;
+    final candidates = _entries.entries
+        .where((entry) => entry.value.refCount <= 0)
+        .toList()
+      ..sort((a, b) => a.value.lastUsed.compareTo(b.value.lastUsed));
+    for (final candidate in candidates) {
+      if (_entries.length <= _maxEntries) break;
+      final removed = _entries.remove(candidate.key);
+      if (removed?.owned == true) {
+        removed?.image?.dispose();
+      }
+    }
   }
 }
 
