@@ -763,6 +763,7 @@ class WebPtBR {
       'blockRule.title': 'Regras de Bloqueio',
       'blockRule.empty': 'Nenhuma regra de bloqueio configurada',
       'blockRule.add': 'Adicionar Regra',
+      'blockRule.addCondition': 'Adicionar Condição',
       'blockRule.edit': 'Editar Regra',
       'blockRule.manage': 'Gerenciar Regras de Bloqueio',
       'useBuiltInBlockedUsers': 'Ativar lista interna de usuários bloqueados',

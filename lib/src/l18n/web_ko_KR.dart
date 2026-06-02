@@ -712,6 +712,7 @@ class WebKoKR {
       'blockRule.title': '차단 규칙',
       'blockRule.empty': '차단 규칙이 없습니다',
       'blockRule.add': '규칙 추가',
+      'blockRule.addCondition': '조건 추가',
       'blockRule.edit': '규칙 편집',
       'blockRule.manage': '차단 규칙 관리',
       'useBuiltInBlockedUsers': '내장 사용자 차단 목록 사용',

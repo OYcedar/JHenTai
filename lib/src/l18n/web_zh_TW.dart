@@ -685,6 +685,7 @@ class WebZhTW {
       'blockRule.title': '封鎖規則',
       'blockRule.empty': '沒有設定封鎖規則',
       'blockRule.add': '新增規則',
+      'blockRule.addCondition': '追加條件',
       'blockRule.edit': '編輯規則',
       'blockRule.manage': '管理封鎖規則',
       'useBuiltInBlockedUsers': '使用內建使用者封鎖名單',

@@ -426,8 +426,7 @@ class GalleryRoutes {
       }
       final blockRules = db.selectAllBlockRules();
       if (blockRules.isNotEmpty && list != null) {
-        list.removeWhere(
-            (g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
+        list.removeWhere((g) => matchesBlockRuleSet(blockRules, g));
       }
       return Response.ok(jsonEncode(galleries),
           headers: {'Content-Type': 'application/json'});
@@ -660,8 +659,7 @@ class GalleryRoutes {
       if (blockRules.isNotEmpty) {
         final list = galleries['galleries'] as List<Map<String, dynamic>>?;
         if (list != null) {
-          list.removeWhere(
-              (g) => blockRules.any((rule) => matchesBlockRule(rule, g)));
+          list.removeWhere((g) => matchesBlockRuleSet(blockRules, g));
         }
       }
 
@@ -690,8 +688,8 @@ class GalleryRoutes {
         ...await builtInBlockedUserRules(),
       ];
       if (blockRules.isNotEmpty) {
-        comments.removeWhere((comment) =>
-            blockRules.any((rule) => matchesCommentBlockRule(rule, comment)));
+        comments.removeWhere(
+            (comment) => matchesCommentBlockRuleSet(blockRules, comment));
       }
       return Response.ok(
         jsonEncode({

@@ -755,6 +755,7 @@ class WebRuRU {
       'blockRule.title': 'Правила блокировки',
       'blockRule.empty': 'Нет настроенных правил блокировки',
       'blockRule.add': 'Добавить правило',
+      'blockRule.addCondition': 'Добавить условие',
       'blockRule.edit': 'Редактировать правило',
       'blockRule.manage': 'Управление правилами блокировки',
       'useBuiltInBlockedUsers':

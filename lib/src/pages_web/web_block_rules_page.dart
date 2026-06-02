@@ -139,14 +139,29 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
                       .trParams({'count': '${groupRules.length}'}),
                 ),
                 trailing: groupId.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.delete_sweep, size: 20),
-                        tooltip: 'blockRule.deleteGroup'.tr,
-                        onPressed: () => _confirmDeleteGroup(
-                          context,
-                          groupId,
-                          groupRules.length,
-                        ),
+                    ? Wrap(
+                        spacing: 4,
+                        children: [
+                          IconButton(
+                            icon:
+                                const Icon(Icons.add_circle_outline, size: 20),
+                            tooltip: 'blockRule.addCondition'.tr,
+                            onPressed: () => _showEditDialog(
+                              context,
+                              groupId: groupId,
+                              target: groupRules.first['target']?.toString(),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_sweep, size: 20),
+                            tooltip: 'blockRule.deleteGroup'.tr,
+                            onPressed: () => _confirmDeleteGroup(
+                              context,
+                              groupId,
+                              groupRules.length,
+                            ),
+                          ),
+                        ],
                       )
                     : null,
                 initiallyExpanded: true,
@@ -259,7 +274,12 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
     return '$target.$attribute $pattern "$expression"';
   }
 
-  void _showEditDialog(BuildContext context, {Map<String, dynamic>? rule}) {
+  void _showEditDialog(
+    BuildContext context, {
+    Map<String, dynamic>? rule,
+    String? groupId,
+    String? target,
+  }) {
     final isEdit = rule != null;
     final targets = ['gallery', 'comment'];
     final galleryAttrs = ['title', 'tag', 'uploader', 'category', 'gid'];
@@ -275,13 +295,14 @@ class WebBlockRulesPage extends GetView<WebBlockRulesController> {
       'ste',
     ];
 
-    final selectedTarget = (rule?['target'] as String? ?? 'gallery').obs;
+    final selectedTarget =
+        (rule?['target'] as String? ?? target ?? 'gallery').obs;
     final selectedAttribute = (rule?['attribute'] as String? ?? 'title').obs;
     final selectedPattern = (rule?['pattern'] as String? ?? 'like').obs;
     final expressionCtrl =
         TextEditingController(text: rule?['expression'] as String? ?? '');
-    final groupIdCtrl =
-        TextEditingController(text: rule?['group_id'] as String? ?? '');
+    final groupIdCtrl = TextEditingController(
+        text: rule?['group_id'] as String? ?? groupId ?? '');
 
     Get.dialog(
       AlertDialog(

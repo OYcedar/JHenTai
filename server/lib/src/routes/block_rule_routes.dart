@@ -226,6 +226,16 @@ bool matchesBlockRule(Map<String, dynamic> rule, Map<String, dynamic> gallery) {
   }
 }
 
+bool matchesBlockRuleSet(
+  List<Map<String, dynamic>> rules,
+  Map<String, dynamic> gallery,
+) {
+  return _matchesGroupedRules(
+    rules,
+    (rule) => matchesBlockRule(rule, gallery),
+  );
+}
+
 bool matchesCommentBlockRule(
     Map<String, dynamic> rule, Map<String, dynamic> comment) {
   final target = rule['target'] as String? ?? 'gallery';
@@ -247,6 +257,38 @@ bool matchesCommentBlockRule(
   };
 
   return _matchesPattern(value, pattern, expression);
+}
+
+bool matchesCommentBlockRuleSet(
+  List<Map<String, dynamic>> rules,
+  Map<String, dynamic> comment,
+) {
+  return _matchesGroupedRules(
+    rules,
+    (rule) => matchesCommentBlockRule(rule, comment),
+  );
+}
+
+bool _matchesGroupedRules(
+  List<Map<String, dynamic>> rules,
+  bool Function(Map<String, dynamic> rule) matches,
+) {
+  final grouped = <String, List<Map<String, dynamic>>>{};
+  for (final rule in rules) {
+    final groupId = rule['group_id']?.toString() ?? '';
+    if (groupId.isEmpty) {
+      if (matches(rule)) return true;
+      continue;
+    }
+    grouped.putIfAbsent(groupId, () => []).add(rule);
+  }
+
+  for (final groupRules in grouped.values) {
+    if (groupRules.isNotEmpty && groupRules.every(matches)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool _matchesPattern(String value, String pattern, String expression) {

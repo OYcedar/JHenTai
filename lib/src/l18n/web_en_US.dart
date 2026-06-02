@@ -754,6 +754,7 @@ class WebEnUS {
       'blockRule.title': 'Block Rules',
       'blockRule.empty': 'No block rules configured',
       'blockRule.add': 'Add Rule',
+      'blockRule.addCondition': 'Add Condition',
       'blockRule.edit': 'Edit Rule',
       'blockRule.manage': 'Manage Block Rules',
       'useBuiltInBlockedUsers': 'Enable Built-in User Blocklist',
