@@ -464,9 +464,19 @@ class BackendApiClient {
 
   // --- Local galleries ---
 
-  Future<List<dynamic>> listLocalGalleries() async {
+  Future<({List<dynamic> galleries, bool scanning})>
+      getLocalGalleryListInfo() async {
     final response = await _dio.get('/api/local/list');
-    return (response.data['galleries'] as List?) ?? [];
+    final data = response.data as Map<String, dynamic>;
+    return (
+      galleries: (data['galleries'] as List?) ?? [],
+      scanning: data['scanning'] == true,
+    );
+  }
+
+  Future<List<dynamic>> listLocalGalleries() async {
+    final info = await getLocalGalleryListInfo();
+    return info.galleries;
   }
 
   Future<List<String>> listLocalGalleryRoots() async {

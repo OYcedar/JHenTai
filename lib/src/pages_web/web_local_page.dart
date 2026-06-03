@@ -14,6 +14,9 @@ class WebLocalController extends GetxController
   static const viewModeStorageKey = 'jh_web_local_view_mode';
   static const gridColumnsStorageKey = 'jh_web_local_grid_columns';
   static const _searchDebounceDuration = Duration(milliseconds: 180);
+  static const _scanPollInitialDelay = Duration(milliseconds: 250);
+  static const _scanPollMaxDelay = Duration(milliseconds: 1000);
+  static const _scanPollTimeout = Duration(seconds: 90);
 
   final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
@@ -93,7 +96,7 @@ class WebLocalController extends GetxController
     final previousCount = galleries.length;
     try {
       await backendApiClient.refreshLocalGalleries();
-      await Future.delayed(const Duration(seconds: 2));
+      await _waitForScanComplete();
       await _loadGalleries();
       currentPath.value = '';
       Get.snackbar(
@@ -109,6 +112,20 @@ class WebLocalController extends GetxController
       );
     } finally {
       isScanning.value = false;
+    }
+  }
+
+  Future<void> _waitForScanComplete() async {
+    final deadline = DateTime.now().add(_scanPollTimeout);
+    var delay = _scanPollInitialDelay;
+    while (DateTime.now().isBefore(deadline)) {
+      final info = await backendApiClient.getLocalGalleryListInfo();
+      if (!info.scanning) {
+        return;
+      }
+      await Future.delayed(delay);
+      final nextDelay = delay + const Duration(milliseconds: 150);
+      delay = nextDelay > _scanPollMaxDelay ? _scanPollMaxDelay : nextDelay;
     }
   }
 
