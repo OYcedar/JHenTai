@@ -793,13 +793,30 @@ class WebEnUS {
       'settings.importDataConfirm':
           'Choose a JHenTai Web export or App JHenTaiConfig file. Imported settings may overwrite current values.',
       'settings.importDataSuccess': 'Imported @count items',
+      'settings.importDataSuccessDetail': 'Imported @count items: @detail',
+      'settings.importNoChange':
+          'Import finished, but no new data was written. Check the preview or file contents.',
       'settings.importDataFailed': 'Failed to import data: @error',
+      'settings.importStatusAnalyzing':
+          'Read @name (@size), analyzing import preview.',
+      'settings.importStatusCancelled': 'Import cancelled: @name',
+      'settings.importStatusBackingUp': 'Downloading backup before import.',
+      'settings.importStatusImporting': 'Importing @name.',
+      'settings.importStatusDone': '@source imported @count items: @detail',
+      'settings.importStatusNoChange':
+          '@source import finished, but no new data was written.',
+      'settings.importStatusFailed': 'Import failed: @error',
       'settings.importPreviewTitle': 'Import preview',
       'settings.importPreviewSource': 'Source: @source',
+      'settings.importPreviewFile': 'File: @name (@size)',
       'settings.importSourceWeb': 'Web export',
       'settings.importSourceApp': 'App / cloud config',
       'settings.importPreviewSummary':
           '@count importable, @replace may be overwritten, @skip skipped.',
+      'settings.importPreviewEmpty':
+          'No importable items were found. The file was read, but nothing will be written to this server.',
+      'settings.importPreviewLocalReadHint':
+          'The file is read in this browser only. The server is changed only after you click Back up and import.',
       'settings.importPreviewBackupHint':
           'After confirmation, the current Web data will be downloaded as a backup before importing.',
       'settings.importPreviewOverwriteHint':
