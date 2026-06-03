@@ -260,6 +260,7 @@ class WebReaderController extends GetxController {
   final galleryThumbnails = <Map<String, dynamic>>[].obs;
   final useSuperResolution = false.obs;
   final superResolutionAvailable = false.obs;
+  final superResolutionSupported = false.obs;
   final currentPage = 0.obs;
   final totalPages = 0.obs;
   final isLoading = true.obs;
@@ -359,6 +360,7 @@ class WebReaderController extends GetxController {
   int? _startPage;
   Timer? _stripScrollTimer;
   late final Worker _stripScrollOnPageWorker;
+  Future<void>? _superResolutionCapabilityFuture;
 
   @override
   void onInit() {
@@ -963,6 +965,9 @@ class WebReaderController extends GetxController {
       await _loadAutoInterval();
       await _loadPreloadPages();
       await _loadDisplaySettings();
+      if (_supportsSuperResolutionReaderMode) {
+        await _loadSuperResolutionCapability();
+      }
       switch (mode) {
         case ReaderMode.online:
           await _loadOnline();
@@ -1075,6 +1080,10 @@ class WebReaderController extends GetxController {
     String sourceType,
     int expectedCount,
   ) async {
+    if (!superResolutionSupported.value) {
+      superResolutionAvailable.value = false;
+      return const [];
+    }
     if (expectedCount <= 0) {
       superResolutionAvailable.value = false;
       return const [];
@@ -1104,6 +1113,8 @@ class WebReaderController extends GetxController {
 
   Future<void> toggleSuperResolutionImages() async {
     if (mode != ReaderMode.downloaded && mode != ReaderMode.archive) return;
+    await _loadSuperResolutionCapability();
+    if (!superResolutionSupported.value) return;
     useSuperResolution.value = !useSuperResolution.value;
     final page = currentPage.value;
     if (mode == ReaderMode.downloaded) {
@@ -1126,6 +1137,34 @@ class WebReaderController extends GetxController {
     }
     currentPage.value = page.clamp(0, math.max(0, totalPages.value - 1));
     imageUrls.refresh();
+  }
+
+  bool get _supportsSuperResolutionReaderMode =>
+      mode == ReaderMode.downloaded || mode == ReaderMode.archive;
+
+  Future<void> _loadSuperResolutionCapability() {
+    if (!_supportsSuperResolutionReaderMode) {
+      superResolutionSupported.value = false;
+      useSuperResolution.value = false;
+      return Future.value();
+    }
+    return _superResolutionCapabilityFuture ??=
+        _refreshSuperResolutionCapability();
+  }
+
+  Future<void> _refreshSuperResolutionCapability() async {
+    try {
+      final capabilities =
+          await backendApiClient.getSuperResolutionCapabilities();
+      superResolutionSupported.value =
+          capabilities['status']?.toString() == 'ok';
+    } catch (_) {
+      superResolutionSupported.value = false;
+    }
+    if (!superResolutionSupported.value) {
+      useSuperResolution.value = false;
+      superResolutionAvailable.value = false;
+    }
   }
 
   void _loadLocal() {
@@ -2858,6 +2897,9 @@ class _TopOverlay extends StatelessWidget {
                         Obx(() {
                           if (controller.mode != ReaderMode.downloaded &&
                               controller.mode != ReaderMode.archive) {
+                            return const SizedBox.shrink();
+                          }
+                          if (!controller.superResolutionSupported.value) {
                             return const SizedBox.shrink();
                           }
                           return IconButton(
