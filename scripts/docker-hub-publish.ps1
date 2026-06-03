@@ -64,6 +64,9 @@ $platforms = if ($env:DOCKER_PLATFORMS) { $env:DOCKER_PLATFORMS } else { 'linux/
 Write-Host "Platforms: $platforms"
 docker buildx build `
     --platform "$platforms" `
+    --build-arg "JH_APP_VERSION=$full" `
+    --build-arg "JH_DOCKER_TAG=$tag" `
+    --build-arg "JH_FORK_REVISION=$frNum" `
     -t "${image}:${tag}" `
     -t "${image}:latest" `
     --push `

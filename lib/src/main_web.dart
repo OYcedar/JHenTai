@@ -25,6 +25,7 @@ import 'package:jhentai/src/pages_web/settings/web_settings_diagnostics_page.dar
 import 'package:jhentai/src/pages_web/settings/web_settings_download_menu_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_eh_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_hub_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_maintenance_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_mouse_wheel_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_network_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_performance_page.dart';
@@ -514,6 +515,11 @@ final _webRoutes = [
   GetPage(
     name: '/web/settings/diagnostics',
     page: () => const WebSettingsDiagnosticsPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/maintenance',
+    page: () => const WebSettingsMaintenancePage(),
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(

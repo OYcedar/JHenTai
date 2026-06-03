@@ -5,7 +5,7 @@ import 'package:dio/dio.dart' hide Response;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:path/path.dart' as p;
-import 'package:sqlite3/sqlite3.dart';
+import 'package:sqlite3/sqlite3.dart' show Row;
 
 import '../config/server_config.dart';
 import '../core/database.dart';
@@ -80,6 +80,9 @@ class SettingRoutes {
     router.get('/network/timeouts', _getNetworkTimeouts);
     router.put('/network/timeouts', _updateNetworkTimeouts);
     router.get('/diagnostics', _getDiagnostics);
+    router.get('/maintenance', _getMaintenance);
+    router.get('/maintenance/update-check', _checkMaintenanceUpdate);
+    router.get('/backup/sqlite', _downloadSqliteBackup);
     router.get('/logs', _listLogs);
     router.get('/logs/<name>', _readLog);
     router.delete('/logs', _clearLogs);
@@ -560,6 +563,264 @@ class SettingRoutes {
     );
   }
 
+  Future<Response> _getMaintenance(Request request) async {
+    final logs = _logsSummary();
+    final pageCache = _pageCacheStats();
+    final databaseFile = File(_config.databasePath);
+    final databaseBytes =
+        databaseFile.existsSync() ? databaseFile.statSync().size : 0;
+    final checks = [
+      _pathStatus('dataDir', _config.dataDir, writable: true),
+      _pathStatus('downloadDir', _config.downloadDir, writable: true),
+      _pathStatus('localGalleryDir', _config.localGalleryDir, writable: true),
+      _pathStatus('logDir', _config.logDir, writable: true),
+      _pathStatus('tempDir', _config.tempDir, writable: true),
+    ];
+    final warningCount = checks.where((item) => item['status'] != 'ok').length;
+    return Response.ok(
+      jsonEncode({
+        'status': warningCount > 0 ? 'warn' : 'ok',
+        'generatedAt': DateTime.now().toIso8601String(),
+        'runtime': _runtimeInfo(),
+        'paths': {
+          'dataDir': _config.dataDir,
+          'downloadDir': _config.downloadDir,
+          'localGalleryDir': _config.localGalleryDir,
+          'logDir': _config.logDir,
+          'tempDir': _config.tempDir,
+        },
+        'storage': {
+          'databaseBytes': databaseBytes,
+          'logsBytes': logs['totalSize'] ?? 0,
+          'pageCacheBytes': pageCache['size'] ?? 0,
+          'pageCacheCount': pageCache['count'] ?? 0,
+        },
+        'checks': checks,
+        'logs': logs,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _checkMaintenanceUpdate(Request request) async {
+    final runtime = _runtimeInfo();
+    final currentTag = runtime['dockerTag']?.toString() ?? 'local/dev';
+    if (currentTag == 'local/dev') {
+      return Response.ok(
+        jsonEncode({
+          'status': 'warn',
+          'currentTag': currentTag,
+          'latestTag': null,
+          'updateAvailable': false,
+          'message':
+              'Current runtime does not expose a Docker image tag. Build/publish images with JH_DOCKER_TAG metadata.',
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    try {
+      final dio = Dio(BaseOptions(
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 12),
+      ));
+      final response = await dio.get(
+        'https://hub.docker.com/v2/repositories/hemumoe/jhentai/tags',
+        queryParameters: {'page_size': 100},
+      );
+      final results = response.data is Map ? response.data['results'] : null;
+      if (results is! List) {
+        throw StateError('Unexpected Docker Hub response');
+      }
+      final tags = results
+          .whereType<Map>()
+          .map((item) => item['name']?.toString() ?? '')
+          .where(_isVersionTag)
+          .toList();
+      tags.sort(_compareVersionTags);
+      final latestTag = tags.isEmpty ? null : tags.last;
+      final updateAvailable =
+          latestTag != null && _compareVersionTags(currentTag, latestTag) < 0;
+      return Response.ok(
+        jsonEncode({
+          'status': latestTag == null ? 'warn' : 'ok',
+          'currentTag': currentTag,
+          'latestTag': latestTag,
+          'updateAvailable': updateAvailable,
+          'message': latestTag == null
+              ? 'No versioned Docker Hub tags were found.'
+              : updateAvailable
+                  ? 'A newer Docker image is available.'
+                  : 'Current Docker image is up to date.',
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.ok(
+        jsonEncode({
+          'status': 'warn',
+          'currentTag': currentTag,
+          'latestTag': null,
+          'updateAvailable': false,
+          'message': 'Failed to check Docker Hub: $e',
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Future<Response> _downloadSqliteBackup(Request request) async {
+    await Directory(_config.tempDir).create(recursive: true);
+    final now = DateTime.now();
+    final filename = 'jhentai-sqlite-backup-${_backupTimestamp(now)}.sqlite';
+    final backupPath = p.join(
+      _config.tempDir,
+      '$filename.tmp-${now.microsecondsSinceEpoch}',
+    );
+    final backupFile = File(backupPath);
+    try {
+      final result = await Process.run(
+        'sqlite3',
+        [_config.databasePath, '.backup $backupPath'],
+      );
+      if (result.exitCode != 0) {
+        throw StateError(
+          (result.stderr?.toString().trim().isNotEmpty ?? false)
+              ? result.stderr.toString().trim()
+              : 'sqlite3 exited with ${result.exitCode}',
+        );
+      }
+      final bytes = await backupFile.readAsBytes();
+      return Response.ok(
+        bytes,
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': 'attachment; filename="$filename"',
+        },
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Failed to create SQLite backup: $e'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } finally {
+      try {
+        if (backupFile.existsSync()) backupFile.deleteSync();
+      } catch (_) {}
+    }
+  }
+
+  Map<String, dynamic> _runtimeInfo() {
+    final appVersion = _envValue('JH_APP_VERSION')?.trim();
+    final dockerTag = _envValue('JH_DOCKER_TAG')?.trim();
+    final forkRevision = _envValue('JH_FORK_REVISION')?.trim();
+    final effectiveTag =
+        dockerTag == null || dockerTag.isEmpty ? 'local/dev' : dockerTag;
+    return {
+      'appVersion':
+          appVersion == null || appVersion.isEmpty ? 'local/dev' : appVersion,
+      'dockerTag': effectiveTag,
+      'forkRevision': forkRevision == null || forkRevision.isEmpty
+          ? 'local/dev'
+          : forkRevision,
+      'imageChannel': effectiveTag == 'local/dev'
+          ? 'local/dev'
+          : (effectiveTag == 'latest' ? 'latest' : 'pinned'),
+    };
+  }
+
+  Map<String, dynamic> _pathStatus(
+    String id,
+    String path, {
+    required bool writable,
+  }) {
+    final dir = Directory(path);
+    try {
+      if (!dir.existsSync()) {
+        return {
+          'id': id,
+          'path': path,
+          'status': 'warn',
+          'message': 'Path does not exist',
+        };
+      }
+      dir.listSync(followLinks: false).take(1).toList();
+      if (writable && !_canWriteDirectory(dir)) {
+        return {
+          'id': id,
+          'path': path,
+          'status': 'warn',
+          'message': 'Path exists but is not writable',
+        };
+      }
+      return {
+        'id': id,
+        'path': path,
+        'status': 'ok',
+        'message': writable ? 'Readable and writable' : 'Readable',
+      };
+    } catch (e) {
+      return {
+        'id': id,
+        'path': path,
+        'status': 'warn',
+        'message': '$e',
+      };
+    }
+  }
+
+  Map<String, int> _pageCacheStats() {
+    final row = db.raw.select('''
+      SELECT
+        COUNT(*) AS count,
+        COALESCE(SUM(LENGTH(content)), 0) AS content_bytes,
+        COALESCE(SUM(LENGTH(headers)), 0) AS header_bytes
+      FROM dio_cache
+    ''').first;
+    final contentBytes = (row['content_bytes'] as num?)?.toInt() ?? 0;
+    final headerBytes = (row['header_bytes'] as num?)?.toInt() ?? 0;
+    return {
+      'count': (row['count'] as num?)?.toInt() ?? 0,
+      'size': contentBytes + headerBytes,
+    };
+  }
+
+  static bool _isVersionTag(String value) {
+    return RegExp(r'^\d+\.\d+\.\d+-[0-9a-f]{3}$').hasMatch(value);
+  }
+
+  static int _compareVersionTags(String a, String b) {
+    final pa = _parseVersionTag(a);
+    final pb = _parseVersionTag(b);
+    for (var i = 0; i < 3; i++) {
+      final diff = pa.$1[i].compareTo(pb.$1[i]);
+      if (diff != 0) return diff;
+    }
+    return pa.$2.compareTo(pb.$2);
+  }
+
+  static (List<int>, int) _parseVersionTag(String value) {
+    final match =
+        RegExp(r'^(\d+)\.(\d+)\.(\d+)-([0-9a-f]{3})$').firstMatch(value);
+    if (match == null) {
+      return ([0, 0, 0], -1);
+    }
+    return (
+      [
+        int.parse(match.group(1)!),
+        int.parse(match.group(2)!),
+        int.parse(match.group(3)!),
+      ],
+      int.parse(match.group(4)!, radix: 16),
+    );
+  }
+
+  static String _backupTimestamp(DateTime time) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${time.year}${two(time.month)}${two(time.day)}-'
+        '${two(time.hour)}${two(time.minute)}${two(time.second)}';
+  }
+
   String _directoryStatus(String path, {required bool requireWritable}) {
     final dir = Directory(path);
     try {
@@ -669,19 +930,11 @@ class SettingRoutes {
   }
 
   Future<Response> _getPageCache(Request request) async {
-    final row = db.raw.select('''
-      SELECT
-        COUNT(*) AS count,
-        COALESCE(SUM(LENGTH(content)), 0) AS content_bytes,
-        COALESCE(SUM(LENGTH(headers)), 0) AS header_bytes
-      FROM dio_cache
-    ''').first;
-    final contentBytes = (row['content_bytes'] as num?)?.toInt() ?? 0;
-    final headerBytes = (row['header_bytes'] as num?)?.toInt() ?? 0;
+    final stats = _pageCacheStats();
     return Response.ok(
       jsonEncode({
-        'count': (row['count'] as num?)?.toInt() ?? 0,
-        'size': contentBytes + headerBytes,
+        'count': stats['count'] ?? 0,
+        'size': stats['size'] ?? 0,
       }),
       headers: {'Content-Type': 'application/json'},
     );

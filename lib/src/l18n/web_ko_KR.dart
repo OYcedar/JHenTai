@@ -460,6 +460,41 @@ class WebKoKR {
       'settings.notConfigured': '설정 안 됨',
       'settings.enabled': '활성화됨',
       'settings.disabled': '비활성화됨',
+      'settings.maintenanceCenter': 'Maintenance center',
+      'settings.maintenanceCenterSummary':
+          'Review image version, update checks, SQLite backup, and storage summary.',
+      'settings.maintenanceLoadFailed':
+          'Failed to load maintenance information: @error',
+      'settings.maintenanceRuntime': 'Current runtime',
+      'settings.appVersionLabel': 'App version',
+      'settings.dockerImageTag': 'Docker image tag',
+      'settings.forkRevision': 'Fork revision',
+      'settings.imageChannel': 'Image channel',
+      'settings.maintenanceUpdate': 'Image update',
+      'settings.checkDockerUpdate': 'Check for updates',
+      'settings.updateCheckManualHint':
+          'No external network request is made automatically. Check Docker Hub manually when needed.',
+      'settings.currentImageTag': 'Current tag',
+      'settings.latestImageTag': 'Latest tag',
+      'settings.maintenanceBackup': 'Pre-update backup',
+      'settings.sqliteBackupSensitiveHint':
+          'The SQLite backup contains login cookies, API token, settings, and download tasks. It is sensitive and does not include images, downloads, or local galleries.',
+      'settings.downloadSqliteBackup': 'Download SQLite backup',
+      'settings.sqliteBackupDownloaded': 'SQLite backup download started',
+      'settings.sqliteBackupFailed': 'SQLite backup failed: @error',
+      'settings.maintenanceStorage': 'Storage summary',
+      'settings.databaseSize': 'Database size',
+      'settings.logsSize': 'Logs size',
+      'settings.pageCacheSize': 'Page cache size',
+      'settings.pageCacheCount': 'Page cache entries',
+      'settings.maintenancePaths': 'Key paths',
+      'settings.maintenanceTips': 'Maintenance tips',
+      'settings.maintenanceTipPinVersion':
+          'Pin an explicit image tag in compose updates instead of relying on latest.',
+      'settings.maintenanceTipBackup':
+          'Download a SQLite backup before updating and keep your current compose file.',
+      'settings.maintenanceTipNoImageBackup':
+          'Images and local galleries are usually large. Back them up through NAS snapshots or host directory backups.',
       'settings.deploymentDiagnostics': 'Deployment diagnostics',
       'settings.deploymentDiagnosticsSummaryHint':
           'Check API, WebSocket, directory permissions, database, proxy, and logs.',

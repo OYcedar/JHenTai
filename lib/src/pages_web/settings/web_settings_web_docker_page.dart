@@ -47,6 +47,14 @@ class _WebSettingsWebDockerPageState extends State<WebSettingsWebDockerPage>
             const SizedBox(height: 12),
             _routeCard(
               context,
+              icon: Icons.build_circle_outlined,
+              title: 'settings.maintenanceCenter'.tr,
+              body: 'settings.maintenanceCenterSummary'.tr,
+              route: '/web/settings/maintenance',
+            ),
+            const SizedBox(height: 12),
+            _routeCard(
+              context,
               icon: Icons.health_and_safety_outlined,
               title: 'settings.deploymentDiagnostics'.tr,
               body: 'settings.deploymentDiagnosticsSummaryHint'.tr,

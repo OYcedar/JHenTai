@@ -61,6 +61,9 @@ PLATFORMS="${DOCKER_PLATFORMS:-linux/amd64,linux/arm64}"
 echo "Platforms: ${PLATFORMS}"
 docker buildx build \
   --platform "${PLATFORMS}" \
+  --build-arg "JH_APP_VERSION=${FULL}" \
+  --build-arg "JH_DOCKER_TAG=${TAG}" \
+  --build-arg "JH_FORK_REVISION=${FR}" \
   -t "${IMAGE}:${TAG}" \
   -t "${IMAGE}:latest" \
   --push \

@@ -1224,6 +1224,29 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> getMaintenanceStatus() async {
+    final response = await _dio.get('/api/setting/maintenance');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> checkMaintenanceUpdate() async {
+    final response = await _dio.get('/api/setting/maintenance/update-check');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<({Uint8List bytes, String fileName})> downloadSqliteBackup() async {
+    final response = await _dio.get<List<int>>(
+      '/api/setting/backup/sqlite',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final disposition = response.headers.value('content-disposition') ?? '';
+    final match = RegExp(r'filename="?([^";]+)"?').firstMatch(disposition);
+    return (
+      bytes: Uint8List.fromList(response.data ?? const <int>[]),
+      fileName: match?.group(1) ?? 'jhentai-sqlite-backup.sqlite',
+    );
+  }
+
   Future<List<Map<String, dynamic>>> listProfiles() async {
     final response = await _dio.get('/api/setting/profiles');
     final data = response.data;
