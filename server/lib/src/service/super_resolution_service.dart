@@ -361,6 +361,10 @@ class SuperResolutionService {
     await tempFile.parent.create(recursive: true);
     await tempFile.writeAsBytes(bytes);
     try {
+      await _validateModelArchiveFile(
+        tempFile,
+        sourceUrl: filename.isEmpty ? 'manual import' : filename,
+      );
       return await importModelFile(modelId, tempFile, filename: filename);
     } finally {
       if (tempFile.existsSync()) {
@@ -410,7 +414,7 @@ class SuperResolutionService {
       '${spec.id}-${DateTime.now().millisecondsSinceEpoch}.zip',
     ));
     try {
-      await _dio.download(
+      final response = await _dio.download(
         sourceUrl,
         tempFile.path,
         onReceiveProgress: (received, total) {
@@ -422,6 +426,12 @@ class SuperResolutionService {
             progress: total > 0 ? received / total : 0,
           );
         },
+      );
+      await _validateModelArchiveFile(
+        tempFile,
+        sourceUrl: sourceUrl,
+        statusCode: response.statusCode,
+        contentType: response.headers.value('content-type'),
       );
       state.update(stage: 'installing');
       await _installModelArchive(spec, tempFile);
@@ -886,6 +896,10 @@ class SuperResolutionService {
     await target.parent.create(recursive: true);
     await staging.create(recursive: true);
     try {
+      await _validateModelArchiveFile(
+        archiveFile,
+        sourceUrl: archiveFile.path,
+      );
       await _extractModelArchive(spec, archiveFile, staging);
       final binary = _binaryPathInDir(spec, staging);
       if (!binary.existsSync()) {
@@ -926,6 +940,12 @@ class SuperResolutionService {
     late final Archive archive;
     try {
       archive = ZipDecoder().decodeBuffer(input);
+    } on FormatException catch (e) {
+      throw FormatException(
+        'Invalid or corrupted ZIP package for ${spec.label}: ${e.message}. '
+        'The download may be incomplete, blocked, or replaced by an HTML/proxy error page. '
+        'Try JH_SUPER_RESOLUTION_MODEL_MIRROR or manual ZIP import.',
+      );
     } finally {
       await input.close();
     }
@@ -980,6 +1000,58 @@ class SuperResolutionService {
 
   String _modelDownloadSource(SuperResolutionModelSpec spec) {
     return _modelDownloadUrl(spec) == spec.downloadUrl ? 'official' : 'mirror';
+  }
+
+  Future<void> _validateModelArchiveFile(
+    File file, {
+    required String sourceUrl,
+    int? statusCode,
+    String? contentType,
+  }) async {
+    if (!await file.exists()) {
+      throw StateError('Model package was not downloaded: $sourceUrl');
+    }
+    final length = await file.length();
+    if (length < 4) {
+      throw StateError(
+        'Model package is empty or truncated ($length bytes): $sourceUrl',
+      );
+    }
+
+    final input = await file.open();
+    try {
+      final header = await input.read(4);
+      final isZip = header.length == 4 &&
+          header[0] == 0x50 &&
+          header[1] == 0x4b &&
+          (header[2] == 0x03 || header[2] == 0x05 || header[2] == 0x07) &&
+          (header[3] == 0x04 || header[3] == 0x06 || header[3] == 0x08);
+      if (!isZip) {
+        final preview = await _fileTextPreview(file);
+        throw FormatException(
+          'Downloaded model package is not a ZIP file. '
+          'status=${statusCode ?? 'unknown'} contentType=${contentType ?? 'unknown'} '
+          'bytes=$length source=$sourceUrl preview=$preview',
+        );
+      }
+    } finally {
+      await input.close();
+    }
+  }
+
+  Future<String> _fileTextPreview(File file) async {
+    final input = await file.open();
+    try {
+      final bytes = await input.read(160);
+      return utf8
+          .decode(bytes, allowMalformed: true)
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+    } catch (_) {
+      return '<binary>';
+    } finally {
+      await input.close();
+    }
   }
 
   File _binaryPath(SuperResolutionModelSpec spec) {
