@@ -191,6 +191,21 @@ The model page never enables CPU-only work by default. Installing a model also d
 
 ---
 
+## Optional Archive Bot / Archive-at-Home parsing
+
+Docker/Web can optionally use a third-party archive parsing service for archive downloads. Open **Settings → Web/Docker → Download → Archive Bot / Archive-at-Home** to configure:
+
+- Protocol: `Archive-at-Home` or `EH-ArBot`.
+- API address.
+- API key.
+- Manual balance test and check-in.
+
+This feature is **disabled by default**. Existing archive downloads continue to use the official EH archive path unless a task is explicitly started or switched with the Bot parse source. API keys are stored in the local SQLite config table, are not shown back in the Web UI, and are redacted from diagnostics.
+
+Use this only if you trust the selected third-party service. The server does not register accounts, host API keys, or automatically fall back from official archive parsing to Bot parsing.
+
+---
+
 ### Separate download directory (Unraid / large libraries)
 
 Keep SQLite and config on appdata, but put downloads on your media share:

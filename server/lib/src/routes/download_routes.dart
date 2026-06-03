@@ -47,6 +47,7 @@ class DownloadRoutes {
     router.post('/archive/retry-failed', _retryFailedArchiveDownloads);
     router.post('/archive/reunlock-failed', _reUnlockFailedArchiveDownloads);
     router.patch('/archive/<gid>', _patchArchiveDownload);
+    router.post('/archive/<gid>/parse-source', _changeArchiveParseSource);
     router.post('/archive/<gid>/pause', _pauseArchiveDownload);
     router.post('/archive/<gid>/resume', _resumeArchiveDownload);
     router.post('/archive/<gid>/reunlock', _reUnlockArchive);
@@ -201,6 +202,55 @@ class DownloadRoutes {
         headers: {'Content-Type': 'application/json'});
   }
 
+  Future<Response> _changeArchiveParseSource(
+      Request request, String gid) async {
+    final id = int.tryParse(gid);
+    if (id == null) {
+      return Response.badRequest(body: jsonEncode({'error': 'Invalid gid'}));
+    }
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (e) {
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid JSON body'}));
+    }
+    final task = _archiveService.getTask(id);
+    if (task == null) {
+      return Response.notFound(
+        jsonEncode({'success': false, 'error': 'Archive task not found'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    if (task.status == ArchiveStatus.completed) {
+      return Response(
+        409,
+        body: jsonEncode({
+          'success': false,
+          'error': 'Completed archive tasks cannot change parse source',
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    final parseSource = ArchiveParseSource.fromValue(body['parseSource']);
+    final ok = await _archiveService.changeParseSource(id, parseSource);
+    if (!ok) {
+      return Response(
+        400,
+        body: jsonEncode({'success': false, 'error': 'Change rejected'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    return Response.ok(
+      jsonEncode({
+        'success': true,
+        'gid': id,
+        'parseSource': parseSource.name,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
   Future<Response> _pauseGalleryDownload(Request request, String gid) async {
     final id = int.tryParse(gid);
     if (id == null)
@@ -324,6 +374,7 @@ class DownloadRoutes {
       priority: (body['priority'] as num?)?.toInt() ?? 0,
       tagSearchText: body['tagSearchText'] as String? ?? '',
       publishTime: body['publishTime'] as String? ?? '',
+      parseSource: ArchiveParseSource.fromValue(body['parseSource']),
     );
 
     return Response.ok(

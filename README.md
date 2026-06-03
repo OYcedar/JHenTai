@@ -118,6 +118,8 @@ For **AMD/Intel integrated GPU** NAS devices, pass `/dev/dri` into the container
 
 Super-resolution model packages can be downloaded from **Settings → Web/Docker → Image super resolution**. If GitHub downloads are slow or blocked in your NAS network, download the matching ZIP manually and use **Import ZIP** on the same page; the server validates the package before enabling it.
 
+Archive downloads use the official EH archive path by default. If you use a trusted third-party Archive Bot / Archive-at-Home service, configure it from **Settings → Web/Docker → Download** and choose the Bot parse source per archive task.
+
 **For detailed Docker documentation** (configuration, backup, reverse proxy, CI/CD, security, troubleshooting), see:
 
 > **[Docker Deployment Guide (English)](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md)** | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)

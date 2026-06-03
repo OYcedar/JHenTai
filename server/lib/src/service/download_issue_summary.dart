@@ -107,6 +107,15 @@ class DownloadIssueSummary {
       return 'imagePage';
     }
     if (type == 'archive' &&
+        (text.contains('archivebot') ||
+            text.contains('archive bot') ||
+            text.contains('archive-at-home') ||
+            text.contains('api key') ||
+            text.contains('apikey') ||
+            text.contains('bot resolve'))) {
+      return 'archiveBot';
+    }
+    if (type == 'archive' &&
         (text.contains('unlock') || text.contains('509'))) {
       return 'archiveUnlock';
     }
@@ -129,6 +138,11 @@ class DownloadIssueSummary {
     return switch (category) {
       'hath' => ['probe_hath', 'open_network', 'retry_failed'],
       'quota' => ['open_eh_status', 'retry_failed'],
+      'archiveBot' => [
+          'open_archive_bot_settings',
+          'retry_failed_archive',
+          'reunlock_failed_archive'
+        ],
       'archiveUnlock' => ['reunlock_failed_archive', 'open_network'],
       'archiveDownload' => ['retry_failed_archive', 'reunlock_failed_archive'],
       'imagePage' => ['retry_failed_gallery', 'open_troubleshooting'],

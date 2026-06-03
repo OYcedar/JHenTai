@@ -702,6 +702,13 @@ class WebEnUS {
       'settings.defaultGalleryDownload': 'Gallery download',
       'settings.defaultArchiveDownload': 'Archive download',
       'settings.customGroupName': 'Custom group name',
+      'settings.archiveParseSource': 'Archive parse source',
+      'settings.archiveParseOfficial': 'Official EH archive',
+      'settings.archiveParseOfficialShort': 'Official',
+      'settings.archiveParseBot': 'Archive Bot / Archive-at-Home',
+      'settings.archiveParseBotShort': 'Bot',
+      'settings.archiveParseChangeHint':
+          'Changing the parse source clears resolved URLs and queues the archive again.',
       'speedLimit': 'Speed limit',
       'settings.speedLimitWebHint':
           'Limits gallery image downloads on the Docker server. Use 99 for unlimited.',
@@ -716,6 +723,24 @@ class WebEnUS {
           'Failed to load server runtime settings: @error',
       'settings.galleryConcurrency': 'Gallery concurrency',
       'settings.archiveConcurrency': 'Archive concurrency',
+      'settings.archiveBotTitle': 'Archive Bot / Archive-at-Home',
+      'settings.archiveBotHint':
+          'Optional third-party archive parsing. It stays unused by default; after configuring an API key, archive tasks can manually choose the Bot parse source.',
+      'settings.archiveBotProtocol': 'Protocol',
+      'settings.archiveBotApiAddress': 'API address',
+      'settings.archiveBotApiKey': 'API key',
+      'settings.archiveBotApiKeyConfigured':
+          'An API key is saved. Leave blank to keep the current key.',
+      'settings.archiveBotApiKeyNotConfigured': 'No API key configured.',
+      'settings.archiveBotTestBalance': 'Test balance',
+      'settings.archiveBotCheckIn': 'Check in',
+      'settings.archiveBotSaved': 'Archive Bot settings saved',
+      'settings.archiveBotBalanceResult': 'Current balance: @balance',
+      'settings.archiveBotLoadFailed':
+          'Failed to load Archive Bot settings: @error',
+      'settings.archiveBotSaveFailed':
+          'Failed to save Archive Bot settings: @error',
+      'settings.archiveBotActionFailed': 'Archive Bot request failed: @error',
       'settings.jhPublicApiBaseUrl': 'JH public API',
       'settings.jhAppId': 'JH app ID',
       'settings.jhApiSecretConfigured': 'JH API secret',
@@ -1312,6 +1337,9 @@ class WebEnUS {
           '@count archive download/extract failures',
       'downloads.issue_archiveDownload_hint':
           'Retry archive tasks; if the URL expired, re-unlock first.',
+      'downloads.issue_archiveBot': '@count Archive Bot parse failures',
+      'downloads.issue_archiveBot_hint':
+          'Check the Archive Bot / Archive-at-Home API address, API key, and balance, or switch back to official archive parsing.',
       'downloads.issue_localFile': '@count local file issues',
       'downloads.issue_localFile_hint':
           'Check download directory mounts, permissions, and NAS disk health.',

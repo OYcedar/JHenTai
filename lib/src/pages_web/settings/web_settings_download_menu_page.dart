@@ -23,6 +23,7 @@ class _WebSettingsDownloadMenuPageState
   static const _galleryOriginalKey = 'jh_web_default_gallery_original';
   static const _archiveGroupKey = 'jh_web_default_archive_group';
   static const _archivePriorityKey = 'jh_web_default_archive_priority';
+  static const _archiveParseSourceKey = 'jh_web_default_archive_parse_source';
 
   final WebSettingsController controller = Get.find<WebSettingsController>();
   final galleryGroupController = TextEditingController();
@@ -45,6 +46,15 @@ class _WebSettingsDownloadMenuPageState
   bool deleteArchiveFileAfterDownload = true;
   bool isLoadingRuntimeSettings = true;
   String runtimeSettingsError = '';
+  final archiveBotApiAddressController = TextEditingController();
+  final archiveBotApiKeyController = TextEditingController();
+  String archiveBotType = 'archiveAtHome';
+  bool archiveBotApiKeyConfigured = false;
+  bool isLoadingArchiveBot = true;
+  bool archiveBotSaving = false;
+  bool archiveBotActionRunning = false;
+  String archiveBotError = '';
+  String archiveBotResult = '';
 
   @override
   void initState() {
@@ -58,6 +68,7 @@ class _WebSettingsDownloadMenuPageState
     _loadRestoreTasksAutomatically();
     _loadSpeedLimit();
     _loadRuntimeSettings();
+    _loadArchiveBotSettings();
   }
 
   @override
@@ -66,6 +77,8 @@ class _WebSettingsDownloadMenuPageState
     galleryPriorityController.dispose();
     archiveGroupController.dispose();
     archivePriorityController.dispose();
+    archiveBotApiAddressController.dispose();
+    archiveBotApiKeyController.dispose();
     super.dispose();
   }
 
@@ -180,6 +193,127 @@ class _WebSettingsDownloadMenuPageState
     } finally {
       if (mounted) {
         setState(() => isLoadingRuntimeSettings = false);
+      }
+    }
+  }
+
+  Future<void> _loadArchiveBotSettings() async {
+    setState(() {
+      isLoadingArchiveBot = true;
+      archiveBotError = '';
+      archiveBotResult = '';
+    });
+    try {
+      final settings = await backendApiClient.getArchiveBotSettings();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        archiveBotType = settings['type']?.toString() ?? 'archiveAtHome';
+        archiveBotApiAddressController.text =
+            settings['apiAddress']?.toString() ??
+                _archiveBotDefaultAddress(archiveBotType);
+        archiveBotApiKeyConfigured = settings['apiKeyConfigured'] == true;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => archiveBotError =
+              'settings.archiveBotLoadFailed'.trParams({'error': '$e'}),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoadingArchiveBot = false);
+      }
+    }
+  }
+
+  Future<void> _saveArchiveBotSettings() async {
+    if (archiveBotSaving) {
+      return;
+    }
+    setState(() {
+      archiveBotSaving = true;
+      archiveBotError = '';
+      archiveBotResult = '';
+    });
+    try {
+      final result = await backendApiClient.updateArchiveBotSettings(
+        type: archiveBotType,
+        apiAddress: archiveBotApiAddressController.text.trim(),
+        apiKey: archiveBotApiKeyController.text.trim().isEmpty
+            ? null
+            : archiveBotApiKeyController.text.trim(),
+      );
+      final settings = result['settings'] is Map
+          ? Map<String, dynamic>.from(result['settings'] as Map)
+          : const <String, dynamic>{};
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        archiveBotType = settings['type']?.toString() ?? archiveBotType;
+        archiveBotApiAddressController.text =
+            settings['apiAddress']?.toString() ??
+                _archiveBotDefaultAddress(archiveBotType);
+        archiveBotApiKeyConfigured = settings['apiKeyConfigured'] == true;
+        archiveBotApiKeyController.clear();
+        archiveBotResult = 'settings.archiveBotSaved'.tr;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => archiveBotError =
+              'settings.archiveBotSaveFailed'.trParams({'error': '$e'}),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => archiveBotSaving = false);
+      }
+    }
+  }
+
+  Future<void> _runArchiveBotAction(
+    Future<Map<String, dynamic>> Function() run,
+  ) async {
+    if (archiveBotActionRunning) {
+      return;
+    }
+    setState(() {
+      archiveBotActionRunning = true;
+      archiveBotError = '';
+      archiveBotResult = '';
+    });
+    try {
+      final result = await run();
+      if (!mounted) {
+        return;
+      }
+      final response = result['response'] is Map
+          ? Map<String, dynamic>.from(result['response'] as Map)
+          : const <String, dynamic>{};
+      final message = response['message']?.toString() ??
+          result['message']?.toString() ??
+          (result['success'] == true ? 'OK' : '');
+      final balance = result['balance'];
+      setState(() {
+        archiveBotResult = balance == null
+            ? message
+            : 'settings.archiveBotBalanceResult'
+                .trParams({'balance': '$balance'});
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(
+          () => archiveBotError =
+              'settings.archiveBotActionFailed'.trParams({'error': '$e'}),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => archiveBotActionRunning = false);
       }
     }
   }
@@ -384,6 +518,10 @@ class _WebSettingsDownloadMenuPageState
             _sectionTitle(context, 'settings.downloadServerRuntime'.tr),
             const SizedBox(height: 8),
             _runtimeCard(info),
+            const SizedBox(height: 24),
+            _sectionTitle(context, 'settings.archiveBotTitle'.tr),
+            const SizedBox(height: 8),
+            _archiveBotCard(context),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => showWebScanRootsDialog(
@@ -476,6 +614,30 @@ class _WebSettingsDownloadMenuPageState
               groupController: archiveGroupController,
               priorityController: archivePriorityController,
               groups: groups,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _readStorage(_archiveParseSourceKey, 'official'),
+              decoration: InputDecoration(
+                labelText: 'settings.archiveParseSource'.tr,
+                border: const OutlineInputBorder(),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: 'official',
+                  child: Text('settings.archiveParseOfficial'.tr),
+                ),
+                DropdownMenuItem(
+                  value: 'bot',
+                  child: Text('settings.archiveParseBot'.tr),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  web.window.localStorage
+                      .setItem(_archiveParseSourceKey, value);
+                }
+              },
             ),
           ],
         ),
@@ -691,6 +853,131 @@ class _WebSettingsDownloadMenuPageState
         ),
       ),
     );
+  }
+
+  Widget _archiveBotCard(BuildContext context) {
+    final busy = isLoadingArchiveBot || archiveBotSaving;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'settings.archiveBotHint'.tr,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: archiveBotType,
+              decoration: InputDecoration(
+                labelText: 'settings.archiveBotProtocol'.tr,
+                border: const OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(
+                  value: 'archiveAtHome',
+                  child: Text('Archive-at-Home'),
+                ),
+                DropdownMenuItem(
+                  value: 'ehArBot',
+                  child: Text('EH-ArBot'),
+                ),
+              ],
+              onChanged: busy
+                  ? null
+                  : (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() {
+                        archiveBotType = value;
+                        archiveBotApiAddressController.text =
+                            _archiveBotDefaultAddress(value);
+                      });
+                    },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: archiveBotApiAddressController,
+              enabled: !busy,
+              decoration: InputDecoration(
+                labelText: 'settings.archiveBotApiAddress'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: archiveBotApiKeyController,
+              enabled: !busy,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: 'settings.archiveBotApiKey'.tr,
+                helperText: archiveBotApiKeyConfigured
+                    ? 'settings.archiveBotApiKeyConfigured'.tr
+                    : 'settings.archiveBotApiKeyNotConfigured'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            if (archiveBotError.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _loadErrorBanner(
+                  context, archiveBotError, _loadArchiveBotSettings),
+            ],
+            if (archiveBotResult.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Icon(Icons.check_circle_outline,
+                      color: Theme.of(context).colorScheme.primary, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(archiveBotResult)),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: busy ? null : _saveArchiveBotSettings,
+                  icon: archiveBotSaving
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text('common.save'.tr),
+                ),
+                OutlinedButton.icon(
+                  onPressed: archiveBotActionRunning
+                      ? null
+                      : () => _runArchiveBotAction(
+                          backendApiClient.requestArchiveBotBalance),
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                  label: Text('settings.archiveBotTestBalance'.tr),
+                ),
+                OutlinedButton.icon(
+                  onPressed: archiveBotActionRunning
+                      ? null
+                      : () => _runArchiveBotAction(
+                          backendApiClient.requestArchiveBotCheckIn),
+                  icon: const Icon(Icons.task_alt_outlined),
+                  label: Text('settings.archiveBotCheckIn'.tr),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _archiveBotDefaultAddress(String type) {
+    return type == 'ehArBot'
+        ? 'https://eh-arc-api.mhdy.icu'
+        : 'https://api.archive-at-home.org';
   }
 
   Widget _settingSubtitle(

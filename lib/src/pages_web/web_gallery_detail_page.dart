@@ -594,6 +594,7 @@ class WebGalleryDetailController extends GetxController
     bool isOriginal = false,
     String group = 'default',
     int priority = 0,
+    String parseSource = 'official',
   }) async {
     if (archiverUrl.isEmpty) {
       Get.snackbar('common.error'.tr, 'detail.noArchive'.tr,
@@ -616,6 +617,7 @@ class WebGalleryDetailController extends GetxController
         priority: priority,
         tagSearchText: buildDownloadTagSearchText(),
         publishTime: publishDate.value,
+        parseSource: parseSource,
       );
       Get.snackbar('detail.downloadStarted'.tr, 'detail.archiveQueued'.tr,
           snackPosition: SnackPosition.BOTTOM);
@@ -1083,142 +1085,180 @@ class WebGalleryDetailPage extends StatelessWidget {
           web.window.localStorage.getItem('jh_web_default_archive_priority') ??
               '0',
     );
+    var parseSource = web.window.localStorage
+            .getItem('jh_web_default_archive_parse_source') ??
+        'official';
     final archiveInfoFuture =
         backendApiClient.fetchGalleryArchiveInfo(controller.archiverUrl.value);
     showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('detail.startDownloadTitle'.tr),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              WebGroupNameSelector(
-                currentGroup: group,
-                candidates: candidates,
-                listener: (g) => group = g,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: priorityCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'detail.downloadPriority'.tr,
-                  border: const OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('detail.startDownloadTitle'.tr),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                WebGroupNameSelector(
+                  currentGroup: group,
+                  candidates: candidates,
+                  listener: (g) => group = g,
                 ),
-              ),
-              const SizedBox(height: 16),
-              FutureBuilder<Map<String, dynamic>>(
-                future: archiveInfoFuture,
-                builder: (context, snapshot) {
-                  final info = snapshot.data ?? const <String, dynamic>{};
-                  final loading =
-                      snapshot.connectionState != ConnectionState.done &&
-                          !snapshot.hasData;
-                  final error = snapshot.error;
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (loading)
-                        const LinearProgressIndicator()
-                      else if (error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Text(
-                            'detail.loadArchiveInfoFailed'
-                                .trParams({'error': '$error'}),
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.error,
+                const SizedBox(height: 12),
+                TextField(
+                  controller: priorityCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: 'detail.downloadPriority'.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: parseSource,
+                  decoration: InputDecoration(
+                    labelText: 'settings.archiveParseSource'.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: [
+                    DropdownMenuItem(
+                      value: 'official',
+                      child: Text('settings.archiveParseOfficial'.tr),
+                    ),
+                    DropdownMenuItem(
+                      value: 'bot',
+                      child: Text('settings.archiveParseBot'.tr),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => parseSource = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                FutureBuilder<Map<String, dynamic>>(
+                  future: archiveInfoFuture,
+                  builder: (context, snapshot) {
+                    final info = snapshot.data ?? const <String, dynamic>{};
+                    final loading =
+                        snapshot.connectionState != ConnectionState.done &&
+                            !snapshot.hasData;
+                    final error = snapshot.error;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (loading)
+                          const LinearProgressIndicator()
+                        else if (error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Text(
+                              'detail.loadArchiveInfoFailed'
+                                  .trParams({'error': '$error'}),
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
                             ),
-                          ),
-                        )
-                      else
-                        _archiveBalanceChips(context, info),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.center,
-                        children: [
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.archive),
-                            label: Text(_archiveOptionLabel(
-                              'detail.archiveResample'.tr,
-                              info['resampleCost'],
-                              info['resampleSize'],
-                            )),
-                            onPressed: _canStartArchiveOption(
-                              cost: info['resampleCost'],
-                              hint: info['downloadResampleHint'],
-                              allowWhenUnknown: error != null,
-                            )
-                                ? () async {
-                                    final g = group.trim().isEmpty
-                                        ? 'default'
-                                        : group.trim();
-                                    final p = int.tryParse(
-                                            priorityCtrl.text.trim()) ??
-                                        0;
-                                    web.window.localStorage.setItem(
-                                        'jh_web_default_archive_group', g);
-                                    web.window.localStorage.setItem(
-                                        'jh_web_default_archive_priority',
-                                        '$p');
-                                    Navigator.pop(ctx);
-                                    await controller.startArchiveDownload(
-                                        isOriginal: false,
-                                        group: g,
-                                        priority: p);
-                                  }
-                                : null,
-                          ),
-                          FilledButton.icon(
-                            icon: const Icon(Icons.archive_outlined),
-                            label: Text(_archiveOptionLabel(
-                              'detail.archiveOriginal'.tr,
-                              info['originalCost'],
-                              info['originalSize'],
-                            )),
-                            onPressed: _canStartArchiveOption(
-                              cost: info['originalCost'],
-                              hint: info['downloadOriginalHint'],
-                              allowWhenUnknown: error != null,
-                            )
-                                ? () async {
-                                    final g = group.trim().isEmpty
-                                        ? 'default'
-                                        : group.trim();
-                                    final p = int.tryParse(
-                                            priorityCtrl.text.trim()) ??
-                                        0;
-                                    web.window.localStorage.setItem(
-                                        'jh_web_default_archive_group', g);
-                                    web.window.localStorage.setItem(
-                                        'jh_web_default_archive_priority',
-                                        '$p');
-                                    Navigator.pop(ctx);
-                                    await controller.startArchiveDownload(
-                                        isOriginal: true,
-                                        group: g,
-                                        priority: p);
-                                  }
-                                : null,
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
+                          )
+                        else
+                          _archiveBalanceChips(context, info),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.center,
+                          children: [
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.archive),
+                              label: Text(_archiveOptionLabel(
+                                'detail.archiveResample'.tr,
+                                info['resampleCost'],
+                                info['resampleSize'],
+                              )),
+                              onPressed: parseSource == 'bot' ||
+                                      _canStartArchiveOption(
+                                        cost: info['resampleCost'],
+                                        hint: info['downloadResampleHint'],
+                                        allowWhenUnknown: error != null,
+                                      )
+                                  ? () async {
+                                      final g = group.trim().isEmpty
+                                          ? 'default'
+                                          : group.trim();
+                                      final p = int.tryParse(
+                                              priorityCtrl.text.trim()) ??
+                                          0;
+                                      web.window.localStorage.setItem(
+                                          'jh_web_default_archive_group', g);
+                                      web.window.localStorage.setItem(
+                                          'jh_web_default_archive_priority',
+                                          '$p');
+                                      web.window.localStorage.setItem(
+                                          'jh_web_default_archive_parse_source',
+                                          parseSource);
+                                      Navigator.pop(ctx);
+                                      await controller.startArchiveDownload(
+                                          isOriginal: false,
+                                          group: g,
+                                          priority: p,
+                                          parseSource: parseSource);
+                                    }
+                                  : null,
+                            ),
+                            FilledButton.icon(
+                              icon: const Icon(Icons.archive_outlined),
+                              label: Text(_archiveOptionLabel(
+                                'detail.archiveOriginal'.tr,
+                                info['originalCost'],
+                                info['originalSize'],
+                              )),
+                              onPressed: parseSource == 'bot' ||
+                                      _canStartArchiveOption(
+                                        cost: info['originalCost'],
+                                        hint: info['downloadOriginalHint'],
+                                        allowWhenUnknown: error != null,
+                                      )
+                                  ? () async {
+                                      final g = group.trim().isEmpty
+                                          ? 'default'
+                                          : group.trim();
+                                      final p = int.tryParse(
+                                              priorityCtrl.text.trim()) ??
+                                          0;
+                                      web.window.localStorage.setItem(
+                                          'jh_web_default_archive_group', g);
+                                      web.window.localStorage.setItem(
+                                          'jh_web_default_archive_priority',
+                                          '$p');
+                                      web.window.localStorage.setItem(
+                                          'jh_web_default_archive_parse_source',
+                                          parseSource);
+                                      Navigator.pop(ctx);
+                                      await controller.startArchiveDownload(
+                                          isOriginal: true,
+                                          group: g,
+                                          priority: p,
+                                          parseSource: parseSource);
+                                    }
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('common.cancel'.tr)),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('common.cancel'.tr)),
-        ],
       ),
     );
   }

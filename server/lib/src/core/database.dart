@@ -29,6 +29,8 @@ class ServerDatabase {
         'archive_download', 'priority', 'INTEGER NOT NULL DEFAULT 0');
     _addColumnIfMissing(
         'archive_download', 'tag_search_text', "TEXT NOT NULL DEFAULT ''");
+    _addColumnIfMissing(
+        'archive_download', 'parse_source', "TEXT NOT NULL DEFAULT 'official'");
     _addColumnIfMissing('tag_translation', 'links', "TEXT NOT NULL DEFAULT ''");
     _db.execute(
         'CREATE INDEX IF NOT EXISTS idx_super_resolution_job_source ON super_resolution_job(source_type, gid)');
@@ -117,7 +119,8 @@ class ServerDatabase {
         downloaded_bytes INTEGER NOT NULL DEFAULT 0,
         total_bytes INTEGER NOT NULL DEFAULT 0,
         priority INTEGER NOT NULL DEFAULT 0,
-        tag_search_text TEXT NOT NULL DEFAULT ''
+        tag_search_text TEXT NOT NULL DEFAULT '',
+        parse_source TEXT NOT NULL DEFAULT 'official'
       )
     ''');
 
@@ -373,8 +376,8 @@ class ServerDatabase {
       INSERT OR REPLACE INTO archive_download
       (gid, token, title, category, page_count, gallery_url, cover_url, uploader, size,
        publish_time, archive_status, archive_page_url, download_page_url, download_url,
-       is_original, insert_time, group_name, downloaded_bytes, total_bytes, priority, tag_search_text)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       is_original, insert_time, group_name, downloaded_bytes, total_bytes, priority, tag_search_text, parse_source)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', [
       data['gid'],
       data['token'],
@@ -397,10 +400,12 @@ class ServerDatabase {
       data['total_bytes'] ?? 0,
       data['priority'] ?? 0,
       data['tag_search_text'] ?? '',
+      data['parse_source'] ?? 'official',
     ]);
   }
 
-  void updateArchiveDownloadMeta(int gid, {int? priority, String? groupName}) {
+  void updateArchiveDownloadMeta(int gid,
+      {int? priority, String? groupName, String? parseSource}) {
     if (priority != null) {
       _db.execute('UPDATE archive_download SET priority = ? WHERE gid = ?',
           [priority, gid]);
@@ -408,6 +413,10 @@ class ServerDatabase {
     if (groupName != null) {
       _db.execute('UPDATE archive_download SET group_name = ? WHERE gid = ?',
           [groupName, gid]);
+    }
+    if (parseSource != null) {
+      _db.execute('UPDATE archive_download SET parse_source = ? WHERE gid = ?',
+          [parseSource, gid]);
     }
   }
 

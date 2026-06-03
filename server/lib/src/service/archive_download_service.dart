@@ -10,6 +10,7 @@ import '../core/database.dart';
 import '../core/log.dart';
 import '../network/eh_client.dart';
 import '../utils/archive_util.dart';
+import 'archive_bot_service.dart';
 import 'download_runtime_settings.dart';
 import 'event_bus.dart';
 import 'super_resolution_service.dart';
@@ -30,6 +31,24 @@ enum ArchiveStatus {
   failed, // 8
 }
 
+enum ArchiveParseSource {
+  official,
+  bot;
+
+  static ArchiveParseSource fromValue(Object? value) {
+    final text = value?.toString().trim().toLowerCase() ?? '';
+    return switch (text) {
+      'bot' || '1' || 'archivebot' || 'archive_bot' => ArchiveParseSource.bot,
+      _ => ArchiveParseSource.official,
+    };
+  }
+
+  String get label => switch (this) {
+        ArchiveParseSource.official => 'Official EH archive',
+        ArchiveParseSource.bot => 'Archive Bot / Archive-at-Home',
+      };
+}
+
 class ArchiveDownloadTask {
   final int gid;
   final String token;
@@ -42,6 +61,7 @@ class ArchiveDownloadTask {
   final String size;
   final String archivePageUrl;
   final bool isOriginal;
+  ArchiveParseSource parseSource;
   String group;
   int priority;
   final String tagSearchText;
@@ -68,6 +88,7 @@ class ArchiveDownloadTask {
     required this.size,
     required this.archivePageUrl,
     required this.isOriginal,
+    this.parseSource = ArchiveParseSource.official,
     this.group = 'default',
     this.priority = 0,
     this.tagSearchText = '',
@@ -94,6 +115,8 @@ class ArchiveDownloadTask {
         'size': size,
         'archivePageUrl': archivePageUrl,
         'isOriginal': isOriginal,
+        'parseSource': parseSource.name,
+        'parseSourceLabel': parseSource.label,
         'status': status.index,
         'downloadPageUrl': downloadPageUrl,
         'downloadUrl': downloadUrl,
@@ -116,6 +139,7 @@ class ArchiveDownloadService {
   final EHClient _client;
   final ServerConfig _config;
   final EventBus _eventBus;
+  final ArchiveBotService? _archiveBotService;
   final SuperResolutionService? _superResolutionService;
 
   final Map<int, ArchiveDownloadTask> _tasks = {};
@@ -127,8 +151,10 @@ class ArchiveDownloadService {
   int get activeDownloadCount => _activeDownloads.length;
 
   ArchiveDownloadService(this._client, this._config, this._eventBus,
-      {SuperResolutionService? superResolutionService})
-      : _superResolutionService = superResolutionService;
+      {ArchiveBotService? archiveBotService,
+      SuperResolutionService? superResolutionService})
+      : _archiveBotService = archiveBotService,
+        _superResolutionService = superResolutionService;
 
   Future<void> init() async {
     _loadTasksFromDatabase();
@@ -178,6 +204,7 @@ class ArchiveDownloadService {
         size: row['size'] as String? ?? '',
         archivePageUrl: row['archive_page_url'] as String? ?? '',
         isOriginal: (row['is_original'] as int? ?? 0) == 1,
+        parseSource: ArchiveParseSource.fromValue(row['parse_source']),
         status: _safeEnum(ArchiveStatus.values, row['archive_status'] as int,
             ArchiveStatus.failed),
         downloadPageUrl: row['download_page_url'] as String? ?? '',
@@ -211,9 +238,15 @@ class ArchiveDownloadService {
     int priority = 0,
     String tagSearchText = '',
     String? publishTime,
+    ArchiveParseSource parseSource = ArchiveParseSource.official,
   }) async {
     if (_tasks.containsKey(gid)) {
       final existing = _tasks[gid]!;
+      if (existing.parseSource != parseSource &&
+          existing.status != ArchiveStatus.completed) {
+        await changeParseSource(gid, parseSource);
+        return;
+      }
       if (existing.status == ArchiveStatus.paused ||
           existing.status == ArchiveStatus.failed) {
         existing.status = ArchiveStatus.unlocking;
@@ -238,6 +271,7 @@ class ArchiveDownloadService {
       size: size,
       archivePageUrl: archivePageUrl,
       isOriginal: isOriginal,
+      parseSource: parseSource,
       status: ArchiveStatus.unlocking,
       group: group,
       priority: priority,
@@ -263,6 +297,7 @@ class ArchiveDownloadService {
       'archive_status': ArchiveStatus.unlocking.index,
       'archive_page_url': archivePageUrl,
       'is_original': isOriginal ? 1 : 0,
+      'parse_source': parseSource.name,
       'group_name': group,
       'insert_time': now,
       'priority': priority,
@@ -286,6 +321,45 @@ class ArchiveDownloadService {
       db.updateArchiveDownloadMeta(gid, groupName: group);
     }
     _notifyProgress(task);
+  }
+
+  ArchiveDownloadTask? getTask(int gid) => _tasks[gid];
+
+  Future<bool> changeParseSource(
+    int gid,
+    ArchiveParseSource parseSource,
+  ) async {
+    final task = _tasks[gid];
+    if (task == null || task.status == ArchiveStatus.completed) return false;
+
+    task._cancelToken?.cancel('change parse source');
+    _activeDownloads.remove(gid);
+    task.parseSource = parseSource;
+    task.status = ArchiveStatus.unlocking;
+    task.lastError = '';
+    task.errorCategory = '';
+    task.downloadPageUrl = '';
+    task.downloadUrl = '';
+    task.downloadedBytes = 0;
+    task.totalBytes = 0;
+
+    final zipFile = File(_archiveZipPath(gid));
+    if (await zipFile.exists()) {
+      await zipFile.delete();
+    }
+
+    db.updateArchiveDownloadMeta(gid, parseSource: parseSource.name);
+    db.updateArchiveDownloadUrls(gid, downloadPageUrl: '', downloadUrl: '');
+    db.updateArchiveDownloadStatus(
+      gid,
+      ArchiveStatus.unlocking.index,
+      downloadedBytes: 0,
+      totalBytes: 0,
+    );
+    _saveMetadata(task);
+    _notifyProgress(task);
+    _processQueue();
+    return true;
   }
 
   void pauseDownload(int gid) {
@@ -409,6 +483,7 @@ class ArchiveDownloadService {
         size: meta['size']?.toString() ?? '',
         archivePageUrl: archivePageUrl,
         isOriginal: meta['isOriginal'] as bool? ?? false,
+        parseSource: ArchiveParseSource.fromValue(meta['parseSource']),
         group: meta['group']?.toString() ??
             meta['groupName']?.toString() ??
             'default',
@@ -439,6 +514,7 @@ class ArchiveDownloadService {
         'download_page_url': task.downloadPageUrl,
         'download_url': task.downloadUrl,
         'is_original': task.isOriginal ? 1 : 0,
+        'parse_source': task.parseSource.name,
         'group_name': task.group,
         'insert_time': insertTime,
         'priority': task.priority,
@@ -483,16 +559,18 @@ class ArchiveDownloadService {
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
       _notifyProgress(task);
 
-      if (task.downloadPageUrl.isEmpty) {
-        final downloadPageUrl = await _client.unlockArchive(
-          task.archivePageUrl,
-          isOriginal: task.isOriginal,
-          cancelToken: task._cancelToken,
-        );
-        task.downloadPageUrl = downloadPageUrl;
-        db.updateArchiveDownloadUrls(task.gid,
-            downloadPageUrl: downloadPageUrl);
-        _saveMetadata(task);
+      if (task.parseSource == ArchiveParseSource.official) {
+        if (task.downloadPageUrl.isEmpty) {
+          final downloadPageUrl = await _client.unlockArchive(
+            task.archivePageUrl,
+            isOriginal: task.isOriginal,
+            cancelToken: task._cancelToken,
+          );
+          task.downloadPageUrl = downloadPageUrl;
+          db.updateArchiveDownloadUrls(task.gid,
+              downloadPageUrl: downloadPageUrl);
+          _saveMetadata(task);
+        }
       }
 
       task.status = ArchiveStatus.parsingUrl;
@@ -501,16 +579,29 @@ class ArchiveDownloadService {
 
       if (task.downloadUrl.isEmpty) {
         String? downloadUrl;
-        for (var i = 0;
-            i < 10 && task.status == ArchiveStatus.parsingUrl;
-            i++) {
-          downloadUrl = await _client.parseArchiveDownloadUrl(
-            task.downloadPageUrl,
+        if (task.parseSource == ArchiveParseSource.bot) {
+          final archiveBotService = _archiveBotService;
+          if (archiveBotService == null) {
+            throw const ArchiveBotException('Archive Bot service unavailable');
+          }
+          downloadUrl = await archiveBotService.resolveArchiveUrl(
+            gid: task.gid,
+            token: task.token,
+            reParse: true,
             cancelToken: task._cancelToken,
           );
-          if (downloadUrl != null) break;
-          await Future<void>.delayed(const Duration(seconds: 3));
-          cancelTokenThrowIfCancelled(task._cancelToken);
+        } else {
+          for (var i = 0;
+              i < 10 && task.status == ArchiveStatus.parsingUrl;
+              i++) {
+            downloadUrl = await _client.parseArchiveDownloadUrl(
+              task.downloadPageUrl,
+              cancelToken: task._cancelToken,
+            );
+            if (downloadUrl != null) break;
+            await Future<void>.delayed(const Duration(seconds: 3));
+            cancelTokenThrowIfCancelled(task._cancelToken);
+          }
         }
         if (downloadUrl == null) {
           throw Exception('Failed to parse archive download URL');
@@ -585,6 +676,13 @@ class ArchiveDownloadService {
       task.errorCategory = 'archiveUnlock';
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
       _notifyProgress(task);
+    } on ArchiveBotException catch (e) {
+      log.error('Archive Bot resolve failed for ${task.gid}: ${e.message}');
+      task.status = ArchiveStatus.failed;
+      task.lastError = e.message;
+      task.errorCategory = 'archiveBot';
+      db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
+      _notifyProgress(task);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) return;
       log.error('Archive download failed for ${task.gid}', e);
@@ -637,6 +735,7 @@ class ArchiveDownloadService {
       'size': task.size,
       'archivePageUrl': task.archivePageUrl,
       'isOriginal': task.isOriginal,
+      'parseSource': task.parseSource.name,
       'group': task.group,
       'priority': task.priority,
       'publishTime': task.publishTime,
@@ -652,6 +751,13 @@ class ArchiveDownloadService {
   String _classifyArchiveError(String error) {
     final text = error.toLowerCase();
     if (text.contains('509')) return 'quota';
+    if (text.contains('archive bot') ||
+        text.contains('archive-at-home') ||
+        text.contains('archiveathome') ||
+        text.contains('api key') ||
+        text.contains('apikey')) {
+      return 'archiveBot';
+    }
     if (text.contains('unlock')) return 'archiveUnlock';
     if (text.contains('hath.network') ||
         text.contains('proxy') ||

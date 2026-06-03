@@ -113,6 +113,8 @@ docker-compose up -d
 
 超分模型包可在 **设置 → Web/Docker → 图片超分辨率** 下载。如果 NAS 网络访问 GitHub 较慢或失败，可以手动下载对应 ZIP 后在同一页面使用 **导入 ZIP**；服务端会校验模型包后再启用。
 
+归档下载默认仍走官方 EH 归档路径。如果你使用可信的第三方 Archive Bot / Archive-at-Home 服务，可以在 **设置 → Web/Docker → 下载** 中配置，并在归档任务中手动选择 Bot 解析来源。
+
 **详细的 Docker 部署文档**（配置、备份、反向代理、CI/CD、安全、常见问题）请参阅：
 
 > **[Docker 部署指南（简体中文）](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md)** | [English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)

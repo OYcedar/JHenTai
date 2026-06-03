@@ -13,6 +13,7 @@ import 'package:jhentai_server/src/middleware/auth_middleware.dart';
 import 'package:jhentai_server/src/network/cookie_manager.dart';
 import 'package:jhentai_server/src/network/eh_client.dart';
 import 'package:jhentai_server/src/routes/router.dart';
+import 'package:jhentai_server/src/service/archive_bot_service.dart';
 import 'package:jhentai_server/src/service/archive_download_service.dart';
 import 'package:jhentai_server/src/service/event_bus.dart';
 import 'package:jhentai_server/src/service/gallery_download_service.dart';
@@ -70,6 +71,9 @@ Future<void> main(List<String> args) async {
 
   final eventBus = EventBus();
 
+  final archiveBotService = ArchiveBotService();
+  await archiveBotService.init();
+
   final superResolutionService = SuperResolutionService(config, eventBus);
   await superResolutionService.init();
 
@@ -80,6 +84,7 @@ Future<void> main(List<String> args) async {
 
   final archiveDownloadService = ArchiveDownloadService(
       ehClient, config, eventBus,
+      archiveBotService: archiveBotService,
       superResolutionService: superResolutionService);
   await archiveDownloadService.init();
 
@@ -110,6 +115,7 @@ Future<void> main(List<String> args) async {
     ehClient: ehClient,
     galleryDownloadService: galleryDownloadService,
     archiveDownloadService: archiveDownloadService,
+    archiveBotService: archiveBotService,
     localGalleryService: localGalleryService,
     config: config,
     eventBus: eventBus,

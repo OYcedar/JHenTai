@@ -445,6 +445,7 @@ class BackendApiClient {
     int priority = 0,
     String tagSearchText = '',
     String publishTime = '',
+    String parseSource = 'official',
   }) async {
     await _dio.post(
       '/api/download/archive/start',
@@ -464,6 +465,7 @@ class BackendApiClient {
         'priority': priority,
         'tagSearchText': tagSearchText,
         'publishTime': publishTime,
+        'parseSource': parseSource,
       },
     );
   }
@@ -490,6 +492,16 @@ class BackendApiClient {
 
   Future<void> reUnlockArchiveDownload(int gid) async {
     await _dio.post('/api/download/archive/$gid/reunlock');
+  }
+
+  Future<void> changeArchiveParseSource(
+    int gid, {
+    required String parseSource,
+  }) async {
+    await _dio.post(
+      '/api/download/archive/$gid/parse-source',
+      data: {'parseSource': parseSource},
+    );
   }
 
   Future<Map<String, dynamic>> retryFailedArchiveDownloads() async {
@@ -586,6 +598,55 @@ class BackendApiClient {
   Future<List<String>> getArchiveDownloadImages(int gid) async {
     final response = await _dio.get('/api/download/archive/$gid/images');
     return ((response.data['images'] as List?) ?? []).cast<String>();
+  }
+
+  // --- Archive Bot / Archive-at-Home ---
+
+  Future<Map<String, dynamic>> getArchiveBotSettings() async {
+    final response = await _dio.get('/api/archive-bot/settings');
+    final data = response.data;
+    if (data is Map && data['settings'] is Map) {
+      return Map<String, dynamic>.from(data['settings'] as Map);
+    }
+    return {};
+  }
+
+  Future<Map<String, dynamic>> updateArchiveBotSettings({
+    required String type,
+    required String apiAddress,
+    String? apiKey,
+    bool clearApiKey = false,
+  }) async {
+    final body = <String, dynamic>{
+      'type': type,
+      'apiAddress': apiAddress,
+      if (apiKey != null) 'apiKey': apiKey,
+      if (clearApiKey) 'clearApiKey': true,
+    };
+    final response = await _dio.put('/api/archive-bot/settings', data: body);
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> requestArchiveBotBalance() async {
+    final response = await _dio.post('/api/archive-bot/balance');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> requestArchiveBotCheckIn() async {
+    final response = await _dio.post('/api/archive-bot/check-in');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> resolveArchiveBot({
+    required int gid,
+    required String token,
+    bool reParse = true,
+  }) async {
+    final response = await _dio.post(
+      '/api/archive-bot/resolve',
+      data: {'gid': gid, 'token': token, 'reParse': reParse},
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
   // --- Super resolution ---

@@ -1013,12 +1013,16 @@ class SettingRoutes {
       final category = group['category']?.toString() ?? 'unknown';
       issues.add({
         'id': 'downloads_$category',
-        'group': category == 'hath' ? 'hath' : 'downloads',
+        'group': category == 'hath'
+            ? 'hath'
+            : (category == 'archiveBot' ? 'network' : 'downloads'),
         'status': 'warn',
         'titleKey': group['titleKey'],
         'detailKey': group['detailKey'],
         'count': group['count'],
-        'route': '/web/downloads',
+        'route': category == 'archiveBot'
+            ? '/web/settings/download'
+            : '/web/downloads',
         'probe': category == 'hath' ? 'hath' : 'downloads',
         'actions': group['actions'],
       });

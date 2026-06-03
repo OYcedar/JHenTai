@@ -32,6 +32,7 @@ The remaining gaps are either platform-specific App features or larger backend w
 | Gallery detail | Yes | Yes | Covered | Web covers favorite, rating, comments, tag actions, torrents, archives, stats. |
 | Reader layouts | Yes | Yes | Covered | Web has continuous, fit-width, double column, wheel controls, local/archive/downloaded modes. |
 | Download tasks | Yes | Yes | Covered | Web has gallery/archive tabs, search, filters, batch actions, group and priority editing. |
+| Archive-at-Home / Archive Bot | Yes | Yes | Covered | Web/Docker can configure Archive-at-Home or EH-ArBot, start archive tasks with official or Bot parsing, and switch unfinished archive tasks before re-parsing. |
 | Local galleries | Yes | Yes | Covered | Web supports scan roots, directory browsing, search, grid/list, local reader. |
 | History | Yes | Yes | Covered | Web supports search, pagination, grid/list, delete/clear. |
 | Block rules | Yes | Yes | Covered | Web has grouped rule management and import/export support. |

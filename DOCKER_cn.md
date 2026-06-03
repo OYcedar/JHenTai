@@ -207,6 +207,21 @@ services:
 
 ---
 
+## 可选 Archive Bot / Archive-at-Home 解析
+
+Docker/Web 端可以选择使用第三方归档解析服务。入口在 **设置 → Web/Docker → 下载 → Archive Bot / Archive-at-Home**，可配置：
+
+- 协议：`Archive-at-Home` 或 `EH-ArBot`。
+- API 地址。
+- API key。
+- 手动测试余额和签到。
+
+该功能 **默认关闭**。现有归档下载仍走官方 EH 归档路径，只有在新建任务或未完成任务中明确选择 Bot 解析来源时才会使用第三方服务。API key 保存在本地 SQLite 配置表中，Web 页面不会回显，诊断包中也会脱敏。
+
+请只在信任所选第三方服务时使用。服务端不会注册账号、托管 API key，也不会在官方归档解析失败时未经确认自动切换到 Bot 解析。
+
+---
+
 ## 本地画廊扫描
 
 将媒体目录挂载到容器中，并通过 `JH_EXTRA_SCAN_PATHS` 注册：

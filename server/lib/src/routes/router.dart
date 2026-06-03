@@ -7,6 +7,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../config/server_config.dart';
 import '../network/eh_client.dart';
+import '../service/archive_bot_service.dart';
 import '../service/archive_download_service.dart';
 import '../service/event_bus.dart';
 import '../service/gallery_download_service.dart';
@@ -14,6 +15,7 @@ import '../service/local_gallery_service.dart';
 import '../service/super_resolution_service.dart';
 import '../service/tag_translation_service.dart';
 import 'auth_routes.dart';
+import 'archive_bot_routes.dart';
 import 'block_rule_routes.dart';
 import 'comment_routes.dart';
 import 'download_routes.dart';
@@ -36,6 +38,7 @@ class AppRouter {
   final EHClient ehClient;
   final GalleryDownloadService galleryDownloadService;
   final ArchiveDownloadService archiveDownloadService;
+  final ArchiveBotService archiveBotService;
   final LocalGalleryService localGalleryService;
   final ServerConfig config;
   final EventBus eventBus;
@@ -47,6 +50,7 @@ class AppRouter {
     required this.ehClient,
     required this.galleryDownloadService,
     required this.archiveDownloadService,
+    required this.archiveBotService,
     required this.localGalleryService,
     required this.config,
     required this.eventBus,
@@ -60,6 +64,8 @@ class AppRouter {
 
     router.mount('/api/proxy/', ProxyRoutes(ehClient).router.call);
     router.mount('/api/auth/', AuthRoutes(ehClient).router.call);
+    router.mount(
+        '/api/archive-bot/', ArchiveBotRoutes(archiveBotService).router.call);
     router.mount('/api/gallery/', GalleryRoutes(ehClient).router.call);
     router.mount(
         '/api/download/',

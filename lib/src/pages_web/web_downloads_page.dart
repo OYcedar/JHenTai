@@ -947,6 +947,20 @@ class WebDownloadsController extends GetxController
     }
   }
 
+  Future<void> changeArchiveParseSource(
+    int gid, {
+    required String parseSource,
+    bool refresh = true,
+  }) async {
+    await backendApiClient.changeArchiveParseSource(
+      gid,
+      parseSource: parseSource,
+    );
+    if (refresh) {
+      await _svc.refresh();
+    }
+  }
+
   Future<void> renameTaskGroup({
     required bool galleryTab,
     required String oldGroup,
@@ -1925,58 +1939,107 @@ void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
 void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl,
     Map<String, dynamic> task) {
   final gid = task['gid'] as int;
+  final status = (task['status'] as num?)?.toInt() ?? 0;
   final priCtrl = TextEditingController(
       text: '${(task['priority'] as num?)?.toInt() ?? 0}');
   final grpCtrl = TextEditingController(
       text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
+  var parseSource =
+      task['parseSource']?.toString() == 'bot' ? 'bot' : 'official';
+  final originalParseSource = parseSource;
   showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('downloads.editTask'.tr),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: priCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'downloads.setPriority'.tr,
-              border: const OutlineInputBorder(),
-            ),
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        title: Text('downloads.editTask'.tr),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: priCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'downloads.setPriority'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _PriorityChoiceChips(
+                selectedPriority: int.tryParse(priCtrl.text.trim()),
+                onSelected: (priority) => priCtrl.text = '$priority',
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: grpCtrl,
+                decoration: InputDecoration(
+                  labelText: 'downloads.setGroup'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: parseSource,
+                decoration: InputDecoration(
+                  labelText: 'settings.archiveParseSource'.tr,
+                  border: const OutlineInputBorder(),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: 'official',
+                    child: Text('settings.archiveParseOfficial'.tr),
+                  ),
+                  DropdownMenuItem(
+                    value: 'bot',
+                    child: Text('settings.archiveParseBot'.tr),
+                  ),
+                ],
+                onChanged: status == 6
+                    ? null
+                    : (value) {
+                        if (value != null) {
+                          setDialogState(() => parseSource = value);
+                        }
+                      },
+              ),
+              if (status != 6 && parseSource != originalParseSource) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'settings.archiveParseChangeHint'.tr,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 8),
-          _PriorityChoiceChips(
-            selectedPriority: int.tryParse(priCtrl.text.trim()),
-            onSelected: (priority) => priCtrl.text = '$priority',
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: grpCtrl,
-            decoration: InputDecoration(
-              labelText: 'downloads.setGroup'.tr,
-              border: const OutlineInputBorder(),
-            ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr)),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final g =
+                  grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
+              await ctrl.patchArchiveTask(
+                gid,
+                priority: int.tryParse(priCtrl.text.trim()),
+                group: g,
+                refresh: false,
+              );
+              if (status != 6 && parseSource != originalParseSource) {
+                await ctrl.changeArchiveParseSource(
+                  gid,
+                  parseSource: parseSource,
+                  refresh: false,
+                );
+              }
+              await ctrl.refresh();
+            },
+            child: Text('common.ok'.tr),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('common.cancel'.tr)),
-        FilledButton(
-          onPressed: () async {
-            Navigator.pop(ctx);
-            final g =
-                grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
-            await ctrl.patchArchiveTask(
-              gid,
-              priority: int.tryParse(priCtrl.text.trim()),
-              group: g,
-            );
-          },
-          child: Text('common.ok'.tr),
-        ),
-      ],
     ),
   );
 }
@@ -2509,6 +2572,13 @@ class _DownloadTaskGridCard extends StatelessWidget {
                           _TinyLabel(
                             label: 'originalImage'.tr,
                             color: Colors.teal,
+                          ),
+                        if (isArchive)
+                          _TinyLabel(
+                            label: _archiveParseSourceLabel(task),
+                            color: task['parseSource'] == 'bot'
+                                ? Colors.deepOrange
+                                : Colors.indigo,
                           ),
                       ],
                     ),
@@ -3719,6 +3789,13 @@ class _ArchiveTaskCard extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 8),
                               ],
+                              _TinyLabel(
+                                label: _archiveParseSourceLabel(task),
+                                color: task['parseSource'] == 'bot'
+                                    ? Colors.deepOrange
+                                    : Colors.indigo,
+                              ),
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 5, vertical: 1),
@@ -3947,6 +4024,13 @@ String _formatBytes(int bytes) {
   if (bytes < 1048576) return '${(bytes / 1024).toStringAsFixed(1)} KB';
   if (bytes < 1073741824) return '${(bytes / 1048576).toStringAsFixed(1)} MB';
   return '${(bytes / 1073741824).toStringAsFixed(1)} GB';
+}
+
+String _archiveParseSourceLabel(Map<String, dynamic> task) {
+  if (task['parseSource']?.toString() == 'bot') {
+    return 'settings.archiveParseBotShort'.tr;
+  }
+  return 'settings.archiveParseOfficialShort'.tr;
 }
 
 int _taskInt(Map<String, dynamic> task, String key) =>
