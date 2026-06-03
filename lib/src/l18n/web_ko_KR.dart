@@ -460,6 +460,38 @@ class WebKoKR {
       'settings.notConfigured': '설정 안 됨',
       'settings.enabled': '활성화됨',
       'settings.disabled': '비활성화됨',
+      'settings.deploymentDiagnostics': 'Deployment diagnostics',
+      'settings.deploymentDiagnosticsSummaryHint':
+          'Check API, WebSocket, directory permissions, database, proxy, and logs.',
+      'settings.copyDeploymentDiagnostics': 'Copy deployment diagnostics',
+      'settings.deploymentDiagnosticsSummary': 'Deployment status',
+      'settings.deploymentDiagnosticsSummaryBody':
+          '@errors errors, @warnings warnings.',
+      'settings.generatedAt': 'Generated at',
+      'settings.diagnosticsLoadFailed':
+          'Failed to load deployment diagnostics: @error',
+      'settings.diagnosticsGroupService': 'Service entry',
+      'settings.diagnosticsGroupStorage': 'Storage directories',
+      'settings.diagnosticsGroupDatabase': 'Database',
+      'settings.diagnosticsGroupLocalGallery': 'Local gallery',
+      'settings.diagnosticsGroupNetwork': 'Network proxy',
+      'settings.diagnosticsGroupLogs': 'Logs',
+      'settings.diagnosticsStatusOk': 'OK',
+      'settings.diagnosticsStatusWarn': 'Warning',
+      'settings.diagnosticsStatusError': 'Error',
+      'settings.websocketStatus': 'Download WebSocket',
+      'settings.websocketConnecting':
+          'The download realtime status channel is connecting.',
+      'settings.websocketConnected':
+          'The download realtime status channel is connected.',
+      'settings.websocketReconnecting':
+          'The download realtime status channel is reconnecting.',
+      'settings.websocketDisconnected':
+          'The download realtime status channel is disconnected. Check reverse proxy WebSocket forwarding.',
+      'settings.proxyHasCredentials': 'auth configured',
+      'settings.logCount': 'Log count',
+      'settings.logTotalSize': 'Log size',
+      'settings.logLatestModified': 'Latest update',
       'settings.downloadWebSummary':
           '다운로드 기본 그룹과 우선순위를 설정하고 Docker 다운로드 경로와 동시 다운로드 수를 확인하며 작업을 관리합니다.',
       'settings.downloadWebIntro':

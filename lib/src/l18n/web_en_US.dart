@@ -274,6 +274,12 @@ class WebEnUS {
       'downloads.deleteTitle': 'Delete Download',
       'downloads.deleteConfirm': 'Choose whether to keep downloaded files.',
       'downloads.loadFailed': 'Failed to load tasks: @error',
+      'downloads.wsConnected': 'Download live status connected',
+      'downloads.wsConnecting': 'Connecting download live status...',
+      'downloads.wsReconnecting':
+          'Download live status disconnected, reconnecting. Tasks will sync after reconnection.',
+      'downloads.wsDisconnected':
+          'Download live status is unavailable. You can refresh the task list manually.',
       // gallery statuses
       'downloads.gStatus0': 'None',
       'downloads.gStatus1': 'Downloading',
@@ -298,6 +304,8 @@ class WebEnUS {
           'Mount directories into the Docker container\nor place galleries in the local_gallery folder',
       'local.scanNow': 'Scan Now',
       'local.scanFailed': 'Failed to scan local galleries: @error',
+      'local.scanProgress':
+          'Scanning, found @count galleries, elapsed @elapsed',
       'local.empty': 'Empty',
       'local.noImages': 'No images found in this gallery',
       'local.loadFailed': 'Failed to load gallery images: @error',
@@ -492,6 +500,38 @@ class WebEnUS {
       'settings.notConfigured': 'Not configured',
       'settings.enabled': 'Enabled',
       'settings.disabled': 'Disabled',
+      'settings.deploymentDiagnostics': 'Deployment diagnostics',
+      'settings.deploymentDiagnosticsSummaryHint':
+          'Check API, WebSocket, directory permissions, database, proxy, and logs.',
+      'settings.copyDeploymentDiagnostics': 'Copy deployment diagnostics',
+      'settings.deploymentDiagnosticsSummary': 'Deployment status',
+      'settings.deploymentDiagnosticsSummaryBody':
+          '@errors errors, @warnings warnings.',
+      'settings.generatedAt': 'Generated at',
+      'settings.diagnosticsLoadFailed':
+          'Failed to load deployment diagnostics: @error',
+      'settings.diagnosticsGroupService': 'Service entry',
+      'settings.diagnosticsGroupStorage': 'Storage directories',
+      'settings.diagnosticsGroupDatabase': 'Database',
+      'settings.diagnosticsGroupLocalGallery': 'Local gallery',
+      'settings.diagnosticsGroupNetwork': 'Network proxy',
+      'settings.diagnosticsGroupLogs': 'Logs',
+      'settings.diagnosticsStatusOk': 'OK',
+      'settings.diagnosticsStatusWarn': 'Warning',
+      'settings.diagnosticsStatusError': 'Error',
+      'settings.websocketStatus': 'Download WebSocket',
+      'settings.websocketConnecting':
+          'The download realtime status channel is connecting.',
+      'settings.websocketConnected':
+          'The download realtime status channel is connected.',
+      'settings.websocketReconnecting':
+          'The download realtime status channel is reconnecting.',
+      'settings.websocketDisconnected':
+          'The download realtime status channel is disconnected. Check reverse proxy WebSocket forwarding.',
+      'settings.proxyHasCredentials': 'auth configured',
+      'settings.logCount': 'Log count',
+      'settings.logTotalSize': 'Log size',
+      'settings.logLatestModified': 'Latest update',
       'settings.downloadWebSummary':
           'Set download defaults, review Docker download paths and concurrency, and manage download tasks.',
       'settings.downloadWebIntro':
@@ -525,6 +565,12 @@ class WebEnUS {
       'settings.webPerformance': 'Web performance',
       'settings.performanceWebIntro':
           'The web client runs in your browser. These local browser settings affect large-list interaction smoothness.',
+      'settings.performancePresetTitle': 'Performance presets',
+      'settings.performancePresetHint':
+          'Quickly tune reader preloading and download-list animation limits. You can still override each reader option later.',
+      'settings.performancePresetNas': 'NAS low load',
+      'settings.performancePresetBalanced': 'Balanced',
+      'settings.performancePresetFast': 'Fast device',
       'settings.webMaxGalleryNum4Animation': 'Download group animation limit',
       'settings.webMaxGalleryNum4AnimationHint':
           'Disable expand/collapse icon animation when a download group has more tasks than this value. Use 0 to always disable it.',
@@ -551,6 +597,25 @@ class WebEnUS {
           'Choose a JHenTai Web export or App JHenTaiConfig file. Imported settings may overwrite current values.',
       'settings.importDataSuccess': 'Imported @count items',
       'settings.importDataFailed': 'Failed to import data: @error',
+      'settings.importPreviewTitle': 'Import preview',
+      'settings.importPreviewSource': 'Source: @source',
+      'settings.importSourceWeb': 'Web export',
+      'settings.importSourceApp': 'App / cloud config',
+      'settings.importPreviewSummary':
+          '@count importable, @replace may be overwritten, @skip skipped.',
+      'settings.importPreviewBackupHint':
+          'After confirmation, the current Web data will be downloaded as a backup before importing.',
+      'settings.importPreviewOverwriteHint':
+          'Import merges data. Settings, history, search history, and quick searches may overwrite matching key / gid / keyword / name entries.',
+      'settings.importConfirmWithBackup': 'Back up and import',
+      'settings.importSectionSummary':
+          'Import @count · overwrite @replace · skip @skip',
+      'settings.importSectionConfig': 'Settings',
+      'settings.importSectionBlockRules': 'Block rules',
+      'settings.importSectionHistory': 'Gallery history',
+      'settings.importSectionSearchHistory': 'Search history',
+      'settings.importSectionQuickSearch': 'Quick searches',
+      'settings.importSectionReadProgress': 'Read progress',
       'settings.cloudSync': 'Cloud Config Sync',
       'settings.cloudSyncHint':
           'Browse JHenTai cloud configs, import by share code, and merge them into this Docker server.',

@@ -99,6 +99,55 @@ String _webHomeGalleryUrl(Map<String, dynamic> gallery) {
   return 'https://e-hentai.org/g/$gid/$token/';
 }
 
+const Duration _webHomeReadProgressCacheTtl = Duration(seconds: 30);
+const int _webHomeReadProgressCacheMaxEntries = 256;
+final Map<int, _WebHomeReadProgressCacheEntry> _webHomeReadProgressCache = {};
+
+Future<String?> _webHomeReadProgressFuture(int gid) {
+  final now = DateTime.now();
+  final cached = _webHomeReadProgressCache[gid];
+  if (cached != null &&
+      now.difference(cached.createdAt) < _webHomeReadProgressCacheTtl) {
+    cached.touch();
+    return cached.future;
+  }
+  final future = backendApiClient.getSetting('read_progress_$gid');
+  _webHomeReadProgressCache[gid] =
+      _WebHomeReadProgressCacheEntry(future: future, createdAt: now);
+  _evictWebHomeReadProgressCache();
+  return future;
+}
+
+void _evictWebHomeReadProgressCache() {
+  if (_webHomeReadProgressCache.length <= _webHomeReadProgressCacheMaxEntries) {
+    return;
+  }
+  final entries = _webHomeReadProgressCache.entries.toList()
+    ..sort((a, b) => a.value.lastUsed.compareTo(b.value.lastUsed));
+  for (final entry in entries) {
+    if (_webHomeReadProgressCache.length <=
+        _webHomeReadProgressCacheMaxEntries) {
+      break;
+    }
+    _webHomeReadProgressCache.remove(entry.key);
+  }
+}
+
+class _WebHomeReadProgressCacheEntry {
+  _WebHomeReadProgressCacheEntry({
+    required this.future,
+    required this.createdAt,
+  }) : lastUsed = createdAt;
+
+  final Future<String?> future;
+  final DateTime createdAt;
+  DateTime lastUsed;
+
+  void touch() {
+    lastUsed = DateTime.now();
+  }
+}
+
 Future<void> _openWebHomeGallery(
   Map<String, dynamic> gallery, {
   required bool isLeftPane,
@@ -4870,7 +4919,7 @@ class _WebGalleryReadProgressIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     if (gid <= 0 || pageCount <= 0) return const SizedBox.shrink();
     return FutureBuilder<String?>(
-      future: backendApiClient.getSetting('read_progress_$gid'),
+      future: _webHomeReadProgressFuture(gid),
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const SizedBox.shrink();

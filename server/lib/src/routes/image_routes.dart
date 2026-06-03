@@ -13,6 +13,7 @@ import '../service/local_gallery_runtime_settings.dart';
 
 class ImageRoutes {
   final ServerConfig _config;
+  late final String _downloadDirCanonical = p.canonicalize(_config.downloadDir);
 
   ImageRoutes(this._config);
 
@@ -90,8 +91,8 @@ class ImageRoutes {
 
   bool _isAllowedPath(String filePath) {
     final resolved = p.canonicalize(filePath);
-    final downloadDir = p.canonicalize(_config.downloadDir);
-    if (resolved == downloadDir || resolved.startsWith('$downloadDir/')) {
+    if (resolved == _downloadDirCanonical ||
+        resolved.startsWith('$_downloadDirCanonical/')) {
       return true;
     }
     return isPathUnderLocalGalleryScanPath(filePath, _config);

@@ -21,6 +21,7 @@ import 'package:jhentai/src/pages_web/settings/web_settings_account_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_advanced_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_cloud_sync_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_diagnostics_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_download_menu_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_eh_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_hub_page.dart';
@@ -40,6 +41,13 @@ import 'package:jhentai/src/pages_web/web_thumbnails_page.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:web/web.dart' as web;
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+enum WebDownloadConnectionStatus {
+  connecting,
+  connected,
+  reconnecting,
+  disconnected,
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,7 +84,10 @@ class WebLayoutController extends GetxController {
 class WebDownloadService extends GetxController {
   final galleryTasks = <int, Map<String, dynamic>>{}.obs;
   final archiveTasks = <int, Map<String, dynamic>>{}.obs;
+  final galleryTasksVersion = 0.obs;
+  final archiveTasksVersion = 0.obs;
   final isLoaded = false.obs;
+  final connectionStatus = WebDownloadConnectionStatus.disconnected.obs;
 
   WebSocketChannel? _wsChannel;
   StreamSubscription? _wsSubscription;
@@ -116,6 +127,7 @@ class WebDownloadService extends GetxController {
         gMap[gid] = task;
       }
       galleryTasks.value = gMap;
+      galleryTasksVersion.value++;
 
       final aTasks = await backendApiClient.listArchiveDownloads();
       final aMap = <int, Map<String, dynamic>>{};
@@ -125,6 +137,7 @@ class WebDownloadService extends GetxController {
         aMap[gid] = task;
       }
       archiveTasks.value = aMap;
+      archiveTasksVersion.value++;
       isLoaded.value = true;
     } catch (e) {
       debugPrint('WebDownloadService load failed: $e');
@@ -133,6 +146,13 @@ class WebDownloadService extends GetxController {
 
   void _connectWebSocket() {
     if (isClosed) return;
+    final wasReconnect =
+        connectionStatus.value == WebDownloadConnectionStatus.reconnecting ||
+            _reconnectAttempts > 0;
+    connectionStatus.value = wasReconnect
+        ? WebDownloadConnectionStatus.reconnecting
+        : WebDownloadConnectionStatus.connecting;
+    _reconnectTimer?.cancel();
     _wsSubscription?.cancel();
     _wsChannel?.sink.close();
 
@@ -143,17 +163,26 @@ class WebDownloadService extends GetxController {
         Uri.parse('$wsUrl/ws/events?token=$wsToken'),
       );
       _reconnectAttempts = 0;
+      connectionStatus.value = WebDownloadConnectionStatus.connected;
+      if (wasReconnect) {
+        unawaited(_loadTasks());
+      }
 
       _wsSubscription = _wsChannel!.stream.listen(
         (data) => _handleWsMessage(data.toString()),
         onError: (e) {
           debugPrint('WDS WebSocket error: $e');
+          connectionStatus.value = WebDownloadConnectionStatus.disconnected;
           _scheduleReconnect();
         },
-        onDone: () => _scheduleReconnect(),
+        onDone: () {
+          connectionStatus.value = WebDownloadConnectionStatus.disconnected;
+          _scheduleReconnect();
+        },
       );
     } catch (e) {
       debugPrint('WDS WebSocket connect failed: $e');
+      connectionStatus.value = WebDownloadConnectionStatus.disconnected;
       _scheduleReconnect();
     }
   }
@@ -162,6 +191,7 @@ class WebDownloadService extends GetxController {
     if (isClosed) return;
     _reconnectAttempts++;
     final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(1, 30));
+    connectionStatus.value = WebDownloadConnectionStatus.reconnecting;
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, _connectWebSocket);
   }
@@ -176,9 +206,11 @@ class WebDownloadService extends GetxController {
       if (eventType == 'gallery_download_progress') {
         final gid = data['gid'] as int;
         galleryTasks[gid] = data;
+        galleryTasksVersion.value++;
       } else if (eventType == 'archive_download_progress') {
         final gid = data['gid'] as int;
         archiveTasks[gid] = data;
+        archiveTasksVersion.value++;
       } else if (eventType == 'download_removed') {
         _loadTasks();
       }
@@ -198,7 +230,7 @@ class WebDownloadService extends GetxController {
 
   Future<void> _runDownloadMutation(
     Future<void> Function() action, {
-    bool refresh = true,
+    bool refresh = false,
   }) async {
     await action();
     if (refresh) {
@@ -206,17 +238,17 @@ class WebDownloadService extends GetxController {
     }
   }
 
-  Future<void> pauseGallery(int gid, {bool refresh = true}) =>
+  Future<void> pauseGallery(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.pauseGalleryDownload(gid),
         refresh: refresh,
       );
-  Future<void> resumeGallery(int gid, {bool refresh = true}) =>
+  Future<void> resumeGallery(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.resumeGalleryDownload(gid),
         refresh: refresh,
       );
-  Future<void> reDownloadGallery(int gid, {bool refresh = true}) =>
+  Future<void> reDownloadGallery(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.reDownloadGallery(gid),
         refresh: refresh,
@@ -224,7 +256,7 @@ class WebDownloadService extends GetxController {
   Future<void> deleteGallery(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _runDownloadMutation(
         () => backendApiClient.deleteGalleryDownload(
@@ -233,17 +265,17 @@ class WebDownloadService extends GetxController {
         ),
         refresh: refresh,
       );
-  Future<void> pauseArchive(int gid, {bool refresh = true}) =>
+  Future<void> pauseArchive(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.pauseArchiveDownload(gid),
         refresh: refresh,
       );
-  Future<void> resumeArchive(int gid, {bool refresh = true}) =>
+  Future<void> resumeArchive(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.resumeArchiveDownload(gid),
         refresh: refresh,
       );
-  Future<void> reUnlockArchive(int gid, {bool refresh = true}) =>
+  Future<void> reUnlockArchive(int gid, {bool refresh = false}) =>
       _runDownloadMutation(
         () => backendApiClient.reUnlockArchiveDownload(gid),
         refresh: refresh,
@@ -251,7 +283,7 @@ class WebDownloadService extends GetxController {
   Future<void> deleteArchive(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _runDownloadMutation(
         () => backendApiClient.deleteArchiveDownload(
@@ -477,6 +509,11 @@ final _webRoutes = [
   GetPage(
     name: '/web/settings/web-docker',
     page: () => const WebSettingsWebDockerPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/diagnostics',
+    page: () => const WebSettingsDiagnosticsPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(

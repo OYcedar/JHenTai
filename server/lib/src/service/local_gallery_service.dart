@@ -28,14 +28,50 @@ class LocalGallery {
       };
 }
 
+class LocalGalleryScanProgress {
+  final bool scanning;
+  final int foundCount;
+  final DateTime? startedAt;
+  final int? lastDurationMs;
+
+  LocalGalleryScanProgress({
+    required this.scanning,
+    required this.foundCount,
+    required this.startedAt,
+    required this.lastDurationMs,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'scanning': scanning,
+        'foundCount': foundCount,
+        'startedAt': startedAt?.toIso8601String(),
+        'elapsedMs': !scanning || startedAt == null
+            ? lastDurationMs ?? 0
+            : DateTime.now().difference(startedAt!).inMilliseconds,
+        'lastDurationMs': lastDurationMs,
+      };
+}
+
 class LocalGalleryService {
+  static const int _maxImagesCacheEntries = 128;
   final ServerConfig _config;
 
   List<LocalGallery> _galleries = [];
   bool _scanning = false;
+  int _scanFoundCount = 0;
+  DateTime? _scanStartedAt;
+  int? _lastScanDurationMs;
+  Future<void>? _scanFuture;
+  final Map<String, _LocalGalleryImagesCacheEntry> _imagesCache = {};
 
   List<LocalGallery> get galleries => List.unmodifiable(_galleries);
   bool get isScanning => _scanning;
+  LocalGalleryScanProgress get scanProgress => LocalGalleryScanProgress(
+        scanning: _scanning,
+        foundCount: _scanning ? _scanFoundCount : _galleries.length,
+        startedAt: _scanStartedAt,
+        lastDurationMs: _lastScanDurationMs,
+      );
 
   LocalGalleryService(this._config);
 
@@ -44,28 +80,42 @@ class LocalGalleryService {
   }
 
   Future<void> refresh() async {
-    if (_scanning) return;
+    if (_scanFuture != null) {
+      return _scanFuture!;
+    }
     _scanning = true;
-
+    _scanFoundCount = 0;
+    _scanStartedAt = DateTime.now();
+    _scanFuture = _refreshInternal();
     try {
-      final start = DateTime.now();
-      _galleries = [];
+      await _scanFuture;
+    } finally {
+      _scanFuture = null;
+      _scanning = false;
+    }
+  }
+
+  Future<void> _refreshInternal() async {
+    try {
+      final start = _scanStartedAt ?? DateTime.now();
+      final nextGalleries = <LocalGallery>[];
 
       final scanPaths = effectiveLocalGalleryScanPaths(_config);
 
       for (final scanPath in scanPaths) {
         final dir = Directory(scanPath);
         if (!await dir.exists()) continue;
-        await _scanDirectory(dir);
+        await _scanDirectory(dir, nextGalleries);
       }
 
+      _galleries = nextGalleries;
+      _imagesCache.clear();
       final elapsed = DateTime.now().difference(start).inMilliseconds;
+      _lastScanDurationMs = elapsed;
       log.info(
           'Local gallery scan complete: ${_galleries.length} galleries found in ${elapsed}ms');
     } catch (e, s) {
       log.error('Failed to scan local galleries', e, s);
-    } finally {
-      _scanning = false;
     }
   }
 
@@ -80,6 +130,14 @@ class LocalGalleryService {
 
     final dir = Directory(galleryPath);
     if (!dir.existsSync()) return [];
+    final stat = dir.statSync();
+    final cached = _imagesCache[dir.path];
+    if (cached != null &&
+        cached.modified == stat.modified &&
+        cached.entityChanged == stat.changed) {
+      cached.touch();
+      return cached.images;
+    }
 
     final files = dir
         .listSync()
@@ -88,7 +146,14 @@ class LocalGalleryService {
         .toList()
       ..sort((a, b) => naturalCompare(p.basename(a.path), p.basename(b.path)));
 
-    return files.map((f) => f.path).toList();
+    final images = files.map((f) => f.path).toList();
+    _imagesCache[dir.path] = _LocalGalleryImagesCacheEntry(
+      modified: stat.modified,
+      entityChanged: stat.changed,
+      images: images,
+    );
+    _evictImagesCache();
+    return images;
   }
 
   Future<void> deleteGallery(String galleryPath) async {
@@ -97,6 +162,7 @@ class LocalGalleryService {
     }
 
     final dir = Directory(galleryPath);
+    _imagesCache.remove(dir.path);
     if (!await dir.exists()) {
       _galleries.removeWhere(
           (g) => p.canonicalize(g.path) == p.canonicalize(galleryPath));
@@ -118,7 +184,10 @@ class LocalGalleryService {
         (g) => p.canonicalize(g.path) == p.canonicalize(galleryPath));
   }
 
-  Future<void> _scanDirectory(Directory dir) async {
+  Future<void> _scanDirectory(
+    Directory dir,
+    List<LocalGallery> nextGalleries,
+  ) async {
     try {
       final entities = await dir.list().toList();
       final subDirs = entities.whereType<Directory>().toList();
@@ -134,16 +203,17 @@ class LocalGalleryService {
                 .path
             : null;
 
-        _galleries.add(LocalGallery(
+        nextGalleries.add(LocalGallery(
           path: dir.path,
           title: p.basename(dir.path),
           imageCount: imageFiles.length,
           coverPath: cover,
         ));
+        _scanFoundCount = nextGalleries.length;
       }
 
       for (final subDir in subDirs) {
-        await _scanDirectory(subDir);
+        await _scanDirectory(subDir, nextGalleries);
       }
     } catch (e) {
       log.warning('Failed to scan directory: ${dir.path}', e);
@@ -154,5 +224,32 @@ class LocalGalleryService {
     return File(p.join(dir.path, 'metadata')).existsSync() ||
         File(p.join(dir.path, 'ametadata')).existsSync() ||
         File(p.join(dir.path, 'metadata.json')).existsSync();
+  }
+
+  void _evictImagesCache() {
+    if (_imagesCache.length <= _maxImagesCacheEntries) return;
+    final entries = _imagesCache.entries.toList()
+      ..sort((a, b) => a.value.lastUsed.compareTo(b.value.lastUsed));
+    for (final entry in entries) {
+      if (_imagesCache.length <= _maxImagesCacheEntries) break;
+      _imagesCache.remove(entry.key);
+    }
+  }
+}
+
+class _LocalGalleryImagesCacheEntry {
+  _LocalGalleryImagesCacheEntry({
+    required this.modified,
+    required this.entityChanged,
+    required this.images,
+  });
+
+  final DateTime modified;
+  final DateTime entityChanged;
+  final List<String> images;
+  int lastUsed = DateTime.now().millisecondsSinceEpoch;
+
+  void touch() {
+    lastUsed = DateTime.now().millisecondsSinceEpoch;
   }
 }

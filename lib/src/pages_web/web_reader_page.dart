@@ -281,10 +281,10 @@ class WebReaderController extends GetxController {
   final autoInterval = 5.0.obs;
   final autoModeStyle = 'turnPage'.obs;
   final turnPageMode = 'adaptive'.obs;
-  final preloadPages = 3.obs;
-  final preloadPagesLocal = 3.obs;
+  final preloadPages = 2.obs;
+  final preloadPagesLocal = 4.obs;
   final preloadDistance = 1.obs;
-  final preloadDistanceLocal = 8.obs;
+  final preloadDistanceLocal = 4.obs;
   final showThumbnails = true.obs;
   final showScrollBar = true.obs;
   final showStatusInfo = true.obs;
@@ -1759,22 +1759,36 @@ class WebReaderPage extends StatelessWidget {
       body: Obx(() {
         final _ = controller.readerLoadingLabelKey.value;
         if (controller.isLoading.value) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(color: Colors.white),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Text(
-                    controller.readerLoadingLabelKey.value.tr,
-                    style: const TextStyle(color: Colors.white70),
-                    textAlign: TextAlign.center,
+          return Stack(
+            children: [
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: IconButton(
+                    tooltip: 'back'.tr,
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => _popOrExitWebReader(context, controller),
                   ),
                 ),
-              ],
-            ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(color: Colors.white),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        controller.readerLoadingLabelKey.value.tr,
+                        style: const TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           );
         }
         if (controller.errorMessage.isNotEmpty) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,7 @@ class WebDownloadsController extends GetxController
       'jh_web_downloads_archive_groups_expanded';
   static const _kViewMode = 'jh_web_downloads_view_mode';
   static const _kSearchMode = 'jh_web_downloads_search_mode';
+  static const _searchDebounceDuration = Duration(milliseconds: 180);
 
   final galleryScrollController = ScrollController();
   final archiveScrollController = ScrollController();
@@ -49,6 +51,16 @@ class WebDownloadsController extends GetxController
 
   double _lastGalleryScrollOffset = 0;
   double _lastArchiveScrollOffset = 0;
+
+  int? _galleryCategoriesVersion;
+  int? _archiveCategoriesVersion;
+  List<String>? _cachedGalleryCategories;
+  List<String>? _cachedArchiveCategories;
+
+  _TaskListCache? _galleryTaskListCache;
+  _TaskListCache? _archiveTaskListCache;
+  Timer? _searchDebounceTimer;
+  String? _pendingSearchQuery;
 
   WebDownloadService get _svc => Get.find<WebDownloadService>();
 
@@ -99,6 +111,11 @@ class WebDownloadsController extends GetxController
   }
 
   List<String> get galleryCategoriesForFilter {
+    final version = _svc.galleryTasksVersion.value;
+    if (_galleryCategoriesVersion == version &&
+        _cachedGalleryCategories != null) {
+      return _cachedGalleryCategories!;
+    }
     final s = <String>{};
     for (final t in _svc.galleryTasks.values) {
       final c = _taskCategoryKey(t);
@@ -106,10 +123,17 @@ class WebDownloadsController extends GetxController
     }
     final list = s.toList();
     list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    _galleryCategoriesVersion = version;
+    _cachedGalleryCategories = List.unmodifiable(list);
     return list;
   }
 
   List<String> get archiveCategoriesForFilter {
+    final version = _svc.archiveTasksVersion.value;
+    if (_archiveCategoriesVersion == version &&
+        _cachedArchiveCategories != null) {
+      return _cachedArchiveCategories!;
+    }
     final s = <String>{};
     for (final t in _svc.archiveTasks.values) {
       final c = _taskCategoryKey(t);
@@ -117,6 +141,8 @@ class WebDownloadsController extends GetxController
     }
     final list = s.toList();
     list.sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    _archiveCategoriesVersion = version;
+    _cachedArchiveCategories = List.unmodifiable(list);
     return list;
   }
 
@@ -140,6 +166,7 @@ class WebDownloadsController extends GetxController
   }
 
   void setSearchMode(WebDownloadSearchMode mode) {
+    _flushPendingSearchQuery();
     searchMode.value = mode;
     resetActiveScrollState();
     web.window.localStorage.setItem(
@@ -156,21 +183,42 @@ class WebDownloadsController extends GetxController
   }
 
   void updateSearchQuery(String value) {
-    searchQuery.value = value;
-    resetActiveScrollState();
+    _pendingSearchQuery = value;
+    _searchDebounceTimer?.cancel();
+    if (value.isEmpty) {
+      _flushPendingSearchQuery();
+      return;
+    }
+    _searchDebounceTimer = Timer(
+      _searchDebounceDuration,
+      _flushPendingSearchQuery,
+    );
   }
 
   void setCategoryFilter(String? value) {
+    _flushPendingSearchQuery();
     selectedCategoryFilter.value = value;
     resetActiveScrollState();
   }
 
   void setActiveSort(WebDownloadSort value) {
+    _flushPendingSearchQuery();
     if (tabController.index == 0) {
       gallerySort.value = value;
     } else {
       archiveSort.value = value;
     }
+    resetActiveScrollState();
+  }
+
+  void _flushPendingSearchQuery() {
+    _searchDebounceTimer?.cancel();
+    final value = _pendingSearchQuery;
+    _pendingSearchQuery = null;
+    if (value == null || searchQuery.value == value) {
+      return;
+    }
+    searchQuery.value = value;
     resetActiveScrollState();
   }
 
@@ -291,6 +339,18 @@ class WebDownloadsController extends GetxController
   }
 
   List<Map<String, dynamic>> get filteredGalleryTasks {
+    final cached = _galleryTaskListCache;
+    final key = _TaskListCacheKey(
+      version: _svc.galleryTasksVersion.value,
+      query: searchQuery.value,
+      searchMode: searchMode.value,
+      category: selectedCategoryFilter.value,
+      sort: gallerySort.value,
+    );
+    if (cached != null && cached.key == key) {
+      return cached.tasks;
+    }
+
     var list = _svc.galleryTasks.values.toList();
     final cat = selectedCategoryFilter.value;
     if (cat != null && cat.isNotEmpty) {
@@ -303,33 +363,17 @@ class WebDownloadsController extends GetxController
     if (q.isNotEmpty) {
       list = list.where((t) => _matchesSearch(t, q)).toList();
     }
-    return list;
+    _sortGalleryTasks(list);
+    final result = List<Map<String, dynamic>>.unmodifiable(list);
+    _galleryTaskListCache = _TaskListCache(key, result);
+    return result;
   }
-
-  static int _cmpInsertTime(Map<String, dynamic> a, Map<String, dynamic> b) {
-    final ta = a['insertTime'] as String? ?? '';
-    final tb = b['insertTime'] as String? ?? '';
-    return ta.compareTo(tb);
-  }
-
-  static int _galleryStatusRank(int s) => switch (s) {
-        3 => 0,
-        1 => 1,
-        2 => 2,
-        4 => 3,
-        _ => 9,
-      };
-
-  static int _archiveStatusRank(int s) => switch (s) {
-        6 => 0,
-        3 => 1,
-        7 => 2,
-        8 => 3,
-        _ => 9,
-      };
 
   List<Map<String, dynamic>> get sortedFilteredGalleryTasks {
-    final list = List<Map<String, dynamic>>.from(filteredGalleryTasks);
+    return filteredGalleryTasks;
+  }
+
+  void _sortGalleryTasks(List<Map<String, dynamic>> list) {
     switch (gallerySort.value) {
       case WebDownloadSort.priorityDesc:
         list.sort((a, b) {
@@ -358,10 +402,21 @@ class WebDownloadsController extends GetxController
         });
         break;
     }
-    return list;
   }
 
   List<Map<String, dynamic>> get filteredArchiveTasks {
+    final cached = _archiveTaskListCache;
+    final key = _TaskListCacheKey(
+      version: _svc.archiveTasksVersion.value,
+      query: searchQuery.value,
+      searchMode: searchMode.value,
+      category: selectedCategoryFilter.value,
+      sort: archiveSort.value,
+    );
+    if (cached != null && cached.key == key) {
+      return cached.tasks;
+    }
+
     var list = _svc.archiveTasks.values.toList();
     final cat = selectedCategoryFilter.value;
     if (cat != null && cat.isNotEmpty) {
@@ -374,8 +429,37 @@ class WebDownloadsController extends GetxController
     if (q.isNotEmpty) {
       list = list.where((t) => _matchesSearch(t, q)).toList();
     }
-    return list;
+    _sortArchiveTasks(list);
+    final result = List<Map<String, dynamic>>.unmodifiable(list);
+    _archiveTaskListCache = _TaskListCache(key, result);
+    return result;
   }
+
+  List<Map<String, dynamic>> get sortedFilteredArchiveTasks {
+    return filteredArchiveTasks;
+  }
+
+  static int _cmpInsertTime(Map<String, dynamic> a, Map<String, dynamic> b) {
+    final ta = a['insertTime'] as String? ?? '';
+    final tb = b['insertTime'] as String? ?? '';
+    return ta.compareTo(tb);
+  }
+
+  static int _galleryStatusRank(int s) => switch (s) {
+        3 => 0,
+        1 => 1,
+        2 => 2,
+        4 => 3,
+        _ => 9,
+      };
+
+  static int _archiveStatusRank(int s) => switch (s) {
+        6 => 0,
+        3 => 1,
+        7 => 2,
+        8 => 3,
+        _ => 9,
+      };
 
   bool _matchesSearch(Map<String, dynamic> task, String query) {
     final haystack = _taskSearchText(task);
@@ -412,8 +496,7 @@ class WebDownloadsController extends GetxController
     return values.where((v) => v.isNotEmpty).join('\n');
   }
 
-  List<Map<String, dynamic>> get sortedFilteredArchiveTasks {
-    final list = List<Map<String, dynamic>>.from(filteredArchiveTasks);
+  void _sortArchiveTasks(List<Map<String, dynamic>> list) {
     switch (archiveSort.value) {
       case WebDownloadSort.priorityDesc:
         list.sort((a, b) {
@@ -442,7 +525,6 @@ class WebDownloadsController extends GetxController
         });
         break;
     }
-    return list;
   }
 
   void _syncCategoryFilterWithTab() {
@@ -533,6 +615,7 @@ class WebDownloadsController extends GetxController
 
   @override
   void onClose() {
+    _searchDebounceTimer?.cancel();
     tabController.removeListener(_handleTabControllerChanged);
     galleryScrollController.removeListener(_onScroll);
     archiveScrollController.removeListener(_onScroll);
@@ -542,28 +625,28 @@ class WebDownloadsController extends GetxController
     super.onClose();
   }
 
-  Future<void> pauseGallery(int gid, {bool refresh = true}) =>
+  Future<void> pauseGallery(int gid, {bool refresh = false}) =>
       _svc.pauseGallery(gid, refresh: refresh);
-  Future<void> resumeGallery(int gid, {bool refresh = true}) =>
+  Future<void> resumeGallery(int gid, {bool refresh = false}) =>
       _svc.resumeGallery(gid, refresh: refresh);
-  Future<void> reDownloadGallery(int gid, {bool refresh = true}) =>
+  Future<void> reDownloadGallery(int gid, {bool refresh = false}) =>
       _svc.reDownloadGallery(gid, refresh: refresh);
   Future<void> deleteGallery(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _svc.deleteGallery(gid, deleteFiles: deleteFiles, refresh: refresh);
-  Future<void> pauseArchive(int gid, {bool refresh = true}) =>
+  Future<void> pauseArchive(int gid, {bool refresh = false}) =>
       _svc.pauseArchive(gid, refresh: refresh);
-  Future<void> resumeArchive(int gid, {bool refresh = true}) =>
+  Future<void> resumeArchive(int gid, {bool refresh = false}) =>
       _svc.resumeArchive(gid, refresh: refresh);
-  Future<void> reUnlockArchive(int gid, {bool refresh = true}) =>
+  Future<void> reUnlockArchive(int gid, {bool refresh = false}) =>
       _svc.reUnlockArchive(gid, refresh: refresh);
   Future<void> deleteArchive(
     int gid, {
     bool deleteFiles = true,
-    bool refresh = true,
+    bool refresh = false,
   }) =>
       _svc.deleteArchive(gid, deleteFiles: deleteFiles, refresh: refresh);
 
@@ -770,8 +853,8 @@ class WebDownloadsController extends GetxController
     if (group == null) return;
 
     await Future.wait(ids.map((gid) => galleryTab
-        ? patchGalleryTask(gid, group: group)
-        : patchArchiveTask(gid, group: group)));
+        ? patchGalleryTask(gid, group: group, refresh: false)
+        : patchArchiveTask(gid, group: group, refresh: false)));
     await refresh();
     if (selectionMode.value) exitSelectionMode();
     Get.snackbar('common.success'.tr,
@@ -797,8 +880,8 @@ class WebDownloadsController extends GetxController
     }
 
     await Future.wait(ids.map((gid) => galleryTab
-        ? patchGalleryTask(gid, priority: priority)
-        : patchArchiveTask(gid, priority: priority)));
+        ? patchGalleryTask(gid, priority: priority, refresh: false)
+        : patchArchiveTask(gid, priority: priority, refresh: false)));
     await refresh();
     if (selectionMode.value) {
       exitSelectionMode();
@@ -808,16 +891,30 @@ class WebDownloadsController extends GetxController
         snackPosition: SnackPosition.BOTTOM);
   }
 
-  Future<void> patchGalleryTask(int gid, {int? priority, String? group}) async {
+  Future<void> patchGalleryTask(
+    int gid, {
+    int? priority,
+    String? group,
+    bool refresh = true,
+  }) async {
     await backendApiClient.patchGalleryDownload(gid,
         priority: priority, group: group);
-    await _svc.refresh();
+    if (refresh) {
+      await _svc.refresh();
+    }
   }
 
-  Future<void> patchArchiveTask(int gid, {int? priority, String? group}) async {
+  Future<void> patchArchiveTask(
+    int gid, {
+    int? priority,
+    String? group,
+    bool refresh = true,
+  }) async {
     await backendApiClient.patchArchiveDownload(gid,
         priority: priority, group: group);
-    await _svc.refresh();
+    if (refresh) {
+      await _svc.refresh();
+    }
   }
 
   Future<void> renameTaskGroup({
@@ -899,6 +996,42 @@ class WebDownloadsController extends GetxController
       snackPosition: SnackPosition.BOTTOM,
     );
   }
+}
+
+class _TaskListCacheKey {
+  const _TaskListCacheKey({
+    required this.version,
+    required this.query,
+    required this.searchMode,
+    required this.category,
+    required this.sort,
+  });
+
+  final int version;
+  final String query;
+  final WebDownloadSearchMode searchMode;
+  final String? category;
+  final WebDownloadSort sort;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _TaskListCacheKey &&
+          version == other.version &&
+          query == other.query &&
+          searchMode == other.searchMode &&
+          category == other.category &&
+          sort == other.sort;
+
+  @override
+  int get hashCode => Object.hash(version, query, searchMode, category, sort);
+}
+
+class _TaskListCache {
+  const _TaskListCache(this.key, this.tasks);
+
+  final _TaskListCacheKey key;
+  final List<Map<String, dynamic>> tasks;
 }
 
 class WebDownloadsPage extends GetView<WebDownloadsController> {
@@ -1010,6 +1143,7 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         }
         return Column(
           children: [
+            _DownloadConnectionStatusBar(service: svc),
             _DownloadFilterBar(controller: controller),
             Expanded(
               child: TabBarView(
@@ -1024,6 +1158,73 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         );
       }),
     );
+  }
+}
+
+class _DownloadConnectionStatusBar extends StatelessWidget {
+  const _DownloadConnectionStatusBar({required this.service});
+
+  final WebDownloadService service;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final status = service.connectionStatus.value;
+      if (status == WebDownloadConnectionStatus.connected) {
+        return const SizedBox.shrink();
+      }
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
+      final isDisconnected = status == WebDownloadConnectionStatus.disconnected;
+      final icon = switch (status) {
+        WebDownloadConnectionStatus.connecting => Icons.sync,
+        WebDownloadConnectionStatus.reconnecting => Icons.sync_problem,
+        WebDownloadConnectionStatus.disconnected => Icons.cloud_off_outlined,
+        WebDownloadConnectionStatus.connected => Icons.cloud_done_outlined,
+      };
+      final textKey = switch (status) {
+        WebDownloadConnectionStatus.connecting => 'downloads.wsConnecting',
+        WebDownloadConnectionStatus.reconnecting => 'downloads.wsReconnecting',
+        WebDownloadConnectionStatus.disconnected => 'downloads.wsDisconnected',
+        WebDownloadConnectionStatus.connected => 'downloads.wsConnected',
+      };
+      final background = isDisconnected
+          ? colorScheme.errorContainer
+          : colorScheme.secondaryContainer;
+      final foreground = isDisconnected
+          ? colorScheme.onErrorContainer
+          : colorScheme.onSecondaryContainer;
+
+      return Material(
+        color: background,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: foreground),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  textKey.tr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: foreground,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: service.refresh,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text('common.refresh'.tr),
+                style: TextButton.styleFrom(
+                  foregroundColor: foreground,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
 

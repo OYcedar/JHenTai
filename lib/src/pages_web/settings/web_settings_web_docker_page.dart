@@ -45,6 +45,14 @@ class _WebSettingsWebDockerPageState extends State<WebSettingsWebDockerPage>
               route: '/web/settings/download',
             ),
             const SizedBox(height: 12),
+            _routeCard(
+              context,
+              icon: Icons.health_and_safety_outlined,
+              title: 'settings.deploymentDiagnostics'.tr,
+              body: 'settings.deploymentDiagnosticsSummaryHint'.tr,
+              route: '/web/settings/diagnostics',
+            ),
+            const SizedBox(height: 12),
             _serverInfoCard(context, info),
             const SizedBox(height: 12),
             _routeCard(

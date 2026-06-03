@@ -635,6 +635,20 @@ class EHClient {
     }
   }
 
+  Future<Response<ResponseBody>> downloadStream(String url) async {
+    try {
+      return await _dioForUrl(url).get<ResponseBody>(
+        url,
+        options: Options(responseType: ResponseType.stream),
+      );
+    } on DioException catch (e) {
+      final host = Uri.tryParse(url)?.host;
+      log.warning(
+          'downloadStream failed host=$host type=${e.type} error=$e', e);
+      rethrow;
+    }
+  }
+
   // --- Archive operations (parity with Flutter [ArchiveDownloadService] / [EHSpiderParser]) ---
 
   static const String _ehInsufficientFundsUnlockPrefix =

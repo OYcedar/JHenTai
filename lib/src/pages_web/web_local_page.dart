@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -11,6 +13,10 @@ class WebLocalController extends GetxController
     with WebScrollToTopControllerMixin {
   static const viewModeStorageKey = 'jh_web_local_view_mode';
   static const gridColumnsStorageKey = 'jh_web_local_grid_columns';
+  static const _searchDebounceDuration = Duration(milliseconds: 180);
+  static const _scanPollInitialDelay = Duration(milliseconds: 250);
+  static const _scanPollMaxDelay = Duration(milliseconds: 1000);
+  static const _scanPollTimeout = Duration(seconds: 90);
 
   final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
@@ -22,7 +28,16 @@ class WebLocalController extends GetxController
   final groupExpanded = <String, bool>{}.obs;
   final isLoading = true.obs;
   final isScanning = false.obs;
+  final scanProgress = Rxn<LocalGalleryScanProgress>();
   final errorMessage = ''.obs;
+
+  int _dataVersion = 0;
+  _LocalFilteredCache? _filteredCache;
+  _LocalGroupedCache? _groupedCache;
+  _LocalPathListCache? _childDirectoriesCache;
+  _LocalPathGalleryCache? _currentDirectoryGalleriesCache;
+  Timer? _searchDebounceTimer;
+  String? _pendingSearchQuery;
 
   @override
   void onInit() {
@@ -37,6 +52,7 @@ class WebLocalController extends GetxController
 
   @override
   void onClose() {
+    _searchDebounceTimer?.cancel();
     unbindScrollToTop();
     searchTextController.dispose();
     super.onClose();
@@ -47,7 +63,10 @@ class WebLocalController extends GetxController
     errorMessage.value = '';
     try {
       final rootInfo = await backendApiClient.getLocalGalleryRootInfo();
-      final galleryData = await backendApiClient.listLocalGalleries();
+      final listInfo = await backendApiClient.getLocalGalleryListInfo();
+      final galleryData = listInfo.galleries;
+      isScanning.value = listInfo.scanning;
+      scanProgress.value = listInfo.scanProgress;
       final rootData = rootInfo.roots
           .map(_normalizePath)
           .where((path) => path.isNotEmpty)
@@ -61,6 +80,7 @@ class WebLocalController extends GetxController
         ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
 
       galleries.value = galleryData.cast<Map<String, dynamic>>();
+      _markDataChanged();
       if (currentPath.value.isNotEmpty &&
           !_isCurrentPathStillVisible(currentPath.value)) {
         currentPath.value = '';
@@ -77,10 +97,15 @@ class WebLocalController extends GetxController
 
   Future<void> refreshGalleries() async {
     isScanning.value = true;
+    scanProgress.value = const LocalGalleryScanProgress(
+      scanning: true,
+      foundCount: 0,
+      elapsedMs: 0,
+    );
     final previousCount = galleries.length;
     try {
       await backendApiClient.refreshLocalGalleries();
-      await Future.delayed(const Duration(seconds: 2));
+      await _waitForScanComplete();
       await _loadGalleries();
       currentPath.value = '';
       Get.snackbar(
@@ -96,6 +121,22 @@ class WebLocalController extends GetxController
       );
     } finally {
       isScanning.value = false;
+    }
+  }
+
+  Future<void> _waitForScanComplete() async {
+    final deadline = DateTime.now().add(_scanPollTimeout);
+    var delay = _scanPollInitialDelay;
+    while (DateTime.now().isBefore(deadline)) {
+      final info = await backendApiClient.getLocalGalleryListInfo();
+      isScanning.value = info.scanning;
+      scanProgress.value = info.scanProgress;
+      if (!info.scanning) {
+        return;
+      }
+      await Future.delayed(delay);
+      final nextDelay = delay + const Duration(milliseconds: 150);
+      delay = nextDelay > _scanPollMaxDelay ? _scanPollMaxDelay : nextDelay;
     }
   }
 
@@ -160,6 +201,7 @@ class WebLocalController extends GetxController
       await backendApiClient.deleteLocalGallery(path);
       galleries.removeWhere((item) => item['path'] == path);
       galleries.refresh();
+      _markDataChanged();
       Get.snackbar('common.success'.tr, 'local.deleteSuccess'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
@@ -173,17 +215,31 @@ class WebLocalController extends GetxController
 
   List<Map<String, dynamic>> get filteredGalleries {
     final q = searchQuery.value.trim().toLowerCase();
-    if (q.isEmpty) {
-      return galleries.toList();
+    final cached = _filteredCache;
+    if (cached != null && cached.version == _dataVersion && cached.query == q) {
+      return cached.items;
     }
-    return galleries.where((gallery) {
+    if (q.isEmpty) {
+      final items = List<Map<String, dynamic>>.unmodifiable(galleries);
+      _filteredCache = _LocalFilteredCache(_dataVersion, q, items);
+      return items;
+    }
+    final items = galleries.where((gallery) {
       final title = gallery['title']?.toString().toLowerCase() ?? '';
       final path = gallery['path']?.toString().toLowerCase() ?? '';
       return title.contains(q) || path.contains(q);
     }).toList();
+    final result = List<Map<String, dynamic>>.unmodifiable(items);
+    _filteredCache = _LocalFilteredCache(_dataVersion, q, result);
+    return result;
   }
 
   Map<String, List<Map<String, dynamic>>> get groupedGalleries {
+    final q = searchQuery.value.trim().toLowerCase();
+    final cached = _groupedCache;
+    if (cached != null && cached.version == _dataVersion && cached.query == q) {
+      return cached.groups;
+    }
     final groups = <String, List<Map<String, dynamic>>>{};
     for (final gallery in filteredGalleries) {
       final path = gallery['path']?.toString() ?? '';
@@ -192,14 +248,18 @@ class WebLocalController extends GetxController
     }
     final sortedKeys = groups.keys.toList()
       ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
-    return {
+    final result = {
       for (final key in sortedKeys)
-        key: (groups[key]!
-          ..sort((a, b) => _naturalCompare(
-                a['title']?.toString() ?? '',
-                b['title']?.toString() ?? '',
-              )))
+        key: List<Map<String, dynamic>>.unmodifiable(groups[key]!
+          ..sort(
+            (a, b) => _naturalCompare(
+              a['title']?.toString() ?? '',
+              b['title']?.toString() ?? '',
+            ),
+          ))
     };
+    _groupedCache = _LocalGroupedCache(_dataVersion, q, result);
+    return result;
   }
 
   void toggleGroup(String group) {
@@ -249,13 +309,32 @@ class WebLocalController extends GetxController
   }
 
   void updateSearchQuery(String value) {
-    searchQuery.value = value;
-    _resetScrollState();
+    _pendingSearchQuery = value;
+    _searchDebounceTimer?.cancel();
+    if (value.isEmpty) {
+      _flushPendingSearchQuery();
+      return;
+    }
+    _searchDebounceTimer = Timer(
+      _searchDebounceDuration,
+      _flushPendingSearchQuery,
+    );
   }
 
   void clearSearchQuery() {
     searchTextController.clear();
-    searchQuery.value = '';
+    _pendingSearchQuery = '';
+    _flushPendingSearchQuery();
+  }
+
+  void _flushPendingSearchQuery() {
+    _searchDebounceTimer?.cancel();
+    final value = _pendingSearchQuery;
+    _pendingSearchQuery = null;
+    if (value == null || searchQuery.value == value) {
+      return;
+    }
+    searchQuery.value = value;
     _resetScrollState();
   }
 
@@ -264,11 +343,20 @@ class WebLocalController extends GetxController
   }
 
   List<String> get childDirectories {
-    final dirs = <String>{};
     final current = currentPath.value;
+    final cached = _childDirectoriesCache;
+    if (cached != null &&
+        cached.version == _dataVersion &&
+        cached.currentPath == current) {
+      return cached.paths;
+    }
+    final dirs = <String>{};
     if (current.isEmpty) {
       if (roots.isNotEmpty) {
-        return roots.toList();
+        final paths = List<String>.unmodifiable(roots);
+        _childDirectoriesCache =
+            _LocalPathListCache(_dataVersion, current, paths);
+        return paths;
       }
       dirs.addAll(
           galleries.map((g) => _topDerivedRoot(g['path']?.toString() ?? '')));
@@ -281,8 +369,11 @@ class WebLocalController extends GetxController
         }
       }
     }
-    return dirs.where((path) => path.isNotEmpty).toList()
+    final paths = dirs.where((path) => path.isNotEmpty).toList()
       ..sort((a, b) => _naturalCompare(_displayPath(a), _displayPath(b)));
+    final result = List<String>.unmodifiable(paths);
+    _childDirectoriesCache = _LocalPathListCache(_dataVersion, current, result);
+    return result;
   }
 
   List<Map<String, dynamic>> get currentDirectoryGalleries {
@@ -290,15 +381,32 @@ class WebLocalController extends GetxController
     if (current.isEmpty) {
       return const [];
     }
+    final cached = _currentDirectoryGalleriesCache;
+    if (cached != null &&
+        cached.version == _dataVersion &&
+        cached.currentPath == current) {
+      return cached.items;
+    }
     final items = galleries
         .where((gallery) =>
             _parentPath(gallery['path']?.toString() ?? '') == current)
         .toList();
-    return items
-      ..sort((a, b) => _naturalCompare(
-            a['title']?.toString() ?? '',
-            b['title']?.toString() ?? '',
-          ));
+    items.sort((a, b) => _naturalCompare(
+          a['title']?.toString() ?? '',
+          b['title']?.toString() ?? '',
+        ));
+    final result = List<Map<String, dynamic>>.unmodifiable(items);
+    _currentDirectoryGalleriesCache =
+        _LocalPathGalleryCache(_dataVersion, current, result);
+    return result;
+  }
+
+  void _markDataChanged() {
+    _dataVersion++;
+    _filteredCache = null;
+    _groupedCache = null;
+    _childDirectoriesCache = null;
+    _currentDirectoryGalleriesCache = null;
   }
 
   bool _isCurrentPathStillVisible(String path) {
@@ -407,6 +515,42 @@ class WebLocalController extends GetxController
   }
 }
 
+class _LocalFilteredCache {
+  const _LocalFilteredCache(this.version, this.query, this.items);
+
+  final int version;
+  final String query;
+  final List<Map<String, dynamic>> items;
+}
+
+class _LocalGroupedCache {
+  _LocalGroupedCache(
+    this.version,
+    this.query,
+    Map<String, List<Map<String, dynamic>>> groups,
+  ) : groups = Map.unmodifiable(groups);
+
+  final int version;
+  final String query;
+  final Map<String, List<Map<String, dynamic>>> groups;
+}
+
+class _LocalPathListCache {
+  const _LocalPathListCache(this.version, this.currentPath, this.paths);
+
+  final int version;
+  final String currentPath;
+  final List<String> paths;
+}
+
+class _LocalPathGalleryCache {
+  const _LocalPathGalleryCache(this.version, this.currentPath, this.items);
+
+  final int version;
+  final String currentPath;
+  final List<Map<String, dynamic>> items;
+}
+
 class WebLocalPage extends GetView<WebLocalController> {
   const WebLocalPage({super.key});
 
@@ -487,37 +631,100 @@ class WebLocalPage extends GetView<WebLocalController> {
           );
         }
         if (controller.galleries.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text('local.noGalleries'.tr),
-                const SizedBox(height: 8),
-                Text(
-                  'local.helpText'.tr,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey),
+          return Column(
+            children: [
+              _buildScanProgress(),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.folder_open,
+                          size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text('local.noGalleries'.tr),
+                      const SizedBox(height: 8),
+                      Text(
+                        'local.helpText'.tr,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.refresh),
+                        label: Text('local.scanNow'.tr),
+                        onPressed: controller.refreshGalleries,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: Text('local.scanNow'.tr),
-                  onPressed: controller.refreshGalleries,
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         }
         return Column(
           children: [
             _buildSearchField(),
+            _buildScanProgress(),
             Expanded(child: _buildGalleryList(context)),
           ],
         );
       }),
     );
+  }
+
+  Widget _buildScanProgress() {
+    return Obx(() {
+      final progress = controller.scanProgress.value;
+      if (!controller.isScanning.value || progress == null) {
+        return const SizedBox.shrink();
+      }
+      final theme = Get.theme;
+      final elapsed = _formatDuration(progress.elapsedMs);
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'local.scanProgress'.trParams({
+                  'count': '${progress.foundCount}',
+                  'elapsed': elapsed,
+                }),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  String _formatDuration(int milliseconds) {
+    final seconds = (milliseconds / 1000).floor();
+    if (seconds < 60) {
+      return '${seconds}s';
+    }
+    final minutes = seconds ~/ 60;
+    final remainder = seconds % 60;
+    return '${minutes}m ${remainder}s';
   }
 
   Widget _buildSearchField() {
