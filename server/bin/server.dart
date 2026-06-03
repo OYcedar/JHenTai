@@ -17,6 +17,7 @@ import 'package:jhentai_server/src/service/archive_download_service.dart';
 import 'package:jhentai_server/src/service/event_bus.dart';
 import 'package:jhentai_server/src/service/gallery_download_service.dart';
 import 'package:jhentai_server/src/service/local_gallery_service.dart';
+import 'package:jhentai_server/src/service/super_resolution_service.dart';
 import 'package:jhentai_server/src/service/tag_translation_service.dart';
 
 Future<void> main(List<String> args) async {
@@ -77,6 +78,9 @@ Future<void> main(List<String> args) async {
       ArchiveDownloadService(ehClient, config, eventBus);
   await archiveDownloadService.init();
 
+  final superResolutionService = SuperResolutionService(config, eventBus);
+  await superResolutionService.init();
+
   if (_restoreTasksAutomaticallyEnabled()) {
     try {
       final galleryRestored =
@@ -109,6 +113,7 @@ Future<void> main(List<String> args) async {
     eventBus: eventBus,
     authToken: authMiddleware.token,
     tagTranslationService: tagTranslationService,
+    superResolutionService: superResolutionService,
   );
 
   final pipeline = const Pipeline()

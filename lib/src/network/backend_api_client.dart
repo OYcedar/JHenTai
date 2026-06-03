@@ -568,6 +568,105 @@ class BackendApiClient {
     return ((response.data['images'] as List?) ?? []).cast<String>();
   }
 
+  // --- Super resolution ---
+
+  Future<Map<String, dynamic>> getSuperResolutionCapabilities() async {
+    final response = await _dio.get('/api/super-resolution/capabilities');
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<List<Map<String, dynamic>>> listSuperResolutionModels() async {
+    final response = await _dio.get('/api/super-resolution/models');
+    final data = response.data;
+    final models = data is Map ? data['models'] as List? : null;
+    return (models ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> downloadSuperResolutionModel(
+      String model) async {
+    final response = await _dio.post(
+      '/api/super-resolution/models/download',
+      data: {'model': model},
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<List<Map<String, dynamic>>> listSuperResolutionJobs() async {
+    final response = await _dio.get('/api/super-resolution/jobs');
+    final data = response.data;
+    final jobs = data is Map ? data['jobs'] as List? : null;
+    return (jobs ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> createSuperResolutionJob({
+    required String sourceType,
+    required int gid,
+    String model = 'realcugan',
+    int? gpuId,
+    int tileSize = 0,
+    bool cpuOnly = false,
+    bool allowCpuOnly = false,
+  }) async {
+    final response = await _dio.post(
+      '/api/super-resolution/jobs',
+      data: {
+        'sourceType': sourceType,
+        'gid': gid,
+        'model': model,
+        if (gpuId != null) 'gpuId': gpuId,
+        'tileSize': tileSize,
+        'cpuOnly': cpuOnly,
+        'allowCpuOnly': allowCpuOnly,
+      },
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<void> pauseSuperResolutionJob(String id) async {
+    await _dio.post('/api/super-resolution/jobs/$id/pause');
+  }
+
+  Future<void> resumeSuperResolutionJob(String id) async {
+    await _dio.post('/api/super-resolution/jobs/$id/resume');
+  }
+
+  Future<void> cancelSuperResolutionJob(String id) async {
+    await _dio.post('/api/super-resolution/jobs/$id/cancel');
+  }
+
+  Future<void> deleteSuperResolutionJob(
+    String id, {
+    bool deleteFiles = false,
+  }) async {
+    await _dio.delete(
+      '/api/super-resolution/jobs/$id',
+      queryParameters: {'deleteFiles': deleteFiles},
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getSuperResolutionOutputImages({
+    required String sourceType,
+    required int gid,
+  }) async {
+    final response =
+        await _dio.get('/api/super-resolution/output/$sourceType/$gid/images');
+    final data = response.data;
+    final images = data is Map ? data['images'] as List? : null;
+    return (images ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
   // --- Image URL helpers ---
 
   String galleryImageUrl(int gid, String filename) {
@@ -576,6 +675,10 @@ class BackendApiClient {
 
   String archiveImageUrl(int gid, String filename) {
     return '$_baseUrl/api/image/archive/$gid/$filename?token=${Uri.encodeComponent(_token ?? '')}';
+  }
+
+  String superResolutionImageUrl(String jobId, String filename) {
+    return '$_baseUrl/api/super-resolution/image/$jobId/$filename?token=${Uri.encodeComponent(_token ?? '')}';
   }
 
   String imageFileUrl(String filePath) {

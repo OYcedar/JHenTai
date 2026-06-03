@@ -81,6 +81,14 @@ class _WebSettingsWebDockerPageState extends State<WebSettingsWebDockerPage>
             const SizedBox(height: 12),
             _routeCard(
               context,
+              icon: Icons.auto_fix_high_outlined,
+              title: 'superResolution.title'.tr,
+              body: 'superResolution.summary'.tr,
+              route: '/web/settings/super-resolution',
+            ),
+            const SizedBox(height: 12),
+            _routeCard(
+              context,
               icon: Icons.security,
               title: 'settings.menuSecurity'.tr,
               body: 'settings.securityWebSummary'.tr,

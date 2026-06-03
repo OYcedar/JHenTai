@@ -102,6 +102,7 @@ Enter this token in the browser setup page. It is saved to `localStorage` so you
 | `JH_HOST` | `0.0.0.0` | Bind address |
 | `JH_WEB_DIR` | `/app/web` | Web frontend static files directory |
 | `JH_EXTRA_SCAN_PATHS` | *(empty)* | Comma-separated extra directories for local gallery scanning |
+| `JH_SUPER_RESOLUTION_BINARY` | *(empty)* | Advanced debug override for the super-resolution executable path. Most users should download model packages from the Web UI instead. |
 | `PUID` | `1000` | User ID for file ownership on mapped volumes |
 | `PGID` | `1000` | Group ID for file ownership on mapped volumes |
 | `HTTP_PROXY` / `HTTPS_PROXY` | *(empty)* | Outbound proxy used by the backend when it requests EH/EX/H@H. For `https://` targets, set `HTTPS_PROXY=http://proxy-host:port`. |
@@ -117,6 +118,29 @@ environment:
   - PUID=99
   - PGID=100
 ```
+
+---
+
+## Image super resolution (GPU first)
+
+Docker/Web includes an optional image super-resolution center under **Settings → Web/Docker → Image super resolution**. It runs external `Real-CUGAN ncnn Vulkan` / `Real-ESRGAN ncnn Vulkan` tools. Model packages are stored under `/data/super_resolution/models`, and generated images are stored under `/data/super_resolution/output`; original downloads are not overwritten.
+
+Notes:
+
+1. The feature is **GPU/Vulkan first**. If no GPU is detected, the page shows a warning. CPU-only mode is experimental and is not recommended for large NAS workloads.
+2. Official Ubuntu prebuilt packages are treated as the amd64 path in this fork. arm64 NAS users may need to provide a compatible custom executable and debug with `JH_SUPER_RESOLUTION_BINARY`.
+3. Super-resolution output can be much larger than source images. Check free space before starting large jobs.
+4. Intel/AMD integrated GPUs usually require passing `/dev/dri` into the container:
+
+```yaml
+services:
+  jhentai:
+    devices:
+      - /dev/dri:/dev/dri
+```
+
+5. NVIDIA GPUs require NVIDIA Container Toolkit on the host and the appropriate `--gpus all` / Compose GPU configuration.
+6. If your NAS or reverse proxy environment cannot expose GPU devices, the page can still be used for diagnostics and model management, but large CPU-only jobs are discouraged.
 
 ---
 

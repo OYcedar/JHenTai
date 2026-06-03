@@ -258,6 +258,8 @@ class WebReaderController extends GetxController {
 
   final imageUrls = <String>[].obs;
   final galleryThumbnails = <Map<String, dynamic>>[].obs;
+  final useSuperResolution = false.obs;
+  final superResolutionAvailable = false.obs;
   final currentPage = 0.obs;
   final totalPages = 0.obs;
   final isLoading = true.obs;
@@ -450,6 +452,8 @@ class WebReaderController extends GetxController {
     }
     gid = int.tryParse(gidStr) ?? 0;
     token = tokenStr;
+    final sr = q['sr'] ?? Get.parameters['sr'];
+    useSuperResolution.value = sr == '1' || sr == 'true';
 
     final titleQ = q['title'] ?? Get.parameters['title'];
     if (titleQ != null && titleQ.isNotEmpty) {
@@ -1033,6 +1037,11 @@ class WebReaderController extends GetxController {
   Future<void> _loadDownloaded() async {
     final filenames = await backendApiClient.getGalleryDownloadImages(gid);
     totalPages.value = filenames.length;
+    final sr = await _superResolutionImageUrls('gallery', filenames.length);
+    if (useSuperResolution.value && sr.isNotEmpty) {
+      imageUrls.value = sr;
+      return;
+    }
     imageUrls.value =
         filenames.map((f) => backendApiClient.galleryImageUrl(gid, f)).toList();
   }
@@ -1053,8 +1062,70 @@ class WebReaderController extends GetxController {
   Future<void> _loadArchive() async {
     final filenames = await backendApiClient.getArchiveDownloadImages(gid);
     totalPages.value = filenames.length;
+    final sr = await _superResolutionImageUrls('archive', filenames.length);
+    if (useSuperResolution.value && sr.isNotEmpty) {
+      imageUrls.value = sr;
+      return;
+    }
     imageUrls.value =
         filenames.map((f) => backendApiClient.archiveImageUrl(gid, f)).toList();
+  }
+
+  Future<List<String>> _superResolutionImageUrls(
+    String sourceType,
+    int expectedCount,
+  ) async {
+    if (expectedCount <= 0) {
+      superResolutionAvailable.value = false;
+      return const [];
+    }
+    try {
+      final images = await backendApiClient.getSuperResolutionOutputImages(
+        sourceType: sourceType,
+        gid: gid,
+      );
+      superResolutionAvailable.value = images.isNotEmpty;
+      if (images.length < expectedCount) return const [];
+      images.sort(
+        (a, b) => ((a['serialNo'] as num?)?.toInt() ?? 0)
+            .compareTo((b['serialNo'] as num?)?.toInt() ?? 0),
+      );
+      return images
+          .map((item) => backendApiClient.superResolutionImageUrl(
+                item['jobId'].toString(),
+                item['filename'].toString(),
+              ))
+          .toList();
+    } catch (_) {
+      superResolutionAvailable.value = false;
+      return const [];
+    }
+  }
+
+  Future<void> toggleSuperResolutionImages() async {
+    if (mode != ReaderMode.downloaded && mode != ReaderMode.archive) return;
+    useSuperResolution.value = !useSuperResolution.value;
+    final page = currentPage.value;
+    if (mode == ReaderMode.downloaded) {
+      await _loadDownloaded();
+    } else {
+      await _loadArchive();
+    }
+    if (useSuperResolution.value && !superResolutionAvailable.value) {
+      useSuperResolution.value = false;
+      Get.snackbar(
+        'common.warning'.tr,
+        'superResolution.noOutputHint'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      if (mode == ReaderMode.downloaded) {
+        await _loadDownloaded();
+      } else {
+        await _loadArchive();
+      }
+    }
+    currentPage.value = page.clamp(0, math.max(0, totalPages.value - 1));
+    imageUrls.refresh();
   }
 
   void _loadLocal() {
@@ -2784,6 +2855,22 @@ class _TopOverlay extends StatelessWidget {
                           tooltip: 'reader.reloadImage'.tr,
                           onPressed: controller.reloadCurrentImages,
                         ),
+                        Obx(() {
+                          if (controller.mode != ReaderMode.downloaded &&
+                              controller.mode != ReaderMode.archive) {
+                            return const SizedBox.shrink();
+                          }
+                          return IconButton(
+                            icon: Icon(
+                              Icons.auto_fix_high,
+                              color: controller.useSuperResolution.value
+                                  ? Colors.amber
+                                  : Colors.white,
+                            ),
+                            tooltip: 'superResolution.useOutput'.tr,
+                            onPressed: controller.toggleSuperResolutionImages,
+                          );
+                        }),
                         IconButton(
                           icon:
                               const Icon(Icons.fullscreen, color: Colors.white),

@@ -39,6 +39,10 @@ RUN apt-get update && \
     sqlite3 \
     ca-certificates \
     wget \
+    unzip \
+    libvulkan1 \
+    vulkan-tools \
+    mesa-vulkan-drivers \
     gosu \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/lib/*/libsqlite3.so.0 /usr/lib/libsqlite3.so

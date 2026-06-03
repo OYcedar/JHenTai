@@ -2074,6 +2074,13 @@ class _GalleryTaskGridCard extends StatelessWidget {
           onResume: status == 2 || status == 4
               ? () => controller.resumeGallery(gid)
               : null,
+          onSuperResolution: isCompleted
+              ? () => _showStartSuperResolutionDialog(
+                    context,
+                    sourceType: 'gallery',
+                    gid: gid,
+                  )
+              : null,
           onDelete: () async {
             final deleteFiles = await _showDeleteTaskDialog(context);
             if (deleteFiles == null) return;
@@ -2127,6 +2134,13 @@ class _ArchiveTaskGridCard extends StatelessWidget {
           onResume: status == 7 || status == 8
               ? () => controller.resumeArchive(gid)
               : null,
+          onSuperResolution: isCompleted
+              ? () => _showStartSuperResolutionDialog(
+                    context,
+                    sourceType: 'archive',
+                    gid: gid,
+                  )
+              : null,
           onDelete: () async {
             final deleteFiles = await _showDeleteTaskDialog(context);
             if (deleteFiles == null) return;
@@ -2154,6 +2168,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
   final VoidCallback? onReUnlock;
   final VoidCallback? onPause;
   final VoidCallback? onResume;
+  final VoidCallback? onSuperResolution;
   final VoidCallback onDelete;
 
   const _DownloadTaskGridCard({
@@ -2174,6 +2189,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
     this.onReUnlock,
     required this.onPause,
     required this.onResume,
+    this.onSuperResolution,
     required this.onDelete,
   });
 
@@ -2200,6 +2216,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
               onReUnlock: onReUnlock,
               onPause: onPause,
               onResume: onResume,
+              onSuperResolution: onSuperResolution,
               onDelete: onDelete,
             ),
       onSecondaryTapUp: (details) => selectionMode
@@ -2214,6 +2231,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
               onReUnlock: onReUnlock,
               onPause: onPause,
               onResume: onResume,
+              onSuperResolution: onSuperResolution,
               onDelete: onDelete,
             ),
       child: Card(
@@ -2253,6 +2271,10 @@ class _DownloadTaskGridCard extends StatelessWidget {
                           color: Colors.black.withValues(alpha: 0.18),
                         ),
                       ),
+                    _SuperResolutionBadge(
+                      sourceType: isArchive ? 'archive' : 'gallery',
+                      gid: _taskInt(task, 'gid'),
+                    ),
                     Positioned(
                       top: 6,
                       right: 6,
@@ -2286,6 +2308,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
                                 onReUnlock: onReUnlock,
                                 onPause: onPause,
                                 onResume: onResume,
+                                onSuperResolution: onSuperResolution,
                                 onDelete: onDelete,
                               ),
                               itemBuilder: (context) => _downloadTaskMenuItems(
@@ -2466,11 +2489,263 @@ class _DownloadTaskMenuItem extends StatelessWidget {
   }
 }
 
+Future<void> _showStartSuperResolutionDialog(
+  BuildContext context, {
+  required String sourceType,
+  required int gid,
+}) async {
+  var selectedModel = 'realcugan';
+  var tileSize = 0;
+  var gpuIdText = '';
+  var cpuOnly = false;
+  var allowCpuOnly = false;
+  Map<String, dynamic> capabilities = {};
+  List<Map<String, dynamic>> models = [];
+  var loading = true;
+
+  await Get.dialog<void>(
+    StatefulBuilder(
+      builder: (context, setState) {
+        Future<void> load() async {
+          try {
+            final caps =
+                await backendApiClient.getSuperResolutionCapabilities();
+            final modelList =
+                await backendApiClient.listSuperResolutionModels();
+            if (!context.mounted) return;
+            setState(() {
+              capabilities = caps;
+              models = modelList;
+              if (models.isNotEmpty &&
+                  !models.any((m) => m['id'] == selectedModel)) {
+                selectedModel = models.first['id'].toString();
+              }
+              loading = false;
+            });
+          } catch (e) {
+            if (!context.mounted) return;
+            setState(() {
+              capabilities = {
+                'status': 'warn',
+                'warnings': ['$e'],
+              };
+              loading = false;
+            });
+          }
+        }
+
+        if (loading) {
+          Future.microtask(load);
+        }
+
+        final gpu =
+            capabilities['gpu'] is Map ? capabilities['gpu'] as Map : {};
+        final gpuAvailable = gpu['available'] == true;
+        final selectedInstalled = models
+            .where((m) => m['id'] == selectedModel)
+            .any((m) => m['installed'] == true);
+        final warnings = ((capabilities['warnings'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList();
+        return AlertDialog(
+          title: Text('superResolution.start'.tr),
+          content: SizedBox(
+            width: 520,
+            child: loading
+                ? const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('superResolution.safetyHint'.tr),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          value: selectedModel,
+                          decoration: InputDecoration(
+                            labelText: 'superResolution.model'.tr,
+                          ),
+                          items: [
+                            for (final model in models)
+                              DropdownMenuItem(
+                                value: model['id'].toString(),
+                                child: Text(
+                                  '${model['label']} · ${model['installed'] == true ? 'superResolution.installed'.tr : 'superResolution.notInstalled'.tr}',
+                                ),
+                              ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => selectedModel = value);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: tileSize,
+                          decoration: InputDecoration(
+                            labelText: 'superResolution.tileSize'.tr,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 0, child: Text('Auto')),
+                            DropdownMenuItem(value: 128, child: Text('128')),
+                            DropdownMenuItem(value: 256, child: Text('256')),
+                            DropdownMenuItem(value: 512, child: Text('512')),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => tileSize = value);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          decoration: InputDecoration(
+                            labelText: 'GPU id',
+                            hintText: 'superResolution.gpuAutoHint'.tr,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) => gpuIdText = value,
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('superResolution.cpuOnly'.tr),
+                          subtitle: Text('superResolution.cpuOnlyHint'.tr),
+                          value: cpuOnly,
+                          onChanged: (value) {
+                            setState(() {
+                              cpuOnly = value;
+                              allowCpuOnly = value;
+                            });
+                          },
+                        ),
+                        if (!gpuAvailable || warnings.isNotEmpty)
+                          Text(
+                            [
+                              if (!gpuAvailable)
+                                'superResolution.noGpuWarning'.tr,
+                              ...warnings,
+                            ].join('\n'),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        if (!selectedInstalled)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              'superResolution.modelMissingHint'.tr,
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton.icon(
+              onPressed: loading
+                  ? null
+                  : () async {
+                      try {
+                        await backendApiClient.createSuperResolutionJob(
+                          sourceType: sourceType,
+                          gid: gid,
+                          model: selectedModel,
+                          gpuId: int.tryParse(gpuIdText),
+                          tileSize: tileSize,
+                          cpuOnly: cpuOnly,
+                          allowCpuOnly: allowCpuOnly,
+                        );
+                        await Get.find<WebDownloadService>().refresh();
+                        Get.back();
+                        Get.snackbar(
+                          'common.success'.tr,
+                          'superResolution.jobCreated'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'common.error'.tr,
+                          '$e',
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                      }
+                    },
+              icon: const Icon(Icons.auto_fix_high),
+              label: Text('superResolution.start'.tr),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+class _SuperResolutionBadge extends StatelessWidget {
+  const _SuperResolutionBadge({
+    required this.sourceType,
+    required this.gid,
+  });
+
+  final String sourceType;
+  final int gid;
+
+  @override
+  Widget build(BuildContext context) {
+    final svc = Get.find<WebDownloadService>();
+    return Obx(() {
+      svc.superResolutionJobsVersion.value;
+      final job = svc.latestSuperResolutionJob(sourceType, gid);
+      if (job == null) return const SizedBox.shrink();
+      final status = job['status']?.toString() ?? '';
+      final success = job['successCount']?.toString() ?? '0';
+      final total = job['totalCount']?.toString() ?? '0';
+      final color = switch (status) {
+        'completed' => Colors.green,
+        'failed' => Colors.red,
+        'running' => Colors.amber,
+        _ => Colors.blueGrey,
+      };
+      return Positioned(
+        left: 6,
+        top: 6,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            'AI $success/$total',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
 enum _DownloadTaskAction {
   read,
   edit,
   reDownload,
   reUnlock,
+  superResolution,
   pause,
   resume,
   delete,
@@ -2515,6 +2790,14 @@ List<PopupMenuEntry<_DownloadTaskAction>> _downloadTaskMenuItems({
           label: 'downloads.reUnlockArchive'.tr,
         ),
       ),
+    if (isCompleted)
+      PopupMenuItem(
+        value: _DownloadTaskAction.superResolution,
+        child: _DownloadTaskMenuItem(
+          icon: Icons.auto_fix_high,
+          label: 'superResolution.start'.tr,
+        ),
+      ),
     if (onPause != null)
       PopupMenuItem(
         value: _DownloadTaskAction.pause,
@@ -2549,6 +2832,7 @@ void _handleDownloadTaskAction(
   required VoidCallback? onReUnlock,
   required VoidCallback? onPause,
   required VoidCallback? onResume,
+  required VoidCallback? onSuperResolution,
   required VoidCallback onDelete,
 }) {
   switch (action) {
@@ -2563,6 +2847,9 @@ void _handleDownloadTaskAction(
       break;
     case _DownloadTaskAction.reUnlock:
       onReUnlock?.call();
+      break;
+    case _DownloadTaskAction.superResolution:
+      onSuperResolution?.call();
       break;
     case _DownloadTaskAction.pause:
       onPause?.call();
@@ -2586,6 +2873,7 @@ Future<void> _showDownloadTaskContextMenu(
   required VoidCallback? onReUnlock,
   required VoidCallback? onPause,
   required VoidCallback? onResume,
+  required VoidCallback? onSuperResolution,
   required VoidCallback onDelete,
 }) async {
   final action = await showMenu<_DownloadTaskAction>(
@@ -2615,6 +2903,7 @@ Future<void> _showDownloadTaskContextMenu(
     onReUnlock: onReUnlock,
     onPause: onPause,
     onResume: onResume,
+    onSuperResolution: onSuperResolution,
     onDelete: onDelete,
   );
 }
@@ -2742,6 +3031,13 @@ class _GalleryTaskCard extends StatelessWidget {
     final onResume = (status == 2 || status == 4)
         ? () => controller.resumeGallery(gid)
         : null;
+    final onSuperResolution = isCompleted
+        ? () => _showStartSuperResolutionDialog(
+              context,
+              sourceType: 'gallery',
+              gid: gid,
+            )
+        : null;
 
     return GestureDetector(
       onLongPressStart: (details) {
@@ -2759,6 +3055,7 @@ class _GalleryTaskCard extends StatelessWidget {
           onReUnlock: null,
           onPause: onPause,
           onResume: onResume,
+          onSuperResolution: onSuperResolution,
           onDelete: () => _confirmDelete(context, gid),
         );
       },
@@ -2777,6 +3074,7 @@ class _GalleryTaskCard extends StatelessWidget {
           onReUnlock: null,
           onPause: onPause,
           onResume: onResume,
+          onSuperResolution: onSuperResolution,
           onDelete: () => _confirmDelete(context, gid),
         );
       },
@@ -3125,6 +3423,13 @@ class _ArchiveTaskCard extends StatelessWidget {
     final onResume = (status == 7 || status == 8)
         ? () => controller.resumeArchive(gid)
         : null;
+    final onSuperResolution = isCompleted
+        ? () => _showStartSuperResolutionDialog(
+              context,
+              sourceType: 'archive',
+              gid: gid,
+            )
+        : null;
 
     return GestureDetector(
       onLongPressStart: (details) {
@@ -3142,6 +3447,7 @@ class _ArchiveTaskCard extends StatelessWidget {
           onReUnlock: onReUnlock,
           onPause: onPause,
           onResume: onResume,
+          onSuperResolution: onSuperResolution,
           onDelete: () => _confirmDelete(context, gid),
         );
       },
@@ -3160,6 +3466,7 @@ class _ArchiveTaskCard extends StatelessWidget {
           onReUnlock: onReUnlock,
           onPause: onPause,
           onResume: onResume,
+          onSuperResolution: onSuperResolution,
           onDelete: () => _confirmDelete(context, gid),
         );
       },

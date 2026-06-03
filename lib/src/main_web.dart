@@ -34,6 +34,7 @@ import 'package:jhentai/src/pages_web/settings/web_settings_read_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_security_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_web_docker_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_style_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_super_resolution_page.dart';
 import 'package:jhentai/src/pages_web/web_theme_controller.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_stats_page.dart';
@@ -87,6 +88,8 @@ class WebDownloadService extends GetxController {
   final archiveTasks = <int, Map<String, dynamic>>{}.obs;
   final galleryTasksVersion = 0.obs;
   final archiveTasksVersion = 0.obs;
+  final superResolutionJobs = <String, Map<String, dynamic>>{}.obs;
+  final superResolutionJobsVersion = 0.obs;
   final isLoaded = false.obs;
   final connectionStatus = WebDownloadConnectionStatus.disconnected.obs;
 
@@ -139,6 +142,17 @@ class WebDownloadService extends GetxController {
       }
       archiveTasks.value = aMap;
       archiveTasksVersion.value++;
+
+      final srJobs = await backendApiClient.listSuperResolutionJobs();
+      final srMap = <String, Map<String, dynamic>>{};
+      for (final task in srJobs) {
+        final id = task['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          srMap[id] = task;
+        }
+      }
+      superResolutionJobs.value = srMap;
+      superResolutionJobsVersion.value++;
       isLoaded.value = true;
     } catch (e) {
       debugPrint('WebDownloadService load failed: $e');
@@ -214,6 +228,18 @@ class WebDownloadService extends GetxController {
         archiveTasksVersion.value++;
       } else if (eventType == 'download_removed') {
         _loadTasks();
+      } else if (eventType == 'super_resolution_progress') {
+        final id = data['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          superResolutionJobs[id] = data;
+          superResolutionJobsVersion.value++;
+        }
+      } else if (eventType == 'super_resolution_removed') {
+        final id = data['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          superResolutionJobs.remove(id);
+          superResolutionJobsVersion.value++;
+        }
       }
     } catch (e) {
       debugPrint('WDS WS parse error: $e');
@@ -225,6 +251,20 @@ class WebDownloadService extends GetxController {
 
   int? getGalleryStatus(int gid) => galleryTasks[gid]?['status'] as int?;
   int? getArchiveStatus(int gid) => archiveTasks[gid]?['status'] as int?;
+
+  Map<String, dynamic>? latestSuperResolutionJob(String sourceType, int gid) {
+    Map<String, dynamic>? latest;
+    for (final job in superResolutionJobs.values) {
+      if (job['sourceType'] != sourceType || job['gid'] != gid) continue;
+      if (latest == null ||
+          (job['createdAt']?.toString() ?? '')
+                  .compareTo(latest['createdAt']?.toString() ?? '') >
+              0) {
+        latest = job;
+      }
+    }
+    return latest;
+  }
 
   bool isGalleryDownloaded(int gid) => getGalleryStatus(gid) == 3;
   bool isGalleryDownloading(int gid) => getGalleryStatus(gid) == 1;
@@ -535,6 +575,11 @@ final _webRoutes = [
   GetPage(
     name: '/web/settings/performance',
     page: () => const WebSettingsPerformancePage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/super-resolution',
+    page: () => const WebSettingsSuperResolutionPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(

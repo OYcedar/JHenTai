@@ -22,6 +22,42 @@ class WebPtBR {
       'common.pages': '@count páginas',
       'common.open': 'Abrir',
       'common.close': 'Fechar',
+      'common.yes': 'Yes',
+      'common.no': 'No',
+      'common.warning': 'Warning',
+      'common.update': 'Update',
+      'common.download': 'Download',
+      'superResolution.title': 'Image super resolution',
+      'superResolution.summary':
+          'Check GPU/Vulkan support, download models, and manage Docker super-resolution jobs.',
+      'superResolution.capability': 'Runtime self-check',
+      'superResolution.arch': 'Architecture',
+      'superResolution.gpu': 'GPU/Vulkan',
+      'superResolution.safetyHint':
+          'Super resolution can occupy GPU/CPU for a long time and significantly increase disk usage. Docker uses a GPU-first policy; CPU-only is experimental.',
+      'superResolution.models': 'Models',
+      'superResolution.installed': 'Installed',
+      'superResolution.notInstalled': 'Not installed',
+      'superResolution.modelReady': 'Model is ready',
+      'superResolution.jobs': 'Jobs',
+      'superResolution.noJobs': 'No super-resolution jobs yet',
+      'superResolution.deleteHint':
+          'Delete this job and remove generated super-resolution images?',
+      'superResolution.start': 'Super resolve',
+      'superResolution.model': 'Model',
+      'superResolution.tileSize': 'Tile size',
+      'superResolution.gpuAutoHint': 'Leave empty for auto',
+      'superResolution.cpuOnly': 'CPU-only experimental mode',
+      'superResolution.cpuOnlyHint':
+          'Use only for small tests when no GPU is available and you accept NAS load risk.',
+      'superResolution.noGpuWarning':
+          'No GPU/Vulkan device was detected; creating jobs is not recommended by default.',
+      'superResolution.modelMissingHint':
+          'This model is not installed. Download it from the image super resolution page first.',
+      'superResolution.jobCreated': 'Super-resolution job created',
+      'superResolution.useOutput': 'Use super-resolution images',
+      'superResolution.noOutputHint':
+          'This gallery does not have a complete super-resolution output yet.',
       'localizedReason': 'Autentique-se para continuar',
       'passwordErrorHint': 'Senha incorreta, tente novamente',
       'dawnOfaNewDay': 'É o amanhecer de um novo dia!',
