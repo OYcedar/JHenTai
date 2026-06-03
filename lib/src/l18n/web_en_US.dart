@@ -40,6 +40,13 @@ class WebEnUS {
       'superResolution.installed': 'Installed',
       'superResolution.notInstalled': 'Not installed',
       'superResolution.modelReady': 'Model is ready',
+      'superResolution.modelDownloadStarted': 'Model download started',
+      'superResolution.modelDownloading': 'Downloading @progress%',
+      'superResolution.modelImporting': 'Importing model package',
+      'superResolution.modelDownloadFailed': 'Model download failed',
+      'superResolution.installedNotExecutable':
+          'Installed, but the binary is not executable',
+      'superResolution.importModel': 'Import ZIP',
       'superResolution.jobs': 'Jobs',
       'superResolution.noJobs': 'No super-resolution jobs yet',
       'superResolution.deleteHint':
@@ -553,6 +560,18 @@ class WebEnUS {
       'settings.troubleshootingWorkbench': 'Troubleshooting workbench',
       'settings.troubleshootingWorkbenchSummary':
           'Review diagnostics, logs, proxy, and super-resolution status, then run manual probes.',
+      'settings.setupChecklist': 'Setup checklist',
+      'settings.setupChecklistSummaryHint':
+          'Review first-run and post-upgrade readiness without running external probes automatically.',
+      'settings.setupChecklistHint':
+          'This checklist only reads local runtime state. Run active network or H@H tests from the troubleshooting workbench when needed.',
+      'settings.setupChecklistSummary': 'Readiness summary',
+      'settings.setupChecklistSummaryBody':
+          '@total checks, @errors errors, @warnings warnings.',
+      'settings.setupChecklistLoadFailed':
+          'Failed to load setup checklist: @error',
+      'settings.copySetupChecklist': 'Copy setup checklist',
+      'settings.setupChecklistCopied': 'Setup checklist copied',
       'settings.maintenanceLoadFailed':
           'Failed to load maintenance information: @error',
       'settings.maintenanceRuntime': 'Current runtime',

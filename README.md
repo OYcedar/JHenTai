@@ -112,7 +112,11 @@ docker-compose up -d
 
 Then open `http://<your-server-ip>:8080` in any browser and enter the API token from `docker logs jhentai`.
 
+After first login, open **Settings → Web/Docker → Setup checklist**. It verifies the local deployment without running external probes automatically: API token, EH cookies, storage permissions, SQLite, proxy routing, Docker tag pinning, backups, failed downloads, and super-resolution GPU/model readiness.
+
 For **AMD/Intel integrated GPU** NAS devices, pass `/dev/dri` into the container before using image super-resolution. If the self-check still reports no GPU or permission denied, add `group_add` as described in the [Docker Deployment Guide](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md#image-super-resolution-gpu-first).
+
+Super-resolution model packages can be downloaded from **Settings → Web/Docker → Image super resolution**. If GitHub downloads are slow or blocked in your NAS network, download the matching ZIP manually and use **Import ZIP** on the same page; the server validates the package before enabling it.
 
 **For detailed Docker documentation** (configuration, backup, reverse proxy, CI/CD, security, troubleshooting), see:
 

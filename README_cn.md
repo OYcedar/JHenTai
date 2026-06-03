@@ -107,7 +107,11 @@ docker-compose up -d
 
 在浏览器中打开 `http://<服务器IP>:8080`，输入 `docker logs jhentai` 中显示的 API Token 即可使用。
 
+首次登录后，建议打开 **设置 → Web/Docker → 启动清单**。该页面只读取本地运行状态，不会自动访问外网，可检查 API Token、EH Cookie、目录权限、SQLite、代理路由、Docker 标签固定、备份入口、下载失败和超分 GPU/模型状态。
+
 如果你的 NAS 使用 **AMD/Intel 核显** 并希望使用图片超分辨率，请把宿主机的 `/dev/dri` 透传到容器。若超分页面仍提示没有 GPU 或权限不足，再按 [Docker 部署指南](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md#图片超分辨率gpu-优先) 增加 `group_add`。
+
+超分模型包可在 **设置 → Web/Docker → 图片超分辨率** 下载。如果 NAS 网络访问 GitHub 较慢或失败，可以手动下载对应 ZIP 后在同一页面使用 **导入 ZIP**；服务端会校验模型包后再启用。
 
 **详细的 Docker 部署文档**（配置、备份、反向代理、CI/CD、安全、常见问题）请参阅：
 

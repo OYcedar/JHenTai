@@ -47,6 +47,14 @@ class _WebSettingsWebDockerPageState extends State<WebSettingsWebDockerPage>
             const SizedBox(height: 12),
             _routeCard(
               context,
+              icon: Icons.checklist_rtl_outlined,
+              title: 'settings.setupChecklist'.tr,
+              body: 'settings.setupChecklistSummaryHint'.tr,
+              route: '/web/settings/setup-checklist',
+            ),
+            const SizedBox(height: 12),
+            _routeCard(
+              context,
               icon: Icons.build_circle_outlined,
               title: 'settings.maintenanceCenter'.tr,
               body: 'settings.maintenanceCenterSummary'.tr,

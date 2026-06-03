@@ -636,6 +636,22 @@ class BackendApiClient {
         : {};
   }
 
+  Future<Map<String, dynamic>> importSuperResolutionModel({
+    required String model,
+    required Uint8List bytes,
+    String fileName = '',
+  }) async {
+    final response = await _dio.post(
+      '/api/super-resolution/models/import',
+      queryParameters: {'model': model},
+      data: bytes,
+      options: Options(headers: {'x-filename': fileName}),
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
   Future<List<Map<String, dynamic>>> listSuperResolutionJobs() async {
     final response = await _dio.get('/api/super-resolution/jobs');
     final data = response.data;
@@ -1363,6 +1379,11 @@ class BackendApiClient {
 
   Future<Map<String, dynamic>> getDeploymentDiagnostics() async {
     final response = await _dio.get('/api/setting/diagnostics');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> getSetupChecklist() async {
+    final response = await _dio.get('/api/setting/setup-checklist');
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 

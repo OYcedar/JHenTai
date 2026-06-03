@@ -459,6 +459,11 @@ class _WebSettingsTroubleshootingPageState
           runSpacing: 8,
           children: [
             OutlinedButton.icon(
+              onPressed: () => Get.toNamed('/web/settings/setup-checklist'),
+              icon: const Icon(Icons.checklist_rtl_outlined),
+              label: Text('settings.setupChecklist'.tr),
+            ),
+            OutlinedButton.icon(
               onPressed: () => Get.toNamed('/web/settings/network'),
               icon: const Icon(Icons.wifi_tethering),
               label: Text('settings.menuNetwork'.tr),

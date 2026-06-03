@@ -111,6 +111,7 @@ class SettingRoutes {
     router.delete('/cache/page', _clearPageCache);
     router.get('/network/timeouts', _getNetworkTimeouts);
     router.put('/network/timeouts', _updateNetworkTimeouts);
+    router.get('/setup-checklist', _getSetupChecklist);
     router.get('/diagnostics', _getDiagnostics);
     router.get('/maintenance', _getMaintenance);
     router.get('/maintenance/update-check', _checkMaintenanceUpdate);
@@ -476,6 +477,201 @@ class SettingRoutes {
       jsonEncode({'success': true, 'deleted': deleted}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _getSetupChecklist(Request request) async {
+    return Response.ok(
+      jsonEncode(_setupChecklistPayload()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Map<String, dynamic> _setupChecklistPayload() {
+    final diagnostics = _diagnosticsPayload();
+    final maintenance = _maintenancePayload();
+    final downloadIssues = _downloadIssuesPayload();
+    final superResolution = _superResolutionSnapshot();
+    final network = _networkRuntime();
+    final runtime = _runtimeInfo();
+    final checks = <Map<String, dynamic>>[];
+
+    void add({
+      required String id,
+      required String group,
+      required String label,
+      required String status,
+      required String detail,
+      required String hint,
+      String? route,
+      String? copyText,
+    }) {
+      checks.add({
+        'id': id,
+        'group': group,
+        'label': label,
+        'status': status,
+        'detail': detail,
+        'hint': hint,
+        if (route != null) 'route': route,
+        if (copyText != null && copyText.isNotEmpty) 'copyText': copyText,
+      });
+    }
+
+    final apiTokenConfigured = (db.readConfig('api_token') ?? '').isNotEmpty;
+    add(
+      id: 'api_token',
+      group: 'service',
+      label: 'API token',
+      status: apiTokenConfigured ? 'ok' : 'warn',
+      detail: apiTokenConfigured
+          ? 'API token is configured for browser access.'
+          : 'API token is not stored in the database yet.',
+      hint:
+          'Open the setup page with the token printed in Docker logs if this browser cannot access the API.',
+      route: '/web/setup',
+    );
+
+    final cookies = db.readConfig('eh_cookies') ?? '';
+    add(
+      id: 'eh_login',
+      group: 'account',
+      label: 'EH login cookies',
+      status: cookies.trim().isNotEmpty ? 'ok' : 'warn',
+      detail: cookies.trim().isNotEmpty
+          ? 'EH cookies are stored.'
+          : 'EH cookies are not configured.',
+      hint:
+          'Set EH cookies in Account settings before browsing ExHentai or downloading protected galleries.',
+      route: '/web/settings/account',
+    );
+
+    final diagnosticChecks =
+        (diagnostics['checks'] as List? ?? const []).whereType<Map>();
+    for (final check in diagnosticChecks) {
+      final id = check['id']?.toString() ?? '';
+      if (!{
+        'http_api',
+        'data_dir',
+        'download_dir',
+        'log_dir',
+        'temp_dir',
+        'database',
+      }.contains(id)) {
+        continue;
+      }
+      add(
+        id: 'diagnostics_$id',
+        group: check['group']?.toString() ?? 'storage',
+        label: check['label']?.toString() ?? id,
+        status: check['status']?.toString() ?? 'warn',
+        detail: check['detail']?.toString() ?? '',
+        hint: check['hint']?.toString() ?? '',
+        route: '/web/settings/diagnostics',
+      );
+    }
+
+    final dockerTag = runtime['dockerTag']?.toString() ?? 'local/dev';
+    final forkRevision = runtime['forkRevision']?.toString() ?? 'local/dev';
+    final pinned = dockerTag != 'latest' && dockerTag != 'local/dev';
+    add(
+      id: 'docker_version',
+      group: 'maintenance',
+      label: 'Docker image tag',
+      status: pinned ? 'ok' : 'warn',
+      detail: 'Current tag: $dockerTag, fork revision: $forkRevision',
+      hint:
+          'Use an explicit x.y.z-hhh tag in compose updates; avoid relying on latest for long-running NAS deployments.',
+      route: '/web/settings/maintenance',
+    );
+
+    add(
+      id: 'sqlite_backup',
+      group: 'maintenance',
+      label: 'SQLite backup',
+      status: 'warn',
+      detail:
+          'SQLite backup can be downloaded from the maintenance center before updates or restores.',
+      hint:
+          'Download a fresh SQLite backup before changing image versions, restoring data, or experimenting with imports.',
+      route: '/web/settings/maintenance',
+    );
+
+    final hathProxy = network['hathProxySource']?.toString() ?? 'direct';
+    final proxyConfigured = hathProxy != 'direct';
+    add(
+      id: 'proxy_runtime',
+      group: 'network',
+      label: 'Proxy routing',
+      status: proxyConfigured ? 'ok' : 'skipped',
+      detail: 'H@H route: $hathProxy',
+      hint:
+          'If gallery pages work but H@H images fail, configure JH_HATH_PROXY or test H@H from the troubleshooting workbench.',
+      route: '/web/settings/network',
+    );
+
+    final srCaps = superResolution['capabilities'] is Map
+        ? Map<String, dynamic>.from(superResolution['capabilities'] as Map)
+        : const <String, dynamic>{};
+    final srModels = srCaps['models'] is Map
+        ? Map<String, dynamic>.from(srCaps['models'] as Map)
+        : const <String, dynamic>{};
+    final installedModels = srModels.values
+        .where((item) => item is Map && item['installed'] == true)
+        .length;
+    final srGpu = srCaps['gpu'] is Map
+        ? Map<String, dynamic>.from(srCaps['gpu'] as Map)
+        : const <String, dynamic>{};
+    add(
+      id: 'super_resolution',
+      group: 'superResolution',
+      label: 'Image super resolution',
+      status: srCaps['status'] == 'ok' && installedModels > 0 ? 'ok' : 'warn',
+      detail:
+          'Runtime: ${srCaps['status'] ?? 'warn'}, installed models: $installedModels',
+      hint:
+          'Pass /dev/dri into the container and install at least one model before enabling automatic super-resolution.',
+      route: '/web/settings/super-resolution',
+      copyText: srGpu['composeSnippet']?.toString(),
+    );
+
+    final downloadSummary = downloadIssues['summary'] is Map
+        ? Map<String, dynamic>.from(downloadIssues['summary'] as Map)
+        : const <String, dynamic>{};
+    final failedTotal = (downloadSummary['failedTotal'] as num?)?.toInt() ?? 0;
+    add(
+      id: 'download_failures',
+      group: 'downloads',
+      label: 'Download failures',
+      status: failedTotal == 0 ? 'ok' : 'warn',
+      detail: failedTotal == 0
+          ? 'No failed download tasks are currently reported.'
+          : '$failedTotal failed download tasks need attention.',
+      hint:
+          'Open Downloads or the troubleshooting workbench to retry failed tasks and test H@H/proxy routing.',
+      route:
+          failedTotal == 0 ? '/web/downloads' : '/web/settings/troubleshooting',
+    );
+
+    final errorCount = checks.where((item) => item['status'] == 'error').length;
+    final warningCount =
+        checks.where((item) => item['status'] == 'warn').length;
+    final status = errorCount > 0
+        ? 'error'
+        : warningCount > 0
+            ? 'warn'
+            : 'ok';
+    return {
+      'status': status,
+      'generatedAt': DateTime.now().toIso8601String(),
+      'summary': {
+        'errorCount': errorCount,
+        'warningCount': warningCount,
+        'total': checks.length,
+      },
+      'checks': checks,
+      'maintenance': maintenance,
+      'network': network,
+    };
   }
 
   Future<Response> _getDiagnostics(Request request) async {

@@ -10,6 +10,7 @@ English | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/D
 
 - [Quick Start](#quick-start)
 - [First Login](#first-login)
+- [Setup and Upgrade Checklist](#setup-and-upgrade-checklist)
 - [Configuration](#configuration)
 - [Local Gallery Scanning](#local-gallery-scanning)
 - [Backup](#backup)
@@ -90,6 +91,24 @@ Enter this token in the browser setup page. It is saved to `localStorage` so you
 
 ---
 
+## Setup and Upgrade Checklist
+
+After the first login, open **Settings → Web/Docker → Setup checklist**. The page reads local runtime state only and does **not** automatically probe EH/EX, H@H, Docker Hub, or any other external endpoint.
+
+Use it after first deployment and after image upgrades to confirm:
+
+- API token and EH cookie state.
+- Data, download, log, temp, and SQLite access.
+- Proxy routing, especially the H@H route.
+- Explicit Docker tag / fork revision instead of long-term `latest` usage.
+- SQLite backup entry before imports, restores, or image upgrades.
+- Failed download summary and the troubleshooting workbench link.
+- GPU/Vulkan and installed model readiness for image super-resolution.
+
+If a network or H@H problem is suspected, open **Settings → Web/Docker → Troubleshooting workbench** and run the active probes manually.
+
+---
+
 ## Configuration
 
 ### Environment Variables
@@ -160,6 +179,14 @@ services:
 6. NVIDIA GPUs require NVIDIA Container Toolkit on the host and the appropriate `--gpus all` / Compose GPU configuration.
 7. If your NAS or reverse proxy environment cannot expose GPU devices, the page can still be used for diagnostics and model management, but large CPU-only jobs are discouraged.
 8. “Auto super-resolve after download” is disabled by default. Enable it only after GPU self-check passes, models are installed, and enough free disk space is available.
+
+### Model download and manual import
+
+Open **Settings → Web/Docker → Image super resolution** to manage models. Clicking **Download** starts a server-side download and the model card shows progress, retry state, and the latest error.
+
+If GitHub downloads are slow or blocked by the NAS network, download the matching upstream ZIP manually and click **Import ZIP** for that model. The server extracts the ZIP under `/data/super_resolution/models`, rejects packages that do not contain the expected executable, and marks the binary executable after import.
+
+The model page never enables CPU-only work by default. Installing a model also does not start jobs automatically; automatic super-resolution after downloads must be enabled separately.
 
 ---
 

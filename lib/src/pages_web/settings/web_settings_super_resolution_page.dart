@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
@@ -20,8 +23,10 @@ class _WebSettingsSuperResolutionPageState
   List<Map<String, dynamic>> models = [];
   bool loading = true;
   bool downloading = false;
+  bool importing = false;
   bool savingSettings = false;
   String? error;
+  Timer? _modelPollTimer;
   final TextEditingController _gpuIdController = TextEditingController();
 
   WebDownloadService get _downloads => Get.find<WebDownloadService>();
@@ -51,6 +56,7 @@ class _WebSettingsSuperResolutionPageState
         models = modelList;
         _gpuIdController.text = settings['gpuId']?.toString() ?? '';
       });
+      _syncModelPolling();
     } catch (e) {
       if (mounted) {
         error = '$e';
@@ -64,6 +70,7 @@ class _WebSettingsSuperResolutionPageState
 
   @override
   void dispose() {
+    _modelPollTimer?.cancel();
     _gpuIdController.dispose();
     super.dispose();
   }
@@ -72,8 +79,9 @@ class _WebSettingsSuperResolutionPageState
     setState(() => downloading = true);
     try {
       await backendApiClient.downloadSuperResolutionModel(model);
-      await _load();
-      Get.snackbar('common.success'.tr, 'superResolution.modelReady'.tr,
+      await _refreshModels();
+      Get.snackbar(
+          'common.success'.tr, 'superResolution.modelDownloadStarted'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
       Get.snackbar('common.error'.tr, '$e',
@@ -83,6 +91,74 @@ class _WebSettingsSuperResolutionPageState
         setState(() => downloading = false);
       }
     }
+  }
+
+  Future<void> _importModel(String model) async {
+    setState(() => importing = true);
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['zip'],
+        withData: true,
+      );
+      final file = result?.files.single;
+      final bytes = file?.bytes;
+      if (file == null || bytes == null) {
+        return;
+      }
+      await backendApiClient.importSuperResolutionModel(
+        model: model,
+        bytes: bytes,
+        fileName: file.name,
+      );
+      await _load();
+      Get.snackbar('common.success'.tr, 'superResolution.modelReady'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) {
+        setState(() => importing = false);
+      }
+    }
+  }
+
+  Future<void> _refreshModels() async {
+    try {
+      final modelList = await backendApiClient.listSuperResolutionModels();
+      if (!mounted) return;
+      setState(() {
+        models = modelList;
+        downloading = _hasActiveModelOperation(modelList);
+      });
+      _syncModelPolling();
+    } catch (_) {
+      if (mounted) {
+        setState(() => downloading = false);
+      }
+    }
+  }
+
+  void _syncModelPolling() {
+    final active = _hasActiveModelOperation(models);
+    if (!active) {
+      _modelPollTimer?.cancel();
+      _modelPollTimer = null;
+      return;
+    }
+    _modelPollTimer ??= Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _refreshModels(),
+    );
+  }
+
+  bool _hasActiveModelOperation(List<Map<String, dynamic>> modelList) {
+    return modelList.any((model) {
+      final state = _map(model['downloadState']);
+      final status = state['status']?.toString();
+      return status == 'downloading' || status == 'importing';
+    });
   }
 
   Future<void> _saveAutoSettings() async {
@@ -273,34 +349,95 @@ class _WebSettingsSuperResolutionPageState
               '',
             ),
             const SizedBox(height: 8),
-            for (final model in models)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title:
-                    Text(model['label']?.toString() ?? model['id'].toString()),
-                subtitle: Text(model['installed'] == true
-                    ? 'superResolution.installed'.tr
-                    : 'superResolution.notInstalled'.tr),
-                trailing: FilledButton.icon(
-                  onPressed: downloading
-                      ? null
-                      : () => _downloadModel(model['id'].toString()),
-                  icon: downloading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.download),
-                  label: Text(model['installed'] == true
-                      ? 'common.update'.tr
-                      : 'common.download'.tr),
-                ),
-              ),
+            for (final model in models) _modelTile(context, model),
           ],
         ),
       ),
     );
+  }
+
+  Widget _modelTile(BuildContext context, Map<String, dynamic> model) {
+    final id = model['id']?.toString() ?? 'realcugan';
+    final state = _map(model['downloadState']);
+    final status = state['status']?.toString() ??
+        (model['installed'] == true ? 'installed' : 'idle');
+    final progress = (state['progress'] as num?)?.toDouble() ?? 0;
+    final active = status == 'downloading' || status == 'importing';
+    final failed = status == 'failed';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(model['label']?.toString() ?? id),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_modelStatusLabel(model, state)),
+            if (active) ...[
+              const SizedBox(height: 6),
+              LinearProgressIndicator(value: progress > 0 ? progress : null),
+            ],
+            if (failed && (state['error']?.toString().isNotEmpty ?? false))
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  state['error'].toString(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+          ],
+        ),
+        trailing: Wrap(
+          spacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: active || importing ? null : () => _importModel(id),
+              icon: const Icon(Icons.upload_file_outlined),
+              label: Text('superResolution.importModel'.tr),
+            ),
+            FilledButton.icon(
+              onPressed:
+                  active || downloading ? null : () => _downloadModel(id),
+              icon: active
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download),
+              label: Text(failed
+                  ? 'common.retry'.tr
+                  : model['installed'] == true
+                      ? 'common.update'.tr
+                      : 'common.download'.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _modelStatusLabel(
+    Map<String, dynamic> model,
+    Map<String, dynamic> state,
+  ) {
+    final status = state['status']?.toString() ??
+        (model['installed'] == true ? 'installed' : 'idle');
+    final progress = ((state['progress'] as num?)?.toDouble() ?? 0) * 100;
+    return switch (status) {
+      'downloading' => 'superResolution.modelDownloading'
+          .trParams({'progress': progress.toStringAsFixed(0)}),
+      'importing' => 'superResolution.modelImporting'.tr,
+      'failed' => 'superResolution.modelDownloadFailed'.tr,
+      'installed' => model['executable'] == true
+          ? 'superResolution.installed'.tr
+          : 'superResolution.installedNotExecutable'.tr,
+      _ => model['installed'] == true
+          ? 'superResolution.installed'.tr
+          : 'superResolution.notInstalled'.tr,
+    };
   }
 
   Widget _autoCard(BuildContext context) {

@@ -372,6 +372,11 @@ class _WebSettingsMaintenancePageState extends State<WebSettingsMaintenancePage>
           runSpacing: 8,
           children: [
             OutlinedButton.icon(
+              onPressed: () => Get.toNamed('/web/settings/setup-checklist'),
+              icon: const Icon(Icons.checklist_rtl_outlined),
+              label: Text('settings.setupChecklist'.tr),
+            ),
+            OutlinedButton.icon(
               onPressed: () => Get.toNamed('/web/settings/diagnostics'),
               icon: const Icon(Icons.health_and_safety_outlined),
               label: Text('settings.deploymentDiagnostics'.tr),
