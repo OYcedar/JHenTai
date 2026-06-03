@@ -35,7 +35,7 @@ Example: `8.0.12+309` with fork revision `310` → **`8.0.12-136`** (`310` = `0x
 The publish scripts also push `latest`, but compose / Unraid examples must pin an explicit `x.y.z-hhh` tag.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.13-14f
+docker pull hemumoe/jhentai:8.0.13-150
 ```
 
 **docker-compose.yml** (recommended):
@@ -43,7 +43,7 @@ docker pull hemumoe/jhentai:8.0.13-14f
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.13-14f
+    image: hemumoe/jhentai:8.0.13-150
     container_name: jhentai
     ports:
       - "8080:8080"

@@ -35,7 +35,7 @@
 发布脚本也会推送 `latest`，但 compose / Unraid 示例必须固定明确的 **`x.y.z-hhh`** 标签。
 
 ```bash
-docker pull hemumoe/jhentai:8.0.13-14f
+docker pull hemumoe/jhentai:8.0.13-150
 ```
 
 **docker-compose.yml**（推荐）：
@@ -43,7 +43,7 @@ docker pull hemumoe/jhentai:8.0.13-14f
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.13-14f
+    image: hemumoe/jhentai:8.0.13-150
     container_name: jhentai
     ports:
       - "8080:8080"
