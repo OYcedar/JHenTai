@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_diagnostics_localization.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
 class WebSettingsDiagnosticsPage extends StatefulWidget {
@@ -237,7 +238,9 @@ class _WebSettingsDiagnosticsPageState extends State<WebSettingsDiagnosticsPage>
                 children: [
                   Expanded(
                     child: Text(
-                      check['label']?.toString() ?? '-',
+                      localizeWebDiagnosticLabel(
+                        check['label']?.toString() ?? '-',
+                      ),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -245,8 +248,13 @@ class _WebSettingsDiagnosticsPageState extends State<WebSettingsDiagnosticsPage>
                 ],
               ),
               const SizedBox(height: 4),
-              Text(check['detail']?.toString() ?? '-'),
-              finalHint(context, check['hint']?.toString()),
+              Text(
+                localizeWebDiagnosticText(check['detail']?.toString() ?? '-'),
+              ),
+              finalHint(
+                context,
+                localizeWebDiagnosticText(check['hint']?.toString() ?? ''),
+              ),
             ],
           ),
         ),

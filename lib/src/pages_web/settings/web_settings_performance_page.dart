@@ -5,6 +5,7 @@ import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_downloads_page.dart';
 import 'package:jhentai/src/pages_web/web_reader_setting_keys.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
+import 'package:web/web.dart' as web;
 
 enum _PerformancePreset {
   nas,
@@ -63,7 +64,7 @@ class _WebSettingsPerformancePageState extends State<WebSettingsPerformancePage>
   };
 
   late final TextEditingController _maxGalleryNumController;
-  final applyingPreset = false.obs;
+  final applyingPreset = Rxn<_PerformancePreset>();
 
   @override
   void initState() {
@@ -139,31 +140,62 @@ class _WebSettingsPerformancePageState extends State<WebSettingsPerformancePage>
                   ),
                   const SizedBox(height: 12),
                   Obx(
-                    () => Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                    () => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        FilledButton.tonalIcon(
-                          onPressed: applyingPreset.value
-                              ? null
-                              : () => _applyPreset(_PerformancePreset.nas),
-                          icon: const Icon(Icons.dns_outlined),
-                          label: Text('settings.performancePresetNas'.tr),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            FilledButton.tonalIcon(
+                              onPressed: applyingPreset.value == null
+                                  ? () => _applyPreset(_PerformancePreset.nas)
+                                  : null,
+                              icon: _presetIcon(
+                                _PerformancePreset.nas,
+                                Icons.dns_outlined,
+                              ),
+                              label: Text('settings.performancePresetNas'.tr),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: applyingPreset.value == null
+                                  ? () =>
+                                      _applyPreset(_PerformancePreset.balanced)
+                                  : null,
+                              icon: _presetIcon(
+                                _PerformancePreset.balanced,
+                                Icons.tune,
+                              ),
+                              label: Text(
+                                'settings.performancePresetBalanced'.tr,
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: applyingPreset.value == null
+                                  ? () => _applyPreset(_PerformancePreset.fast)
+                                  : null,
+                              icon: _presetIcon(
+                                _PerformancePreset.fast,
+                                Icons.bolt_outlined,
+                              ),
+                              label: Text('settings.performancePresetFast'.tr),
+                            ),
+                          ],
                         ),
-                        OutlinedButton.icon(
-                          onPressed: applyingPreset.value
-                              ? null
-                              : () => _applyPreset(_PerformancePreset.balanced),
-                          icon: const Icon(Icons.tune),
-                          label: Text('settings.performancePresetBalanced'.tr),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: applyingPreset.value
-                              ? null
-                              : () => _applyPreset(_PerformancePreset.fast),
-                          icon: const Icon(Icons.bolt_outlined),
-                          label: Text('settings.performancePresetFast'.tr),
-                        ),
+                        if (applyingPreset.value != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            'settings.performancePresetApplying'.trParams({
+                              'preset': _presetLabel(applyingPreset.value!),
+                            }),
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -226,8 +258,11 @@ class _WebSettingsPerformancePageState extends State<WebSettingsPerformancePage>
   }
 
   Future<void> _applyPreset(_PerformancePreset preset) async {
+    if (applyingPreset.value != null) {
+      return;
+    }
     final values = _presetValues[preset]!;
-    applyingPreset.value = true;
+    applyingPreset.value = preset;
     try {
       await Future.wait([
         backendApiClient.putSetting(
@@ -247,6 +282,16 @@ class _WebSettingsPerformancePageState extends State<WebSettingsPerformancePage>
           values.localPreloadDistance,
         ),
       ]);
+      _cacheReaderSetting(kWebPreloadPagesKey, values.onlinePreloadPages);
+      _cacheReaderSetting(kWebPreloadPagesLocalKey, values.localPreloadPages);
+      _cacheReaderSetting(
+        kWebPreloadDistanceKey,
+        values.onlinePreloadDistance,
+      );
+      _cacheReaderSetting(
+        kWebPreloadDistanceLocalKey,
+        values.localPreloadDistance,
+      );
       WebDownloadsController.setMaxGalleryNum4Animation(
         values.maxGalleryNum4Animation,
       );
@@ -256,8 +301,37 @@ class _WebSettingsPerformancePageState extends State<WebSettingsPerformancePage>
         'settings.performanceSaved'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.performancePresetFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
-      applyingPreset.value = false;
+      applyingPreset.value = null;
     }
+  }
+
+  Widget _presetIcon(_PerformancePreset preset, IconData icon) {
+    if (applyingPreset.value != preset) {
+      return Icon(icon);
+    }
+    return const SizedBox(
+      width: 18,
+      height: 18,
+      child: CircularProgressIndicator(strokeWidth: 2),
+    );
+  }
+
+  String _presetLabel(_PerformancePreset preset) {
+    return switch (preset) {
+      _PerformancePreset.nas => 'settings.performancePresetNas'.tr,
+      _PerformancePreset.balanced => 'settings.performancePresetBalanced'.tr,
+      _PerformancePreset.fast => 'settings.performancePresetFast'.tr,
+    };
+  }
+
+  void _cacheReaderSetting(String key, int value) {
+    web.window.localStorage.setItem(key, '$value');
   }
 }

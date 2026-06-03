@@ -676,6 +676,8 @@ class WebZhCN {
       'settings.performancePresetNas': 'NAS 低负载',
       'settings.performancePresetBalanced': '均衡',
       'settings.performancePresetFast': '高速设备',
+      'settings.performancePresetApplying': '正在应用 @preset...',
+      'settings.performancePresetFailed': '应用性能预设失败：@error',
       'settings.webMaxGalleryNum4Animation': '下载分组动画阈值',
       'settings.webMaxGalleryNum4AnimationHint':
           '单个下载分组内任务数超过此值时，关闭展开/收起图标动画；0 表示始终关闭。',

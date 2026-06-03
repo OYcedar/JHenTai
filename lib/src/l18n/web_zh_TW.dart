@@ -676,6 +676,8 @@ class WebZhTW {
       'settings.performancePresetNas': 'NAS 低負載',
       'settings.performancePresetBalanced': '均衡',
       'settings.performancePresetFast': '高速裝置',
+      'settings.performancePresetApplying': '正在套用 @preset...',
+      'settings.performancePresetFailed': '套用效能預設失敗：@error',
       'settings.webMaxGalleryNum4Animation': '下載分組動畫閾值',
       'settings.webMaxGalleryNum4AnimationHint':
           '單個下載分組內任務數超過此值時，關閉展開／收合圖示動畫；0 表示一律關閉。',

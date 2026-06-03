@@ -763,6 +763,9 @@ class WebEnUS {
       'settings.performancePresetNas': 'NAS low load',
       'settings.performancePresetBalanced': 'Balanced',
       'settings.performancePresetFast': 'Fast device',
+      'settings.performancePresetApplying': 'Applying @preset...',
+      'settings.performancePresetFailed':
+          'Failed to apply performance preset: @error',
       'settings.webMaxGalleryNum4Animation': 'Download group animation limit',
       'settings.webMaxGalleryNum4AnimationHint':
           'Disable expand/collapse icon animation when a download group has more tasks than this value. Use 0 to always disable it.',

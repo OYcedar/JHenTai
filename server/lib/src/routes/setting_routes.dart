@@ -1301,7 +1301,8 @@ class SettingRoutes {
       '<redacted-token>',
     );
     text = text.replaceAll(
-      RegExp(r'(?i)(cookie|set-cookie|eh_cookies)[=:][^\s,;]+'),
+      RegExp(r'(cookie|set-cookie|eh_cookies)[=:][^\s,;]+',
+          caseSensitive: false),
       r'$1=<redacted>',
     );
     text = text.replaceAllMapped(
