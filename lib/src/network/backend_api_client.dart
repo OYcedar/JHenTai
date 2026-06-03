@@ -586,6 +586,25 @@ class BackendApiClient {
         .toList();
   }
 
+  Future<Map<String, dynamic>> getSuperResolutionSettings() async {
+    final response = await _dio.get('/api/super-resolution/settings');
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<Map<String, dynamic>> updateSuperResolutionSettings(
+    Map<String, dynamic> settings,
+  ) async {
+    final response = await _dio.put(
+      '/api/super-resolution/settings',
+      data: settings,
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
   Future<Map<String, dynamic>> downloadSuperResolutionModel(
       String model) async {
     final response = await _dio.post(

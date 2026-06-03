@@ -16,10 +16,13 @@ class _WebSettingsSuperResolutionPageState
     extends State<WebSettingsSuperResolutionPage>
     with WebScrollToTopState<WebSettingsSuperResolutionPage> {
   Map<String, dynamic> capabilities = {};
+  Map<String, dynamic> autoSettings = {};
   List<Map<String, dynamic>> models = [];
   bool loading = true;
   bool downloading = false;
+  bool savingSettings = false;
   String? error;
+  final TextEditingController _gpuIdController = TextEditingController();
 
   WebDownloadService get _downloads => Get.find<WebDownloadService>();
 
@@ -36,20 +39,33 @@ class _WebSettingsSuperResolutionPageState
     });
     try {
       final caps = await backendApiClient.getSuperResolutionCapabilities();
+      final settings = await backendApiClient.getSuperResolutionSettings();
       final modelList = await backendApiClient.listSuperResolutionModels();
       await _downloads.refresh();
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         capabilities = caps;
+        autoSettings = settings;
         models = modelList;
+        _gpuIdController.text = settings['gpuId']?.toString() ?? '';
       });
     } catch (e) {
-      if (mounted) error = '$e';
+      if (mounted) {
+        error = '$e';
+      }
     } finally {
       if (mounted) {
         setState(() => loading = false);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _gpuIdController.dispose();
+    super.dispose();
   }
 
   Future<void> _downloadModel(String model) async {
@@ -65,6 +81,35 @@ class _WebSettingsSuperResolutionPageState
     } finally {
       if (mounted) {
         setState(() => downloading = false);
+      }
+    }
+  }
+
+  Future<void> _saveAutoSettings() async {
+    setState(() => savingSettings = true);
+    try {
+      final result = await backendApiClient.updateSuperResolutionSettings({
+        'autoEnabled': autoSettings['autoEnabled'] == true,
+        'model': autoSettings['model']?.toString() ?? 'realcugan',
+        'gpuId': int.tryParse(_gpuIdController.text.trim()),
+        'tileSize': (autoSettings['tileSize'] as num?)?.toInt() ?? 0,
+        'allowCpuOnly': autoSettings['allowCpuOnly'] == true,
+      });
+      if (mounted) {
+        setState(() {
+          autoSettings =
+              Map<String, dynamic>.from(result['settings'] as Map? ?? {});
+          _gpuIdController.text = autoSettings['gpuId']?.toString() ?? '';
+        });
+      }
+      Get.snackbar('common.success'.tr, 'superResolution.autoSettingsSaved'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) {
+        setState(() => savingSettings = false);
       }
     }
   }
@@ -96,7 +141,9 @@ class _WebSettingsSuperResolutionPageState
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true) {
+      return;
+    }
     await backendApiClient.deleteSuperResolutionJob(id, deleteFiles: true);
     await _downloads.refresh();
   }
@@ -127,6 +174,8 @@ class _WebSettingsSuperResolutionPageState
                       _capabilityCard(context),
                       const SizedBox(height: 12),
                       _modelCard(context),
+                      const SizedBox(height: 12),
+                      _autoCard(context),
                       const SizedBox(height: 12),
                       _jobsCard(context),
                     ],
@@ -254,6 +303,137 @@ class _WebSettingsSuperResolutionPageState
     );
   }
 
+  Widget _autoCard(BuildContext context) {
+    final model = autoSettings['model']?.toString() ?? 'realcugan';
+    final tileSize = (autoSettings['tileSize'] as num?)?.toInt() ?? 0;
+    final gpu = _map(capabilities['gpu']);
+    final gpuAvailable = gpu['available'] == true;
+    final selectedModelInstalled = models
+        .where((item) => item['id'] == model)
+        .any((item) => item['installed'] == true);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionHeader(
+              context,
+              Icons.download_done_outlined,
+              'superResolution.autoAfterDownload'.tr,
+              autoSettings['autoEnabled'] == true
+                  ? 'settings.enabled'.tr
+                  : 'settings.disabled'.tr,
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('superResolution.autoEnabled'.tr),
+              subtitle: Text('superResolution.autoEnabledHint'.tr),
+              value: autoSettings['autoEnabled'] == true,
+              onChanged: (value) {
+                setState(() => autoSettings['autoEnabled'] = value);
+              },
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              key: ValueKey('auto-model-$model-${models.length}'),
+              initialValue: _modelOptions.any((item) => item['id'] == model)
+                  ? model
+                  : 'realcugan',
+              decoration: InputDecoration(
+                labelText: 'superResolution.model'.tr,
+              ),
+              items: [
+                for (final item in _modelOptions)
+                  DropdownMenuItem(
+                    value: item['id'].toString(),
+                    child: Text(
+                      '${item['label']} · ${item['installed'] == true ? 'superResolution.installed'.tr : 'superResolution.notInstalled'.tr}',
+                    ),
+                  ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => autoSettings['model'] = value);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'superResolution.autoAfterDownloadHint'.tr,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              key: ValueKey('auto-tile-$tileSize'),
+              initialValue: tileSize,
+              decoration: InputDecoration(
+                labelText: 'superResolution.tileSize'.tr,
+              ),
+              items: const [
+                DropdownMenuItem(value: 0, child: Text('Auto')),
+                DropdownMenuItem(value: 128, child: Text('128')),
+                DropdownMenuItem(value: 256, child: Text('256')),
+                DropdownMenuItem(value: 512, child: Text('512')),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => autoSettings['tileSize'] = value);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _gpuIdController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'GPU id',
+                hintText: 'superResolution.gpuAutoHint'.tr,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('superResolution.allowCpuOnlyAuto'.tr),
+              subtitle: Text('superResolution.allowCpuOnlyAutoHint'.tr),
+              value: autoSettings['allowCpuOnly'] == true,
+              onChanged: (value) {
+                setState(() => autoSettings['allowCpuOnly'] = value);
+              },
+            ),
+            if (!gpuAvailable || !selectedModelInstalled)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  [
+                    if (!gpuAvailable) 'superResolution.noGpuWarning'.tr,
+                    if (!selectedModelInstalled)
+                      'superResolution.modelMissingHint'.tr,
+                  ].join('\n'),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.icon(
+                onPressed: savingSettings ? null : _saveAutoSettings,
+                icon: savingSettings
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.save_outlined),
+                label: Text('common.save'.tr),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _jobsCard(BuildContext context) {
     return Card(
       child: Padding(
@@ -367,5 +547,24 @@ class _WebSettingsSuperResolutionPageState
 
   Map<String, dynamic> _map(dynamic value) {
     return value is Map ? Map<String, dynamic>.from(value) : {};
+  }
+
+  List<Map<String, dynamic>> get _modelOptions {
+    if (models.isNotEmpty) {
+      return models;
+    }
+    return const [
+      {'id': 'realcugan', 'label': 'Real-CUGAN', 'installed': false},
+      {
+        'id': 'realesrgan-x4plus',
+        'label': 'Real-ESRGAN x4plus',
+        'installed': false,
+      },
+      {
+        'id': 'realesrgan-x4plus-anime',
+        'label': 'Real-ESRGAN anime',
+        'installed': false,
+      },
+    ];
   }
 }

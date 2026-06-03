@@ -52,6 +52,16 @@ class WebZhTW {
       'superResolution.jobCreated': '超分任務已建立',
       'superResolution.useOutput': '使用超分圖片',
       'superResolution.noOutputHint': '目前畫廊還沒有完整可用的超分輸出。',
+      'superResolution.autoAfterDownload': '下載完成後自動超分',
+      'superResolution.autoAfterDownloadHint':
+          '開啟後，gallery 下載完成或 archive 解壓完成時會自動建立超分任務；任務進入現有單併發佇列，不影響下載完成狀態。',
+      'superResolution.autoEnabled': '自動建立超分任務',
+      'superResolution.autoEnabledHint':
+          '預設關閉，避免 NAS 在下載完成後無意觸發長時間 GPU/CPU 負載。',
+      'superResolution.allowCpuOnlyAuto': '自動任務允許 CPU-only',
+      'superResolution.allowCpuOnlyAutoHint':
+          '沒有 GPU/Vulkan 時仍允許建立自動任務，僅適合少量實驗。',
+      'superResolution.autoSettingsSaved': '自動超分設定已儲存',
       'localizedReason': '請驗證以繼續',
       'passwordErrorHint': '密碼錯誤，請重試',
       'dawnOfaNewDay': '黎明之時',

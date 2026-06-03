@@ -58,6 +58,17 @@ class WebKoKR {
       'superResolution.useOutput': 'Use super-resolution images',
       'superResolution.noOutputHint':
           'This gallery does not have a complete super-resolution output yet.',
+      'superResolution.autoAfterDownload': 'Auto super-resolve after download',
+      'superResolution.autoAfterDownloadHint':
+          'When enabled, completed gallery downloads and extracted archive downloads automatically create super-resolution jobs. Jobs enter the existing single-concurrency queue and never block download completion.',
+      'superResolution.autoEnabled': 'Create jobs automatically',
+      'superResolution.autoEnabledHint':
+          'Disabled by default to avoid unexpected long GPU/CPU load on NAS devices.',
+      'superResolution.allowCpuOnlyAuto': 'Allow CPU-only auto jobs',
+      'superResolution.allowCpuOnlyAutoHint':
+          'Allow automatic jobs without GPU/Vulkan. Use only for small experiments.',
+      'superResolution.autoSettingsSaved':
+          'Auto super-resolution settings saved',
       'localizedReason': '계속하려면 인증하세요',
       'passwordErrorHint': '비밀번호가 틀렸습니다. 다시 시도하세요',
       'dawnOfaNewDay': '새로운 하루가 밝았습니다!',

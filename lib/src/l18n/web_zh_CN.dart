@@ -52,6 +52,16 @@ class WebZhCN {
       'superResolution.jobCreated': '超分任务已创建',
       'superResolution.useOutput': '使用超分图片',
       'superResolution.noOutputHint': '当前画廊还没有完整可用的超分输出。',
+      'superResolution.autoAfterDownload': '下载完成后自动超分',
+      'superResolution.autoAfterDownloadHint':
+          '开启后，gallery 下载完成或 archive 解压完成时会自动创建超分任务；任务进入现有单并发队列，不影响下载完成状态。',
+      'superResolution.autoEnabled': '自动创建超分任务',
+      'superResolution.autoEnabledHint':
+          '默认关闭，避免 NAS 在下载完成后无意触发长时间 GPU/CPU 负载。',
+      'superResolution.allowCpuOnlyAuto': '自动任务允许 CPU-only',
+      'superResolution.allowCpuOnlyAutoHint':
+          '没有 GPU/Vulkan 时仍允许创建自动任务，仅适合少量实验。',
+      'superResolution.autoSettingsSaved': '自动超分设置已保存',
       'localizedReason': '请验证以继续',
       'passwordErrorHint': '密码错误，请重试',
       'dawnOfaNewDay': '黎明之时',

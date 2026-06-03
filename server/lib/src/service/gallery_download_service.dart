@@ -14,6 +14,7 @@ import '../network/jh_public_client.dart';
 import '../service/event_bus.dart';
 import 'download_runtime_settings.dart';
 import 'download_rate_limiter.dart';
+import 'super_resolution_service.dart';
 
 T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
   return (index >= 0 && index < values.length) ? values[index] : fallback;
@@ -110,6 +111,7 @@ class GalleryDownloadService {
   final EHClient _client;
   final ServerConfig _config;
   final EventBus _eventBus;
+  final SuperResolutionService? _superResolutionService;
 
   final Map<int, GalleryDownloadTask> _tasks = {};
   final Set<int> _activeDownloads = {};
@@ -120,7 +122,9 @@ class GalleryDownloadService {
   List<GalleryDownloadTask> get tasks => _tasks.values.toList();
   int get activeDownloadCount => _activeDownloads.length;
 
-  GalleryDownloadService(this._client, this._config, this._eventBus);
+  GalleryDownloadService(this._client, this._config, this._eventBus,
+      {SuperResolutionService? superResolutionService})
+      : _superResolutionService = superResolutionService;
 
   Future<void> init() async {
     _loadTasksFromDatabase();
@@ -690,6 +694,11 @@ class GalleryDownloadService {
             completedCount: task.completedCount);
         _notifyProgress(task);
         log.info('Gallery ${task.gid} download completed');
+        final superResolutionService = _superResolutionService;
+        if (superResolutionService != null) {
+          unawaited(superResolutionService.createJobIfAutoEnabled(
+              sourceType: 'gallery', gid: task.gid));
+        }
       }
     } catch (e, s) {
       log.error('Gallery download failed for ${task.gid}', e, s);

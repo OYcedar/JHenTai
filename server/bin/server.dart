@@ -70,16 +70,18 @@ Future<void> main(List<String> args) async {
 
   final eventBus = EventBus();
 
-  final galleryDownloadService =
-      GalleryDownloadService(ehClient, config, eventBus);
-  await galleryDownloadService.init();
-
-  final archiveDownloadService =
-      ArchiveDownloadService(ehClient, config, eventBus);
-  await archiveDownloadService.init();
-
   final superResolutionService = SuperResolutionService(config, eventBus);
   await superResolutionService.init();
+
+  final galleryDownloadService = GalleryDownloadService(
+      ehClient, config, eventBus,
+      superResolutionService: superResolutionService);
+  await galleryDownloadService.init();
+
+  final archiveDownloadService = ArchiveDownloadService(
+      ehClient, config, eventBus,
+      superResolutionService: superResolutionService);
+  await archiveDownloadService.init();
 
   if (_restoreTasksAutomaticallyEnabled()) {
     try {

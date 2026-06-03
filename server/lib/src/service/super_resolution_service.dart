@@ -56,6 +56,12 @@ class SuperResolutionInputImage {
 class SuperResolutionService {
   SuperResolutionService(this._config, this._eventBus);
 
+  static const _autoEnabledKey = 'super_resolution_auto_enabled';
+  static const _autoModelKey = 'super_resolution_auto_model';
+  static const _autoGpuIdKey = 'super_resolution_auto_gpu_id';
+  static const _autoTileSizeKey = 'super_resolution_auto_tile_size';
+  static const _autoAllowCpuOnlyKey = 'super_resolution_auto_allow_cpu_only';
+
   static const models = <String, SuperResolutionModelSpec>{
     'realcugan': SuperResolutionModelSpec(
       id: 'realcugan',
@@ -158,6 +164,91 @@ class SuperResolutionService {
 
   List<Map<String, dynamic>> listModels() =>
       models.values.map((spec) => _modelState(spec)).toList();
+
+  Map<String, dynamic> settings() => {
+        'autoEnabled': _readBool(_autoEnabledKey, defaultValue: false),
+        'model': _readString(_autoModelKey, fallback: 'realcugan'),
+        'gpuId': _readNullableInt(_autoGpuIdKey),
+        'tileSize': _readInt(_autoTileSizeKey, fallback: 0),
+        'allowCpuOnly': _readBool(_autoAllowCpuOnlyKey, defaultValue: false),
+      };
+
+  void updateSettings(Map<String, dynamic> data) {
+    if (data.containsKey('autoEnabled')) {
+      db.writeConfig(
+          _autoEnabledKey, data['autoEnabled'] == true ? 'true' : 'false');
+    }
+    if (data.containsKey('model')) {
+      final model = data['model']?.toString() ?? 'realcugan';
+      db.writeConfig(
+          _autoModelKey, models.containsKey(model) ? model : 'realcugan');
+    }
+    if (data.containsKey('gpuId')) {
+      final gpuId = (data['gpuId'] as num?)?.toInt();
+      db.writeConfig(_autoGpuIdKey, gpuId?.toString() ?? '');
+    }
+    if (data.containsKey('tileSize')) {
+      final tileSize =
+          ((data['tileSize'] as num?)?.toInt() ?? 0).clamp(0, 8192);
+      db.writeConfig(_autoTileSizeKey, '$tileSize');
+    }
+    if (data.containsKey('allowCpuOnly')) {
+      db.writeConfig(_autoAllowCpuOnlyKey,
+          data['allowCpuOnly'] == true ? 'true' : 'false');
+    }
+  }
+
+  Future<Map<String, dynamic>?> createJobIfAutoEnabled({
+    required String sourceType,
+    required int gid,
+  }) async {
+    final s = settings();
+    if (s['autoEnabled'] != true) return null;
+    final active = db.selectSuperResolutionJobs().where((job) {
+      if (job['source_type'] != sourceType || job['gid'] != gid) return false;
+      return {
+        SuperResolutionJobStatus.pending.name,
+        SuperResolutionJobStatus.running.name,
+        SuperResolutionJobStatus.paused.name,
+        SuperResolutionJobStatus.completed.name,
+      }.contains(job['status']);
+    }).toList();
+    if (active.isNotEmpty) {
+      log.info(
+          'Auto super resolution skipped for $sourceType/$gid: existing job ${active.first['id']} status=${active.first['status']}');
+      return null;
+    }
+    final allowCpuOnly = s['allowCpuOnly'] == true;
+    final caps = capabilities();
+    final gpuAvailable = ((caps['gpu'] as Map)['available'] as bool?) == true;
+    if (!gpuAvailable && !allowCpuOnly) {
+      log.warning(
+          'Auto super resolution skipped for $sourceType/$gid: no GPU/Vulkan detected');
+      return null;
+    }
+    final model = s['model']?.toString() ?? 'realcugan';
+    final spec = models[model] ?? models['realcugan']!;
+    if (!_binaryPath(spec).existsSync()) {
+      log.warning(
+          'Auto super resolution skipped for $sourceType/$gid: model not installed (${spec.id})');
+      return null;
+    }
+    try {
+      return await createJob(
+        sourceType: sourceType,
+        gid: gid,
+        modelId: spec.id,
+        gpuId: s['gpuId'] as int?,
+        tileSize: (s['tileSize'] as int?) ?? 0,
+        cpuOnly: !gpuAvailable && allowCpuOnly,
+        allowCpuOnly: allowCpuOnly,
+      );
+    } catch (e, stackTrace) {
+      log.warning(
+          'Auto super resolution skipped for $sourceType/$gid: $e\n$stackTrace');
+      return null;
+    }
+  }
 
   Future<Map<String, dynamic>> downloadModel(String modelId) async {
     final spec = models[modelId];
@@ -634,6 +725,29 @@ class SuperResolutionService {
     final c = p.normalize(p.absolute(child));
     final pth = p.normalize(p.absolute(parent));
     return c == pth || c.startsWith('$pth${p.separator}');
+  }
+
+  String _readString(String key, {required String fallback}) {
+    final value = db.readConfig(key)?.trim();
+    return value == null || value.isEmpty ? fallback : value;
+  }
+
+  int _readInt(String key, {required int fallback}) {
+    return int.tryParse(db.readConfig(key) ?? '') ?? fallback;
+  }
+
+  int? _readNullableInt(String key) {
+    final value = db.readConfig(key)?.trim();
+    if (value == null || value.isEmpty) return null;
+    return int.tryParse(value);
+  }
+
+  bool _readBool(String key, {required bool defaultValue}) {
+    final value = db.readConfig(key)?.trim().toLowerCase();
+    if (value == null || value.isEmpty) return defaultValue;
+    if (value == 'true' || value == '1' || value == 'yes') return true;
+    if (value == 'false' || value == '0' || value == 'no') return false;
+    return defaultValue;
   }
 }
 

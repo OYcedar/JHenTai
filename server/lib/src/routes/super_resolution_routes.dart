@@ -15,6 +15,8 @@ class SuperResolutionRoutes {
     final router = Router();
 
     router.get('/capabilities', _capabilities);
+    router.get('/settings', _settings);
+    router.put('/settings', _updateSettings);
     router.get('/models', _models);
     router.post('/models/download', _downloadModel);
     router.get('/jobs', _listJobs);
@@ -52,6 +54,18 @@ class SuperResolutionRoutes {
 
   Future<Response> _models(Request request) async {
     return _json({'models': _service.listModels()});
+  }
+
+  Future<Response> _settings(Request request) async {
+    return _json(_service.settings());
+  }
+
+  Future<Response> _updateSettings(Request request) {
+    return _guard(() async {
+      final body = jsonDecode(await request.readAsString()) as Map;
+      _service.updateSettings(Map<String, dynamic>.from(body));
+      return _json({'success': true, 'settings': _service.settings()});
+    });
   }
 
   Future<Response> _downloadModel(Request request) {
