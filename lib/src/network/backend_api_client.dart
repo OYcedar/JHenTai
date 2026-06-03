@@ -1219,6 +1219,11 @@ class BackendApiClient {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> getDeploymentDiagnostics() async {
+    final response = await _dio.get('/api/setting/diagnostics');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<List<Map<String, dynamic>>> listProfiles() async {
     final response = await _dio.get('/api/setting/profiles');
     final data = response.data;

@@ -79,6 +79,7 @@ class SettingRoutes {
     router.delete('/cache/page', _clearPageCache);
     router.get('/network/timeouts', _getNetworkTimeouts);
     router.put('/network/timeouts', _updateNetworkTimeouts);
+    router.get('/diagnostics', _getDiagnostics);
     router.get('/logs', _listLogs);
     router.get('/logs/<name>', _readLog);
     router.delete('/logs', _clearLogs);
@@ -437,6 +438,234 @@ class SettingRoutes {
       jsonEncode({'success': true, 'deleted': deleted}),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _getDiagnostics(Request request) async {
+    final checks = <Map<String, dynamic>>[];
+    void addCheck({
+      required String id,
+      required String group,
+      required String label,
+      required String status,
+      required String detail,
+      required String hint,
+    }) {
+      checks.add({
+        'id': id,
+        'group': group,
+        'label': label,
+        'status': status,
+        'detail': detail,
+        'hint': hint,
+      });
+    }
+
+    addCheck(
+      id: 'http_api',
+      group: 'service',
+      label: 'HTTP API',
+      status: 'ok',
+      detail: 'API is responding',
+      hint: 'If the web UI cannot reach the API, check reverse proxy rules.',
+    );
+
+    for (final item in [
+      ('data_dir', 'Data directory', _config.dataDir, true),
+      ('download_dir', 'Download directory', _config.downloadDir, true),
+      (
+        'local_gallery_dir',
+        'Local gallery directory',
+        _config.localGalleryDir,
+        true
+      ),
+      ('log_dir', 'Log directory', _config.logDir, true),
+      ('temp_dir', 'Temp directory', _config.tempDir, true),
+      ('config_dir', 'Config directory', _config.configDir, true),
+    ]) {
+      addCheck(
+        id: item.$1,
+        group: 'storage',
+        label: item.$2,
+        status: _directoryStatus(item.$3, requireWritable: item.$4),
+        detail: _directoryDetail(item.$3, requireWritable: item.$4),
+        hint: _directoryHint(item.$3, requireWritable: item.$4),
+      );
+    }
+
+    if (_config.extraScanPaths.isEmpty) {
+      addCheck(
+        id: 'extra_scan_paths',
+        group: 'localGallery',
+        label: 'Extra scan paths',
+        status: 'ok',
+        detail: 'No extra scan paths configured',
+        hint:
+            'Configure JH_EXTRA_SCAN_PATHS only when additional folders are mounted.',
+      );
+    } else {
+      for (var i = 0; i < _config.extraScanPaths.length; i++) {
+        final path = _config.extraScanPaths[i];
+        addCheck(
+          id: 'extra_scan_path_$i',
+          group: 'localGallery',
+          label: 'Extra scan path ${i + 1}',
+          status: _directoryStatus(path, requireWritable: false),
+          detail: _directoryDetail(path, requireWritable: false),
+          hint: _directoryHint(path, requireWritable: false),
+        );
+      }
+    }
+
+    final databaseCheck = _databaseCheck();
+    addCheck(
+      id: 'database',
+      group: 'database',
+      label: 'SQLite database',
+      status: databaseCheck['status']!,
+      detail: databaseCheck['detail']!,
+      hint: databaseCheck['hint']!,
+    );
+
+    final logs = _logsSummary();
+    addCheck(
+      id: 'logs',
+      group: 'logs',
+      label: 'Server logs',
+      status: logs['status'] as String,
+      detail: logs['detail'] as String,
+      hint: logs['hint'] as String,
+    );
+
+    final errorCount = checks.where((c) => c['status'] == 'error').length;
+    final warningCount = checks.where((c) => c['status'] == 'warn').length;
+    final status = errorCount > 0
+        ? 'error'
+        : warningCount > 0
+            ? 'warn'
+            : 'ok';
+
+    return Response.ok(
+      jsonEncode({
+        'status': status,
+        'generatedAt': DateTime.now().toIso8601String(),
+        'checks': checks,
+        'summary': {
+          'errorCount': errorCount,
+          'warningCount': warningCount,
+        },
+        'network': _networkRuntime(),
+        'logs': logs,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  String _directoryStatus(String path, {required bool requireWritable}) {
+    final dir = Directory(path);
+    try {
+      if (!dir.existsSync()) return 'error';
+      dir.listSync(followLinks: false).take(1).toList();
+      if (requireWritable && !_canWriteDirectory(dir)) return 'error';
+      return 'ok';
+    } catch (_) {
+      return 'error';
+    }
+  }
+
+  String _directoryDetail(String path, {required bool requireWritable}) {
+    final dir = Directory(path);
+    try {
+      if (!dir.existsSync()) return '$path does not exist';
+      dir.listSync(followLinks: false).take(1).toList();
+      if (requireWritable && !_canWriteDirectory(dir)) {
+        return '$path exists but is not writable';
+      }
+      return requireWritable
+          ? '$path exists and is writable'
+          : '$path exists and is readable';
+    } catch (e) {
+      return '$path cannot be accessed: $e';
+    }
+  }
+
+  String _directoryHint(String path, {required bool requireWritable}) {
+    return requireWritable
+        ? 'Check Docker volume mount, owner, and write permission for $path.'
+        : 'Check Docker volume mount and read permission for $path.';
+  }
+
+  bool _canWriteDirectory(Directory dir) {
+    final file = File(p.join(
+      dir.path,
+      '.jhentai-write-test-${DateTime.now().microsecondsSinceEpoch}',
+    ));
+    try {
+      file.writeAsStringSync('ok', flush: true);
+      file.deleteSync();
+      return true;
+    } catch (_) {
+      try {
+        if (file.existsSync()) file.deleteSync();
+      } catch (_) {}
+      return false;
+    }
+  }
+
+  Map<String, String> _databaseCheck() {
+    try {
+      final row = db.raw.select('SELECT COUNT(*) AS count FROM config').first;
+      final count = (row['count'] as num?)?.toInt() ?? 0;
+      return {
+        'status': 'ok',
+        'detail': '${_config.databasePath} is readable ($count config rows)',
+        'hint': 'No action needed.',
+      };
+    } catch (e) {
+      return {
+        'status': 'error',
+        'detail': 'Database check failed: $e',
+        'hint': 'Check data directory permission and sqlite file integrity.',
+      };
+    }
+  }
+
+  Map<String, dynamic> _logsSummary() {
+    try {
+      final logs = _logFiles();
+      final totalSize = logs.fold<int>(0, (sum, file) {
+        try {
+          return sum + file.statSync().size;
+        } catch (_) {
+          return sum;
+        }
+      });
+      DateTime? latest;
+      for (final file in logs) {
+        try {
+          final modified = file.statSync().modified;
+          if (latest == null || modified.isAfter(latest)) latest = modified;
+        } catch (_) {}
+      }
+      return {
+        'status': 'ok',
+        'count': logs.length,
+        'totalSize': totalSize,
+        'latestModified': latest?.toIso8601String(),
+        'detail': logs.isEmpty
+            ? 'No log files found'
+            : '${logs.length} log files, $totalSize bytes',
+        'hint': 'Use the advanced settings log viewer when troubleshooting.',
+      };
+    } catch (e) {
+      return {
+        'status': 'warn',
+        'count': 0,
+        'totalSize': 0,
+        'latestModified': null,
+        'detail': 'Log summary failed: $e',
+        'hint': 'Check log directory permission.',
+      };
+    }
   }
 
   Future<Response> _getPageCache(Request request) async {
