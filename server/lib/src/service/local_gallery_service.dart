@@ -28,17 +28,50 @@ class LocalGallery {
       };
 }
 
+class LocalGalleryScanProgress {
+  final bool scanning;
+  final int foundCount;
+  final DateTime? startedAt;
+  final int? lastDurationMs;
+
+  LocalGalleryScanProgress({
+    required this.scanning,
+    required this.foundCount,
+    required this.startedAt,
+    required this.lastDurationMs,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'scanning': scanning,
+        'foundCount': foundCount,
+        'startedAt': startedAt?.toIso8601String(),
+        'elapsedMs': !scanning || startedAt == null
+            ? lastDurationMs ?? 0
+            : DateTime.now().difference(startedAt!).inMilliseconds,
+        'lastDurationMs': lastDurationMs,
+      };
+}
+
 class LocalGalleryService {
   static const int _maxImagesCacheEntries = 128;
   final ServerConfig _config;
 
   List<LocalGallery> _galleries = [];
   bool _scanning = false;
+  int _scanFoundCount = 0;
+  DateTime? _scanStartedAt;
+  int? _lastScanDurationMs;
   Future<void>? _scanFuture;
   final Map<String, _LocalGalleryImagesCacheEntry> _imagesCache = {};
 
   List<LocalGallery> get galleries => List.unmodifiable(_galleries);
   bool get isScanning => _scanning;
+  LocalGalleryScanProgress get scanProgress => LocalGalleryScanProgress(
+        scanning: _scanning,
+        foundCount: _scanning ? _scanFoundCount : _galleries.length,
+        startedAt: _scanStartedAt,
+        lastDurationMs: _lastScanDurationMs,
+      );
 
   LocalGalleryService(this._config);
 
@@ -51,6 +84,8 @@ class LocalGalleryService {
       return _scanFuture!;
     }
     _scanning = true;
+    _scanFoundCount = 0;
+    _scanStartedAt = DateTime.now();
     _scanFuture = _refreshInternal();
     try {
       await _scanFuture;
@@ -62,7 +97,7 @@ class LocalGalleryService {
 
   Future<void> _refreshInternal() async {
     try {
-      final start = DateTime.now();
+      final start = _scanStartedAt ?? DateTime.now();
       final nextGalleries = <LocalGallery>[];
 
       final scanPaths = effectiveLocalGalleryScanPaths(_config);
@@ -76,6 +111,7 @@ class LocalGalleryService {
       _galleries = nextGalleries;
       _imagesCache.clear();
       final elapsed = DateTime.now().difference(start).inMilliseconds;
+      _lastScanDurationMs = elapsed;
       log.info(
           'Local gallery scan complete: ${_galleries.length} galleries found in ${elapsed}ms');
     } catch (e, s) {
@@ -173,6 +209,7 @@ class LocalGalleryService {
           imageCount: imageFiles.length,
           coverPath: cover,
         ));
+        _scanFoundCount = nextGalleries.length;
       }
 
       for (final subDir in subDirs) {

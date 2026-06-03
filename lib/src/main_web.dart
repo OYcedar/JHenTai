@@ -41,6 +41,13 @@ import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:web/web.dart' as web;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+enum WebDownloadConnectionStatus {
+  connecting,
+  connected,
+  reconnecting,
+  disconnected,
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -79,6 +86,7 @@ class WebDownloadService extends GetxController {
   final galleryTasksVersion = 0.obs;
   final archiveTasksVersion = 0.obs;
   final isLoaded = false.obs;
+  final connectionStatus = WebDownloadConnectionStatus.disconnected.obs;
 
   WebSocketChannel? _wsChannel;
   StreamSubscription? _wsSubscription;
@@ -137,6 +145,13 @@ class WebDownloadService extends GetxController {
 
   void _connectWebSocket() {
     if (isClosed) return;
+    final wasReconnect =
+        connectionStatus.value == WebDownloadConnectionStatus.reconnecting ||
+            _reconnectAttempts > 0;
+    connectionStatus.value = wasReconnect
+        ? WebDownloadConnectionStatus.reconnecting
+        : WebDownloadConnectionStatus.connecting;
+    _reconnectTimer?.cancel();
     _wsSubscription?.cancel();
     _wsChannel?.sink.close();
 
@@ -147,17 +162,26 @@ class WebDownloadService extends GetxController {
         Uri.parse('$wsUrl/ws/events?token=$wsToken'),
       );
       _reconnectAttempts = 0;
+      connectionStatus.value = WebDownloadConnectionStatus.connected;
+      if (wasReconnect) {
+        unawaited(_loadTasks());
+      }
 
       _wsSubscription = _wsChannel!.stream.listen(
         (data) => _handleWsMessage(data.toString()),
         onError: (e) {
           debugPrint('WDS WebSocket error: $e');
+          connectionStatus.value = WebDownloadConnectionStatus.disconnected;
           _scheduleReconnect();
         },
-        onDone: () => _scheduleReconnect(),
+        onDone: () {
+          connectionStatus.value = WebDownloadConnectionStatus.disconnected;
+          _scheduleReconnect();
+        },
       );
     } catch (e) {
       debugPrint('WDS WebSocket connect failed: $e');
+      connectionStatus.value = WebDownloadConnectionStatus.disconnected;
       _scheduleReconnect();
     }
   }
@@ -166,6 +190,7 @@ class WebDownloadService extends GetxController {
     if (isClosed) return;
     _reconnectAttempts++;
     final delay = Duration(seconds: (_reconnectAttempts * 2).clamp(1, 30));
+    connectionStatus.value = WebDownloadConnectionStatus.reconnecting;
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, _connectWebSocket);
   }

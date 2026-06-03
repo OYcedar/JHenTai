@@ -10,6 +10,33 @@ import 'package:web/web.dart' as web;
 
 typedef HtmlParser<T> = T Function(Headers headers, dynamic data);
 
+class LocalGalleryScanProgress {
+  const LocalGalleryScanProgress({
+    required this.scanning,
+    required this.foundCount,
+    required this.elapsedMs,
+    this.startedAt,
+    this.lastDurationMs,
+  });
+
+  final bool scanning;
+  final int foundCount;
+  final int elapsedMs;
+  final String? startedAt;
+  final int? lastDurationMs;
+
+  factory LocalGalleryScanProgress.fromJson(Map<String, dynamic>? data) {
+    final json = data ?? const <String, dynamic>{};
+    return LocalGalleryScanProgress(
+      scanning: json['scanning'] == true,
+      foundCount: (json['foundCount'] as num?)?.toInt() ?? 0,
+      elapsedMs: (json['elapsedMs'] as num?)?.toInt() ?? 0,
+      startedAt: json['startedAt'] as String?,
+      lastDurationMs: (json['lastDurationMs'] as num?)?.toInt(),
+    );
+  }
+}
+
 class BackendApiClient {
   late Dio _dio;
   String _baseUrl = '';
@@ -464,13 +491,21 @@ class BackendApiClient {
 
   // --- Local galleries ---
 
-  Future<({List<dynamic> galleries, bool scanning})>
-      getLocalGalleryListInfo() async {
+  Future<
+      ({
+        List<dynamic> galleries,
+        bool scanning,
+        LocalGalleryScanProgress scanProgress,
+      })> getLocalGalleryListInfo() async {
     final response = await _dio.get('/api/local/list');
     final data = response.data as Map<String, dynamic>;
+    final progress = LocalGalleryScanProgress.fromJson(
+      data['scanProgress'] as Map<String, dynamic>?,
+    );
     return (
       galleries: (data['galleries'] as List?) ?? [],
       scanning: data['scanning'] == true,
+      scanProgress: progress,
     );
   }
 

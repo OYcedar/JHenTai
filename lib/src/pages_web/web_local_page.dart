@@ -28,6 +28,7 @@ class WebLocalController extends GetxController
   final groupExpanded = <String, bool>{}.obs;
   final isLoading = true.obs;
   final isScanning = false.obs;
+  final scanProgress = Rxn<LocalGalleryScanProgress>();
   final errorMessage = ''.obs;
 
   int _dataVersion = 0;
@@ -62,7 +63,10 @@ class WebLocalController extends GetxController
     errorMessage.value = '';
     try {
       final rootInfo = await backendApiClient.getLocalGalleryRootInfo();
-      final galleryData = await backendApiClient.listLocalGalleries();
+      final listInfo = await backendApiClient.getLocalGalleryListInfo();
+      final galleryData = listInfo.galleries;
+      isScanning.value = listInfo.scanning;
+      scanProgress.value = listInfo.scanProgress;
       final rootData = rootInfo.roots
           .map(_normalizePath)
           .where((path) => path.isNotEmpty)
@@ -93,6 +97,11 @@ class WebLocalController extends GetxController
 
   Future<void> refreshGalleries() async {
     isScanning.value = true;
+    scanProgress.value = const LocalGalleryScanProgress(
+      scanning: true,
+      foundCount: 0,
+      elapsedMs: 0,
+    );
     final previousCount = galleries.length;
     try {
       await backendApiClient.refreshLocalGalleries();
@@ -120,6 +129,8 @@ class WebLocalController extends GetxController
     var delay = _scanPollInitialDelay;
     while (DateTime.now().isBefore(deadline)) {
       final info = await backendApiClient.getLocalGalleryListInfo();
+      isScanning.value = info.scanning;
+      scanProgress.value = info.scanProgress;
       if (!info.scanning) {
         return;
       }
@@ -620,37 +631,100 @@ class WebLocalPage extends GetView<WebLocalController> {
           );
         }
         if (controller.galleries.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.folder_open, size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text('local.noGalleries'.tr),
-                const SizedBox(height: 8),
-                Text(
-                  'local.helpText'.tr,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.grey),
+          return Column(
+            children: [
+              _buildScanProgress(),
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.folder_open,
+                          size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text('local.noGalleries'.tr),
+                      const SizedBox(height: 8),
+                      Text(
+                        'local.helpText'.tr,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.refresh),
+                        label: Text('local.scanNow'.tr),
+                        onPressed: controller.refreshGalleries,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  label: Text('local.scanNow'.tr),
-                  onPressed: controller.refreshGalleries,
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         }
         return Column(
           children: [
             _buildSearchField(),
+            _buildScanProgress(),
             Expanded(child: _buildGalleryList(context)),
           ],
         );
       }),
     );
+  }
+
+  Widget _buildScanProgress() {
+    return Obx(() {
+      final progress = controller.scanProgress.value;
+      if (!controller.isScanning.value || progress == null) {
+        return const SizedBox.shrink();
+      }
+      final theme = Get.theme;
+      final elapsed = _formatDuration(progress.elapsedMs);
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'local.scanProgress'.trParams({
+                  'count': '${progress.foundCount}',
+                  'elapsed': elapsed,
+                }),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  String _formatDuration(int milliseconds) {
+    final seconds = (milliseconds / 1000).floor();
+    if (seconds < 60) {
+      return '${seconds}s';
+    }
+    final minutes = seconds ~/ 60;
+    final remainder = seconds % 60;
+    return '${minutes}m ${remainder}s';
   }
 
   Widget _buildSearchField() {

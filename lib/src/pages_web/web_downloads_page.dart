@@ -1143,6 +1143,7 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         }
         return Column(
           children: [
+            _DownloadConnectionStatusBar(service: svc),
             _DownloadFilterBar(controller: controller),
             Expanded(
               child: TabBarView(
@@ -1157,6 +1158,73 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         );
       }),
     );
+  }
+}
+
+class _DownloadConnectionStatusBar extends StatelessWidget {
+  const _DownloadConnectionStatusBar({required this.service});
+
+  final WebDownloadService service;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final status = service.connectionStatus.value;
+      if (status == WebDownloadConnectionStatus.connected) {
+        return const SizedBox.shrink();
+      }
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
+      final isDisconnected = status == WebDownloadConnectionStatus.disconnected;
+      final icon = switch (status) {
+        WebDownloadConnectionStatus.connecting => Icons.sync,
+        WebDownloadConnectionStatus.reconnecting => Icons.sync_problem,
+        WebDownloadConnectionStatus.disconnected => Icons.cloud_off_outlined,
+        WebDownloadConnectionStatus.connected => Icons.cloud_done_outlined,
+      };
+      final textKey = switch (status) {
+        WebDownloadConnectionStatus.connecting => 'downloads.wsConnecting',
+        WebDownloadConnectionStatus.reconnecting => 'downloads.wsReconnecting',
+        WebDownloadConnectionStatus.disconnected => 'downloads.wsDisconnected',
+        WebDownloadConnectionStatus.connected => 'downloads.wsConnected',
+      };
+      final background = isDisconnected
+          ? colorScheme.errorContainer
+          : colorScheme.secondaryContainer;
+      final foreground = isDisconnected
+          ? colorScheme.onErrorContainer
+          : colorScheme.onSecondaryContainer;
+
+      return Material(
+        color: background,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: foreground),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  textKey.tr,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: foreground,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: service.refresh,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: Text('common.refresh'.tr),
+                style: TextButton.styleFrom(
+                  foregroundColor: foreground,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
 

@@ -274,6 +274,12 @@ class WebEnUS {
       'downloads.deleteTitle': 'Delete Download',
       'downloads.deleteConfirm': 'Choose whether to keep downloaded files.',
       'downloads.loadFailed': 'Failed to load tasks: @error',
+      'downloads.wsConnected': 'Download live status connected',
+      'downloads.wsConnecting': 'Connecting download live status...',
+      'downloads.wsReconnecting':
+          'Download live status disconnected, reconnecting. Tasks will sync after reconnection.',
+      'downloads.wsDisconnected':
+          'Download live status is unavailable. You can refresh the task list manually.',
       // gallery statuses
       'downloads.gStatus0': 'None',
       'downloads.gStatus1': 'Downloading',
@@ -298,6 +304,8 @@ class WebEnUS {
           'Mount directories into the Docker container\nor place galleries in the local_gallery folder',
       'local.scanNow': 'Scan Now',
       'local.scanFailed': 'Failed to scan local galleries: @error',
+      'local.scanProgress':
+          'Scanning, found @count galleries, elapsed @elapsed',
       'local.empty': 'Empty',
       'local.noImages': 'No images found in this gallery',
       'local.loadFailed': 'Failed to load gallery images: @error',
@@ -525,6 +533,12 @@ class WebEnUS {
       'settings.webPerformance': 'Web performance',
       'settings.performanceWebIntro':
           'The web client runs in your browser. These local browser settings affect large-list interaction smoothness.',
+      'settings.performancePresetTitle': 'Performance presets',
+      'settings.performancePresetHint':
+          'Quickly tune reader preloading and download-list animation limits. You can still override each reader option later.',
+      'settings.performancePresetNas': 'NAS low load',
+      'settings.performancePresetBalanced': 'Balanced',
+      'settings.performancePresetFast': 'Fast device',
       'settings.webMaxGalleryNum4Animation': 'Download group animation limit',
       'settings.webMaxGalleryNum4AnimationHint':
           'Disable expand/collapse icon animation when a download group has more tasks than this value. Use 0 to always disable it.',

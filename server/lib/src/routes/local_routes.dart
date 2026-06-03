@@ -32,6 +32,7 @@ class LocalRoutes {
       jsonEncode({
         'galleries': galleries,
         'scanning': _service.isScanning,
+        'scanProgress': _service.scanProgress.toJson(),
       }),
       headers: {'Content-Type': 'application/json'},
     );
