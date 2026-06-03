@@ -1047,6 +1047,33 @@ class SettingRoutes {
           'copyText': gpu['composeSnippet'].toString(),
       });
     }
+    final srModels = srCaps['models'] is Map
+        ? Map<String, dynamic>.from(srCaps['models'] as Map)
+        : const <String, dynamic>{};
+    for (final entry in srModels.entries) {
+      final model = entry.value is Map
+          ? Map<String, dynamic>.from(entry.value as Map)
+          : const <String, dynamic>{};
+      if (model['installed'] == true && model['executable'] != true) {
+        issues.add({
+          'id': 'super_resolution_model_permission_${entry.key}',
+          'group': 'superResolution',
+          'status': 'warn',
+          'title': 'Super-resolution model is not executable',
+          'detail':
+              '${model['label'] ?? entry.key} is installed but cannot be executed.',
+          'route': '/web/settings/super-resolution',
+          'actions': [
+            {
+              'id': 'repair_model_permission',
+              'model': entry.key,
+              'labelKey': 'superResolution.repairPermission',
+              'confirm': false,
+            }
+          ],
+        });
+      }
+    }
 
     if (maintenance['status'] != 'ok') {
       issues.add({

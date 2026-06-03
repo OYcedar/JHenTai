@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:mime/mime.dart';
+import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
@@ -20,6 +22,7 @@ class SuperResolutionRoutes {
     router.get('/models', _models);
     router.post('/models/download', _downloadModel);
     router.post('/models/import', _importModel);
+    router.post('/models/<model>/repair-permission', _repairModelPermission);
     router.get('/jobs', _listJobs);
     router.post('/jobs', _createJob);
     router.get('/jobs/<id>', _getJob);
@@ -83,15 +86,45 @@ class SuperResolutionRoutes {
       final model =
           request.url.queryParameters['model']?.toString() ?? 'realcugan';
       final filename = request.headers['x-filename'] ?? '';
-      final bytes = await request.read().expand((chunk) => chunk).toList();
-      if (bytes.isEmpty) {
-        return _json({'success': false, 'error': 'Empty upload'}, status: 400);
+      final maxBytes = 1024 * 1024 * 1024;
+      var received = 0;
+      final tempFile = File(p.join(
+        Directory.systemTemp.path,
+        'jhentai-sr-import-$model-${DateTime.now().millisecondsSinceEpoch}.zip',
+      ));
+      await tempFile.parent.create(recursive: true);
+      try {
+        final sink = tempFile.openWrite();
+        try {
+          await for (final chunk in request.read()) {
+            received += chunk.length;
+            if (received > maxBytes) {
+              throw StateError('Model package is larger than 1 GiB.');
+            }
+            sink.add(chunk);
+          }
+        } finally {
+          await sink.close();
+        }
+        if (received == 0) {
+          return _json({'success': false, 'error': 'Empty upload'},
+              status: 400);
+        }
+        final result = await _service.importModelFile(
+          model,
+          tempFile,
+          filename: filename,
+        );
+        return _json({'success': true, 'model': result});
+      } finally {
+        if (tempFile.existsSync()) await tempFile.delete();
       }
-      final result = await _service.importModel(
-        model,
-        bytes,
-        filename: filename,
-      );
+    });
+  }
+
+  Future<Response> _repairModelPermission(Request request, String model) {
+    return _guard(() async {
+      final result = await _service.repairModelPermission(model);
       return _json({'success': true, 'model': result});
     });
   }

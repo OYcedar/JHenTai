@@ -57,6 +57,7 @@ class _ModelDownloadState {
   _ModelDownloadState({
     required this.model,
     required this.status,
+    this.sourceUrl = '',
     this.progress = 0,
     String? startedAt,
     String? updatedAt,
@@ -65,6 +66,8 @@ class _ModelDownloadState {
 
   final String model;
   String status;
+  String sourceUrl;
+  String stage = '';
   double progress;
   int receivedBytes = 0;
   int totalBytes = 0;
@@ -75,6 +78,8 @@ class _ModelDownloadState {
   Map<String, dynamic> toJson() => {
         'model': model,
         'status': status,
+        'stage': stage,
+        'sourceUrl': sourceUrl,
         'progress': progress.clamp(0, 1).toDouble(),
         'receivedBytes': receivedBytes,
         'totalBytes': totalBytes,
@@ -85,12 +90,16 @@ class _ModelDownloadState {
 
   void update({
     String? status,
+    String? stage,
+    String? sourceUrl,
     double? progress,
     int? receivedBytes,
     int? totalBytes,
     String? error,
   }) {
     if (status != null) this.status = status;
+    if (stage != null) this.stage = stage;
+    if (sourceUrl != null) this.sourceUrl = sourceUrl;
     if (progress != null) this.progress = progress.clamp(0, 1).toDouble();
     if (receivedBytes != null) this.receivedBytes = receivedBytes;
     if (totalBytes != null) this.totalBytes = totalBytes;
@@ -318,15 +327,39 @@ class SuperResolutionService {
     if (current != null && current.status == 'downloading') {
       return _modelState(spec);
     }
-    final state = _ModelDownloadState(model: spec.id, status: 'downloading');
+    final state = _ModelDownloadState(
+      model: spec.id,
+      status: 'downloading',
+      sourceUrl: _modelDownloadUrl(spec),
+    );
     _modelDownloads[spec.id] = state;
     unawaited(_downloadModelArchive(spec, state));
     return _modelState(spec);
   }
 
-  Future<Map<String, dynamic>> importModel(
+  Future<Map<String, dynamic>> importModelBytes(
     String modelId,
     List<int> bytes, {
+    String filename = '',
+  }) async {
+    final tempFile = File(p.join(
+      _config.tempDir,
+      'sr-import-$modelId-${DateTime.now().millisecondsSinceEpoch}.zip',
+    ));
+    await tempFile.parent.create(recursive: true);
+    await tempFile.writeAsBytes(bytes);
+    try {
+      return await importModelFile(modelId, tempFile, filename: filename);
+    } finally {
+      if (tempFile.existsSync()) {
+        await tempFile.delete();
+      }
+    }
+  }
+
+  Future<Map<String, dynamic>> importModelFile(
+    String modelId,
+    File file, {
     String filename = '',
   }) async {
     final spec = models[modelId];
@@ -336,7 +369,8 @@ class SuperResolutionService {
     final state = _ModelDownloadState(model: spec.id, status: 'importing');
     _modelDownloads[spec.id] = state;
     try {
-      await _extractModelArchive(spec, bytes);
+      state.update(stage: 'validating');
+      await _installModelArchive(spec, file);
       await _chmodExecutable(_binaryPath(spec));
       final installed = _modelState(spec);
       if (installed['installed'] != true) {
@@ -357,26 +391,28 @@ class SuperResolutionService {
     SuperResolutionModelSpec spec,
     _ModelDownloadState state,
   ) async {
-    final target = _modelDir(spec);
-    await target.create(recursive: true);
+    final sourceUrl = _modelDownloadUrl(spec);
+    state.update(sourceUrl: sourceUrl, stage: 'downloading');
     final tempFile = File(p.join(
       _config.tempDir,
       '${spec.id}-${DateTime.now().millisecondsSinceEpoch}.zip',
     ));
     try {
       await _dio.download(
-        spec.downloadUrl,
+        sourceUrl,
         tempFile.path,
         onReceiveProgress: (received, total) {
           state.update(
             status: 'downloading',
+            stage: 'downloading',
             receivedBytes: received,
             totalBytes: total > 0 ? total : 0,
             progress: total > 0 ? received / total : 0,
           );
         },
       );
-      await _extractModelArchive(spec, await tempFile.readAsBytes());
+      state.update(stage: 'installing');
+      await _installModelArchive(spec, tempFile);
       await _chmodExecutable(_binaryPath(spec));
       final installed = _modelState(spec);
       if (installed['installed'] != true) {
@@ -394,6 +430,19 @@ class SuperResolutionService {
         await tempFile.delete();
       }
     }
+  }
+
+  Future<Map<String, dynamic>> repairModelPermission(String modelId) async {
+    final spec = models[modelId];
+    if (spec == null) {
+      throw ArgumentError('Unsupported model: $modelId');
+    }
+    final binary = _binaryPath(spec);
+    if (!binary.existsSync()) {
+      throw StateError('Model binary is not installed: ${spec.binaryName}.');
+    }
+    await _chmodExecutable(binary);
+    return _modelState(spec);
   }
 
   List<Map<String, dynamic>> listJobs() =>
@@ -768,21 +817,32 @@ class SuperResolutionService {
     final binary = _binaryPath(spec);
     final dir = _modelDir(spec);
     final download = _modelDownloads[spec.id];
+    final installed = binary.existsSync();
+    final executable = _isExecutable(binary);
     return {
       'id': spec.id,
       'label': spec.label,
       'kind': spec.kind,
       'defaultScale': spec.defaultScale,
-      'installed': binary.existsSync(),
-      'executable': _isExecutable(binary),
+      'installed': installed,
+      'executable': executable,
       'downloadUrl': spec.downloadUrl,
+      'resolvedDownloadUrl': _modelDownloadUrl(spec),
+      'downloadSource': _modelDownloadSource(spec),
       'directory': dir.path,
       'binary': binary.path,
+      'actions': [
+        if (installed && !executable) 'repair_permission',
+        if (!installed || !executable) 'download',
+        'import',
+      ],
       'downloadState': download?.toJson() ??
           {
             'model': spec.id,
-            'status': binary.existsSync() ? 'installed' : 'idle',
-            'progress': binary.existsSync() ? 1 : 0,
+            'status': installed ? 'installed' : 'idle',
+            'stage': installed ? 'installed' : 'idle',
+            'sourceUrl': _modelDownloadUrl(spec),
+            'progress': installed ? 1 : 0,
             'receivedBytes': 0,
             'totalBytes': 0,
             'error': '',
@@ -790,13 +850,65 @@ class SuperResolutionService {
     };
   }
 
-  Future<void> _extractModelArchive(
+  Future<void> _installModelArchive(
     SuperResolutionModelSpec spec,
-    List<int> bytes,
+    File archiveFile,
   ) async {
     final target = _modelDir(spec);
+    final staging = Directory(p.join(
+      _config.tempDir,
+      'sr-model-${spec.id}-${DateTime.now().millisecondsSinceEpoch}',
+    ));
+    final backup = Directory(p.join(
+      _config.tempDir,
+      'sr-model-${spec.id}-backup-${DateTime.now().millisecondsSinceEpoch}',
+    ));
+    await target.parent.create(recursive: true);
+    await staging.create(recursive: true);
+    try {
+      await _extractModelArchive(spec, archiveFile, staging);
+      final binary = _binaryPathInDir(spec, staging);
+      if (!binary.existsSync()) {
+        throw StateError('Package does not contain ${spec.binaryName}.');
+      }
+      await _chmodExecutable(binary);
+      if (target.existsSync()) {
+        await target.rename(backup.path);
+      }
+      await staging.rename(target.path);
+      if (backup.existsSync()) {
+        await backup.delete(recursive: true);
+      }
+    } catch (_) {
+      if (target.existsSync()) {
+        // Target was never removed unless backup exists.
+      } else if (backup.existsSync()) {
+        await backup.rename(target.path);
+      }
+      rethrow;
+    } finally {
+      if (staging.existsSync()) {
+        await staging.delete(recursive: true);
+      }
+      if (backup.existsSync()) {
+        await backup.delete(recursive: true);
+      }
+    }
+  }
+
+  Future<void> _extractModelArchive(
+    SuperResolutionModelSpec spec,
+    File archiveFile,
+    Directory target,
+  ) async {
     await target.create(recursive: true);
-    final archive = ZipDecoder().decodeBytes(bytes);
+    final input = InputFileStream(archiveFile.path);
+    late final Archive archive;
+    try {
+      archive = ZipDecoder().decodeBuffer(input);
+    } finally {
+      await input.close();
+    }
     var binaryFound = false;
     for (final file in archive.files) {
       final normalizedName = _safeArchiveName(file.name);
@@ -819,7 +931,7 @@ class SuperResolutionService {
         await Directory(outPath).create(recursive: true);
       }
     }
-    if (!binaryFound && !_binaryPath(spec).existsSync()) {
+    if (!binaryFound && !_binaryPathInDir(spec, target).existsSync()) {
       throw StateError('Package does not contain ${spec.binaryName}.');
     }
   }
@@ -835,8 +947,26 @@ class SuperResolutionService {
   Directory _modelDir(SuperResolutionModelSpec spec) =>
       Directory(p.join(_config.superResolutionModelDir, spec.kind));
 
+  String _modelDownloadUrl(SuperResolutionModelSpec spec) {
+    final mirror = Platform.environment['JH_SUPER_RESOLUTION_MODEL_MIRROR']
+            ?.trim()
+            .replaceFirst(RegExp(r'/+$'), '') ??
+        '';
+    if (mirror.isEmpty) return spec.downloadUrl;
+    final original = Uri.parse(spec.downloadUrl);
+    final filename = p.basename(original.path);
+    return '$mirror/$filename';
+  }
+
+  String _modelDownloadSource(SuperResolutionModelSpec spec) {
+    return _modelDownloadUrl(spec) == spec.downloadUrl ? 'official' : 'mirror';
+  }
+
   File _binaryPath(SuperResolutionModelSpec spec) {
-    final dir = _modelDir(spec);
+    return _binaryPathInDir(spec, _modelDir(spec));
+  }
+
+  File _binaryPathInDir(SuperResolutionModelSpec spec, Directory dir) {
     final candidates = dir.existsSync()
         ? dir
             .listSync(recursive: true)

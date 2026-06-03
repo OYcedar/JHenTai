@@ -101,6 +101,7 @@ Generated new API token: a3f9c2...
 | `JH_HOST` | `0.0.0.0` | 바인드 주소 |
 | `JH_WEB_DIR` | `/app/web` | 웹 프론트엔드 정적 파일 디렉토리 |
 | `JH_EXTRA_SCAN_PATHS` | *(비어 있음)* | 로컬 갤러리 스캔을 위한 추가 경로 (쉼표로 구분) |
+| `JH_SUPER_RESOLUTION_MODEL_MIRROR` | *(비어 있음)* | 초해상도 모델 ZIP 다운로드용 선택적 미러 기본 URL입니다. 서버는 여기에 upstream ZIP 파일명을 붙여 다운로드합니다. |
 | `PUID` | `1000` | 마운트된 볼륨의 파일 소유자 사용자 ID |
 | `PGID` | `1000` | 마운트된 볼륨의 파일 소유자 그룹 ID |
 
@@ -152,6 +153,8 @@ services:
 
 6. NVIDIA GPU는 호스트에 NVIDIA Container Toolkit을 설치한 뒤 Docker/Compose 버전에 맞게 `--gpus all` 또는 compose GPU 옵션을 설정해야 합니다.
 7. “Auto super-resolve after download”는 기본적으로 꺼져 있습니다. GPU 자가 진단 통과, 모델 설치, 충분한 디스크 공간을 확인한 뒤 켜세요.
+
+GitHub 모델 다운로드가 느리거나 차단되는 환경에서는 `JH_SUPER_RESOLUTION_MODEL_MIRROR`를 신뢰할 수 있는 미러 기본 URL로 설정하거나, upstream ZIP을 직접 내려받아 모델 카드에서 **Import ZIP**을 사용하세요. 서버는 임시 디렉터리에서 먼저 검증한 뒤 설치하며, 검증 실패 시 기존 설치된 모델을 보존합니다.
 
 ---
 

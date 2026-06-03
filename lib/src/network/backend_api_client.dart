@@ -652,6 +652,16 @@ class BackendApiClient {
         : {};
   }
 
+  Future<Map<String, dynamic>> repairSuperResolutionModelPermission(
+      String model) async {
+    final response = await _dio.post(
+      '/api/super-resolution/models/$model/repair-permission',
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
   Future<List<Map<String, dynamic>>> listSuperResolutionJobs() async {
     final response = await _dio.get('/api/super-resolution/jobs');
     final data = response.data;

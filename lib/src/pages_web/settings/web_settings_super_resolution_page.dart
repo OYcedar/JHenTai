@@ -124,10 +124,25 @@ class _WebSettingsSuperResolutionPageState
     }
   }
 
+  Future<void> _repairModelPermission(String model) async {
+    try {
+      await backendApiClient.repairSuperResolutionModelPermission(model);
+      await _load();
+      Get.snackbar(
+          'common.success'.tr, 'superResolution.modelPermissionRepaired'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar('common.error'.tr, '$e',
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   Future<void> _refreshModels() async {
     try {
       final modelList = await backendApiClient.listSuperResolutionModels();
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         models = modelList;
         downloading = _hasActiveModelOperation(modelList);
@@ -364,6 +379,10 @@ class _WebSettingsSuperResolutionPageState
     final progress = (state['progress'] as num?)?.toDouble() ?? 0;
     final active = status == 'downloading' || status == 'importing';
     final failed = status == 'failed';
+    final installed = model['installed'] == true;
+    final executable = model['executable'] == true;
+    final received = (state['receivedBytes'] as num?)?.toInt() ?? 0;
+    final total = (state['totalBytes'] as num?)?.toInt() ?? 0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -373,10 +392,30 @@ class _WebSettingsSuperResolutionPageState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(_modelStatusLabel(model, state)),
+            if ((model['downloadSource']?.toString() ?? '').isNotEmpty)
+              Text(
+                'superResolution.modelSource'.trParams({
+                  'source': model['downloadSource'].toString(),
+                }),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            if (active && total > 0)
+              Text(
+                '${_formatBytes(received)} / ${_formatBytes(total)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             if (active) ...[
               const SizedBox(height: 6),
               LinearProgressIndicator(value: progress > 0 ? progress : null),
             ],
+            if (installed && !executable)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'superResolution.installedNotExecutable'.tr,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
             if (failed && (state['error']?.toString().isNotEmpty ?? false))
               Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -392,6 +431,14 @@ class _WebSettingsSuperResolutionPageState
         trailing: Wrap(
           spacing: 8,
           children: [
+            if (installed && !executable)
+              OutlinedButton.icon(
+                onPressed: active || importing || downloading
+                    ? null
+                    : () => _repairModelPermission(id),
+                icon: const Icon(Icons.build_outlined),
+                label: Text('superResolution.repairPermission'.tr),
+              ),
             OutlinedButton.icon(
               onPressed: active || importing ? null : () => _importModel(id),
               icon: const Icon(Icons.upload_file_outlined),
@@ -438,6 +485,19 @@ class _WebSettingsSuperResolutionPageState
           ? 'superResolution.installed'.tr
           : 'superResolution.notInstalled'.tr,
     };
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes >= 1024 * 1024 * 1024) {
+      return '${(bytes / 1024 / 1024 / 1024).toStringAsFixed(1)} GiB';
+    }
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MiB';
+    }
+    if (bytes >= 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KiB';
+    }
+    return '$bytes B';
   }
 
   Widget _autoCard(BuildContext context) {

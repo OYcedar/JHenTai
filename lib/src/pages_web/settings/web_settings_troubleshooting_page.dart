@@ -23,6 +23,7 @@ class _WebSettingsTroubleshootingPageState
   Map<String, dynamic> probe = {};
   bool loading = true;
   bool probing = false;
+  String? runningAction;
   String? error;
 
   WebDownloadService get _downloads => Get.find<WebDownloadService>();
@@ -305,6 +306,7 @@ class _WebSettingsTroubleshootingPageState
     final route = issue['route']?.toString() ?? '';
     final probe = issue['probe']?.toString() ?? '';
     final copyText = issue['copyText']?.toString() ?? '';
+    final actions = (issue['actions'] as List? ?? const []).toList();
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: DecoratedBox(
@@ -370,6 +372,8 @@ class _WebSettingsTroubleshootingPageState
                       icon: const Icon(Icons.copy_all_outlined, size: 16),
                       label: Text('settings.troubleshootingCopyFix'.tr),
                     ),
+                  for (final action in actions.take(3))
+                    _issueActionButton(context, action),
                 ],
               ),
             ],
@@ -377,6 +381,139 @@ class _WebSettingsTroubleshootingPageState
         ),
       ),
     );
+  }
+
+  Widget _issueActionButton(BuildContext context, Object rawAction) {
+    final action = rawAction is Map
+        ? Map<String, dynamic>.from(rawAction)
+        : <String, dynamic>{'id': rawAction.toString()};
+    final id = action['id']?.toString() ?? '';
+    if (!_isExecutableIssueAction(id)) {
+      return const SizedBox.shrink();
+    }
+    final label = _issueActionLabel(action);
+    final busy = runningAction == id;
+    return FilledButton.icon(
+      onPressed: busy ? null : () => _runIssueAction(action),
+      icon: busy
+          ? const SizedBox.square(
+              dimension: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.build_outlined, size: 16),
+      label: Text(label),
+    );
+  }
+
+  bool _isExecutableIssueAction(String id) {
+    return {
+      'retry_failed',
+      'retry_failed_gallery',
+      'retry_failed_archive',
+      'reunlock_failed_archive',
+      'probe_hath',
+      'probe_downloads',
+      'repair_model_permission',
+    }.contains(id);
+  }
+
+  String _issueActionLabel(Map<String, dynamic> action) {
+    final labelKey = action['labelKey']?.toString() ?? '';
+    if (labelKey.isNotEmpty) {
+      return labelKey.tr;
+    }
+    return switch (action['id']?.toString()) {
+      'retry_failed' => 'downloads.retryFailed'.tr,
+      'retry_failed_gallery' => 'downloads.retryFailedGallery'.tr,
+      'retry_failed_archive' => 'downloads.retryFailedArchive'.tr,
+      'reunlock_failed_archive' => 'downloads.reUnlockFailedArchive'.tr,
+      'probe_hath' => 'settings.troubleshootingRetest'.tr,
+      'probe_downloads' => 'settings.troubleshootingRetest'.tr,
+      'repair_model_permission' => 'superResolution.repairPermission'.tr,
+      _ => 'settings.troubleshootingRunAction'.tr,
+    };
+  }
+
+  Future<void> _runIssueAction(Map<String, dynamic> action) async {
+    final id = action['id']?.toString() ?? '';
+    if (id.isEmpty) {
+      return;
+    }
+    if (id.contains('retry') || id.contains('reunlock')) {
+      final ok = await Get.dialog<bool>(
+        AlertDialog(
+          title: Text('settings.troubleshootingRunAction'.tr),
+          content: Text('settings.troubleshootingActionConfirm'.tr),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('common.cancel'.tr),
+            ),
+            FilledButton(
+              onPressed: () => Get.back(result: true),
+              child: Text('common.confirm'.tr),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) {
+        return;
+      }
+    }
+    setState(() => runningAction = id);
+    try {
+      switch (id) {
+        case 'retry_failed':
+          await Future.wait([
+            backendApiClient.retryFailedGalleryDownloads(),
+            backendApiClient.retryFailedArchiveDownloads(),
+          ]);
+          await _downloads.refresh();
+          break;
+        case 'retry_failed_gallery':
+          await backendApiClient.retryFailedGalleryDownloads();
+          await _downloads.refresh();
+          break;
+        case 'retry_failed_archive':
+          await backendApiClient.retryFailedArchiveDownloads();
+          await _downloads.refresh();
+          break;
+        case 'reunlock_failed_archive':
+          await backendApiClient.reUnlockFailedArchiveDownloads();
+          await _downloads.refresh();
+          break;
+        case 'probe_hath':
+          await _runProbe(probes: const ['hath']);
+          return;
+        case 'probe_downloads':
+          await _runProbe(probes: const ['downloads']);
+          return;
+        case 'repair_model_permission':
+          final model = action['model']?.toString() ?? '';
+          if (model.isEmpty) {
+            return;
+          }
+          await backendApiClient.repairSuperResolutionModelPermission(model);
+          await _downloads.refresh();
+          break;
+      }
+      await _load();
+      Get.snackbar(
+        'common.success'.tr,
+        'settings.troubleshootingActionDone'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        '$e',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => runningAction = null);
+      }
+    }
   }
 
   Widget _superResolutionCard(BuildContext context) {

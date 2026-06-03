@@ -122,6 +122,7 @@ If a network or H@H problem is suspected, open **Settings → Web/Docker → Tro
 | `JH_WEB_DIR` | `/app/web` | Web frontend static files directory |
 | `JH_EXTRA_SCAN_PATHS` | *(empty)* | Comma-separated extra directories for local gallery scanning |
 | `JH_SUPER_RESOLUTION_BINARY` | *(empty)* | Advanced debug override for the super-resolution executable path. Most users should download model packages from the Web UI instead. |
+| `JH_SUPER_RESOLUTION_MODEL_MIRROR` | *(empty)* | Optional mirror base URL for super-resolution model ZIP downloads. The server appends the upstream ZIP filename to this base URL. |
 | `PUID` | `1000` | User ID for file ownership on mapped volumes |
 | `PGID` | `1000` | Group ID for file ownership on mapped volumes |
 | `HTTP_PROXY` / `HTTPS_PROXY` | *(empty)* | Outbound proxy used by the backend when it requests EH/EX/H@H. For `https://` targets, set `HTTPS_PROXY=http://proxy-host:port`. |
@@ -184,7 +185,7 @@ services:
 
 Open **Settings → Web/Docker → Image super resolution** to manage models. Clicking **Download** starts a server-side download and the model card shows progress, retry state, and the latest error.
 
-If GitHub downloads are slow or blocked by the NAS network, download the matching upstream ZIP manually and click **Import ZIP** for that model. The server extracts the ZIP under `/data/super_resolution/models`, rejects packages that do not contain the expected executable, and marks the binary executable after import.
+If GitHub downloads are slow or blocked by the NAS network, either set `JH_SUPER_RESOLUTION_MODEL_MIRROR` to a trusted mirror base URL, or download the matching upstream ZIP manually and click **Import ZIP** for that model. The server installs model packages through a temporary directory first, rejects packages that do not contain the expected executable, and keeps the previous installed model intact when validation fails.
 
 The model page never enables CPU-only work by default. Installing a model also does not start jobs automatically; automatic super-resolution after downloads must be enabled separately.
 

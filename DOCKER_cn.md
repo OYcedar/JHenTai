@@ -123,6 +123,7 @@ Generated new API token: a3f9c2...
 | `JH_WEB_DIR`          | `/app/web` | Web 前端静态文件目录      |
 | `JH_EXTRA_SCAN_PATHS` | *（空）*      | 逗号分隔的额外本地画廊扫描路径   |
 | `JH_SUPER_RESOLUTION_BINARY` | *（空）* | 高级调试项：覆盖超分二进制路径。普通用户应使用 Web 页面下载模型包。 |
+| `JH_SUPER_RESOLUTION_MODEL_MIRROR` | *（空）* | 可选的超分模型 ZIP 镜像源基础 URL；服务端会把上游 ZIP 文件名追加到该 URL 后下载。 |
 | `PUID`                | `1000`     | 映射卷文件所有者的用户 ID    |
 | `PGID`                | `1000`     | 映射卷文件所有者的组 ID     |
 | `HTTP_PROXY` / `HTTPS_PROXY` | *（空）* | 后端服务访问 EH/EX/H@H 时使用的出站代理。HTTPS 目标通常需要设置 `HTTPS_PROXY=http://代理地址:端口`。 |
@@ -200,7 +201,7 @@ services:
 
 打开 **设置 → Web/Docker → 图片超分辨率** 管理模型。点击 **下载** 后，服务端会在后台下载模型，模型卡片会显示进度、失败状态和最近错误。
 
-如果 NAS 网络访问 GitHub 较慢或失败，可以手动下载对应上游 ZIP，然后在该模型卡片点击 **导入 ZIP**。服务端会将 ZIP 解压到 `/data/super_resolution/models`，拒绝不包含预期可执行文件的包，并在导入后设置可执行权限。
+如果 NAS 网络访问 GitHub 较慢或失败，可以设置 `JH_SUPER_RESOLUTION_MODEL_MIRROR` 指向可信镜像源，或手动下载对应上游 ZIP 后在模型卡片点击 **导入 ZIP**。服务端会先在临时目录校验并安装模型包，拒绝不包含预期可执行文件的包；校验失败时会保留原有已安装模型。
 
 模型页面不会默认启用 CPU-only。安装模型也不会自动创建任务；下载完成后自动超分需要单独开启。
 

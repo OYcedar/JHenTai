@@ -46,6 +46,10 @@ class WebEnUS {
       'superResolution.modelDownloadFailed': 'Model download failed',
       'superResolution.installedNotExecutable':
           'Installed, but the binary is not executable',
+      'superResolution.modelSource': 'Download source: @source',
+      'superResolution.repairPermission': 'Repair permission',
+      'superResolution.modelPermissionRepaired':
+          'Model executable permission repaired',
       'superResolution.importModel': 'Import ZIP',
       'superResolution.jobs': 'Jobs',
       'superResolution.noJobs': 'No super-resolution jobs yet',
@@ -663,6 +667,10 @@ class WebEnUS {
       'settings.troubleshootingOpenTarget': 'Open related page',
       'settings.troubleshootingRetest': 'Retest',
       'settings.troubleshootingCopyFix': 'Copy fix snippet',
+      'settings.troubleshootingRunAction': 'Run fix',
+      'settings.troubleshootingActionConfirm':
+          'This will run a batch fix for matching failed tasks. Continue?',
+      'settings.troubleshootingActionDone': 'Fix action completed',
       'settings.troubleshootingActiveProbe': 'Manual active probe',
       'settings.troubleshootingActiveProbeHint':
           'Only runs when clicked; tests EH/EX, H@H image hosts, and GPU/super-resolution runtime.',
@@ -1282,6 +1290,7 @@ class WebEnUS {
           '@total failed tasks found (gallery @gallery, archive @archive).',
       'downloads.retryFailedGallery': 'Retry failed galleries',
       'downloads.retryFailedArchive': 'Retry failed archives',
+      'downloads.retryFailed': 'Retry failed tasks',
       'downloads.reUnlockFailedArchive': 'Re-unlock failed archives',
       'downloads.failedGalleryRetried': 'Retried @count failed gallery tasks',
       'downloads.failedArchiveRetried': 'Retried @count failed archive tasks',
