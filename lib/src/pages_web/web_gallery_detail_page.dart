@@ -9,6 +9,7 @@ import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/model/gallery_image_page_url.dart';
 import 'package:jhentai/src/model/gallery_url.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_download_priority.dart';
 import 'package:jhentai/src/pages_web/web_eh_thumbnail.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
@@ -1003,11 +1004,11 @@ class WebGalleryDetailPage extends StatelessWidget {
     var downloadOriginalImage =
         web.window.localStorage.getItem('jh_web_default_gallery_original') ==
             'true';
-    final priorityCtrl = TextEditingController(
-      text:
-          web.window.localStorage.getItem('jh_web_default_gallery_priority') ??
-              '0',
-    );
+    var selectedPriority = normalizeWebDownloadPriority(int.tryParse(web
+                .window.localStorage
+                .getItem('jh_web_default_gallery_priority') ??
+            '') ??
+        webDownloadPriorityMedium);
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1023,13 +1024,10 @@ class WebGalleryDetailPage extends StatelessWidget {
                 listener: (g) => group = g,
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: priorityCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'detail.downloadPriority'.tr,
-                  border: const OutlineInputBorder(),
-                ),
+              WebDownloadPrioritySelector(
+                selectedPriority: selectedPriority,
+                labelText: 'detail.downloadPriority'.tr,
+                onSelected: (value) => selectedPriority = value,
               ),
               const SizedBox(height: 8),
               StatefulBuilder(
@@ -1053,17 +1051,16 @@ class WebGalleryDetailPage extends StatelessWidget {
           FilledButton(
             onPressed: () async {
               final g = group.trim().isEmpty ? 'default' : group.trim();
-              final p = int.tryParse(priorityCtrl.text.trim()) ?? 0;
               web.window.localStorage
                   .setItem('jh_web_default_gallery_group', g);
-              web.window.localStorage
-                  .setItem('jh_web_default_gallery_priority', '$p');
+              web.window.localStorage.setItem(
+                  'jh_web_default_gallery_priority', '$selectedPriority');
               web.window.localStorage.setItem('jh_web_default_gallery_original',
                   downloadOriginalImage ? 'true' : 'false');
               Navigator.pop(ctx);
               await controller.startGalleryDownload(
                 group: g,
-                priority: p,
+                priority: selectedPriority,
                 downloadOriginalImage: downloadOriginalImage,
               );
             },
@@ -1080,11 +1077,11 @@ class WebGalleryDetailPage extends StatelessWidget {
     final rawG =
         web.window.localStorage.getItem('jh_web_default_archive_group');
     var group = (rawG != null && rawG.isNotEmpty) ? rawG : 'default';
-    final priorityCtrl = TextEditingController(
-      text:
-          web.window.localStorage.getItem('jh_web_default_archive_priority') ??
-              '0',
-    );
+    var selectedPriority = normalizeWebDownloadPriority(int.tryParse(web
+                .window.localStorage
+                .getItem('jh_web_default_archive_priority') ??
+            '') ??
+        webDownloadPriorityMedium);
     var parseSource = web.window.localStorage
             .getItem('jh_web_default_archive_parse_source') ??
         'official';
@@ -1106,13 +1103,10 @@ class WebGalleryDetailPage extends StatelessWidget {
                   listener: (g) => group = g,
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: priorityCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'detail.downloadPriority'.tr,
-                    border: const OutlineInputBorder(),
-                  ),
+                WebDownloadPrioritySelector(
+                  selectedPriority: selectedPriority,
+                  labelText: 'detail.downloadPriority'.tr,
+                  onSelected: (value) => selectedPriority = value,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -1187,14 +1181,11 @@ class WebGalleryDetailPage extends StatelessWidget {
                                       final g = group.trim().isEmpty
                                           ? 'default'
                                           : group.trim();
-                                      final p = int.tryParse(
-                                              priorityCtrl.text.trim()) ??
-                                          0;
                                       web.window.localStorage.setItem(
                                           'jh_web_default_archive_group', g);
                                       web.window.localStorage.setItem(
                                           'jh_web_default_archive_priority',
-                                          '$p');
+                                          '$selectedPriority');
                                       web.window.localStorage.setItem(
                                           'jh_web_default_archive_parse_source',
                                           parseSource);
@@ -1202,7 +1193,7 @@ class WebGalleryDetailPage extends StatelessWidget {
                                       await controller.startArchiveDownload(
                                           isOriginal: false,
                                           group: g,
-                                          priority: p,
+                                          priority: selectedPriority,
                                           parseSource: parseSource);
                                     }
                                   : null,
@@ -1224,14 +1215,11 @@ class WebGalleryDetailPage extends StatelessWidget {
                                       final g = group.trim().isEmpty
                                           ? 'default'
                                           : group.trim();
-                                      final p = int.tryParse(
-                                              priorityCtrl.text.trim()) ??
-                                          0;
                                       web.window.localStorage.setItem(
                                           'jh_web_default_archive_group', g);
                                       web.window.localStorage.setItem(
                                           'jh_web_default_archive_priority',
-                                          '$p');
+                                          '$selectedPriority');
                                       web.window.localStorage.setItem(
                                           'jh_web_default_archive_parse_source',
                                           parseSource);
@@ -1239,7 +1227,7 @@ class WebGalleryDetailPage extends StatelessWidget {
                                       await controller.startArchiveDownload(
                                           isOriginal: true,
                                           group: g,
-                                          priority: p,
+                                          priority: selectedPriority,
                                           parseSource: parseSource);
                                     }
                                   : null,

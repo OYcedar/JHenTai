@@ -323,7 +323,7 @@ labels:
 
 This fork does **not** use GitHub Actions to push Docker images. Build and push from your machine (or any CI you control) after **`docker login`**. A Cursor-oriented checklist lives in [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md).
 
-Every publish script run increments **`docker/fork_revision`** and updates README / compose image tags before pushing. Commit those file changes after a successful image push. Set **`DOCKER_SKIP_VERSION_BUMP=1`** only when intentionally re-pushing the current tag.
+Every publish script run increments **`docker/fork_revision`** and updates README / compose image tags before pushing. Commit those file changes after a successful image push. After the push, remove old local JHenTai images and keep only the current `x.y.z-hhh` tag plus `latest`. Set **`DOCKER_SKIP_VERSION_BUMP=1`** only when intentionally re-pushing the current tag.
 
 **One-shot scripts** (from the repo root; pushes **`x.y.z-hhh`** and **`latest`**):
 

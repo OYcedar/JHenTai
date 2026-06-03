@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_download_priority.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
 import 'package:jhentai/src/pages_web/web_proxied_image.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
@@ -1446,62 +1447,42 @@ Future<int?> _showBatchPriorityDialog(BuildContext context,
       .toSet()
       .toList()
     ..sort();
-  final initialPriority = priorities.length == 1 ? priorities.first : 0;
-  final controller = TextEditingController(text: '$initialPriority');
-  try {
-    return showDialog<int>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text('downloads.changeBatchPriority'.tr),
-          content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('downloads.changeBatchPriorityConfirm'
-                    .trParams({'scope': scopeText})),
-                const SizedBox(height: 12),
-                _PriorityChoiceChips(
-                  selectedPriority: int.tryParse(controller.text.trim()),
-                  onSelected: (priority) => controller.text = '$priority',
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: controller,
-                  autofocus: true,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: 'downloads.setPriority'.tr,
-                    border: const OutlineInputBorder(),
-                  ),
-                  onSubmitted: (_) {
-                    Navigator.pop(
-                        ctx, int.tryParse(controller.text.trim()) ?? 0);
-                  },
-                ),
-              ],
-            ),
+  var selectedPriority = normalizeWebDownloadPriority(
+      priorities.length == 1 ? priorities.first : webDownloadPriorityMedium);
+  return showDialog<int>(
+    context: context,
+    builder: (ctx) {
+      return AlertDialog(
+        title: Text('downloads.changeBatchPriority'.tr),
+        content: SizedBox(
+          width: 420,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('downloads.changeBatchPriorityConfirm'
+                  .trParams({'scope': scopeText})),
+              const SizedBox(height: 12),
+              WebDownloadPrioritySelector(
+                selectedPriority: selectedPriority,
+                onSelected: (priority) => selectedPriority = priority,
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('common.cancel'.tr),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(ctx, int.tryParse(controller.text.trim()) ?? 0);
-              },
-              child: Text('common.ok'.tr),
-            ),
-          ],
-        );
-      },
-    );
-  } finally {
-    controller.dispose();
-  }
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.cancel'.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, selectedPriority),
+            child: Text('common.ok'.tr),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 Future<String?> _showRenameGroupDialog(
@@ -1834,54 +1815,11 @@ class _DownloadGroupHeader extends StatelessWidget {
 
 enum _DownloadGroupAction { rename, clear }
 
-class _PriorityChoiceChips extends StatefulWidget {
-  final int? selectedPriority;
-  final ValueChanged<int> onSelected;
-
-  const _PriorityChoiceChips({
-    required this.selectedPriority,
-    required this.onSelected,
-  });
-
-  @override
-  State<_PriorityChoiceChips> createState() => _PriorityChoiceChipsState();
-}
-
-class _PriorityChoiceChipsState extends State<_PriorityChoiceChips> {
-  late int? selectedPriority = widget.selectedPriority;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        for (final priority in const [0, 1, 2, 3, 4, 5])
-          ChoiceChip(
-            label: Text(_priorityChoiceLabel(priority)),
-            selected: selectedPriority == priority,
-            onSelected: (_) {
-              setState(() => selectedPriority = priority);
-              widget.onSelected(priority);
-            },
-          ),
-      ],
-    );
-  }
-}
-
-String _priorityChoiceLabel(int priority) {
-  if (priority == 0) {
-    return '${'priority'.tr} : 0 (${'default'.tr})';
-  }
-  return '${'priority'.tr} : $priority';
-}
-
 void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
     Map<String, dynamic> task) {
   final gid = task['gid'] as int;
-  final priCtrl = TextEditingController(
-      text: '${(task['priority'] as num?)?.toInt() ?? 0}');
+  var selectedPriority = normalizeWebDownloadPriority(
+      (task['priority'] as num?)?.toInt() ?? webDownloadPriorityMedium);
   final grpCtrl = TextEditingController(
       text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
   showDialog<void>(
@@ -1891,18 +1829,9 @@ void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(
-            controller: priCtrl,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: 'downloads.setPriority'.tr,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _PriorityChoiceChips(
-            selectedPriority: int.tryParse(priCtrl.text.trim()),
-            onSelected: (priority) => priCtrl.text = '$priority',
+          WebDownloadPrioritySelector(
+            selectedPriority: selectedPriority,
+            onSelected: (priority) => selectedPriority = priority,
           ),
           const SizedBox(height: 12),
           TextField(
@@ -1925,7 +1854,7 @@ void _showGalleryPatchDialog(BuildContext context, WebDownloadsController ctrl,
                 grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
             await ctrl.patchGalleryTask(
               gid,
-              priority: int.tryParse(priCtrl.text.trim()),
+              priority: selectedPriority,
               group: g,
             );
           },
@@ -1940,8 +1869,8 @@ void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl,
     Map<String, dynamic> task) {
   final gid = task['gid'] as int;
   final status = (task['status'] as num?)?.toInt() ?? 0;
-  final priCtrl = TextEditingController(
-      text: '${(task['priority'] as num?)?.toInt() ?? 0}');
+  var selectedPriority = normalizeWebDownloadPriority(
+      (task['priority'] as num?)?.toInt() ?? webDownloadPriorityMedium);
   final grpCtrl = TextEditingController(
       text: '${task['group_name'] ?? task['groupName'] ?? 'default'}');
   var parseSource =
@@ -1956,18 +1885,9 @@ void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: priCtrl,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'downloads.setPriority'.tr,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _PriorityChoiceChips(
-                selectedPriority: int.tryParse(priCtrl.text.trim()),
-                onSelected: (priority) => priCtrl.text = '$priority',
+              WebDownloadPrioritySelector(
+                selectedPriority: selectedPriority,
+                onSelected: (priority) => selectedPriority = priority,
               ),
               const SizedBox(height: 12),
               TextField(
@@ -2023,7 +1943,7 @@ void _showArchivePatchDialog(BuildContext context, WebDownloadsController ctrl,
                   grpCtrl.text.trim().isEmpty ? 'default' : grpCtrl.text.trim();
               await ctrl.patchArchiveTask(
                 gid,
-                priority: int.tryParse(priCtrl.text.trim()),
+                priority: selectedPriority,
                 group: g,
                 refresh: false,
               );
@@ -2562,8 +2482,7 @@ class _DownloadTaskGridCard extends StatelessWidget {
                             filled: true,
                           ),
                         _TinyLabel(
-                          label: 'downloads.priorityLabel'
-                              .trParams({'n': '$priority'}),
+                          label: webDownloadPriorityLabel(priority),
                           color: Colors.purple,
                         ),
                         if (groupName != 'default')
@@ -3394,8 +3313,7 @@ class _GalleryTaskCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'downloads.priorityLabel'
-                                      .trParams({'n': '$priority'}),
+                                  webDownloadPriorityLabel(priority),
                                   style: const TextStyle(
                                       fontSize: 10, color: Colors.purple),
                                 ),
@@ -3804,8 +3722,7 @@ class _ArchiveTaskCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  'downloads.priorityLabel'
-                                      .trParams({'n': '$priority'}),
+                                  webDownloadPriorityLabel(priority),
                                   style: const TextStyle(
                                       fontSize: 10, color: Colors.purple),
                                 ),

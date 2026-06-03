@@ -11,6 +11,7 @@ import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/model/gallery_image_page_url.dart';
 import 'package:jhentai/src/model/gallery_url.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_download_priority.dart';
 import 'package:jhentai/src/pages_web/web_gallery_detail_page.dart';
 import 'package:jhentai/src/pages_web/web_group_name_selector.dart';
 import 'package:jhentai/src/pages_web/web_preference_settings.dart';
@@ -303,10 +304,10 @@ void _showStartWebHomeGalleryDownloadDialog(
   var downloadOriginalImage =
       web.window.localStorage.getItem('jh_web_default_gallery_original') ==
           'true';
-  final priorityCtrl = TextEditingController(
-    text: web.window.localStorage.getItem('jh_web_default_gallery_priority') ??
-        '0',
-  );
+  var selectedPriority = normalizeWebDownloadPriority(int.tryParse(
+          web.window.localStorage.getItem('jh_web_default_gallery_priority') ??
+              '') ??
+      webDownloadPriorityMedium);
 
   showDialog<void>(
     context: context,
@@ -323,13 +324,10 @@ void _showStartWebHomeGalleryDownloadDialog(
               listener: (value) => group = value,
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: priorityCtrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'detail.downloadPriority'.tr,
-                border: const OutlineInputBorder(),
-              ),
+            WebDownloadPrioritySelector(
+              selectedPriority: selectedPriority,
+              labelText: 'detail.downloadPriority'.tr,
+              onSelected: (value) => selectedPriority = value,
             ),
             const SizedBox(height: 8),
             StatefulBuilder(
@@ -355,11 +353,10 @@ void _showStartWebHomeGalleryDownloadDialog(
           onPressed: () async {
             final selectedGroup =
                 group.trim().isEmpty ? 'default' : group.trim();
-            final priority = int.tryParse(priorityCtrl.text.trim()) ?? 0;
             web.window.localStorage
                 .setItem('jh_web_default_gallery_group', selectedGroup);
-            web.window.localStorage
-                .setItem('jh_web_default_gallery_priority', '$priority');
+            web.window.localStorage.setItem(
+                'jh_web_default_gallery_priority', '$selectedPriority');
             web.window.localStorage.setItem(
               'jh_web_default_gallery_original',
               downloadOriginalImage ? 'true' : 'false',
@@ -376,7 +373,7 @@ void _showStartWebHomeGalleryDownloadDialog(
                 coverUrl: _galleryString(gallery, 'coverUrl'),
                 uploader: _galleryString(gallery, 'uploader'),
                 group: selectedGroup,
-                priority: priority,
+                priority: selectedPriority,
                 downloadOriginalImage: downloadOriginalImage,
                 tagSearchText: _webHomeDownloadTagSearchText(gallery),
                 publishTime: _galleryString(gallery, 'publishDate').isNotEmpty

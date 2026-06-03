@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_diagnostics_localization.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 
 class WebSettingsSetupChecklistPage extends StatefulWidget {
@@ -223,7 +224,9 @@ class _WebSettingsSetupChecklistPageState
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      item['label']?.toString() ?? '-',
+                      localizeWebDiagnosticLabel(
+                        item['label']?.toString() ?? '-',
+                      ),
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                   ),
@@ -234,10 +237,11 @@ class _WebSettingsSetupChecklistPageState
                 ],
               ),
               const SizedBox(height: 8),
-              Text(item['detail']?.toString() ?? '-'),
+              Text(
+                  localizeWebDiagnosticText(item['detail']?.toString() ?? '-')),
               const SizedBox(height: 4),
               Text(
-                item['hint']?.toString() ?? '',
+                localizeWebDiagnosticText(item['hint']?.toString() ?? ''),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               if ((route != null && route.isNotEmpty) || copyText.isNotEmpty)

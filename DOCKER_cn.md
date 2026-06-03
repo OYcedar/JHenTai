@@ -323,7 +323,7 @@ labels:
 
 本 fork **不再**通过 GitHub Actions 自动推送镜像。在已执行 **`docker login`** 的机器上本地构建并推送（或使用你自建的 CI）。面向 Cursor 的检查清单见 [`skills/docker-hub-publish/SKILL.md`](skills/docker-hub-publish/SKILL.md)。
 
-每次运行发布脚本都会先递增 **`docker/fork_revision`**，并同步更新 README / compose 中的镜像标签，然后再推送镜像。镜像推送成功后，请提交这些文件改动。只有在明确要重推当前标签时，才设置 **`DOCKER_SKIP_VERSION_BUMP=1`**。
+每次运行发布脚本都会先递增 **`docker/fork_revision`**，并同步更新 README / compose 中的镜像标签，然后再推送镜像。镜像推送成功后，请提交这些文件改动，并删除本地旧的 JHenTai 镜像，只保留当前发布的 `x.y.z-hhh` 标签和 `latest`。只有在明确要重推当前标签时，才设置 **`DOCKER_SKIP_VERSION_BUMP=1`**。
 
 **一键脚本**（在仓库根目录执行；会推送 **`x.y.z-hhh`** 与 **`latest`**）：
 

@@ -31,6 +31,7 @@ class SuperResolutionModelSpec {
     required this.downloadUrl,
     required this.binaryName,
     required this.modelArgument,
+    this.category = 'basic',
     this.defaultScale = 2,
   });
 
@@ -40,6 +41,7 @@ class SuperResolutionModelSpec {
   final String downloadUrl;
   final String binaryName;
   final String modelArgument;
+  final String category;
   final int defaultScale;
 }
 
@@ -128,6 +130,16 @@ class SuperResolutionService {
       modelArgument: 'models-se',
       defaultScale: 2,
     ),
+    'realesrgan-x4plus-anime': SuperResolutionModelSpec(
+      id: 'realesrgan-x4plus-anime',
+      label: 'Real-ESRGAN anime',
+      kind: 'realesrgan',
+      downloadUrl:
+          'https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-ubuntu.zip',
+      binaryName: 'realesrgan-ncnn-vulkan',
+      modelArgument: 'realesrgan-x4plus-anime',
+      defaultScale: 4,
+    ),
     'realesrgan-x4plus': SuperResolutionModelSpec(
       id: 'realesrgan-x4plus',
       label: 'Real-ESRGAN x4plus',
@@ -138,15 +150,15 @@ class SuperResolutionService {
       modelArgument: 'realesrgan-x4plus',
       defaultScale: 4,
     ),
-    'realesrgan-x4plus-anime': SuperResolutionModelSpec(
-      id: 'realesrgan-x4plus-anime',
-      label: 'Real-ESRGAN anime',
-      kind: 'realesrgan',
+    'waifu2x': SuperResolutionModelSpec(
+      id: 'waifu2x',
+      label: 'waifu2x',
+      kind: 'waifu2x',
       downloadUrl:
-          'https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/download/v0.2.0/realesrgan-ncnn-vulkan-v0.2.0-ubuntu.zip',
-      binaryName: 'realesrgan-ncnn-vulkan',
-      modelArgument: 'realesrgan-x4plus-anime',
-      defaultScale: 4,
+          'https://github.com/nihui/waifu2x-ncnn-vulkan/releases/download/20220728/waifu2x-ncnn-vulkan-20220728-ubuntu.zip',
+      binaryName: 'waifu2x-ncnn-vulkan',
+      modelArgument: 'models-cunet',
+      defaultScale: 2,
     ),
   };
 
@@ -704,6 +716,13 @@ class SuperResolutionService {
     args.addAll(['-j', '1:1:1']);
     if (spec.kind == 'realesrgan') {
       args.addAll(['-n', spec.modelArgument]);
+    } else if (spec.kind == 'waifu2x') {
+      args.addAll([
+        '-n',
+        '1',
+        '-m',
+        p.join(_modelDir(spec).path, spec.modelArgument),
+      ]);
     } else {
       args.addAll(['-m', p.join(_modelDir(spec).path, spec.modelArgument)]);
     }
@@ -823,6 +842,7 @@ class SuperResolutionService {
       'id': spec.id,
       'label': spec.label,
       'kind': spec.kind,
+      'category': spec.category,
       'defaultScale': spec.defaultScale,
       'installed': installed,
       'executable': executable,

@@ -22,7 +22,8 @@ description: >-
    - **Windows PowerShell:** `powershell -ExecutionPolicy Bypass -File scripts/docker-hub-publish.ps1`
 3. The script bumps **`docker/fork_revision`**, updates README / compose image tags, and pushes the image.
 4. Commit the changed **`docker/fork_revision`**, README / DOCKER docs, and compose sample after a successful push.
-5. Override namespace: set **`DOCKERHUB_USERNAME`** (or edit script default).
+5. Remove old local JHenTai images after the push. Keep only the current published **`x.y.z-hhh`** tag and **`latest`**; do not remove unrelated project images.
+6. Override namespace: set **`DOCKERHUB_USERNAME`** (or edit script default).
 
 ## Notes
 
