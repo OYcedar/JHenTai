@@ -2057,19 +2057,22 @@ class SettingRoutes {
           imported = _importWebExportSections(sections);
           db.raw.execute('COMMIT');
         }
-      } else if (body is List) {
-        summary = _analyzeAppCloudConfigs(body);
-        source = 'app';
-        if (!dryRun) {
-          db.raw.execute('BEGIN TRANSACTION');
-          imported = _importAppCloudConfigs(body);
-          db.raw.execute('COMMIT');
-        }
       } else {
-        return Response.badRequest(
-          body: jsonEncode({'error': 'Unsupported import format'}),
-          headers: {'Content-Type': 'application/json'},
-        );
+        final appConfigs = _importAppConfigList(body);
+        if (appConfigs != null) {
+          summary = _analyzeAppCloudConfigs(appConfigs);
+          source = 'app';
+          if (!dryRun) {
+            db.raw.execute('BEGIN TRANSACTION');
+            imported = _importAppCloudConfigs(appConfigs);
+            db.raw.execute('COMMIT');
+          }
+        } else {
+          return Response.badRequest(
+            body: jsonEncode({'error': 'Unsupported import format'}),
+            headers: {'Content-Type': 'application/json'},
+          );
+        }
       }
     } catch (e) {
       if (!dryRun) {
@@ -2108,6 +2111,21 @@ class SettingRoutes {
       }),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  List<dynamic>? _importAppConfigList(dynamic body) {
+    if (body is List) {
+      return body;
+    }
+    if (body is Map) {
+      for (final key in ['data', 'configs', 'items']) {
+        final value = body[key];
+        if (value is List) {
+          return value;
+        }
+      }
+    }
+    return null;
   }
 
   Future<Response> _getSettings(Request request) async {

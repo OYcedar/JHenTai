@@ -734,7 +734,43 @@ class WebPtBR {
       'settings.importDataConfirm':
           'Escolha uma exportação do JHenTai Web ou um arquivo JHenTaiConfig do app. Configurações importadas podem sobrescrever valores atuais.',
       'settings.importDataSuccess': '@count itens importados',
+      'settings.importDataSuccessDetail': '@count itens importados: @detail',
+      'settings.importNoChange':
+          'Import finished, but no new data was written. Check the preview or file contents.',
       'settings.importDataFailed': 'Falha ao importar dados: @error',
+      'settings.importStatusAnalyzing':
+          'Read @name (@size), analyzing import preview.',
+      'settings.importStatusCancelled': 'Import cancelled: @name',
+      'settings.importStatusBackingUp': 'Downloading backup before import.',
+      'settings.importStatusImporting': 'Importing @name.',
+      'settings.importStatusDone': '@source imported @count items: @detail',
+      'settings.importStatusNoChange':
+          '@source import finished, but no new data was written.',
+      'settings.importStatusFailed': 'Import failed: @error',
+      'settings.importPreviewTitle': 'Import preview',
+      'settings.importPreviewSource': 'Source: @source',
+      'settings.importPreviewFile': 'File: @name (@size)',
+      'settings.importSourceWeb': 'Web export',
+      'settings.importSourceApp': 'App / cloud config',
+      'settings.importPreviewSummary':
+          '@count importable, @replace may be overwritten, @skip skipped.',
+      'settings.importPreviewEmpty':
+          'No importable items were found. The file was read, but nothing will be written to this server.',
+      'settings.importPreviewLocalReadHint':
+          'The file is read in this browser only. The server is changed only after you click Back up and import.',
+      'settings.importPreviewBackupHint':
+          'After confirmation, the current Web data will be downloaded as a backup before importing.',
+      'settings.importPreviewOverwriteHint':
+          'Import merges data. Settings, history, search history, and quick searches may overwrite matching key / gid / keyword / name entries.',
+      'settings.importConfirmWithBackup': 'Back up and import',
+      'settings.importSectionSummary':
+          'Import @count · overwrite @replace · skip @skip',
+      'settings.importSectionConfig': 'Settings',
+      'settings.importSectionBlockRules': 'Block rules',
+      'settings.importSectionHistory': 'Gallery history',
+      'settings.importSectionSearchHistory': 'Search history',
+      'settings.importSectionQuickSearch': 'Quick searches',
+      'settings.importSectionReadProgress': 'Read progress',
       'settings.cloudSync': 'Sincronização de config na nuvem',
       'settings.cloudSyncHint':
           'Veja configs da nuvem JHenTai, importe por código de compartilhamento e mescle neste servidor Docker.',

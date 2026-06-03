@@ -31,6 +31,7 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
   bool exportingData = false;
   bool exportingAppData = false;
   bool importingData = false;
+  String? importDataStatus;
 
   @override
   void initState() {
@@ -204,28 +205,59 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
 
   Future<void> _importData() async {
     try {
-      final text = await _pickJsonFileText();
-      if (text == null) {
+      final picked = await _pickJsonFile();
+      if (picked == null) {
         return;
       }
-      final decoded = jsonDecode(text);
-      if (decoded is! Map && decoded is! List) {
-        throw const FormatException('JSON root must be an object or list');
+      setState(() {
+        importingData = true;
+        importDataStatus = 'settings.importStatusAnalyzing'.trParams({
+          'name': picked.name,
+          'size': _formatBytes(picked.size),
+        });
+      });
+      final decoded = jsonDecode(picked.text);
+      final data = _normalizeImportData(decoded);
+      if (data == null) {
+        throw const FormatException('Unsupported JSON import format');
       }
-      setState(() => importingData = true);
-      final data = decoded as Object;
       final preview = await backendApiClient.importUserData(data, dryRun: true);
       if (!mounted) {
         return;
       }
       final ok = await Get.dialog<bool>(
-        _ImportPreviewDialog(preview: preview),
+        _ImportPreviewDialog(
+          preview: preview,
+          fileName: picked.name,
+          fileSize: picked.size,
+        ),
       );
       if (ok != true) {
+        if (mounted) {
+          setState(() {
+            importDataStatus = 'settings.importStatusCancelled'.trParams({
+              'name': picked.name,
+            });
+          });
+        }
         return;
       }
 
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        importDataStatus = 'settings.importStatusBackingUp'.tr;
+      });
       await _downloadWebDataExport('jhentai-web-backup-before-import');
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        importDataStatus = 'settings.importStatusImporting'.trParams({
+          'name': picked.name,
+        });
+      });
       final result = await backendApiClient.importUserData(data);
       final imported = result['imported'] is Map
           ? Map<String, dynamic>.from(result['imported'] as Map)
@@ -235,12 +267,41 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
         (sum, value) => sum + ((value as num?)?.toInt() ?? 0),
       );
       await controller.refreshStatus();
+      final source = result['source']?.toString() == 'app'
+          ? 'settings.importSourceApp'.tr
+          : 'settings.importSourceWeb'.tr;
+      final detail = _formatImportCounts(imported);
+      if (mounted) {
+        setState(() {
+          importDataStatus = count > 0
+              ? 'settings.importStatusDone'.trParams({
+                  'source': source,
+                  'count': '$count',
+                  'detail': detail,
+                })
+              : 'settings.importStatusNoChange'.trParams({
+                  'source': source,
+                });
+        });
+      }
       Get.snackbar(
-        'common.success'.tr,
-        'settings.importDataSuccess'.trParams({'count': '$count'}),
+        count > 0 ? 'common.success'.tr : 'common.warning'.tr,
+        count > 0
+            ? 'settings.importDataSuccessDetail'.trParams({
+                'count': '$count',
+                'detail': detail,
+              })
+            : 'settings.importNoChange'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          importDataStatus = 'settings.importStatusFailed'.trParams({
+            'error': '$e',
+          });
+        });
+      }
       Get.snackbar(
         'common.error'.tr,
         'settings.importDataFailed'.trParams({'error': '$e'}),
@@ -373,7 +434,12 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
                   ListTile(
                     leading: const Icon(Icons.upload_file_outlined),
                     title: Text('settings.importData'.tr),
-                    subtitle: Text('settings.importDataHint'.tr),
+                    subtitle: Text(
+                      [
+                        'settings.importDataHint'.tr,
+                        if (importDataStatus != null) importDataStatus!,
+                      ].join('\n'),
+                    ),
                     trailing: importingData
                         ? const SizedBox.square(
                             dimension: 24,
@@ -599,12 +665,69 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
     String two(int n) => n.toString().padLeft(2, '0');
     return '${date.year}-${two(date.month)}-${two(date.day)} ${two(date.hour)}:${two(date.minute)}';
   }
+
+  Object? _normalizeImportData(Object? decoded) {
+    if (decoded is List) {
+      return decoded;
+    }
+    if (decoded is Map) {
+      if (decoded['format'] == 'jhentai-web-export-v1' &&
+          decoded['sections'] is Map) {
+        return decoded;
+      }
+      for (final key in ['data', 'configs', 'items']) {
+        final value = decoded[key];
+        if (value is List) {
+          return value;
+        }
+      }
+    }
+    return null;
+  }
+
+  String _formatImportCounts(Map<String, dynamic> imported) {
+    final labels = {
+      'config': 'settings.importSectionConfig'.tr,
+      'blockRules': 'settings.importSectionBlockRules'.tr,
+      'history': 'settings.importSectionHistory'.tr,
+      'searchHistory': 'settings.importSectionSearchHistory'.tr,
+      'quickSearch': 'settings.importSectionQuickSearch'.tr,
+      'readProgress': 'settings.importSectionReadProgress'.tr,
+    };
+    return labels.entries
+        .map((entry) {
+          final count = (imported[entry.key] as num?)?.toInt() ?? 0;
+          return count > 0 ? '${entry.value} $count' : '';
+        })
+        .where((text) => text.isNotEmpty)
+        .join(' · ');
+  }
+}
+
+String _formatBytes(int bytes) {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  var value = bytes.toDouble();
+  var unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  final text = unit == 0
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(value >= 10 ? 1 : 2);
+  return '$text ${units[unit]}';
 }
 
 class _ImportPreviewDialog extends StatelessWidget {
-  const _ImportPreviewDialog({required this.preview});
+  const _ImportPreviewDialog({
+    required this.preview,
+    required this.fileName,
+    required this.fileSize,
+  });
 
   final Map<String, dynamic> preview;
+  final String fileName;
+  final int fileSize;
 
   @override
   Widget build(BuildContext context) {
@@ -642,6 +765,13 @@ class _ImportPreviewDialog extends StatelessWidget {
               Text('settings.importPreviewSource'.trParams({'source': source})),
               const SizedBox(height: 8),
               Text(
+                'settings.importPreviewFile'.trParams({
+                  'name': fileName,
+                  'size': _formatBytes(fileSize),
+                }),
+              ),
+              const SizedBox(height: 8),
+              Text(
                 'settings.importPreviewSummary'.trParams({
                   'count': '${_intValue(summary['importable'])}',
                   'replace': '${_intValue(summary['replacing'])}',
@@ -649,6 +779,14 @@ class _ImportPreviewDialog extends StatelessWidget {
                 }),
               ),
               const SizedBox(height: 12),
+              if (rows.isEmpty)
+                Text(
+                  'settings.importPreviewEmpty'.tr,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                ),
+              if (rows.isEmpty) const SizedBox(height: 12),
               if (rows.isNotEmpty)
                 DecoratedBox(
                   decoration: BoxDecoration(
@@ -667,6 +805,13 @@ class _ImportPreviewDialog extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 12),
+              Text(
+                'settings.importPreviewLocalReadHint'.tr,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 6),
               Text(
                 'settings.importPreviewBackupHint'.tr,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -722,6 +867,18 @@ class _ImportPreviewDialog extends StatelessWidget {
   static int _intValue(Object? raw) => (raw as num?)?.toInt() ?? 0;
 }
 
+class _PickedJsonFile {
+  const _PickedJsonFile({
+    required this.name,
+    required this.size,
+    required this.text,
+  });
+
+  final String name;
+  final int size;
+  final String text;
+}
+
 class _ImportPreviewRow {
   const _ImportPreviewRow({
     required this.label,
@@ -757,7 +914,7 @@ class _ImportPreviewRowTile extends StatelessWidget {
   }
 }
 
-Future<String?> _pickJsonFileText() async {
+Future<_PickedJsonFile?> _pickJsonFile() async {
   final input = web.HTMLInputElement()
     ..type = 'file'
     ..accept = 'application/json,.json'
@@ -783,7 +940,12 @@ Future<String?> _pickJsonFileText() async {
       completer.complete(result == null ? '' : (result as JSString).toDart);
     });
     reader.readAsText(file);
-    return completer.future;
+    final text = await completer.future;
+    return _PickedJsonFile(
+      name: file.name,
+      size: file.size,
+      text: text,
+    );
   } finally {
     input.remove();
   }

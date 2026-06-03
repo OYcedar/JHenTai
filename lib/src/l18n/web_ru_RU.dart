@@ -725,7 +725,44 @@ class WebRuRU {
       'settings.importDataConfirm':
           'Выберите файл экспорта JHenTai Web или JHenTaiConfig из приложения. Импортированные настройки могут перезаписать текущие значения.',
       'settings.importDataSuccess': 'Импортировано элементов: @count',
+      'settings.importDataSuccessDetail':
+          'Импортировано элементов: @count: @detail',
+      'settings.importNoChange':
+          'Import finished, but no new data was written. Check the preview or file contents.',
       'settings.importDataFailed': 'Не удалось импортировать данные: @error',
+      'settings.importStatusAnalyzing':
+          'Read @name (@size), analyzing import preview.',
+      'settings.importStatusCancelled': 'Import cancelled: @name',
+      'settings.importStatusBackingUp': 'Downloading backup before import.',
+      'settings.importStatusImporting': 'Importing @name.',
+      'settings.importStatusDone': '@source imported @count items: @detail',
+      'settings.importStatusNoChange':
+          '@source import finished, but no new data was written.',
+      'settings.importStatusFailed': 'Import failed: @error',
+      'settings.importPreviewTitle': 'Import preview',
+      'settings.importPreviewSource': 'Source: @source',
+      'settings.importPreviewFile': 'File: @name (@size)',
+      'settings.importSourceWeb': 'Web export',
+      'settings.importSourceApp': 'App / cloud config',
+      'settings.importPreviewSummary':
+          '@count importable, @replace may be overwritten, @skip skipped.',
+      'settings.importPreviewEmpty':
+          'No importable items were found. The file was read, but nothing will be written to this server.',
+      'settings.importPreviewLocalReadHint':
+          'The file is read in this browser only. The server is changed only after you click Back up and import.',
+      'settings.importPreviewBackupHint':
+          'After confirmation, the current Web data will be downloaded as a backup before importing.',
+      'settings.importPreviewOverwriteHint':
+          'Import merges data. Settings, history, search history, and quick searches may overwrite matching key / gid / keyword / name entries.',
+      'settings.importConfirmWithBackup': 'Back up and import',
+      'settings.importSectionSummary':
+          'Import @count · overwrite @replace · skip @skip',
+      'settings.importSectionConfig': 'Settings',
+      'settings.importSectionBlockRules': 'Block rules',
+      'settings.importSectionHistory': 'Gallery history',
+      'settings.importSectionSearchHistory': 'Search history',
+      'settings.importSectionQuickSearch': 'Quick searches',
+      'settings.importSectionReadProgress': 'Read progress',
       'settings.cloudSync': 'Синхронизация облачных настроек',
       'settings.cloudSyncHint':
           'Просматривайте облачные настройки JHenTai, импортируйте по коду обмена и объединяйте их с этим Docker-сервером.',
