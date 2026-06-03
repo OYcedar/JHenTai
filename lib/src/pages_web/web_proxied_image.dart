@@ -59,24 +59,26 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
   int _postGeneration = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _syncPostFuture();
-  }
-
-  @override
   void didUpdateWidget(WebProxiedImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.sourceUrl != widget.sourceUrl ||
         oldWidget.maxBytes != widget.maxBytes) {
-      _syncPostFuture();
+      _resetPostFuture();
     }
   }
 
-  void _syncPostFuture() {
-    final generation = ++_postGeneration;
+  void _resetPostFuture() {
+    _postGeneration++;
+    _postObjectUrlFuture = null;
     _revokePostObjectUrl();
+  }
+
+  Future<String>? _ensurePostFuture() {
     if (backendApiClient.shouldProxyImageUsePost(widget.sourceUrl)) {
+      if (_postObjectUrlFuture != null) {
+        return _postObjectUrlFuture;
+      }
+      final generation = ++_postGeneration;
       webImageClientLogVerbose(
           'WebProxiedImage POST path urlLen=${widget.sourceUrl.length}');
       _postObjectUrlFuture = _fetchPostObjectUrl(
@@ -84,12 +86,9 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
         maxBytes: widget.maxBytes,
         generation: generation,
       );
-    } else {
-      webImageClientLogVerbose(
-        'WebProxiedImage GET path proxyLen=${backendApiClient.proxyImageUrl(widget.sourceUrl, maxBytes: widget.maxBytes).length}',
-      );
-      _postObjectUrlFuture = null;
+      return _postObjectUrlFuture;
     }
+    return null;
   }
 
   Future<String> _fetchPostObjectUrl(
@@ -219,9 +218,10 @@ class _WebProxiedImageState extends State<WebProxiedImage> {
       );
     }
 
-    if (_postObjectUrlFuture != null) {
+    final postObjectUrlFuture = _ensurePostFuture();
+    if (postObjectUrlFuture != null) {
       return FutureBuilder<String>(
-        future: _postObjectUrlFuture,
+        future: postObjectUrlFuture,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting ||
               snap.connectionState == ConnectionState.active) {
