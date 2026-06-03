@@ -14,6 +14,7 @@ import '../network/jh_public_client.dart';
 import '../service/event_bus.dart';
 import 'download_runtime_settings.dart';
 import 'download_rate_limiter.dart';
+import 'super_resolution_service.dart';
 
 T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
   return (index >= 0 && index < values.length) ? values[index] : fallback;
@@ -46,6 +47,8 @@ class GalleryDownloadTask {
   final String insertTime;
   int? supersedesGid;
   int? supersededByGid;
+  String lastError;
+  String errorCategory;
   CancelToken? _cancelToken;
 
   GalleryDownloadTask({
@@ -67,6 +70,8 @@ class GalleryDownloadTask {
     required this.insertTime,
     this.supersedesGid,
     this.supersededByGid,
+    this.lastError = '',
+    this.errorCategory = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -92,6 +97,8 @@ class GalleryDownloadTask {
         'insertTime': insertTime,
         if (supersedesGid != null) 'supersedesGid': supersedesGid,
         if (supersededByGid != null) 'supersededByGid': supersededByGid,
+        if (lastError.isNotEmpty) 'lastError': lastError,
+        if (errorCategory.isNotEmpty) 'errorCategory': errorCategory,
       };
 }
 
@@ -110,6 +117,7 @@ class GalleryDownloadService {
   final EHClient _client;
   final ServerConfig _config;
   final EventBus _eventBus;
+  final SuperResolutionService? _superResolutionService;
 
   final Map<int, GalleryDownloadTask> _tasks = {};
   final Set<int> _activeDownloads = {};
@@ -118,10 +126,38 @@ class GalleryDownloadService {
   int get _maxConcurrent => effectiveMaxConcurrentGalleryDownloads(_config);
 
   List<GalleryDownloadTask> get tasks => _tasks.values.toList();
+  int get activeDownloadCount => _activeDownloads.length;
 
-  GalleryDownloadService(this._client, this._config, this._eventBus);
+  GalleryDownloadService(this._client, this._config, this._eventBus,
+      {SuperResolutionService? superResolutionService})
+      : _superResolutionService = superResolutionService;
 
   Future<void> init() async {
+    _loadTasksFromDatabase();
+    log.info('Loaded ${_tasks.length} gallery download tasks');
+
+    final toResume = _tasks.values
+        .where((t) => t.status == GalleryDownloadStatus.downloading)
+        .toList();
+    for (final task in toResume) {
+      log.info('Resuming gallery download: ${task.gid} (${task.title})');
+    }
+    if (toResume.isNotEmpty) {
+      _processQueue();
+    }
+  }
+
+  void reloadFromDatabase() {
+    for (final task in _tasks.values) {
+      task._cancelToken?.cancel('reload');
+    }
+    _activeDownloads.clear();
+    _loadTasksFromDatabase();
+    log.info('Reloaded ${_tasks.length} gallery download tasks');
+  }
+
+  void _loadTasksFromDatabase() {
+    _tasks.clear();
     final rows = db.selectAllGalleryDownloads();
     for (final row in rows) {
       final task = GalleryDownloadTask(
@@ -149,17 +185,6 @@ class GalleryDownloadService {
       );
       _tasks[task.gid] = task;
     }
-    log.info('Loaded ${_tasks.length} gallery download tasks');
-
-    final toResume = _tasks.values
-        .where((t) => t.status == GalleryDownloadStatus.downloading)
-        .toList();
-    for (final task in toResume) {
-      log.info('Resuming gallery download: ${task.gid} (${task.title})');
-    }
-    if (toResume.isNotEmpty) {
-      _processQueue();
-    }
   }
 
   Future<void> startDownload({
@@ -183,6 +208,8 @@ class GalleryDownloadService {
       if (existing.status == GalleryDownloadStatus.paused ||
           existing.status == GalleryDownloadStatus.failed) {
         existing.status = GalleryDownloadStatus.downloading;
+        existing.lastError = '';
+        existing.errorCategory = '';
         db.updateGalleryDownloadStatus(
             gid, GalleryDownloadStatus.downloading.index);
         _processQueue();
@@ -342,6 +369,8 @@ class GalleryDownloadService {
     if (task.status != GalleryDownloadStatus.paused &&
         task.status != GalleryDownloadStatus.failed) return;
     task.status = GalleryDownloadStatus.downloading;
+    task.lastError = '';
+    task.errorCategory = '';
     db.updateGalleryDownloadStatus(
         gid, GalleryDownloadStatus.downloading.index);
     _notifyProgress(task);
@@ -609,6 +638,8 @@ class GalleryDownloadService {
       if (imagePageUrls.isEmpty) {
         log.warning('No image pages found for gallery ${task.gid}');
         task.status = GalleryDownloadStatus.failed;
+        task.lastError = 'No image pages found';
+        task.errorCategory = 'imagePage';
         db.updateGalleryDownloadStatus(
             task.gid, GalleryDownloadStatus.failed.index);
         _activeDownloads.remove(task.gid);
@@ -660,6 +691,8 @@ class GalleryDownloadService {
           log.warning(
               'Failed to download image $i after retries, marking gallery ${task.gid} as failed');
           task.status = GalleryDownloadStatus.failed;
+          task.lastError = 'Failed to download image ${i + 1} after retries';
+          task.errorCategory = 'imagePage';
           db.updateGalleryDownloadStatus(
               task.gid, GalleryDownloadStatus.failed.index);
           _notifyProgress(task,
@@ -670,15 +703,24 @@ class GalleryDownloadService {
 
       if (task.status == GalleryDownloadStatus.downloading) {
         task.status = GalleryDownloadStatus.completed;
+        task.lastError = '';
+        task.errorCategory = '';
         db.updateGalleryDownloadStatus(
             task.gid, GalleryDownloadStatus.completed.index,
             completedCount: task.completedCount);
         _notifyProgress(task);
         log.info('Gallery ${task.gid} download completed');
+        final superResolutionService = _superResolutionService;
+        if (superResolutionService != null) {
+          unawaited(superResolutionService.createJobIfAutoEnabled(
+              sourceType: 'gallery', gid: task.gid));
+        }
       }
     } catch (e, s) {
       log.error('Gallery download failed for ${task.gid}', e, s);
       task.status = GalleryDownloadStatus.failed;
+      task.lastError = '$e';
+      task.errorCategory = _classifyGalleryError('$e');
       db.updateGalleryDownloadStatus(
           task.gid, GalleryDownloadStatus.failed.index);
       _notifyProgress(task, error: '$e');
@@ -949,5 +991,22 @@ class GalleryDownloadService {
     final data = task.toJson();
     if (error != null) data['error'] = error;
     _eventBus.fire('gallery_download_progress', data);
+  }
+
+  String _classifyGalleryError(String error) {
+    final text = error.toLowerCase();
+    if (text.contains('509') || text.contains('image limit')) return 'quota';
+    if (text.contains('hath.network') ||
+        text.contains('proxy') ||
+        text.contains('handshake') ||
+        text.contains('socket') ||
+        text.contains('connection') ||
+        text.contains('timeout')) {
+      return 'hath';
+    }
+    if (text.contains('image page') || text.contains('download image')) {
+      return 'imagePage';
+    }
+    return 'unknown';
   }
 }

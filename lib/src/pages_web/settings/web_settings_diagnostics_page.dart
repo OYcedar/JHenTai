@@ -61,6 +61,11 @@ class _WebSettingsDiagnosticsPageState extends State<WebSettingsDiagnosticsPage>
             onPressed: loading || diagnostics.isEmpty ? null : _copyDiagnostics,
             icon: const Icon(Icons.copy_all_outlined),
           ),
+          IconButton(
+            tooltip: 'settings.troubleshootingWorkbench'.tr,
+            onPressed: () => Get.toNamed('/web/settings/troubleshooting'),
+            icon: const Icon(Icons.plumbing_outlined),
+          ),
         ],
       ),
       body: loading

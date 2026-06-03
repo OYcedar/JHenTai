@@ -12,6 +12,7 @@ import '../network/eh_client.dart';
 import '../utils/archive_util.dart';
 import 'download_runtime_settings.dart';
 import 'event_bus.dart';
+import 'super_resolution_service.dart';
 
 T _safeEnum<T extends Enum>(List<T> values, int index, T fallback) {
   return (index >= 0 && index < values.length) ? values[index] : fallback;
@@ -51,6 +52,8 @@ class ArchiveDownloadTask {
   String downloadUrl;
   int downloadedBytes;
   int totalBytes;
+  String lastError;
+  String errorCategory;
   CancelToken? _cancelToken;
 
   ArchiveDownloadTask({
@@ -75,6 +78,8 @@ class ArchiveDownloadTask {
     this.downloadUrl = '',
     this.downloadedBytes = 0,
     this.totalBytes = 0,
+    this.lastError = '',
+    this.errorCategory = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -102,6 +107,8 @@ class ArchiveDownloadTask {
         'publishTime': publishTime,
         'publish_time': publishTime,
         'insertTime': insertTime,
+        if (lastError.isNotEmpty) 'lastError': lastError,
+        if (errorCategory.isNotEmpty) 'errorCategory': errorCategory,
       };
 }
 
@@ -109,6 +116,7 @@ class ArchiveDownloadService {
   final EHClient _client;
   final ServerConfig _config;
   final EventBus _eventBus;
+  final SuperResolutionService? _superResolutionService;
 
   final Map<int, ArchiveDownloadTask> _tasks = {};
   final Set<int> _activeDownloads = {};
@@ -116,10 +124,46 @@ class ArchiveDownloadService {
   int get _maxConcurrent => effectiveMaxConcurrentArchiveDownloads(_config);
 
   List<ArchiveDownloadTask> get tasks => _tasks.values.toList();
+  int get activeDownloadCount => _activeDownloads.length;
 
-  ArchiveDownloadService(this._client, this._config, this._eventBus);
+  ArchiveDownloadService(this._client, this._config, this._eventBus,
+      {SuperResolutionService? superResolutionService})
+      : _superResolutionService = superResolutionService;
 
   Future<void> init() async {
+    _loadTasksFromDatabase();
+    log.info('Loaded ${_tasks.length} archive download tasks');
+
+    final activeStatuses = {
+      ArchiveStatus.unlocking,
+      ArchiveStatus.parsingUrl,
+      ArchiveStatus.downloading,
+      ArchiveStatus.downloaded,
+      ArchiveStatus.unpacking,
+    };
+    final toResume =
+        _tasks.values.where((t) => activeStatuses.contains(t.status)).toList();
+    for (final task in toResume) {
+      log.info('Resuming archive download: ${task.gid} (${task.title})');
+      task.status = ArchiveStatus.unlocking;
+      db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
+    }
+    if (toResume.isNotEmpty) {
+      _processQueue();
+    }
+  }
+
+  void reloadFromDatabase() {
+    for (final task in _tasks.values) {
+      task._cancelToken?.cancel('reload');
+    }
+    _activeDownloads.clear();
+    _loadTasksFromDatabase();
+    log.info('Reloaded ${_tasks.length} archive download tasks');
+  }
+
+  void _loadTasksFromDatabase() {
+    _tasks.clear();
     final rows = db.selectAllArchiveDownloads();
     for (final row in rows) {
       final task = ArchiveDownloadTask(
@@ -149,25 +193,6 @@ class ArchiveDownloadService {
       );
       _tasks[task.gid] = task;
     }
-    log.info('Loaded ${_tasks.length} archive download tasks');
-
-    final activeStatuses = {
-      ArchiveStatus.unlocking,
-      ArchiveStatus.parsingUrl,
-      ArchiveStatus.downloading,
-      ArchiveStatus.downloaded,
-      ArchiveStatus.unpacking,
-    };
-    final toResume =
-        _tasks.values.where((t) => activeStatuses.contains(t.status)).toList();
-    for (final task in toResume) {
-      log.info('Resuming archive download: ${task.gid} (${task.title})');
-      task.status = ArchiveStatus.unlocking;
-      db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
-    }
-    if (toResume.isNotEmpty) {
-      _processQueue();
-    }
   }
 
   Future<void> startDownload({
@@ -192,6 +217,8 @@ class ArchiveDownloadService {
       if (existing.status == ArchiveStatus.paused ||
           existing.status == ArchiveStatus.failed) {
         existing.status = ArchiveStatus.unlocking;
+        existing.lastError = '';
+        existing.errorCategory = '';
         db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
         _processQueue();
       }
@@ -278,6 +305,8 @@ class ArchiveDownloadService {
     if (task.status != ArchiveStatus.paused &&
         task.status != ArchiveStatus.failed) return;
     task.status = ArchiveStatus.unlocking;
+    task.lastError = '';
+    task.errorCategory = '';
     db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
     _notifyProgress(task);
     _processQueue();
@@ -290,6 +319,8 @@ class ArchiveDownloadService {
     task._cancelToken?.cancel('reunlock');
     _activeDownloads.remove(gid);
     task.status = ArchiveStatus.unlocking;
+    task.lastError = '';
+    task.errorCategory = '';
     task.downloadPageUrl = '';
     task.downloadUrl = '';
     task.downloadedBytes = 0;
@@ -536,24 +567,37 @@ class ArchiveDownloadService {
       }
 
       task.status = ArchiveStatus.completed;
+      task.lastError = '';
+      task.errorCategory = '';
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.completed.index);
       _saveMetadata(task);
       _notifyProgress(task);
       log.info('Archive ${task.gid} download and extraction completed');
+      final superResolutionService = _superResolutionService;
+      if (superResolutionService != null) {
+        unawaited(superResolutionService.createJobIfAutoEnabled(
+            sourceType: 'archive', gid: task.gid));
+      }
     } on ArchiveUnlockException catch (e) {
       log.error('Archive unlock failed for ${task.gid}: ${e.message}');
       task.status = ArchiveStatus.failed;
+      task.lastError = e.message;
+      task.errorCategory = 'archiveUnlock';
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
       _notifyProgress(task);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) return;
       log.error('Archive download failed for ${task.gid}', e);
       task.status = ArchiveStatus.failed;
+      task.lastError = '$e';
+      task.errorCategory = _classifyArchiveError('$e');
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
       _notifyProgress(task);
     } catch (e, s) {
       log.error('Archive download failed for ${task.gid}', e, s);
       task.status = ArchiveStatus.failed;
+      task.lastError = '$e';
+      task.errorCategory = _classifyArchiveError('$e');
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
       _notifyProgress(task);
     } finally {
@@ -603,5 +647,25 @@ class ArchiveDownloadService {
 
   void _notifyProgress(ArchiveDownloadTask task) {
     _eventBus.fire('archive_download_progress', task.toJson());
+  }
+
+  String _classifyArchiveError(String error) {
+    final text = error.toLowerCase();
+    if (text.contains('509')) return 'quota';
+    if (text.contains('unlock')) return 'archiveUnlock';
+    if (text.contains('hath.network') ||
+        text.contains('proxy') ||
+        text.contains('handshake') ||
+        text.contains('socket') ||
+        text.contains('connection') ||
+        text.contains('timeout')) {
+      return 'hath';
+    }
+    if (text.contains('extract') ||
+        text.contains('zip') ||
+        text.contains('archive')) {
+      return 'archiveDownload';
+    }
+    return 'unknown';
   }
 }

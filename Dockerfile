@@ -29,12 +29,20 @@ RUN dart compile exe bin/server.dart -o bin/server
 # Stage 3: Runtime image
 FROM debian:bookworm-slim
 
+ARG JH_APP_VERSION=local/dev
+ARG JH_DOCKER_TAG=local/dev
+ARG JH_FORK_REVISION=local/dev
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libsqlite3-0 \
     sqlite3 \
     ca-certificates \
     wget \
+    unzip \
+    libvulkan1 \
+    vulkan-tools \
+    mesa-vulkan-drivers \
     gosu \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/lib/*/libsqlite3.so.0 /usr/lib/libsqlite3.so
@@ -55,6 +63,9 @@ ENV JH_DATA_DIR=/data
 ENV JH_PORT=8080
 ENV JH_HOST=0.0.0.0
 ENV JH_WEB_DIR=/app/web
+ENV JH_APP_VERSION=${JH_APP_VERSION}
+ENV JH_DOCKER_TAG=${JH_DOCKER_TAG}
+ENV JH_FORK_REVISION=${JH_FORK_REVISION}
 ENV PUID=1000
 ENV PGID=1000
 

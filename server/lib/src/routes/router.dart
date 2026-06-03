@@ -11,6 +11,7 @@ import '../service/archive_download_service.dart';
 import '../service/event_bus.dart';
 import '../service/gallery_download_service.dart';
 import '../service/local_gallery_service.dart';
+import '../service/super_resolution_service.dart';
 import '../service/tag_translation_service.dart';
 import 'auth_routes.dart';
 import 'block_rule_routes.dart';
@@ -27,6 +28,7 @@ import 'quick_search_routes.dart';
 import 'rating_routes.dart';
 import 'search_history_routes.dart';
 import 'setting_routes.dart';
+import 'super_resolution_routes.dart';
 import 'tag_routes.dart';
 import 'usertag_routes.dart';
 
@@ -39,6 +41,7 @@ class AppRouter {
   final EventBus eventBus;
   final String authToken;
   final TagTranslationService tagTranslationService;
+  final SuperResolutionService superResolutionService;
 
   AppRouter({
     required this.ehClient,
@@ -49,6 +52,7 @@ class AppRouter {
     required this.eventBus,
     required this.authToken,
     required this.tagTranslationService,
+    required this.superResolutionService,
   });
 
   Handler get handler {
@@ -64,7 +68,16 @@ class AppRouter {
             .call);
     router.mount('/api/local/', LocalRoutes(localGalleryService).router.call);
     router.mount('/api/image/', ImageRoutes(config).router.call);
-    router.mount('/api/setting/', SettingRoutes(config, ehClient).router.call);
+    router.mount(
+      '/api/setting/',
+      SettingRoutes(
+        config,
+        ehClient,
+        galleryDownloadService,
+        archiveDownloadService,
+        superResolutionService,
+      ).router.call,
+    );
     router.mount('/api/favorite/', FavoriteRoutes(ehClient).router.call);
     router.mount('/api/rating/', RatingRoutes(ehClient).router.call);
     router.mount('/api/history/', HistoryRoutes().router.call);
@@ -76,6 +89,8 @@ class AppRouter {
     router.mount('/api/usertags/', UsertagRoutes(ehClient).router.call);
     router.mount('/api/quick-search/', QuickSearchRoutes().router.call);
     router.mount('/api/block-rule/', BlockRuleRoutes().router.call);
+    router.mount('/api/super-resolution/',
+        SuperResolutionRoutes(superResolutionService).router.call);
 
     router.get('/api/health', (Request request) {
       return Response.ok(

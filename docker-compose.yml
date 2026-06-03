@@ -7,6 +7,17 @@ services:
     container_name: jhentai
     ports:
       - "8080:8080"
+    # Optional GPU passthrough for Docker/Web image super-resolution.
+    # AMD/Intel iGPU NAS example (AMD Radeon, Intel Quick Sync, etc.):
+    # expose the host DRM device so the container can detect Vulkan.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # If the super-resolution self-check still reports no GPU or permission denied,
+    # add the host render/video group IDs. Check them with:
+    #   stat -c '%n %g' /dev/dri/renderD128 /dev/dri/card0
+    # group_add:
+    #   - "109" # replace with the render group gid from your NAS
+    #   - "44"  # replace with the video group gid if needed
     volumes:
       - jhentai-data:/data
       # Optional: store downloads outside /data (Unraid example: comics on array)

@@ -13,7 +13,7 @@ The Docker/Web fork already covers most high-value App workflows:
 - Reading: online, downloaded, archive, local, continuous/fit-width/double-column style Web reader controls.
 - Downloads: gallery/archive tasks, search, regex search, category filter, sorting, grouping, priorities, batch actions, restore.
 - Data portability: Web export, App-compatible `JHenTaiConfig` export, Web/App JSON import, cloud config import/upload.
-- Management pages: history, search history, quick search, block rules, EH tag sets, local galleries, Docker paths/logs/security.
+- Management pages: history, search history, quick search, block rules, EH tag sets, local galleries, Docker paths/logs/security, SQLite backup and restore.
 
 The remaining gaps are either platform-specific App features or larger backend work, not small UI-feedback tasks.
 
@@ -37,9 +37,9 @@ The remaining gaps are either platform-specific App features or larger backend w
 | Block rules | Yes | Yes | Covered | Web has grouped rule management and import/export support. |
 | EH tag sets | Yes | Yes | Covered | Web manages watched/hidden tags and tag set colors through server proxy. |
 | Settings | Yes | Yes | Covered | Web maps settings to Docker-compatible pages, including network, read, style, download, performance, security, Docker. |
-| Data export/import | Yes | Yes | Covered | Web can export JSON, export App-compatible `JHenTaiConfig`, and import both formats. |
+| Data export/import | Yes | Yes | Covered | Web can export JSON, export App-compatible `JHenTaiConfig`, import both formats, and restore SQLite backups from the Docker maintenance center. |
 | Cloud config sync | Yes | Yes | Covered | Web supports share code lookup, import, upload, delete, download. |
-| Super-resolution | Yes, desktop/local only | No Web backend API | Deferred | Native feature depends on local model files and subprocess execution. A Docker implementation needs server APIs, model management, output storage, and reader/download integration. |
+| Super-resolution | Yes, desktop/local only | Yes, GPU-first advanced option | Covered | Docker/Web provides runtime self-check, model download, persistent jobs, download task badges, and reader output switching. CPU-only remains experimental because it can overload NAS devices. |
 | Native package updates | Yes | No | Not in scope | This fork is Docker/Web-only and does not publish native app packages. |
 | Native OS integrations | Yes | Browser-limited | Not in scope | File associations, native windows, system notifications, local model picker, and desktop-only paths are not Web-equivalent. |
 
@@ -47,17 +47,7 @@ The remaining gaps are either platform-specific App features or larger backend w
 
 ### P1: Super-resolution for Docker/Web
 
-This is the largest genuine App/Web parity gap, but it is not a small frontend task.
-
-Required work:
-
-- Server API for model configuration, model download/status, GPU selection, job start/pause/delete/status.
-- Persistent job table or migration path compatible with Docker data storage.
-- Output file routing so the Web reader can switch between original and super-resolved images.
-- Download page badges/actions matching native task behavior.
-- Safety checks for CPU/GPU availability and disk usage in Docker.
-
-Do not implement this as scattered UI-only stubs. It should be one backend-plus-frontend project.
+Covered as a GPU-first Docker/Web advanced option. Future work here should stay focused on measured runtime compatibility, such as additional arm64 binaries, improved GPU detection on specific NAS platforms, or better model package mirrors. Do not add CPU-heavy default workflows.
 
 ### P2: Web visual QA and navigation polish
 
@@ -76,4 +66,3 @@ Before starting new Web/App parity work:
 3. Choose one theme package.
 4. Implement, verify, and commit that theme as one Chinese commit.
 5. Avoid repeated tiny commits for the same pattern across pages.
-

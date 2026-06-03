@@ -10,6 +10,7 @@
 
 - [快速开始](#快速开始)
 - [首次登录](#首次登录)
+- [首次部署与升级后清单](#首次部署与升级后清单)
 - [配置说明](#配置说明)
 - [本地画廊扫描](#本地画廊扫描)
 - [数据备份](#数据备份)
@@ -90,6 +91,24 @@ Generated new API token: a3f9c2...
 
 ---
 
+## 首次部署与升级后清单
+
+首次登录后，打开 **设置 → Web/Docker → 启动清单**。该页面只读取本地运行状态，**不会**自动探测 EH/EX、H@H、Docker Hub 或其他外网地址。
+
+建议首次部署和每次升级镜像后检查：
+
+- API Token 和 EH Cookie 状态。
+- 数据目录、下载目录、日志目录、临时目录和 SQLite 访问状态。
+- 代理路由，尤其是 H@H 图片节点走哪条代理路径。
+- Docker 镜像是否固定明确标签和 fork 版本号，而不是长期依赖 `latest`。
+- 导入、恢复或升级镜像前的 SQLite 备份入口。
+- 下载失败摘要和排障工作台入口。
+- 图片超分辨率的 GPU/Vulkan 与模型安装状态。
+
+如果怀疑网络或 H@H 图片节点异常，请打开 **设置 → Web/Docker → 排障工作台**，手动运行主动测试。
+
+---
+
 ## 配置说明
 
 ### 环境变量
@@ -103,6 +122,7 @@ Generated new API token: a3f9c2...
 | `JH_HOST`             | `0.0.0.0`  | 绑定地址              |
 | `JH_WEB_DIR`          | `/app/web` | Web 前端静态文件目录      |
 | `JH_EXTRA_SCAN_PATHS` | *（空）*      | 逗号分隔的额外本地画廊扫描路径   |
+| `JH_SUPER_RESOLUTION_BINARY` | *（空）* | 高级调试项：覆盖超分二进制路径。普通用户应使用 Web 页面下载模型包。 |
 | `PUID`                | `1000`     | 映射卷文件所有者的用户 ID    |
 | `PGID`                | `1000`     | 映射卷文件所有者的组 ID     |
 | `HTTP_PROXY` / `HTTPS_PROXY` | *（空）* | 后端服务访问 EH/EX/H@H 时使用的出站代理。HTTPS 目标通常需要设置 `HTTPS_PROXY=http://代理地址:端口`。 |
@@ -133,6 +153,56 @@ environment:
   - PUID=99
   - PGID=100
 ```
+
+---
+
+## 图片超分辨率（GPU 优先）
+
+Docker/Web 端提供可选的图片超分辨率功能，入口在 **设置 → Web/Docker → 图片超分辨率**。该功能基于 `Real-CUGAN ncnn Vulkan` / `Real-ESRGAN ncnn Vulkan` 外部工具运行，模型会下载到 `/data/super_resolution/models`，输出会写入 `/data/super_resolution/output`，不会覆盖原图。
+
+注意事项：
+
+1. 默认按 **GPU/Vulkan 优先** 运行。未检测到 GPU 时，页面会显示警告；CPU-only 仅作为实验模式开放，不建议在低配 NAS 上批量使用。
+2. 官方 Ubuntu 预编译包在本 fork 中按 amd64 路径处理。arm64 NAS 若上游包不可运行，需要自行提供可执行二进制并通过 `JH_SUPER_RESOLUTION_BINARY` 调试。
+3. 超分输出通常比原图大很多，请确认数据卷剩余空间充足。
+4. Intel/AMD 核显通常需要把宿主 `/dev/dri` 暴露给容器。AMD/Intel 核显 NAS 通常也按这个方式配置：
+
+```yaml
+services:
+  jhentai:
+    devices:
+      - /dev/dri:/dev/dri
+```
+
+5. 如果超分自检仍显示没有 GPU，或日志里出现 `/dev/dri/renderD128` 权限不足，请把宿主机的 render/video 组 ID 加到容器。不同 NAS 的 GID 可能不同，先在宿主机执行：
+
+```bash
+stat -c '%n %g' /dev/dri/renderD128 /dev/dri/card0
+```
+
+然后在 compose 中填入对应数字，例如：
+
+```yaml
+services:
+  jhentai:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "109" # 替换为 /dev/dri/renderD128 的组 ID
+      - "44"  # 如有需要，替换为 /dev/dri/card0 的组 ID
+```
+
+6. NVIDIA GPU 需要先在宿主机安装 NVIDIA Container Toolkit，再按宿主 Docker/Compose 版本配置 `--gpus all` 或对应 compose GPU 参数。
+7. 如果反代或 NAS 平台不支持 GPU 透传，超分中心仍可用于自检、模型管理和查看任务，但不建议创建 CPU-only 大任务。
+8. “下载完成后自动超分”默认关闭。确认 GPU 自检正常、模型已安装、磁盘空间充足后再开启，避免 NAS 在批量下载后持续高负载。
+
+### 模型下载与手动导入
+
+打开 **设置 → Web/Docker → 图片超分辨率** 管理模型。点击 **下载** 后，服务端会在后台下载模型，模型卡片会显示进度、失败状态和最近错误。
+
+如果 NAS 网络访问 GitHub 较慢或失败，可以手动下载对应上游 ZIP，然后在该模型卡片点击 **导入 ZIP**。服务端会将 ZIP 解压到 `/data/super_resolution/models`，拒绝不包含预期可执行文件的包，并在导入后设置可执行权限。
+
+模型页面不会默认启用 CPU-only。安装模型也不会自动创建任务；下载完成后自动超分需要单独开启。
 
 ---
 

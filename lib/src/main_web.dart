@@ -25,14 +25,18 @@ import 'package:jhentai/src/pages_web/settings/web_settings_diagnostics_page.dar
 import 'package:jhentai/src/pages_web/settings/web_settings_download_menu_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_eh_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_hub_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_maintenance_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_mouse_wheel_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_network_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_performance_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_preference_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_read_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_security_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_setup_checklist_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_web_docker_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_style_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_super_resolution_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_troubleshooting_page.dart';
 import 'package:jhentai/src/pages_web/web_theme_controller.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_stats_page.dart';
@@ -86,6 +90,10 @@ class WebDownloadService extends GetxController {
   final archiveTasks = <int, Map<String, dynamic>>{}.obs;
   final galleryTasksVersion = 0.obs;
   final archiveTasksVersion = 0.obs;
+  final downloadIssues = <String, dynamic>{}.obs;
+  final downloadIssuesVersion = 0.obs;
+  final superResolutionJobs = <String, Map<String, dynamic>>{}.obs;
+  final superResolutionJobsVersion = 0.obs;
   final isLoaded = false.obs;
   final connectionStatus = WebDownloadConnectionStatus.disconnected.obs;
 
@@ -138,6 +146,20 @@ class WebDownloadService extends GetxController {
       }
       archiveTasks.value = aMap;
       archiveTasksVersion.value++;
+
+      downloadIssues.value = await backendApiClient.getDownloadIssues();
+      downloadIssuesVersion.value++;
+
+      final srJobs = await backendApiClient.listSuperResolutionJobs();
+      final srMap = <String, Map<String, dynamic>>{};
+      for (final task in srJobs) {
+        final id = task['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          srMap[id] = task;
+        }
+      }
+      superResolutionJobs.value = srMap;
+      superResolutionJobsVersion.value++;
       isLoaded.value = true;
     } catch (e) {
       debugPrint('WebDownloadService load failed: $e');
@@ -207,12 +229,26 @@ class WebDownloadService extends GetxController {
         final gid = data['gid'] as int;
         galleryTasks[gid] = data;
         galleryTasksVersion.value++;
+        _updateLocalDownloadIssues();
       } else if (eventType == 'archive_download_progress') {
         final gid = data['gid'] as int;
         archiveTasks[gid] = data;
         archiveTasksVersion.value++;
+        _updateLocalDownloadIssues();
       } else if (eventType == 'download_removed') {
         _loadTasks();
+      } else if (eventType == 'super_resolution_progress') {
+        final id = data['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          superResolutionJobs[id] = data;
+          superResolutionJobsVersion.value++;
+        }
+      } else if (eventType == 'super_resolution_removed') {
+        final id = data['id']?.toString();
+        if (id != null && id.isNotEmpty) {
+          superResolutionJobs.remove(id);
+          superResolutionJobsVersion.value++;
+        }
       }
     } catch (e) {
       debugPrint('WDS WS parse error: $e');
@@ -222,8 +258,40 @@ class WebDownloadService extends GetxController {
   Map<String, dynamic>? getGalleryTask(int gid) => galleryTasks[gid];
   Map<String, dynamic>? getArchiveTask(int gid) => archiveTasks[gid];
 
+  void _updateLocalDownloadIssues() {
+    final failedGallery =
+        galleryTasks.values.where((task) => task['status'] == 4).length;
+    final failedArchive =
+        archiveTasks.values.where((task) => task['status'] == 8).length;
+    final total = failedGallery + failedArchive;
+    final current = Map<String, dynamic>.from(downloadIssues);
+    current['status'] = total == 0 ? 'ok' : 'warn';
+    current['summary'] = {
+      ...Map<String, dynamic>.from(current['summary'] as Map? ?? {}),
+      'failedTotal': total,
+      'galleryFailed': failedGallery,
+      'archiveFailed': failedArchive,
+    };
+    downloadIssues.value = current;
+    downloadIssuesVersion.value++;
+  }
+
   int? getGalleryStatus(int gid) => galleryTasks[gid]?['status'] as int?;
   int? getArchiveStatus(int gid) => archiveTasks[gid]?['status'] as int?;
+
+  Map<String, dynamic>? latestSuperResolutionJob(String sourceType, int gid) {
+    Map<String, dynamic>? latest;
+    for (final job in superResolutionJobs.values) {
+      if (job['sourceType'] != sourceType || job['gid'] != gid) continue;
+      if (latest == null ||
+          (job['createdAt']?.toString() ?? '')
+                  .compareTo(latest['createdAt']?.toString() ?? '') >
+              0) {
+        latest = job;
+      }
+    }
+    return latest;
+  }
 
   bool isGalleryDownloaded(int gid) => getGalleryStatus(gid) == 3;
   bool isGalleryDownloading(int gid) => getGalleryStatus(gid) == 1;
@@ -294,6 +362,29 @@ class WebDownloadService extends GetxController {
       );
 
   Future<void> refresh() => _loadTasks();
+
+  Future<void> refreshDownloadIssues() async {
+    downloadIssues.value = await backendApiClient.getDownloadIssues();
+    downloadIssuesVersion.value++;
+  }
+
+  Future<Map<String, dynamic>> retryFailedGalleryDownloads() async {
+    final result = await backendApiClient.retryFailedGalleryDownloads();
+    await _loadTasks();
+    return result;
+  }
+
+  Future<Map<String, dynamic>> retryFailedArchiveDownloads() async {
+    final result = await backendApiClient.retryFailedArchiveDownloads();
+    await _loadTasks();
+    return result;
+  }
+
+  Future<Map<String, dynamic>> reUnlockFailedArchiveDownloads() async {
+    final result = await backendApiClient.reUnlockFailedArchiveDownloads();
+    await _loadTasks();
+    return result;
+  }
 }
 
 class WebEventNoticeService extends GetxController {
@@ -517,6 +608,21 @@ final _webRoutes = [
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(
+    name: '/web/settings/setup-checklist',
+    page: () => const WebSettingsSetupChecklistPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/troubleshooting',
+    page: () => const WebSettingsTroubleshootingPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/maintenance',
+    page: () => const WebSettingsMaintenancePage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
     name: '/web/settings/network',
     page: () => const WebSettingsNetworkPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
@@ -529,6 +635,11 @@ final _webRoutes = [
   GetPage(
     name: '/web/settings/performance',
     page: () => const WebSettingsPerformancePage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/super-resolution',
+    page: () => const WebSettingsSuperResolutionPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(

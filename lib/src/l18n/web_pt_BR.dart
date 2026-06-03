@@ -22,6 +22,53 @@ class WebPtBR {
       'common.pages': '@count páginas',
       'common.open': 'Abrir',
       'common.close': 'Fechar',
+      'common.yes': 'Yes',
+      'common.no': 'No',
+      'common.warning': 'Warning',
+      'common.update': 'Update',
+      'common.download': 'Download',
+      'superResolution.title': 'Image super resolution',
+      'superResolution.summary':
+          'Check GPU/Vulkan support, download models, and manage Docker super-resolution jobs.',
+      'superResolution.capability': 'Runtime self-check',
+      'superResolution.arch': 'Architecture',
+      'superResolution.gpu': 'GPU/Vulkan',
+      'superResolution.safetyHint':
+          'Super resolution can occupy GPU/CPU for a long time and significantly increase disk usage. Docker uses a GPU-first policy; CPU-only is experimental.',
+      'superResolution.models': 'Models',
+      'superResolution.installed': 'Installed',
+      'superResolution.notInstalled': 'Not installed',
+      'superResolution.modelReady': 'Model is ready',
+      'superResolution.jobs': 'Jobs',
+      'superResolution.noJobs': 'No super-resolution jobs yet',
+      'superResolution.deleteHint':
+          'Delete this job and remove generated super-resolution images?',
+      'superResolution.start': 'Super resolve',
+      'superResolution.model': 'Model',
+      'superResolution.tileSize': 'Tile size',
+      'superResolution.gpuAutoHint': 'Leave empty for auto',
+      'superResolution.cpuOnly': 'CPU-only experimental mode',
+      'superResolution.cpuOnlyHint':
+          'Use only for small tests when no GPU is available and you accept NAS load risk.',
+      'superResolution.noGpuWarning':
+          'No GPU/Vulkan device was detected; creating jobs is not recommended by default.',
+      'superResolution.modelMissingHint':
+          'This model is not installed. Download it from the image super resolution page first.',
+      'superResolution.jobCreated': 'Super-resolution job created',
+      'superResolution.useOutput': 'Use super-resolution images',
+      'superResolution.noOutputHint':
+          'This gallery does not have a complete super-resolution output yet.',
+      'superResolution.autoAfterDownload': 'Auto super-resolve after download',
+      'superResolution.autoAfterDownloadHint':
+          'When enabled, completed gallery downloads and extracted archive downloads automatically create super-resolution jobs. Jobs enter the existing single-concurrency queue and never block download completion.',
+      'superResolution.autoEnabled': 'Create jobs automatically',
+      'superResolution.autoEnabledHint':
+          'Disabled by default to avoid unexpected long GPU/CPU load on NAS devices.',
+      'superResolution.allowCpuOnlyAuto': 'Allow CPU-only auto jobs',
+      'superResolution.allowCpuOnlyAutoHint':
+          'Allow automatic jobs without GPU/Vulkan. Use only for small experiments.',
+      'superResolution.autoSettingsSaved':
+          'Auto super-resolution settings saved',
       'localizedReason': 'Autentique-se para continuar',
       'passwordErrorHint': 'Senha incorreta, tente novamente',
       'dawnOfaNewDay': 'É o amanhecer de um novo dia!',
@@ -499,6 +546,64 @@ class WebPtBR {
       'settings.notConfigured': 'Não configurado',
       'settings.enabled': 'Ativado',
       'settings.disabled': 'Desativado',
+      'settings.maintenanceCenter': 'Maintenance center',
+      'settings.maintenanceCenterSummary':
+          'Review image version, update checks, SQLite backup, and storage summary.',
+      'settings.troubleshootingWorkbench': 'Troubleshooting workbench',
+      'settings.troubleshootingWorkbenchSummary':
+          'Review diagnostics, logs, proxy, and super-resolution status, then run manual probes.',
+      'settings.maintenanceLoadFailed':
+          'Failed to load maintenance information: @error',
+      'settings.maintenanceRuntime': 'Current runtime',
+      'settings.appVersionLabel': 'App version',
+      'settings.dockerImageTag': 'Docker image tag',
+      'settings.forkRevision': 'Fork revision',
+      'settings.imageChannel': 'Image channel',
+      'settings.maintenanceUpdate': 'Image update',
+      'settings.checkDockerUpdate': 'Check for updates',
+      'settings.updateCheckManualHint':
+          'No external network request is made automatically. Check Docker Hub manually when needed.',
+      'settings.currentImageTag': 'Current tag',
+      'settings.latestImageTag': 'Latest tag',
+      'settings.maintenanceBackup': 'Pre-update backup',
+      'settings.sqliteBackupSensitiveHint':
+          'The SQLite backup contains login cookies, API token, settings, and download tasks. It is sensitive and does not include images, downloads, or local galleries.',
+      'settings.downloadSqliteBackup': 'Download SQLite backup',
+      'settings.sqliteBackupDownloaded': 'SQLite backup download started',
+      'settings.sqliteBackupFailed': 'SQLite backup failed: @error',
+      'settings.restoreSqliteBackup': 'Restore SQLite backup',
+      'settings.sqliteRestorePreviewTitle': 'Restore SQLite backup?',
+      'settings.sqliteRestorePreviewIntro':
+          'The selected backup will replace current Web data. A fresh SQLite backup will be downloaded before restoring.',
+      'settings.confirmRestoreSqliteBackup':
+          'Back up current database and restore',
+      'settings.sqliteRestoreSuccess':
+          'SQLite backup restored. Paused @gallery gallery tasks and @archive archive tasks.',
+      'settings.sqliteRestoreFailed': 'SQLite restore failed: @error',
+      'settings.sqliteRestoreGalleryDownloads': 'Gallery download tasks',
+      'settings.sqliteRestoreArchiveDownloads': 'Archive download tasks',
+      'settings.sqliteRestoreGalleryImages': 'Downloaded image records',
+      'settings.sqliteRestoreWarnToken': 'Current API token will be preserved.',
+      'settings.sqliteRestoreWarnCookies':
+          'EH login cookies will be restored from the backup.',
+      'settings.sqliteRestoreWarnPageCache': 'Page cache will not be restored.',
+      'settings.sqliteRestoreWarnDownloadsPaused':
+          'Downloading tasks in the backup will be changed to paused.',
+      'settings.sqliteRestoreWarnNoDownloads':
+          'Backup does not contain download tasks.',
+      'settings.maintenanceStorage': 'Storage summary',
+      'settings.databaseSize': 'Database size',
+      'settings.logsSize': 'Logs size',
+      'settings.pageCacheSize': 'Page cache size',
+      'settings.pageCacheCount': 'Page cache entries',
+      'settings.maintenancePaths': 'Key paths',
+      'settings.maintenanceTips': 'Maintenance tips',
+      'settings.maintenanceTipPinVersion':
+          'Pin an explicit image tag in compose updates instead of relying on latest.',
+      'settings.maintenanceTipBackup':
+          'Download a SQLite backup before updating and keep your current compose file.',
+      'settings.maintenanceTipNoImageBackup':
+          'Images and local galleries are usually large. Back them up through NAS snapshots or host directory backups.',
       'settings.deploymentDiagnostics': 'Deployment diagnostics',
       'settings.deploymentDiagnosticsSummaryHint':
           'Check API, WebSocket, directory permissions, database, proxy, and logs.',
@@ -527,6 +632,35 @@ class WebPtBR {
           'The download realtime status channel is reconnecting.',
       'settings.websocketDisconnected':
           'The download realtime status channel is disconnected. Check reverse proxy WebSocket forwarding.',
+      'settings.troubleshootingLoadFailed':
+          'Failed to load troubleshooting data: @error',
+      'settings.troubleshootingProbeFailed':
+          'Troubleshooting probe failed: @error',
+      'settings.troubleshootingSummary': 'Troubleshooting summary',
+      'settings.troubleshootingSummaryBody': '@count items need attention.',
+      'settings.troubleshootingIssueList': 'Issues to fix',
+      'settings.troubleshootingNoIssues': 'No actionable issues right now.',
+      'settings.troubleshootingOpenTarget': 'Open related page',
+      'settings.troubleshootingRetest': 'Retest',
+      'settings.troubleshootingCopyFix': 'Copy fix snippet',
+      'settings.troubleshootingActiveProbe': 'Manual active probe',
+      'settings.troubleshootingActiveProbeHint':
+          'Only runs when clicked; tests EH/EX, H@H image hosts, and GPU/super-resolution runtime.',
+      'settings.troubleshootingHathUrl': 'H@H image URL (optional)',
+      'settings.runTroubleshootingProbe': 'Run troubleshooting probe',
+      'settings.troubleshootingProbe_network': 'EH/EX network',
+      'settings.troubleshootingProbe_hath': 'H@H image host',
+      'settings.troubleshootingProbe_superResolution':
+          'GPU/super-resolution runtime',
+      'settings.troubleshootingProbe_downloads': 'Download failures',
+      'settings.troubleshootingFailedJobs': 'Failed jobs',
+      'settings.troubleshootingGpuDevices': 'GPU devices',
+      'settings.copyGpuComposeSnippet': 'Copy GPU compose snippet',
+      'settings.troubleshootingRecentProblems': 'Recent problem logs',
+      'settings.troubleshootingNoRecentProblems':
+          'No recent warning/error logs.',
+      'settings.troubleshootingActions': 'Suggested actions',
+      'settings.troubleshootingSkipped': 'Skipped',
       'settings.proxyHasCredentials': 'auth configured',
       'settings.logCount': 'Log count',
       'settings.logTotalSize': 'Log size',
@@ -1108,6 +1242,37 @@ class WebPtBR {
       'downloads.batchPriorityChanged':
           'Prioridade alterada para @count tarefas',
       'downloads.batchDeleted': '@count tarefas excluídas',
+      'downloads.failedIssueSummary':
+          '@total failed tasks found (gallery @gallery, archive @archive).',
+      'downloads.retryFailedGallery': 'Retry failed galleries',
+      'downloads.retryFailedArchive': 'Retry failed archives',
+      'downloads.reUnlockFailedArchive': 'Re-unlock failed archives',
+      'downloads.failedGalleryRetried': 'Retried @count failed gallery tasks',
+      'downloads.failedArchiveRetried': 'Retried @count failed archive tasks',
+      'downloads.failedArchiveReUnlocked':
+          'Re-unlocked @count failed archive tasks',
+      'downloads.issue_hath': '@count H@H/proxy failures',
+      'downloads.issue_hath_hint':
+          'Check the H@H URL, JH_HATH_PROXY, and reverse proxy network path.',
+      'downloads.issue_quota': '@count quota/509 limits',
+      'downloads.issue_quota_hint':
+          'Wait for quota recovery or reset the image limit from EH status before retrying.',
+      'downloads.issue_imagePage': '@count image page/download failures',
+      'downloads.issue_imagePage_hint':
+          'Retry first; if it keeps failing, run the H@H active probe.',
+      'downloads.issue_archiveUnlock': '@count archive unlock failures',
+      'downloads.issue_archiveUnlock_hint':
+          'Re-unlock archives and check login cookies/network proxy if needed.',
+      'downloads.issue_archiveDownload':
+          '@count archive download/extract failures',
+      'downloads.issue_archiveDownload_hint':
+          'Retry archive tasks; if the URL expired, re-unlock first.',
+      'downloads.issue_localFile': '@count local file issues',
+      'downloads.issue_localFile_hint':
+          'Check download directory mounts, permissions, and NAS disk health.',
+      'downloads.issue_unknown': '@count unknown failures',
+      'downloads.issue_unknown_hint':
+          'Open the troubleshooting workbench, copy diagnostics, and review recent server logs.',
       'detail.startDownloadTitle': 'Iniciar download',
       'detail.downloadGroup': 'Grupo',
       'existingGroup': 'Grupo existente',

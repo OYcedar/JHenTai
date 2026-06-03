@@ -17,7 +17,8 @@ class AuthMiddleware {
     final stored = db.readConfig(_apiTokenConfigKey);
     if (stored != null && stored.isNotEmpty) {
       _token = stored;
-      final masked = '${_token.substring(0, 8)}...${_token.substring(_token.length - 4)}';
+      final masked =
+          '${_token.substring(0, 8)}...${_token.substring(_token.length - 4)}';
       log.info('API token loaded: $masked');
     } else {
       _token = _generateToken();
@@ -32,10 +33,12 @@ class AuthMiddleware {
 
   /// Logger output can be noisy or reordered in Docker; duplicate to raw stdout/stderr and flush.
   Future<void> _printTokenToConsole(String token) async {
-    const line = '================================================================================';
+    const line =
+        '================================================================================';
     final buf = StringBuffer()
       ..writeln(line)
-      ..writeln('JHenTai Web UI API token (copy entire line below, then paste in /web/setup):')
+      ..writeln(
+          'JHenTai Web UI API token (copy entire line below, then paste in /web/setup):')
       ..writeln(token)
       ..writeln(line)
       ..writeln('[JHenTai] API token (one-line): $token');
@@ -79,7 +82,8 @@ class AuthMiddleware {
         final providedToken = authHeader.substring(7);
         if (providedToken != _token) {
           if (_isImageRelatedPath(path)) {
-            final m = '[auth] image/proxy request forbidden (Bearer token mismatch). path=$path';
+            final m =
+                '[auth] image/proxy request forbidden (Bearer token mismatch). path=$path';
             log.warning(m);
             jhStderrLine(m);
           }
@@ -102,7 +106,8 @@ class AuthMiddleware {
     if (path == 'api/auth/token/verify') return true;
     if (path.startsWith('ws/') ||
         path.startsWith('api/proxy/image') ||
-        path.startsWith('api/image/')) {
+        path.startsWith('api/image/') ||
+        path.startsWith('api/super-resolution/image/')) {
       final qToken = request.url.queryParameters['token'];
       return qToken == _token;
     }
@@ -110,7 +115,9 @@ class AuthMiddleware {
   }
 
   bool _isImageRelatedPath(String path) {
-    return path.startsWith('api/proxy/image') || path.startsWith('api/image/');
+    return path.startsWith('api/proxy/image') ||
+        path.startsWith('api/image/') ||
+        path.startsWith('api/super-resolution/image/');
   }
 
   String _generateToken() {

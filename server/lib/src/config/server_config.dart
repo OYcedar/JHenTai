@@ -26,6 +26,9 @@ class ServerConfig {
   String get logDir => '$dataDir/logs';
   String get tempDir => '$dataDir/temp';
   String get configDir => '$dataDir/config';
+  String get superResolutionDir => '$dataDir/super_resolution';
+  String get superResolutionModelDir => '$superResolutionDir/models';
+  String get superResolutionOutputDir => '$superResolutionDir/output';
 
   ServerConfig({
     required this.dataDir,
@@ -119,7 +122,10 @@ class ServerConfig {
       localGalleryDir,
       logDir,
       tempDir,
-      configDir
+      configDir,
+      superResolutionDir,
+      superResolutionModelDir,
+      superResolutionOutputDir,
     ]) {
       await Directory(dir).create(recursive: true);
     }

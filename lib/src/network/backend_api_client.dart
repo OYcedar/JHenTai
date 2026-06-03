@@ -372,6 +372,16 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> getDownloadIssues() async {
+    final response = await _dio.get('/api/download/issues');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> retryFailedGalleryDownloads() async {
+    final response = await _dio.post('/api/download/gallery/retry-failed');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<void> patchGalleryDownload(
     int gid, {
     int? priority,
@@ -482,6 +492,16 @@ class BackendApiClient {
     await _dio.post('/api/download/archive/$gid/reunlock');
   }
 
+  Future<Map<String, dynamic>> retryFailedArchiveDownloads() async {
+    final response = await _dio.post('/api/download/archive/retry-failed');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> reUnlockFailedArchiveDownloads() async {
+    final response = await _dio.post('/api/download/archive/reunlock-failed');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<void> deleteArchiveDownload(int gid, {bool deleteFiles = true}) async {
     await _dio.delete(
       '/api/download/archive/$gid',
@@ -568,6 +588,140 @@ class BackendApiClient {
     return ((response.data['images'] as List?) ?? []).cast<String>();
   }
 
+  // --- Super resolution ---
+
+  Future<Map<String, dynamic>> getSuperResolutionCapabilities() async {
+    final response = await _dio.get('/api/super-resolution/capabilities');
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<List<Map<String, dynamic>>> listSuperResolutionModels() async {
+    final response = await _dio.get('/api/super-resolution/models');
+    final data = response.data;
+    final models = data is Map ? data['models'] as List? : null;
+    return (models ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> getSuperResolutionSettings() async {
+    final response = await _dio.get('/api/super-resolution/settings');
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<Map<String, dynamic>> updateSuperResolutionSettings(
+    Map<String, dynamic> settings,
+  ) async {
+    final response = await _dio.put(
+      '/api/super-resolution/settings',
+      data: settings,
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<Map<String, dynamic>> downloadSuperResolutionModel(
+      String model) async {
+    final response = await _dio.post(
+      '/api/super-resolution/models/download',
+      data: {'model': model},
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<Map<String, dynamic>> importSuperResolutionModel({
+    required String model,
+    required Uint8List bytes,
+    String fileName = '',
+  }) async {
+    final response = await _dio.post(
+      '/api/super-resolution/models/import',
+      queryParameters: {'model': model},
+      data: bytes,
+      options: Options(headers: {'x-filename': fileName}),
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<List<Map<String, dynamic>>> listSuperResolutionJobs() async {
+    final response = await _dio.get('/api/super-resolution/jobs');
+    final data = response.data;
+    final jobs = data is Map ? data['jobs'] as List? : null;
+    return (jobs ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> createSuperResolutionJob({
+    required String sourceType,
+    required int gid,
+    String model = 'realcugan',
+    int? gpuId,
+    int tileSize = 0,
+    bool cpuOnly = false,
+    bool allowCpuOnly = false,
+  }) async {
+    final response = await _dio.post(
+      '/api/super-resolution/jobs',
+      data: {
+        'sourceType': sourceType,
+        'gid': gid,
+        'model': model,
+        if (gpuId != null) 'gpuId': gpuId,
+        'tileSize': tileSize,
+        'cpuOnly': cpuOnly,
+        'allowCpuOnly': allowCpuOnly,
+      },
+    );
+    return response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : {};
+  }
+
+  Future<void> pauseSuperResolutionJob(String id) async {
+    await _dio.post('/api/super-resolution/jobs/$id/pause');
+  }
+
+  Future<void> resumeSuperResolutionJob(String id) async {
+    await _dio.post('/api/super-resolution/jobs/$id/resume');
+  }
+
+  Future<void> cancelSuperResolutionJob(String id) async {
+    await _dio.post('/api/super-resolution/jobs/$id/cancel');
+  }
+
+  Future<void> deleteSuperResolutionJob(
+    String id, {
+    bool deleteFiles = false,
+  }) async {
+    await _dio.delete(
+      '/api/super-resolution/jobs/$id',
+      queryParameters: {'deleteFiles': deleteFiles},
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getSuperResolutionOutputImages({
+    required String sourceType,
+    required int gid,
+  }) async {
+    final response =
+        await _dio.get('/api/super-resolution/output/$sourceType/$gid/images');
+    final data = response.data;
+    final images = data is Map ? data['images'] as List? : null;
+    return (images ?? const [])
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
   // --- Image URL helpers ---
 
   String galleryImageUrl(int gid, String filename) {
@@ -576,6 +730,10 @@ class BackendApiClient {
 
   String archiveImageUrl(int gid, String filename) {
     return '$_baseUrl/api/image/archive/$gid/$filename?token=${Uri.encodeComponent(_token ?? '')}';
+  }
+
+  String superResolutionImageUrl(String jobId, String filename) {
+    return '$_baseUrl/api/super-resolution/image/$jobId/$filename?token=${Uri.encodeComponent(_token ?? '')}';
   }
 
   String imageFileUrl(String filePath) {
@@ -1221,6 +1379,67 @@ class BackendApiClient {
 
   Future<Map<String, dynamic>> getDeploymentDiagnostics() async {
     final response = await _dio.get('/api/setting/diagnostics');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> getSetupChecklist() async {
+    final response = await _dio.get('/api/setting/setup-checklist');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> getMaintenanceStatus() async {
+    final response = await _dio.get('/api/setting/maintenance');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> checkMaintenanceUpdate() async {
+    final response = await _dio.get('/api/setting/maintenance/update-check');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> getTroubleshootingStatus() async {
+    final response = await _dio.get('/api/setting/troubleshooting');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> probeTroubleshooting({
+    required List<String> probes,
+    String? imageUrl,
+  }) async {
+    final response = await _dio.post(
+      '/api/setting/troubleshooting/probe',
+      data: {
+        'probes': probes,
+        if (imageUrl != null && imageUrl.trim().isNotEmpty)
+          'imageUrl': imageUrl.trim(),
+      },
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<({Uint8List bytes, String fileName})> downloadSqliteBackup() async {
+    final response = await _dio.get<List<int>>(
+      '/api/setting/backup/sqlite',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    final disposition = response.headers.value('content-disposition') ?? '';
+    final match = RegExp(r'filename="?([^";]+)"?').firstMatch(disposition);
+    return (
+      bytes: Uint8List.fromList(response.data ?? const <int>[]),
+      fileName: match?.group(1) ?? 'jhentai-sqlite-backup.sqlite',
+    );
+  }
+
+  Future<Map<String, dynamic>> restoreSqliteBackup(
+    Uint8List bytes, {
+    bool dryRun = false,
+  }) async {
+    final response = await _dio.post(
+      '/api/setting/backup/sqlite/restore',
+      queryParameters: dryRun ? {'dryRun': 'true'} : null,
+      data: bytes,
+      options: Options(contentType: 'application/octet-stream'),
+    );
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 

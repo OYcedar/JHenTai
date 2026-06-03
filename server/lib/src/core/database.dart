@@ -30,6 +30,10 @@ class ServerDatabase {
     _addColumnIfMissing(
         'archive_download', 'tag_search_text', "TEXT NOT NULL DEFAULT ''");
     _addColumnIfMissing('tag_translation', 'links', "TEXT NOT NULL DEFAULT ''");
+    _db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_super_resolution_job_source ON super_resolution_job(source_type, gid)');
+    _db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_super_resolution_image_job ON super_resolution_image(job_id, serial_no)');
   }
 
   void _addColumnIfMissing(String table, String column, String columnDef) {
@@ -191,6 +195,42 @@ class ServerDatabase {
         attribute TEXT NOT NULL,
         pattern TEXT NOT NULL,
         expression TEXT NOT NULL
+      )
+    ''');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS super_resolution_job (
+        id TEXT PRIMARY KEY,
+        source_type TEXT NOT NULL,
+        gid INTEGER NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        model TEXT NOT NULL,
+        scale INTEGER NOT NULL DEFAULT 2,
+        gpu_id INTEGER,
+        tile_size INTEGER NOT NULL DEFAULT 0,
+        cpu_only INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL,
+        total_count INTEGER NOT NULL DEFAULT 0,
+        success_count INTEGER NOT NULL DEFAULT 0,
+        failed_count INTEGER NOT NULL DEFAULT 0,
+        output_dir TEXT NOT NULL DEFAULT '',
+        error TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    _db.execute('''
+      CREATE TABLE IF NOT EXISTS super_resolution_image (
+        job_id TEXT NOT NULL,
+        serial_no INTEGER NOT NULL,
+        input_path TEXT NOT NULL,
+        output_path TEXT NOT NULL,
+        status TEXT NOT NULL,
+        error TEXT NOT NULL DEFAULT '',
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (job_id, serial_no)
       )
     ''');
   }
@@ -489,6 +529,169 @@ class ServerDatabase {
 
   void clearHistory() {
     _db.execute('DELETE FROM history');
+  }
+
+  // --- Super resolution operations ---
+
+  List<Map<String, dynamic>> selectSuperResolutionJobs() {
+    return _db
+        .select('SELECT * FROM super_resolution_job ORDER BY created_at DESC')
+        .map(_rowToMap)
+        .toList();
+  }
+
+  Map<String, dynamic>? selectSuperResolutionJob(String id) {
+    final rows =
+        _db.select('SELECT * FROM super_resolution_job WHERE id = ?', [id]);
+    return rows.isEmpty ? null : _rowToMap(rows.first);
+  }
+
+  Map<String, dynamic>? selectLatestSuperResolutionJob(
+      String sourceType, int gid) {
+    final rows = _db.select('''
+      SELECT * FROM super_resolution_job
+      WHERE source_type = ? AND gid = ? AND status IN ('running', 'paused', 'completed', 'failed')
+      ORDER BY created_at DESC
+      LIMIT 1
+    ''', [sourceType, gid]);
+    return rows.isEmpty ? null : _rowToMap(rows.first);
+  }
+
+  void insertSuperResolutionJob(Map<String, dynamic> data) {
+    _db.execute('''
+      INSERT OR REPLACE INTO super_resolution_job
+      (id, source_type, gid, title, model, scale, gpu_id, tile_size, cpu_only,
+       status, total_count, success_count, failed_count, output_dir, error,
+       created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', [
+      data['id'],
+      data['source_type'],
+      data['gid'],
+      data['title'] ?? '',
+      data['model'],
+      data['scale'] ?? 2,
+      data['gpu_id'],
+      data['tile_size'] ?? 0,
+      data['cpu_only'] ?? 0,
+      data['status'],
+      data['total_count'] ?? 0,
+      data['success_count'] ?? 0,
+      data['failed_count'] ?? 0,
+      data['output_dir'] ?? '',
+      data['error'] ?? '',
+      data['created_at'],
+      data['updated_at'],
+    ]);
+  }
+
+  void updateSuperResolutionJob(
+    String id, {
+    String? status,
+    int? successCount,
+    int? failedCount,
+    String? error,
+  }) {
+    final updates = <String>['updated_at = ?'];
+    final params = <dynamic>[DateTime.now().toIso8601String()];
+    if (status != null) {
+      updates.add('status = ?');
+      params.add(status);
+    }
+    if (successCount != null) {
+      updates.add('success_count = ?');
+      params.add(successCount);
+    }
+    if (failedCount != null) {
+      updates.add('failed_count = ?');
+      params.add(failedCount);
+    }
+    if (error != null) {
+      updates.add('error = ?');
+      params.add(error);
+    }
+    params.add(id);
+    _db.execute(
+      'UPDATE super_resolution_job SET ${updates.join(', ')} WHERE id = ?',
+      params,
+    );
+  }
+
+  void insertSuperResolutionImages(List<Map<String, dynamic>> rows) {
+    _db.execute('BEGIN TRANSACTION');
+    try {
+      final stmt = _db.prepare('''
+        INSERT OR REPLACE INTO super_resolution_image
+        (job_id, serial_no, input_path, output_path, status, error, duration_ms, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ''');
+      for (final row in rows) {
+        stmt.execute([
+          row['job_id'],
+          row['serial_no'],
+          row['input_path'],
+          row['output_path'],
+          row['status'],
+          row['error'] ?? '',
+          row['duration_ms'] ?? 0,
+          row['updated_at'],
+        ]);
+      }
+      stmt.dispose();
+      _db.execute('COMMIT');
+    } catch (_) {
+      _db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  List<Map<String, dynamic>> selectSuperResolutionImages(String jobId) {
+    return _db
+        .select(
+          'SELECT * FROM super_resolution_image WHERE job_id = ? ORDER BY serial_no',
+          [jobId],
+        )
+        .map(_rowToMap)
+        .toList();
+  }
+
+  void updateSuperResolutionImage(
+    String jobId,
+    int serialNo, {
+    required String status,
+    String error = '',
+    int durationMs = 0,
+  }) {
+    _db.execute('''
+      UPDATE super_resolution_image
+      SET status = ?, error = ?, duration_ms = ?, updated_at = ?
+      WHERE job_id = ? AND serial_no = ?
+    ''', [
+      status,
+      error,
+      durationMs,
+      DateTime.now().toIso8601String(),
+      jobId,
+      serialNo,
+    ]);
+  }
+
+  void deleteSuperResolutionJob(String id) {
+    _db.execute('DELETE FROM super_resolution_image WHERE job_id = ?', [id]);
+    _db.execute('DELETE FROM super_resolution_job WHERE id = ?', [id]);
+  }
+
+  void pauseActiveSuperResolutionJobsOnStartup() {
+    _db.execute('''
+      UPDATE super_resolution_job
+      SET status = 'paused', updated_at = ?
+      WHERE status = 'running'
+    ''', [DateTime.now().toIso8601String()]);
+    _db.execute('''
+      UPDATE super_resolution_image
+      SET status = 'pending', updated_at = ?
+      WHERE status = 'running'
+    ''', [DateTime.now().toIso8601String()]);
   }
 
   // --- Search history operations ---

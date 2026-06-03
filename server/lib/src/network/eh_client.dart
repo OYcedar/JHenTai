@@ -459,10 +459,39 @@ class EHClient {
     Map<String, dynamic>? queryParams,
   }) async {
     try {
-      final response = await _dio.get(url, queryParameters: queryParams);
+      final response =
+          await _dioForUrl(url).get(url, queryParameters: queryParams);
       return _wrapResponse(response);
     } on DioException catch (e) {
       return _wrapError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> probeUrl(String url) async {
+    try {
+      final response = await _dioForUrl(url).get(
+        url,
+        options: Options(
+          headers: {'Range': 'bytes=0-0'},
+          responseType: ResponseType.stream,
+          validateStatus: (status) => status != null && status < 500,
+        ),
+      );
+      final data = response.data;
+      if (data is ResponseBody) {
+        await data.stream.take(1).drain<void>();
+      }
+      return {
+        'statusCode': response.statusCode,
+        'headers': {
+          for (final entry in response.headers.map.entries)
+            entry.key: entry.value.take(3).toList(),
+        },
+      };
+    } on DioException catch (e) {
+      return _wrapError(e);
+    } catch (e) {
+      return {'statusCode': 0, 'error': '$e'};
     }
   }
 
