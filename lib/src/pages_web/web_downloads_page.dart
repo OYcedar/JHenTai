@@ -2740,7 +2740,7 @@ Future<void> _showStartSuperResolutionDialog(
             .where((m) => m['id'] == selectedModel)
             .any((m) => m['installed'] == true);
         final warnings = ((capabilities['warnings'] as List?) ?? const [])
-            .map((e) => e.toString())
+            .map((e) => _localizedSuperResolutionWarning(e.toString()))
             .toList();
         return AlertDialog(
           title: Text('superResolution.start'.tr),
@@ -4031,6 +4031,16 @@ String _archiveParseSourceLabel(Map<String, dynamic> task) {
     return 'settings.archiveParseBotShort'.tr;
   }
   return 'settings.archiveParseOfficialShort'.tr;
+}
+
+String _localizedSuperResolutionWarning(String warning) {
+  return switch (warning) {
+    'Current official Ubuntu packages are treated as amd64-only here. Provide a custom binary for this architecture.' =>
+      'superResolution.warningUbuntuAmd64Only'.tr,
+    'No Vulkan/GPU device was detected. CPU-only mode is experimental and disabled by default.' =>
+      'superResolution.warningNoGpuCpuDisabled'.tr,
+    _ => warning,
+  };
 }
 
 int _taskInt(Map<String, dynamic> task, String key) =>

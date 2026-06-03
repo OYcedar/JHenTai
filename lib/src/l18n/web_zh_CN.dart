@@ -24,6 +24,8 @@ class WebZhCN {
       'common.close': '关闭',
       'common.yes': '是',
       'common.no': '否',
+      'common.visible': '可见',
+      'common.notVisible': '不可见',
       'common.warning': '警告',
       'common.update': '更新',
       'common.download': '下载',
@@ -57,6 +59,10 @@ class WebZhCN {
       'superResolution.cpuOnly': 'CPU-only 实验模式',
       'superResolution.cpuOnlyHint': '仅在没有 GPU 且确认 NAS 负载风险时开启。',
       'superResolution.noGpuWarning': '未检测到 GPU/Vulkan，默认不建议创建超分任务。',
+      'superResolution.warningUbuntuAmd64Only':
+          '当前官方 Ubuntu 包在此处仅按 amd64 处理；该架构需要提供自定义二进制文件。',
+      'superResolution.warningNoGpuCpuDisabled':
+          '未检测到 Vulkan/GPU 设备；CPU-only 模式仍属实验功能，默认已禁用。',
       'superResolution.modelMissingHint': '当前模型尚未安装，请先到图片超分辨率页面下载模型。',
       'superResolution.jobCreated': '超分任务已创建',
       'superResolution.useOutput': '使用超分图片',

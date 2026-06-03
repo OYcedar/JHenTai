@@ -303,7 +303,7 @@ class _WebSettingsSuperResolutionPageState
     final gpu = _map(capabilities['gpu']);
     final runtime = _map(capabilities['runtime']);
     final warnings = ((capabilities['warnings'] as List?) ?? const [])
-        .map((e) => e.toString())
+        .map((e) => _localizedCapabilityWarning(e.toString()))
         .toList();
     return Card(
       child: Padding(
@@ -323,9 +323,13 @@ class _WebSettingsSuperResolutionPageState
             _row('superResolution.arch'.tr, runtime['arch']?.toString() ?? '-'),
             _row('superResolution.gpu'.tr,
                 gpu['available'] == true ? 'common.yes'.tr : 'common.no'.tr),
-            _row('/dev/dri', gpu['hasDevDri'] == true ? 'yes' : 'no'),
-            _row('NVIDIA',
-                gpu['nvidiaVisible'] == true ? 'visible' : 'not visible'),
+            _row('/dev/dri',
+                gpu['hasDevDri'] == true ? 'common.yes'.tr : 'common.no'.tr),
+            _row(
+                'NVIDIA',
+                gpu['nvidiaVisible'] == true
+                    ? 'common.visible'.tr
+                    : 'common.notVisible'.tr),
             if (warnings.isNotEmpty) ...[
               const SizedBox(height: 12),
               for (final warning in warnings)
@@ -744,6 +748,16 @@ class _WebSettingsSuperResolutionPageState
 
   Map<String, dynamic> _map(dynamic value) {
     return value is Map ? Map<String, dynamic>.from(value) : {};
+  }
+
+  String _localizedCapabilityWarning(String warning) {
+    return switch (warning) {
+      'Current official Ubuntu packages are treated as amd64-only here. Provide a custom binary for this architecture.' =>
+        'superResolution.warningUbuntuAmd64Only'.tr,
+      'No Vulkan/GPU device was detected. CPU-only mode is experimental and disabled by default.' =>
+        'superResolution.warningNoGpuCpuDisabled'.tr,
+      _ => warning,
+    };
   }
 
   List<Map<String, dynamic>> get _modelOptions {

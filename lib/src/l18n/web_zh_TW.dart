@@ -24,6 +24,8 @@ class WebZhTW {
       'common.close': '關閉',
       'common.yes': '是',
       'common.no': '否',
+      'common.visible': '可見',
+      'common.notVisible': '不可見',
       'common.warning': '警告',
       'common.update': '更新',
       'common.download': '下載',
@@ -57,6 +59,10 @@ class WebZhTW {
       'superResolution.cpuOnly': 'CPU-only 實驗模式',
       'superResolution.cpuOnlyHint': '僅在沒有 GPU 且確認 NAS 負載風險時開啟。',
       'superResolution.noGpuWarning': '未檢測到 GPU/Vulkan，預設不建議建立超分任務。',
+      'superResolution.warningUbuntuAmd64Only':
+          '目前官方 Ubuntu 套件在此處僅按 amd64 處理；此架構需要提供自訂二進位檔。',
+      'superResolution.warningNoGpuCpuDisabled':
+          '未檢測到 Vulkan/GPU 裝置；CPU-only 模式仍屬實驗功能，預設已停用。',
       'superResolution.modelMissingHint': '目前模型尚未安裝，請先到圖片超解析度頁面下載模型。',
       'superResolution.jobCreated': '超分任務已建立',
       'superResolution.useOutput': '使用超分圖片',

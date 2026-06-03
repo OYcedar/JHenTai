@@ -532,7 +532,8 @@ class _WebSettingsTroubleshootingPageState
         _infoRow('superResolution.arch'.tr, runtime['arch']?.toString() ?? '-'),
         _infoRow('superResolution.gpu'.tr,
             gpu['available'] == true ? 'common.yes'.tr : 'common.no'.tr),
-        _infoRow('/dev/dri', gpu['hasDevDri'] == true ? 'yes' : 'no'),
+        _infoRow('/dev/dri',
+            gpu['hasDevDri'] == true ? 'common.yes'.tr : 'common.no'.tr),
         _infoRow('settings.troubleshootingFailedJobs'.tr,
             '${(jobs['failed'] as num?)?.toInt() ?? 0}'),
         if (devices.isNotEmpty) ...[

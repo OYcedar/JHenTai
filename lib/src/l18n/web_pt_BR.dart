@@ -24,6 +24,8 @@ class WebPtBR {
       'common.close': 'Fechar',
       'common.yes': 'Yes',
       'common.no': 'No',
+      'common.visible': 'Visible',
+      'common.notVisible': 'Not visible',
       'common.warning': 'Warning',
       'common.update': 'Update',
       'common.download': 'Download',
@@ -52,6 +54,10 @@ class WebPtBR {
           'Use only for small tests when no GPU is available and you accept NAS load risk.',
       'superResolution.noGpuWarning':
           'No GPU/Vulkan device was detected; creating jobs is not recommended by default.',
+      'superResolution.warningUbuntuAmd64Only':
+          'Current official Ubuntu packages are treated as amd64-only here. Provide a custom binary for this architecture.',
+      'superResolution.warningNoGpuCpuDisabled':
+          'No Vulkan/GPU device was detected. CPU-only mode is experimental and disabled by default.',
       'superResolution.modelMissingHint':
           'This model is not installed. Download it from the image super resolution page first.',
       'superResolution.jobCreated': 'Super-resolution job created',
