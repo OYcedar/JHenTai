@@ -155,13 +155,7 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
   Future<void> _exportData() async {
     setState(() => exportingData = true);
     try {
-      final data = await backendApiClient.exportUserData();
-      final json = const JsonEncoder.withIndent('  ').convert(data);
-      final now = DateTime.now().toLocal();
-      String two(int n) => n.toString().padLeft(2, '0');
-      final fileName = 'jhentai-web-export-${now.year}${two(now.month)}'
-          '${two(now.day)}-${two(now.hour)}${two(now.minute)}${two(now.second)}.json';
-      _downloadTextFile(fileName, json, mimeType: 'application/json');
+      await _downloadWebDataExport('jhentai-web-export');
       Get.snackbar(
         'common.success'.tr,
         'settings.exportDataSuccess'.tr,
@@ -209,26 +203,6 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
   }
 
   Future<void> _importData() async {
-    final ok = await Get.dialog<bool>(
-      AlertDialog(
-        title: Text('settings.importDataTitle'.tr),
-        content: Text('settings.importDataConfirm'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('common.cancel'.tr),
-          ),
-          FilledButton(
-            onPressed: () => Get.back(result: true),
-            child: Text('settings.importData'.tr),
-          ),
-        ],
-      ),
-    );
-    if (ok != true) {
-      return;
-    }
-
     try {
       final text = await _pickJsonFileText();
       if (text == null) {
@@ -239,7 +213,20 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
         throw const FormatException('JSON root must be an object or list');
       }
       setState(() => importingData = true);
-      final result = await backendApiClient.importUserData(decoded as Object);
+      final data = decoded as Object;
+      final preview = await backendApiClient.importUserData(data, dryRun: true);
+      if (!mounted) {
+        return;
+      }
+      final ok = await Get.dialog<bool>(
+        _ImportPreviewDialog(preview: preview),
+      );
+      if (ok != true) {
+        return;
+      }
+
+      await _downloadWebDataExport('jhentai-web-backup-before-import');
+      final result = await backendApiClient.importUserData(data);
       final imported = result['imported'] is Map
           ? Map<String, dynamic>.from(result['imported'] as Map)
           : const <String, dynamic>{};
@@ -264,6 +251,16 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
         setState(() => importingData = false);
       }
     }
+  }
+
+  Future<void> _downloadWebDataExport(String prefix) async {
+    final data = await backendApiClient.exportUserData();
+    final json = const JsonEncoder.withIndent('  ').convert(data);
+    final now = DateTime.now().toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    final fileName = '$prefix-${now.year}${two(now.month)}'
+        '${two(now.day)}-${two(now.hour)}${two(now.minute)}${two(now.second)}.json';
+    _downloadTextFile(fileName, json, mimeType: 'application/json');
   }
 
   Future<void> _openLog(Map<String, dynamic> item) async {
@@ -601,6 +598,162 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
     }
     String two(int n) => n.toString().padLeft(2, '0');
     return '${date.year}-${two(date.month)}-${two(date.day)} ${two(date.hour)}:${two(date.minute)}';
+  }
+}
+
+class _ImportPreviewDialog extends StatelessWidget {
+  const _ImportPreviewDialog({required this.preview});
+
+  final Map<String, dynamic> preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = preview['summary'] is Map
+        ? Map<String, dynamic>.from(preview['summary'] as Map)
+        : const <String, dynamic>{};
+    final sections = summary['sections'] is Map
+        ? Map<String, dynamic>.from(summary['sections'] as Map)
+        : const <String, dynamic>{};
+    final source = preview['source']?.toString() == 'app'
+        ? 'settings.importSourceApp'.tr
+        : 'settings.importSourceWeb'.tr;
+    final rows = [
+      _summaryRow('settings.importSectionConfig'.tr, sections['config']),
+      _summaryRow(
+          'settings.importSectionBlockRules'.tr, sections['blockRules']),
+      _summaryRow('settings.importSectionHistory'.tr, sections['history']),
+      _summaryRow(
+          'settings.importSectionSearchHistory'.tr, sections['searchHistory']),
+      _summaryRow(
+          'settings.importSectionQuickSearch'.tr, sections['quickSearch']),
+      _summaryRow(
+          'settings.importSectionReadProgress'.tr, sections['readProgress']),
+    ].where((row) => row != null).cast<_ImportPreviewRow>().toList();
+
+    return AlertDialog(
+      title: Text('settings.importPreviewTitle'.tr),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('settings.importPreviewSource'.trParams({'source': source})),
+              const SizedBox(height: 8),
+              Text(
+                'settings.importPreviewSummary'.trParams({
+                  'count': '${_intValue(summary['importable'])}',
+                  'replace': '${_intValue(summary['replacing'])}',
+                  'skip': '${_intValue(summary['skipped'])}',
+                }),
+              ),
+              const SizedBox(height: 12),
+              if (rows.isNotEmpty)
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < rows.length; i++) ...[
+                        _ImportPreviewRowTile(row: rows[i]),
+                        if (i != rows.length - 1) const Divider(height: 1),
+                      ],
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 12),
+              Text(
+                'settings.importPreviewBackupHint'.tr,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'settings.importPreviewOverwriteHint'.tr,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton.icon(
+          onPressed: _intValue(summary['importable']) <= 0
+              ? null
+              : () => Get.back(result: true),
+          icon: const Icon(Icons.backup_outlined),
+          label: Text('settings.importConfirmWithBackup'.tr),
+        ),
+      ],
+    );
+  }
+
+  static _ImportPreviewRow? _summaryRow(String label, Object? raw) {
+    if (raw is! Map) {
+      return null;
+    }
+    final section = Map<String, dynamic>.from(raw);
+    final importable = _intValue(section['importable']);
+    final replacing = _intValue(section['replacing']);
+    final skipped = _intValue(section['skipped']);
+    if (importable == 0 && replacing == 0 && skipped == 0) {
+      return null;
+    }
+    return _ImportPreviewRow(
+      label: label,
+      importable: importable,
+      replacing: replacing,
+      skipped: skipped,
+    );
+  }
+
+  static int _intValue(Object? raw) => (raw as num?)?.toInt() ?? 0;
+}
+
+class _ImportPreviewRow {
+  const _ImportPreviewRow({
+    required this.label,
+    required this.importable,
+    required this.replacing,
+    required this.skipped,
+  });
+
+  final String label;
+  final int importable;
+  final int replacing;
+  final int skipped;
+}
+
+class _ImportPreviewRowTile extends StatelessWidget {
+  const _ImportPreviewRowTile({required this.row});
+
+  final _ImportPreviewRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      title: Text(row.label),
+      subtitle: Text(
+        'settings.importSectionSummary'.trParams({
+          'count': '${row.importable}',
+          'replace': '${row.replacing}',
+          'skip': '${row.skipped}',
+        }),
+      ),
+    );
   }
 }
 

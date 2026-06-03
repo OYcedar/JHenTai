@@ -1437,8 +1437,15 @@ class BackendApiClient {
     return response.data is List ? List<dynamic>.from(response.data) : [];
   }
 
-  Future<Map<String, dynamic>> importUserData(Object data) async {
-    final response = await _dio.post('/api/setting/import', data: data);
+  Future<Map<String, dynamic>> importUserData(
+    Object data, {
+    bool dryRun = false,
+  }) async {
+    final response = await _dio.post(
+      '/api/setting/import',
+      data: data,
+      queryParameters: dryRun ? {'dryRun': 'true'} : null,
+    );
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 

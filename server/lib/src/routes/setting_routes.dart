@@ -13,6 +13,47 @@ import '../network/eh_client.dart';
 import '../service/download_runtime_settings.dart';
 import '../utils/site_setting_page_parser.dart';
 
+class _ImportSectionSummary {
+  int importable = 0;
+  int skipped = 0;
+  int replacing = 0;
+
+  Map<String, dynamic> toJson() => {
+        'importable': importable,
+        'skipped': skipped,
+        'replacing': replacing,
+      };
+}
+
+class _ImportSummary {
+  final sections = <String, _ImportSectionSummary>{
+    'config': _ImportSectionSummary(),
+    'blockRules': _ImportSectionSummary(),
+    'history': _ImportSectionSummary(),
+    'searchHistory': _ImportSectionSummary(),
+    'quickSearch': _ImportSectionSummary(),
+    'readProgress': _ImportSectionSummary(),
+  };
+
+  _ImportSectionSummary section(String key) => sections[key]!;
+
+  int get importable =>
+      sections.values.fold(0, (sum, section) => sum + section.importable);
+  int get skipped =>
+      sections.values.fold(0, (sum, section) => sum + section.skipped);
+  int get replacing =>
+      sections.values.fold(0, (sum, section) => sum + section.replacing);
+
+  Map<String, dynamic> toJson() => {
+        'importable': importable,
+        'skipped': skipped,
+        'replacing': replacing,
+        'sections': {
+          for (final entry in sections.entries) entry.key: entry.value.toJson(),
+        },
+      };
+}
+
 class SettingRoutes {
   final ServerConfig _config;
   final EHClient _client;
@@ -544,38 +585,71 @@ class SettingRoutes {
       );
     }
 
-    db.raw.execute('BEGIN TRANSACTION');
+    final dryRun = request.url.queryParameters['dryRun'] == 'true';
     late Map<String, int> imported;
     late String source;
+    late _ImportSummary summary;
     try {
       if (body is Map &&
           body['format'] == 'jhentai-web-export-v1' &&
           body['sections'] is Map) {
-        imported = _importWebExportSections(
-            Map<String, dynamic>.from(body['sections']));
+        final sections = Map<String, dynamic>.from(body['sections']);
+        summary = _analyzeWebExportSections(sections);
         source = 'web';
+        if (!dryRun) {
+          db.raw.execute('BEGIN TRANSACTION');
+          imported = _importWebExportSections(sections);
+          db.raw.execute('COMMIT');
+        }
       } else if (body is List) {
-        imported = _importAppCloudConfigs(body);
+        summary = _analyzeAppCloudConfigs(body);
         source = 'app';
+        if (!dryRun) {
+          db.raw.execute('BEGIN TRANSACTION');
+          imported = _importAppCloudConfigs(body);
+          db.raw.execute('COMMIT');
+        }
       } else {
-        db.raw.execute('ROLLBACK');
         return Response.badRequest(
           body: jsonEncode({'error': 'Unsupported import format'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
-
-      db.raw.execute('COMMIT');
     } catch (e) {
-      db.raw.execute('ROLLBACK');
+      if (!dryRun) {
+        try {
+          db.raw.execute('ROLLBACK');
+        } catch (_) {}
+      }
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Failed to import data: $e'}),
+        body: jsonEncode({
+          'error': dryRun
+              ? 'Failed to analyze data: $e'
+              : 'Failed to import data: $e',
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    if (dryRun) {
+      return Response.ok(
+        jsonEncode({
+          'success': true,
+          'dryRun': true,
+          'source': source,
+          'summary': summary.toJson(),
+        }),
         headers: {'Content-Type': 'application/json'},
       );
     }
 
     return Response.ok(
-      jsonEncode({'success': true, 'source': source, 'imported': imported}),
+      jsonEncode({
+        'success': true,
+        'source': source,
+        'imported': imported,
+        'summary': summary.toJson(),
+      }),
       headers: {'Content-Type': 'application/json'},
     );
   }
@@ -797,6 +871,85 @@ class SettingRoutes {
     return imported;
   }
 
+  _ImportSummary _analyzeWebExportSections(Map<String, dynamic> sections) {
+    final summary = _ImportSummary();
+    final existingRules = db
+        .selectAllBlockRules()
+        .map((rule) => _blockRuleFingerprint(rule))
+        .toSet();
+
+    for (final row in _importRows(sections['config'])) {
+      final section = summary.section('config');
+      final key = _importString(row['key']);
+      if (key.isEmpty || _reservedKeys.contains(key)) {
+        section.skipped++;
+        continue;
+      }
+      final subKey = _importString(row['sub_key']);
+      section.importable++;
+      if (_configRowExists(key, subKey)) {
+        section.replacing++;
+      }
+    }
+
+    for (final row in _importRows(sections['blockRules'])) {
+      final section = summary.section('blockRules');
+      final rule = _normalizedBlockRule(row);
+      if (rule == null) {
+        section.skipped++;
+        continue;
+      }
+      final fingerprint = _blockRuleFingerprint(rule);
+      if (existingRules.contains(fingerprint)) {
+        section.skipped++;
+        continue;
+      }
+      existingRules.add(fingerprint);
+      section.importable++;
+    }
+
+    for (final row in _importRows(sections['history'])) {
+      final section = summary.section('history');
+      final gid = _importInt(row['gid']);
+      if (gid == null) {
+        section.skipped++;
+        continue;
+      }
+      section.importable++;
+      if (_rowExists('history', 'gid', gid)) {
+        section.replacing++;
+      }
+    }
+
+    for (final row in _importRows(sections['searchHistory'])) {
+      final section = summary.section('searchHistory');
+      final keyword = _importString(row['keyword']).trim();
+      if (keyword.isEmpty) {
+        section.skipped++;
+        continue;
+      }
+      section.importable++;
+      if (_rowExists('search_history', 'keyword', keyword)) {
+        section.replacing++;
+      }
+    }
+
+    for (final row in _importRows(sections['quickSearch'])) {
+      final section = summary.section('quickSearch');
+      final name = _importString(row['name']).trim();
+      if (name.isEmpty) {
+        section.skipped++;
+        continue;
+      }
+      section.importable++;
+      if (_rowExists('quick_search', 'name', name)) {
+        section.replacing++;
+      }
+    }
+
+    return summary;
+  }
+
   Map<String, int> _importAppCloudConfigs(List<dynamic> configs) {
     final imported = _emptyImportCounts();
     final existingRules = db
@@ -879,6 +1032,115 @@ class SettingRoutes {
       }
     }
     return imported;
+  }
+
+  _ImportSummary _analyzeAppCloudConfigs(List<dynamic> configs) {
+    final summary = _ImportSummary();
+    final existingRules = db
+        .selectAllBlockRules()
+        .map((rule) => _blockRuleFingerprint(rule))
+        .toSet();
+
+    for (final item in configs.whereType<Map>()) {
+      final config = Map<String, dynamic>.from(item);
+      final type = _importInt(config['type']);
+      final raw = _importString(config['config']);
+      if (type == null || raw.isEmpty) {
+        summary.section('config').skipped++;
+        continue;
+      }
+      final decoded = jsonDecode(raw);
+      switch (type) {
+        case 1:
+          for (final row in _importRows(decoded)) {
+            final section = summary.section('readProgress');
+            final subKey = _importString(row['subConfigKey']).trim();
+            final value = _importString(row['value']).trim();
+            if (subKey.isEmpty || value.isEmpty) {
+              section.skipped++;
+              continue;
+            }
+            final key = 'read_progress_$subKey';
+            section.importable++;
+            if (_configRowExists(key, '')) {
+              section.replacing++;
+            }
+          }
+        case 2:
+          final section = summary.section('quickSearch');
+          if (decoded is! Map) {
+            section.skipped++;
+            continue;
+          }
+          for (final entry in decoded.entries) {
+            final name = entry.key.toString().trim();
+            if (name.isEmpty) {
+              section.skipped++;
+              continue;
+            }
+            section.importable++;
+            if (_rowExists('quick_search', 'name', name)) {
+              section.replacing++;
+            }
+          }
+        case 3:
+          for (final row in _importRows(decoded)) {
+            final section = summary.section('blockRules');
+            final rule = _convertAppBlockRule(row);
+            if (rule == null) {
+              section.skipped++;
+              continue;
+            }
+            final fingerprint = _blockRuleFingerprint(rule);
+            if (existingRules.contains(fingerprint)) {
+              section.skipped++;
+              continue;
+            }
+            existingRules.add(fingerprint);
+            section.importable++;
+          }
+        case 4:
+          final section = summary.section('searchHistory');
+          if (decoded is! List) {
+            section.skipped++;
+            continue;
+          }
+          for (final item in decoded) {
+            final keyword = _importString(item).trim();
+            if (keyword.isEmpty) {
+              section.skipped++;
+              continue;
+            }
+            section.importable++;
+            if (_rowExists('search_history', 'keyword', keyword)) {
+              section.replacing++;
+            }
+          }
+        case 5:
+          for (final row in _importRows(decoded)) {
+            final section = summary.section('history');
+            final gid = _importInt(row['gid']);
+            final jsonBodyRaw = row['jsonBody'];
+            if (gid == null || jsonBodyRaw is! String || jsonBodyRaw.isEmpty) {
+              section.skipped++;
+              continue;
+            }
+            final body = jsonDecode(jsonBodyRaw);
+            if (body is! Map) {
+              section.skipped++;
+              continue;
+            }
+            section.importable++;
+            if (_rowExists('history', 'gid', gid)) {
+              section.replacing++;
+            }
+          }
+        default:
+          summary.section('config').skipped++;
+      }
+    }
+
+    return summary;
   }
 
   List<Map<String, dynamic>> _exportAppReadProgress() {
@@ -1039,14 +1301,8 @@ class SettingRoutes {
     Map<String, dynamic> row,
     Set<String> existingRules,
   ) {
-    final rule = {
-      'group_id': _importString(row['group_id'] ?? row['groupId']),
-      'target': _importString(row['target'], fallback: 'gallery'),
-      'attribute': _importString(row['attribute'], fallback: 'title'),
-      'pattern': _importString(row['pattern'], fallback: 'like'),
-      'expression': _importString(row['expression']),
-    };
-    if ((rule['expression'] as String).isEmpty) {
+    final rule = _normalizedBlockRule(row);
+    if (rule == null) {
       return false;
     }
     final fingerprint = _blockRuleFingerprint(rule);
@@ -1056,6 +1312,20 @@ class SettingRoutes {
     db.insertBlockRule(rule);
     existingRules.add(fingerprint);
     return true;
+  }
+
+  Map<String, dynamic>? _normalizedBlockRule(Map<String, dynamic> row) {
+    final rule = {
+      'group_id': _importString(row['group_id'] ?? row['groupId']),
+      'target': _importString(row['target'], fallback: 'gallery'),
+      'attribute': _importString(row['attribute'], fallback: 'title'),
+      'pattern': _importString(row['pattern'], fallback: 'like'),
+      'expression': _importString(row['expression']),
+    };
+    if ((rule['expression'] as String).isEmpty) {
+      return null;
+    }
+    return rule;
   }
 
   Map<String, dynamic>? _convertAppBlockRule(Map<String, dynamic> row) {
@@ -1200,6 +1470,20 @@ class SettingRoutes {
       return int.tryParse(value);
     }
     return null;
+  }
+
+  bool _configRowExists(String key, String subKey) {
+    return db.raw.select(
+      'SELECT 1 FROM config WHERE key = ? AND sub_key = ? LIMIT 1',
+      [key, subKey],
+    ).isNotEmpty;
+  }
+
+  bool _rowExists(String table, String column, Object value) {
+    return db.raw.select(
+      'SELECT 1 FROM $table WHERE $column = ? LIMIT 1',
+      [value],
+    ).isNotEmpty;
   }
 
   String _blockRuleFingerprint(Map<String, dynamic> rule) {
