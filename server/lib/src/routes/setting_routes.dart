@@ -13,6 +13,7 @@ import '../network/eh_client.dart';
 import '../service/archive_download_service.dart';
 import '../service/download_runtime_settings.dart';
 import '../service/gallery_download_service.dart';
+import '../service/super_resolution_service.dart';
 import '../utils/site_setting_page_parser.dart';
 
 class _ImportSectionSummary {
@@ -68,6 +69,7 @@ class SettingRoutes {
   final EHClient _client;
   final GalleryDownloadService _galleryDownloadService;
   final ArchiveDownloadService _archiveDownloadService;
+  final SuperResolutionService _superResolutionService;
   static const _reservedKeys = {'api_token', 'eh_cookies'};
   static const _restoreTables = [
     _RestoreTableSpec('config', 'config'),
@@ -87,6 +89,7 @@ class SettingRoutes {
     this._client,
     this._galleryDownloadService,
     this._archiveDownloadService,
+    this._superResolutionService,
   );
 
   Router get router {
@@ -110,6 +113,8 @@ class SettingRoutes {
     router.get('/diagnostics', _getDiagnostics);
     router.get('/maintenance', _getMaintenance);
     router.get('/maintenance/update-check', _checkMaintenanceUpdate);
+    router.get('/troubleshooting', _getTroubleshooting);
+    router.post('/troubleshooting/probe', _probeTroubleshooting);
     router.get('/backup/sqlite', _downloadSqliteBackup);
     router.post('/backup/sqlite/restore', _restoreSqliteBackup);
     router.get('/logs', _listLogs);
@@ -473,6 +478,13 @@ class SettingRoutes {
   }
 
   Future<Response> _getDiagnostics(Request request) async {
+    return Response.ok(
+      jsonEncode(_diagnosticsPayload()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Map<String, dynamic> _diagnosticsPayload() {
     final checks = <Map<String, dynamic>>[];
     void addCheck({
       required String id,
@@ -576,23 +588,27 @@ class SettingRoutes {
             ? 'warn'
             : 'ok';
 
+    return {
+      'status': status,
+      'generatedAt': DateTime.now().toIso8601String(),
+      'checks': checks,
+      'summary': {
+        'errorCount': errorCount,
+        'warningCount': warningCount,
+      },
+      'network': _networkRuntime(),
+      'logs': logs,
+    };
+  }
+
+  Future<Response> _getMaintenance(Request request) async {
     return Response.ok(
-      jsonEncode({
-        'status': status,
-        'generatedAt': DateTime.now().toIso8601String(),
-        'checks': checks,
-        'summary': {
-          'errorCount': errorCount,
-          'warningCount': warningCount,
-        },
-        'network': _networkRuntime(),
-        'logs': logs,
-      }),
+      jsonEncode(_maintenancePayload()),
       headers: {'Content-Type': 'application/json'},
     );
   }
 
-  Future<Response> _getMaintenance(Request request) async {
+  Map<String, dynamic> _maintenancePayload() {
     final logs = _logsSummary();
     final pageCache = _pageCacheStats();
     final databaseFile = File(_config.databasePath);
@@ -606,29 +622,347 @@ class SettingRoutes {
       _pathStatus('tempDir', _config.tempDir, writable: true),
     ];
     final warningCount = checks.where((item) => item['status'] != 'ok').length;
+    return {
+      'status': warningCount > 0 ? 'warn' : 'ok',
+      'generatedAt': DateTime.now().toIso8601String(),
+      'runtime': _runtimeInfo(),
+      'paths': {
+        'dataDir': _config.dataDir,
+        'downloadDir': _config.downloadDir,
+        'localGalleryDir': _config.localGalleryDir,
+        'logDir': _config.logDir,
+        'tempDir': _config.tempDir,
+      },
+      'storage': {
+        'databaseBytes': databaseBytes,
+        'logsBytes': logs['totalSize'] ?? 0,
+        'pageCacheBytes': pageCache['size'] ?? 0,
+        'pageCacheCount': pageCache['count'] ?? 0,
+      },
+      'checks': checks,
+      'logs': logs,
+    };
+  }
+
+  Future<Response> _getTroubleshooting(Request request) async {
+    final diagnostics = _diagnosticsPayload();
+    final maintenance = _maintenancePayload();
+    final superResolution = _superResolutionSnapshot();
+    final recentProblems = _recentProblemLogs();
+    final issueCount = _troubleshootingIssueCount(
+      diagnostics,
+      maintenance,
+      superResolution,
+      recentProblems,
+    );
     return Response.ok(
       jsonEncode({
-        'status': warningCount > 0 ? 'warn' : 'ok',
+        'status': issueCount > 0 ? 'warn' : 'ok',
         'generatedAt': DateTime.now().toIso8601String(),
-        'runtime': _runtimeInfo(),
-        'paths': {
-          'dataDir': _config.dataDir,
-          'downloadDir': _config.downloadDir,
-          'localGalleryDir': _config.localGalleryDir,
-          'logDir': _config.logDir,
-          'tempDir': _config.tempDir,
+        'summary': {'issueCount': issueCount},
+        'diagnostics': diagnostics,
+        'maintenance': maintenance,
+        'network': _networkRuntime(),
+        'logs': {
+          ..._logsSummary(),
+          'recentProblems': recentProblems,
         },
-        'storage': {
-          'databaseBytes': databaseBytes,
-          'logsBytes': logs['totalSize'] ?? 0,
-          'pageCacheBytes': pageCache['size'] ?? 0,
-          'pageCacheCount': pageCache['count'] ?? 0,
-        },
-        'checks': checks,
-        'logs': logs,
+        'superResolution': superResolution,
+        'actions': _troubleshootingActions(superResolution),
       }),
       headers: {'Content-Type': 'application/json'},
     );
+  }
+
+  Future<Response> _probeTroubleshooting(Request request) async {
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
+    } catch (_) {
+      body = const {};
+    }
+    final probes = (body['probes'] as List? ?? const [])
+        .map((item) => item.toString())
+        .toSet();
+    final imageUrl = body['imageUrl']?.toString().trim();
+    final results = <String, dynamic>{};
+    if (probes.contains('network')) {
+      results['network'] = await _probeNetwork();
+    }
+    if (probes.contains('hath')) {
+      results['hath'] = await _probeHath(imageUrl);
+    }
+    if (probes.contains('superResolution')) {
+      results['superResolution'] = _probeSuperResolution();
+    }
+    return Response.ok(
+      jsonEncode({
+        'success': true,
+        'generatedAt': DateTime.now().toIso8601String(),
+        'results': results,
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Map<String, dynamic> _superResolutionSnapshot() {
+    final capabilities = _superResolutionService.capabilities();
+    final jobs = _superResolutionService.listJobs();
+    final failedJobs = jobs
+        .where((job) => job['status'] == 'failed')
+        .take(8)
+        .map((job) => {
+              'id': job['id'],
+              'sourceType': job['sourceType'],
+              'gid': job['gid'],
+              'title': job['title'],
+              'status': job['status'],
+              'error': _sanitizeLogText(job['error']?.toString() ?? ''),
+              'updatedAt': job['updatedAt'],
+            })
+        .toList();
+    return {
+      'capabilities': capabilities,
+      'settings': _superResolutionService.settings(),
+      'jobs': {
+        'total': jobs.length,
+        'running': jobs.where((job) => job['status'] == 'running').length,
+        'pending': jobs.where((job) => job['status'] == 'pending').length,
+        'failed': jobs.where((job) => job['status'] == 'failed').length,
+        'failedRecent': failedJobs,
+      },
+    };
+  }
+
+  int _troubleshootingIssueCount(
+    Map<String, dynamic> diagnostics,
+    Map<String, dynamic> maintenance,
+    Map<String, dynamic> superResolution,
+    List<Map<String, dynamic>> recentProblems,
+  ) {
+    final diagnosticSummary = diagnostics['summary'] is Map
+        ? Map<String, dynamic>.from(diagnostics['summary'] as Map)
+        : const <String, dynamic>{};
+    final diagnosticIssues =
+        ((diagnosticSummary['errorCount'] as num?)?.toInt() ?? 0) +
+            ((diagnosticSummary['warningCount'] as num?)?.toInt() ?? 0);
+    final maintenanceIssues = maintenance['status'] == 'ok' ? 0 : 1;
+    final srCaps = superResolution['capabilities'] is Map
+        ? Map<String, dynamic>.from(superResolution['capabilities'] as Map)
+        : const <String, dynamic>{};
+    final srIssues = srCaps['status'] == 'ok' ? 0 : 1;
+    return diagnosticIssues +
+        maintenanceIssues +
+        srIssues +
+        recentProblems.length.clamp(0, 5).toInt();
+  }
+
+  List<Map<String, dynamic>> _troubleshootingActions(
+      Map<String, dynamic> superResolution) {
+    final caps = superResolution['capabilities'] is Map
+        ? Map<String, dynamic>.from(superResolution['capabilities'] as Map)
+        : const <String, dynamic>{};
+    final gpu = caps['gpu'] is Map
+        ? Map<String, dynamic>.from(caps['gpu'] as Map)
+        : const <String, dynamic>{};
+    return [
+      {
+        'id': 'open_network',
+        'label': 'Open network settings',
+        'route': '/web/settings/network',
+      },
+      {
+        'id': 'open_logs',
+        'label': 'Open server logs',
+        'route': '/web/settings/advanced',
+      },
+      {
+        'id': 'open_super_resolution',
+        'label': 'Open image super resolution',
+        'route': '/web/settings/super-resolution',
+      },
+      if ((gpu['composeSnippet']?.toString() ?? '').isNotEmpty)
+        {
+          'id': 'copy_gpu_compose',
+          'label': 'Copy GPU compose snippet',
+          'text': gpu['composeSnippet'].toString(),
+        },
+    ];
+  }
+
+  List<Map<String, dynamic>> _recentProblemLogs({int maxItems = 20}) {
+    final result = <Map<String, dynamic>>[];
+    final pattern = RegExp(
+      r'(error|warn|warning|exception|failed|HandshakeException|super_resolution:auto)',
+      caseSensitive: false,
+    );
+    for (final file in _logFiles()) {
+      List<String> lines;
+      try {
+        lines = file.readAsLinesSync();
+      } catch (_) {
+        continue;
+      }
+      for (final line in lines.reversed) {
+        if (!pattern.hasMatch(line)) continue;
+        result.add({
+          'file': p.basename(file.path),
+          'line': _sanitizeLogText(line),
+        });
+        if (result.length >= maxItems) return result;
+      }
+    }
+    return result;
+  }
+
+  String? _latestHathUrlFromLogs() {
+    final urlPattern = RegExp(
+        r'https?://[^\s"' '<>]+\.hath\.network/[^\s"' '<>]+',
+        caseSensitive: false);
+    for (final file in _logFiles()) {
+      List<String> lines;
+      try {
+        lines = file.readAsLinesSync();
+      } catch (_) {
+        continue;
+      }
+      for (final line in lines.reversed) {
+        final match = urlPattern.firstMatch(line);
+        if (match != null) return match.group(0);
+      }
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>> _probeNetwork() async {
+    final started = DateTime.now();
+    try {
+      final response = await _client.probeUrl('https://e-hentai.org/');
+      final statusCode = (response['statusCode'] as num?)?.toInt() ?? 0;
+      final ok = statusCode >= 200 && statusCode < 500;
+      return {
+        'status': ok ? 'ok' : 'error',
+        'target': 'https://e-hentai.org/',
+        'statusCode': statusCode,
+        'durationMs': DateTime.now().difference(started).inMilliseconds,
+        'detail': ok
+            ? 'EH front domain is reachable through current route.'
+            : _sanitizeLogText(response['error']?.toString() ??
+                'Unexpected status code: $statusCode'),
+        'route': _networkRuntime()['ehProxySource'],
+      };
+    } catch (e) {
+      return {
+        'status': 'error',
+        'target': 'https://e-hentai.org/',
+        'durationMs': DateTime.now().difference(started).inMilliseconds,
+        'detail': _sanitizeLogText('$e'),
+        'route': _networkRuntime()['ehProxySource'],
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> _probeHath(String? imageUrl) async {
+    final target = (imageUrl != null && imageUrl.isNotEmpty)
+        ? imageUrl
+        : _latestHathUrlFromLogs();
+    if (target == null || target.isEmpty) {
+      return {
+        'status': 'skipped',
+        'detail':
+            'No H@H image URL was provided or found in recent logs. Paste a failing image URL to test this path.',
+        'route': _networkRuntime()['hathProxySource'],
+      };
+    }
+    final uri = Uri.tryParse(target);
+    if (uri == null || !uri.host.toLowerCase().endsWith('.hath.network')) {
+      return {
+        'status': 'skipped',
+        'target': _sanitizeLogText(target),
+        'detail': 'Target is not a *.hath.network URL.',
+        'route': _networkRuntime()['hathProxySource'],
+      };
+    }
+    final started = DateTime.now();
+    try {
+      final response = await _client.probeUrl(target);
+      final statusCode = (response['statusCode'] as num?)?.toInt() ?? 0;
+      final ok = statusCode >= 200 && statusCode < 500;
+      return {
+        'status': ok ? 'ok' : 'error',
+        'target': _sanitizeLogText(target),
+        'statusCode': statusCode,
+        'durationMs': DateTime.now().difference(started).inMilliseconds,
+        'detail': ok
+            ? 'H@H image host is reachable through current route.'
+            : _sanitizeLogText(response['error']?.toString() ??
+                'Unexpected status code: $statusCode'),
+        'route': _networkRuntime()['hathProxySource'],
+      };
+    } catch (e) {
+      return {
+        'status': 'error',
+        'target': _sanitizeLogText(target),
+        'durationMs': DateTime.now().difference(started).inMilliseconds,
+        'detail': _sanitizeLogText('$e'),
+        'route': _networkRuntime()['hathProxySource'],
+      };
+    }
+  }
+
+  Map<String, dynamic> _probeSuperResolution() {
+    final caps = _superResolutionService.capabilities();
+    final gpu = caps['gpu'] is Map
+        ? Map<String, dynamic>.from(caps['gpu'] as Map)
+        : const <String, dynamic>{};
+    final runtime = caps['runtime'] is Map
+        ? Map<String, dynamic>.from(caps['runtime'] as Map)
+        : const <String, dynamic>{};
+    final models = caps['models'] is Map
+        ? Map<String, dynamic>.from(caps['models'] as Map)
+        : const <String, dynamic>{};
+    final installedModels = models.values.where((model) {
+      return model is Map && model['installed'] == true;
+    }).length;
+    final devices = (gpu['devices'] as List? ?? const []).whereType<Map>();
+    final blockedDevices = devices.where((device) {
+      return device['readable'] != true || device['writable'] != true;
+    }).length;
+    final issues = <String>[
+      if (runtime['supportedPrebuiltBinary'] != true)
+        'Current architecture is not the amd64 prebuilt path.',
+      if (gpu['hasDevDri'] != true && gpu['nvidiaVisible'] != true)
+        'No /dev/dri or NVIDIA device is visible inside the container.',
+      if (blockedDevices > 0)
+        '$blockedDevices GPU device entries are not readable/writable.',
+      if (installedModels == 0) 'No super-resolution model is installed.',
+    ];
+    return {
+      'status': issues.isEmpty ? 'ok' : 'warn',
+      'detail': issues.isEmpty
+          ? 'Super-resolution runtime looks ready.'
+          : issues.join(' '),
+      'capabilities': caps,
+      'composeSnippet': gpu['composeSnippet']?.toString() ?? '',
+    };
+  }
+
+  String _sanitizeLogText(String value) {
+    var text = value;
+    text = text.replaceAll(
+      RegExp(r'\b[a-fA-F0-9]{64}\b'),
+      '<redacted-token>',
+    );
+    text = text.replaceAll(
+      RegExp(r'(?i)(cookie|set-cookie|eh_cookies)[=:][^\s,;]+'),
+      r'$1=<redacted>',
+    );
+    text = text.replaceAllMapped(
+      RegExp(r'([a-z][a-z0-9+.-]*://)([^/@\s:]+):([^/@\s]+)@',
+          caseSensitive: false),
+      (match) => '${match.group(1)}<redacted>@',
+    );
+    return text.length > 600 ? '${text.substring(0, 600)}...' : text;
   }
 
   Future<Response> _checkMaintenanceUpdate(Request request) async {

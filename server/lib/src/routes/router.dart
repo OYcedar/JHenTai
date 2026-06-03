@@ -75,6 +75,7 @@ class AppRouter {
         ehClient,
         galleryDownloadService,
         archiveDownloadService,
+        superResolutionService,
       ).router.call,
     );
     router.mount('/api/favorite/', FavoriteRoutes(ehClient).router.call);

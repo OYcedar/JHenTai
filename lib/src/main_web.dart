@@ -35,6 +35,7 @@ import 'package:jhentai/src/pages_web/settings/web_settings_security_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_web_docker_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_style_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_super_resolution_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_troubleshooting_page.dart';
 import 'package:jhentai/src/pages_web/web_theme_controller.dart';
 import 'package:jhentai/src/pages_web/web_watched_tag_styles_controller.dart';
 import 'package:jhentai/src/pages_web/web_stats_page.dart';
@@ -555,6 +556,11 @@ final _webRoutes = [
   GetPage(
     name: '/web/settings/diagnostics',
     page: () => const WebSettingsDiagnosticsPage(),
+    binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/troubleshooting',
+    page: () => const WebSettingsTroubleshootingPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
   ),
   GetPage(

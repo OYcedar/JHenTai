@@ -377,6 +377,11 @@ class _WebSettingsMaintenancePageState extends State<WebSettingsMaintenancePage>
               label: Text('settings.deploymentDiagnostics'.tr),
             ),
             OutlinedButton.icon(
+              onPressed: () => Get.toNamed('/web/settings/troubleshooting'),
+              icon: const Icon(Icons.plumbing_outlined),
+              label: Text('settings.troubleshootingWorkbench'.tr),
+            ),
+            OutlinedButton.icon(
               onPressed: () => Get.toNamed('/web/settings/advanced'),
               icon: const Icon(Icons.article_outlined),
               label: Text('settings.serverLogs'.tr),

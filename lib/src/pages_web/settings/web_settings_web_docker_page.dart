@@ -61,6 +61,14 @@ class _WebSettingsWebDockerPageState extends State<WebSettingsWebDockerPage>
               route: '/web/settings/diagnostics',
             ),
             const SizedBox(height: 12),
+            _routeCard(
+              context,
+              icon: Icons.plumbing_outlined,
+              title: 'settings.troubleshootingWorkbench'.tr,
+              body: 'settings.troubleshootingWorkbenchSummary'.tr,
+              route: '/web/settings/troubleshooting',
+            ),
+            const SizedBox(height: 12),
             _serverInfoCard(context, info),
             const SizedBox(height: 12),
             _routeCard(

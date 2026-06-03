@@ -123,6 +123,7 @@ class SuperResolutionService {
     final arch = _runSimple('uname', ['-m']).trim();
     final vulkanInfo = _runSimple('vulkaninfo', ['--summary'], timeout: 3);
     final hasDevDri = Directory('/dev/dri').existsSync();
+    final devices = _gpuDevices();
     final nvidiaVisible = Directory('/proc/driver/nvidia').existsSync() ||
         Platform.environment.keys.any((key) => key.startsWith('NVIDIA_'));
     final gpuAvailable = hasDevDri || nvidiaVisible;
@@ -145,6 +146,8 @@ class SuperResolutionService {
         'hasDevDri': hasDevDri,
         'nvidiaVisible': nvidiaVisible,
         'vulkanSummary': _trimLines(vulkanInfo, 12),
+        'devices': devices,
+        'composeSnippet': _gpuComposeSnippet(devices),
       },
       'paths': {
         'root': _config.superResolutionDir,
@@ -215,7 +218,7 @@ class SuperResolutionService {
     }).toList();
     if (active.isNotEmpty) {
       log.info(
-          'Auto super resolution skipped for $sourceType/$gid: existing job ${active.first['id']} status=${active.first['status']}');
+          '[super_resolution:auto] skipped source=$sourceType gid=$gid reason=existing_job job=${active.first['id']} status=${active.first['status']}');
       return null;
     }
     final allowCpuOnly = s['allowCpuOnly'] == true;
@@ -223,14 +226,14 @@ class SuperResolutionService {
     final gpuAvailable = ((caps['gpu'] as Map)['available'] as bool?) == true;
     if (!gpuAvailable && !allowCpuOnly) {
       log.warning(
-          'Auto super resolution skipped for $sourceType/$gid: no GPU/Vulkan detected');
+          '[super_resolution:auto] skipped source=$sourceType gid=$gid reason=no_gpu');
       return null;
     }
     final model = s['model']?.toString() ?? 'realcugan';
     final spec = models[model] ?? models['realcugan']!;
     if (!_binaryPath(spec).existsSync()) {
       log.warning(
-          'Auto super resolution skipped for $sourceType/$gid: model not installed (${spec.id})');
+          '[super_resolution:auto] skipped source=$sourceType gid=$gid reason=model_not_installed model=${spec.id}');
       return null;
     }
     try {
@@ -245,7 +248,7 @@ class SuperResolutionService {
       );
     } catch (e, stackTrace) {
       log.warning(
-          'Auto super resolution skipped for $sourceType/$gid: $e\n$stackTrace');
+          '[super_resolution:auto] skipped source=$sourceType gid=$gid reason=create_failed error=$e\n$stackTrace');
       return null;
     }
   }
@@ -662,6 +665,7 @@ class SuperResolutionService {
       'kind': spec.kind,
       'defaultScale': spec.defaultScale,
       'installed': binary.existsSync(),
+      'executable': _isExecutable(binary),
       'downloadUrl': spec.downloadUrl,
       'directory': dir.path,
       'binary': binary.path,
@@ -688,6 +692,91 @@ class SuperResolutionService {
   Future<void> _chmodExecutable(File file) async {
     if (!file.existsSync()) return;
     await Process.run('chmod', ['+x', file.path]);
+  }
+
+  List<Map<String, dynamic>> _gpuDevices() {
+    final dir = Directory('/dev/dri');
+    if (!dir.existsSync()) return const [];
+    final files =
+        dir.listSync(followLinks: false).whereType<File>().where((file) {
+      final name = p.basename(file.path);
+      return name.startsWith('render') || name.startsWith('card');
+    }).toList();
+    files.sort((a, b) => a.path.compareTo(b.path));
+    return files.map((file) {
+      try {
+        final stat = file.statSync();
+        return {
+          'path': file.path,
+          'name': p.basename(file.path),
+          'gid': _deviceGid(file),
+          'mode': stat.mode.toRadixString(8),
+          'readable': _canOpenDevice(file, read: true),
+          'writable': _canOpenDevice(file, read: false),
+        };
+      } catch (e) {
+        return {
+          'path': file.path,
+          'name': p.basename(file.path),
+          'error': '$e',
+          'readable': false,
+          'writable': false,
+        };
+      }
+    }).toList();
+  }
+
+  bool _canOpenDevice(File file, {required bool read}) {
+    try {
+      final raf = file.openSync(
+        mode: read ? FileMode.read : FileMode.writeOnlyAppend,
+      );
+      raf.closeSync();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  int? _deviceGid(File file) {
+    try {
+      final result = Process.runSync('stat', ['-c', '%g', file.path]);
+      if (result.exitCode != 0) return null;
+      return int.tryParse(result.stdout.toString().trim());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _gpuComposeSnippet(List<Map<String, dynamic>> devices) {
+    final gids = devices
+        .map((item) => (item['gid'] as num?)?.toInt())
+        .whereType<int>()
+        .toSet()
+        .toList()
+      ..sort();
+    final lines = <String>[
+      'services:',
+      '  jhentai:',
+      '    devices:',
+      '      - /dev/dri:/dev/dri',
+    ];
+    if (gids.isNotEmpty) {
+      lines.add('    group_add:');
+      for (final gid in gids) {
+        lines.add('      - "$gid"');
+      }
+    }
+    return lines.join('\n');
+  }
+
+  bool _isExecutable(File file) {
+    if (!file.existsSync()) return false;
+    try {
+      return file.statSync().mode & 0x49 != 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   String _runSimple(String command, List<String> args, {int timeout = 5}) {

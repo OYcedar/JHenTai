@@ -1356,6 +1356,26 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> getTroubleshootingStatus() async {
+    final response = await _dio.get('/api/setting/troubleshooting');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> probeTroubleshooting({
+    required List<String> probes,
+    String? imageUrl,
+  }) async {
+    final response = await _dio.post(
+      '/api/setting/troubleshooting/probe',
+      data: {
+        'probes': probes,
+        if (imageUrl != null && imageUrl.trim().isNotEmpty)
+          'imageUrl': imageUrl.trim(),
+      },
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<({Uint8List bytes, String fileName})> downloadSqliteBackup() async {
     final response = await _dio.get<List<int>>(
       '/api/setting/backup/sqlite',

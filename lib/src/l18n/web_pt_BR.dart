@@ -549,6 +549,9 @@ class WebPtBR {
       'settings.maintenanceCenter': 'Maintenance center',
       'settings.maintenanceCenterSummary':
           'Review image version, update checks, SQLite backup, and storage summary.',
+      'settings.troubleshootingWorkbench': 'Troubleshooting workbench',
+      'settings.troubleshootingWorkbenchSummary':
+          'Review diagnostics, logs, proxy, and super-resolution status, then run manual probes.',
       'settings.maintenanceLoadFailed':
           'Failed to load maintenance information: @error',
       'settings.maintenanceRuntime': 'Current runtime',
@@ -629,6 +632,29 @@ class WebPtBR {
           'The download realtime status channel is reconnecting.',
       'settings.websocketDisconnected':
           'The download realtime status channel is disconnected. Check reverse proxy WebSocket forwarding.',
+      'settings.troubleshootingLoadFailed':
+          'Failed to load troubleshooting data: @error',
+      'settings.troubleshootingProbeFailed':
+          'Troubleshooting probe failed: @error',
+      'settings.troubleshootingSummary': 'Troubleshooting summary',
+      'settings.troubleshootingSummaryBody': '@count items need attention.',
+      'settings.troubleshootingActiveProbe': 'Manual active probe',
+      'settings.troubleshootingActiveProbeHint':
+          'Only runs when clicked; tests EH/EX, H@H image hosts, and GPU/super-resolution runtime.',
+      'settings.troubleshootingHathUrl': 'H@H image URL (optional)',
+      'settings.runTroubleshootingProbe': 'Run troubleshooting probe',
+      'settings.troubleshootingProbe_network': 'EH/EX network',
+      'settings.troubleshootingProbe_hath': 'H@H image host',
+      'settings.troubleshootingProbe_superResolution':
+          'GPU/super-resolution runtime',
+      'settings.troubleshootingFailedJobs': 'Failed jobs',
+      'settings.troubleshootingGpuDevices': 'GPU devices',
+      'settings.copyGpuComposeSnippet': 'Copy GPU compose snippet',
+      'settings.troubleshootingRecentProblems': 'Recent problem logs',
+      'settings.troubleshootingNoRecentProblems':
+          'No recent warning/error logs.',
+      'settings.troubleshootingActions': 'Suggested actions',
+      'settings.troubleshootingSkipped': 'Skipped',
       'settings.proxyHasCredentials': 'auth configured',
       'settings.logCount': 'Log count',
       'settings.logTotalSize': 'Log size',
