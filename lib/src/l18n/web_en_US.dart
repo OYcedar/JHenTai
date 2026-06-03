@@ -39,6 +39,8 @@ class WebEnUS {
       'superResolution.safetyHint':
           'Super resolution can occupy GPU/CPU for a long time and significantly increase disk usage. Docker uses a GPU-first policy; CPU-only is experimental.',
       'superResolution.models': 'Models',
+      'superResolution.modelGroupBasic': 'Basic recommendations',
+      'superResolution.modelGroupAdvanced': 'Advanced / experimental',
       'superResolution.installed': 'Installed',
       'superResolution.notInstalled': 'Not installed',
       'superResolution.modelReady': 'Model is ready',

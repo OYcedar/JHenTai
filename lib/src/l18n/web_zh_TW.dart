@@ -37,6 +37,8 @@ class WebZhTW {
       'superResolution.safetyHint':
           '超分會長時間佔用 GPU/CPU 並顯著增加磁碟占用；Docker 預設按 GPU 優先策略執行，CPU-only 僅適合少量實驗。',
       'superResolution.models': '模型',
+      'superResolution.modelGroupBasic': '基礎推薦',
+      'superResolution.modelGroupAdvanced': '進階/實驗',
       'superResolution.installed': '已安裝',
       'superResolution.notInstalled': '未安裝',
       'superResolution.modelReady': '模型已準備好',

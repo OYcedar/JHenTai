@@ -355,6 +355,7 @@ class _WebSettingsSuperResolutionPageState
   }
 
   Widget _modelCard(BuildContext context) {
+    final grouped = _groupedModelOptions;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -368,7 +369,16 @@ class _WebSettingsSuperResolutionPageState
               '',
             ),
             const SizedBox(height: 8),
-            for (final model in models) _modelTile(context, model),
+            for (final entry in grouped.entries) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Text(
+                  entry.key.tr,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              for (final model in entry.value) _modelTile(context, model),
+            ],
           ],
         ),
       ),
@@ -767,15 +777,28 @@ class _WebSettingsSuperResolutionPageState
     return const [
       {'id': 'realcugan', 'label': 'Real-CUGAN', 'installed': false},
       {
-        'id': 'realesrgan-x4plus',
-        'label': 'Real-ESRGAN x4plus',
-        'installed': false,
-      },
-      {
         'id': 'realesrgan-x4plus-anime',
         'label': 'Real-ESRGAN anime',
         'installed': false,
       },
+      {
+        'id': 'realesrgan-x4plus',
+        'label': 'Real-ESRGAN x4plus',
+        'installed': false,
+      },
+      {'id': 'waifu2x', 'label': 'waifu2x', 'installed': false},
     ];
+  }
+
+  Map<String, List<Map<String, dynamic>>> get _groupedModelOptions {
+    final result = <String, List<Map<String, dynamic>>>{};
+    for (final model in _modelOptions) {
+      final category = model['category']?.toString() ?? 'basic';
+      final key = category == 'advanced'
+          ? 'superResolution.modelGroupAdvanced'
+          : 'superResolution.modelGroupBasic';
+      result.putIfAbsent(key, () => []).add(model);
+    }
+    return result;
   }
 }

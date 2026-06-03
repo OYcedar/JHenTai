@@ -37,6 +37,8 @@ class WebZhCN {
       'superResolution.safetyHint':
           '超分会长时间占用 GPU/CPU 并显著增加磁盘占用；Docker 默认按 GPU 优先策略运行，CPU-only 仅适合少量实验。',
       'superResolution.models': '模型',
+      'superResolution.modelGroupBasic': '基础推荐',
+      'superResolution.modelGroupAdvanced': '高级/实验',
       'superResolution.installed': '已安装',
       'superResolution.notInstalled': '未安装',
       'superResolution.modelReady': '模型已准备好',
