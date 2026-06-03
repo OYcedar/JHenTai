@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -11,6 +13,7 @@ class WebLocalController extends GetxController
     with WebScrollToTopControllerMixin {
   static const viewModeStorageKey = 'jh_web_local_view_mode';
   static const gridColumnsStorageKey = 'jh_web_local_grid_columns';
+  static const _searchDebounceDuration = Duration(milliseconds: 180);
 
   final searchTextController = TextEditingController();
   final galleries = <Map<String, dynamic>>[].obs;
@@ -29,6 +32,8 @@ class WebLocalController extends GetxController
   _LocalGroupedCache? _groupedCache;
   _LocalPathListCache? _childDirectoriesCache;
   _LocalPathGalleryCache? _currentDirectoryGalleriesCache;
+  Timer? _searchDebounceTimer;
+  String? _pendingSearchQuery;
 
   @override
   void onInit() {
@@ -43,6 +48,7 @@ class WebLocalController extends GetxController
 
   @override
   void onClose() {
+    _searchDebounceTimer?.cancel();
     unbindScrollToTop();
     searchTextController.dispose();
     super.onClose();
@@ -275,13 +281,32 @@ class WebLocalController extends GetxController
   }
 
   void updateSearchQuery(String value) {
-    searchQuery.value = value;
-    _resetScrollState();
+    _pendingSearchQuery = value;
+    _searchDebounceTimer?.cancel();
+    if (value.isEmpty) {
+      _flushPendingSearchQuery();
+      return;
+    }
+    _searchDebounceTimer = Timer(
+      _searchDebounceDuration,
+      _flushPendingSearchQuery,
+    );
   }
 
   void clearSearchQuery() {
     searchTextController.clear();
-    searchQuery.value = '';
+    _pendingSearchQuery = '';
+    _flushPendingSearchQuery();
+  }
+
+  void _flushPendingSearchQuery() {
+    _searchDebounceTimer?.cancel();
+    final value = _pendingSearchQuery;
+    _pendingSearchQuery = null;
+    if (value == null || searchQuery.value == value) {
+      return;
+    }
+    searchQuery.value = value;
     _resetScrollState();
   }
 

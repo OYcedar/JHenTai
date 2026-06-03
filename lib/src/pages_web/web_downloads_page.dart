@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -29,6 +30,7 @@ class WebDownloadsController extends GetxController
       'jh_web_downloads_archive_groups_expanded';
   static const _kViewMode = 'jh_web_downloads_view_mode';
   static const _kSearchMode = 'jh_web_downloads_search_mode';
+  static const _searchDebounceDuration = Duration(milliseconds: 180);
 
   final galleryScrollController = ScrollController();
   final archiveScrollController = ScrollController();
@@ -57,6 +59,8 @@ class WebDownloadsController extends GetxController
 
   _TaskListCache? _galleryTaskListCache;
   _TaskListCache? _archiveTaskListCache;
+  Timer? _searchDebounceTimer;
+  String? _pendingSearchQuery;
 
   WebDownloadService get _svc => Get.find<WebDownloadService>();
 
@@ -162,6 +166,7 @@ class WebDownloadsController extends GetxController
   }
 
   void setSearchMode(WebDownloadSearchMode mode) {
+    _flushPendingSearchQuery();
     searchMode.value = mode;
     resetActiveScrollState();
     web.window.localStorage.setItem(
@@ -178,21 +183,42 @@ class WebDownloadsController extends GetxController
   }
 
   void updateSearchQuery(String value) {
-    searchQuery.value = value;
-    resetActiveScrollState();
+    _pendingSearchQuery = value;
+    _searchDebounceTimer?.cancel();
+    if (value.isEmpty) {
+      _flushPendingSearchQuery();
+      return;
+    }
+    _searchDebounceTimer = Timer(
+      _searchDebounceDuration,
+      _flushPendingSearchQuery,
+    );
   }
 
   void setCategoryFilter(String? value) {
+    _flushPendingSearchQuery();
     selectedCategoryFilter.value = value;
     resetActiveScrollState();
   }
 
   void setActiveSort(WebDownloadSort value) {
+    _flushPendingSearchQuery();
     if (tabController.index == 0) {
       gallerySort.value = value;
     } else {
       archiveSort.value = value;
     }
+    resetActiveScrollState();
+  }
+
+  void _flushPendingSearchQuery() {
+    _searchDebounceTimer?.cancel();
+    final value = _pendingSearchQuery;
+    _pendingSearchQuery = null;
+    if (value == null || searchQuery.value == value) {
+      return;
+    }
+    searchQuery.value = value;
     resetActiveScrollState();
   }
 
@@ -589,6 +615,7 @@ class WebDownloadsController extends GetxController
 
   @override
   void onClose() {
+    _searchDebounceTimer?.cancel();
     tabController.removeListener(_handleTabControllerChanged);
     galleryScrollController.removeListener(_onScroll);
     archiveScrollController.removeListener(_onScroll);
