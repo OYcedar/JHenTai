@@ -1197,14 +1197,16 @@ class WebPtBR {
       'downloads.setGroup': 'Grupo',
       'downloads.priorityLabel': 'Prioridade @n',
       'downloads.groupLabel': 'Grupo',
+      'downloads.defaultGroup': 'Padrão',
       'downloads.groupActions': 'Acoes do grupo',
       'downloads.renameGroup': 'Renomear grupo',
       'downloads.renameGroupConfirm': 'Renomear o grupo "@group" para:',
       'downloads.groupRenamed': 'Grupo renomeado para @count tarefas',
       'downloads.clearGroup': 'Limpar grupo',
       'downloads.clearGroupConfirm':
-          'Mover @count tarefas em "@group" de volta para default?',
-      'downloads.groupCleared': '@count tarefas movidas de volta para default',
+          'Mover @count tarefas em "@group" de volta para o grupo padrão?',
+      'downloads.groupCleared':
+          '@count tarefas movidas de volta para o grupo padrão',
       'downloads.superseded': 'Atualizada para gid @gid',
       'downloads.editTask': 'Editar tarefa',
       'downloads.selectTasks': 'Selecionar tarefas',

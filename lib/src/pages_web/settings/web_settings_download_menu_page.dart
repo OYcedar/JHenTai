@@ -59,11 +59,13 @@ class _WebSettingsDownloadMenuPageState
   @override
   void initState() {
     super.initState();
-    galleryGroupController.text = _readStorage(_galleryGroupKey, 'default');
+    galleryGroupController.text =
+        _displayGroupName(_readStorage(_galleryGroupKey, 'default'));
     galleryPriorityController.text = _readStorage(_galleryPriorityKey, '0');
     galleryDownloadOriginalImage =
         _readStorage(_galleryOriginalKey, 'false') == 'true';
-    archiveGroupController.text = _readStorage(_archiveGroupKey, 'default');
+    archiveGroupController.text =
+        _displayGroupName(_readStorage(_archiveGroupKey, 'default'));
     archivePriorityController.text = _readStorage(_archivePriorityKey, '0');
     _loadRestoreTasksAutomatically();
     _loadSpeedLimit();
@@ -85,6 +87,22 @@ class _WebSettingsDownloadMenuPageState
   String _readStorage(String key, String fallback) {
     final value = web.window.localStorage.getItem(key);
     return value == null || value.isEmpty ? fallback : value;
+  }
+
+  String _displayGroupName(String group) {
+    return group == 'default' ? 'downloads.defaultGroup'.tr : group;
+  }
+
+  String _normalizeGroupName(String group) {
+    final text = group.trim();
+    if (text.isEmpty ||
+        text == 'default' ||
+        text == 'downloads.defaultGroup'.tr ||
+        text == '默认' ||
+        text == '預設') {
+      return 'default';
+    }
+    return text;
   }
 
   List<String> _groupCandidates() {
@@ -407,12 +425,8 @@ class _WebSettingsDownloadMenuPageState
   }
 
   void _saveDefaults() {
-    final galleryGroup = galleryGroupController.text.trim().isEmpty
-        ? 'default'
-        : galleryGroupController.text.trim();
-    final archiveGroup = archiveGroupController.text.trim().isEmpty
-        ? 'default'
-        : archiveGroupController.text.trim();
+    final galleryGroup = _normalizeGroupName(galleryGroupController.text);
+    final archiveGroup = _normalizeGroupName(archiveGroupController.text);
     final galleryPriority =
         int.tryParse(galleryPriorityController.text.trim()) ?? 0;
     final archivePriority =
@@ -425,9 +439,9 @@ class _WebSettingsDownloadMenuPageState
     web.window.localStorage.setItem(_archiveGroupKey, archiveGroup);
     web.window.localStorage.setItem(_archivePriorityKey, '$archivePriority');
 
-    galleryGroupController.text = galleryGroup;
+    galleryGroupController.text = _displayGroupName(galleryGroup);
     galleryPriorityController.text = '$galleryPriority';
-    archiveGroupController.text = archiveGroup;
+    archiveGroupController.text = _displayGroupName(archiveGroup);
     archivePriorityController.text = '$archivePriority';
     Get.snackbar('common.success'.tr, 'settings.downloadDefaultsSaved'.tr,
         snackPosition: SnackPosition.BOTTOM);
@@ -435,10 +449,10 @@ class _WebSettingsDownloadMenuPageState
 
   void _resetDefaults() {
     setState(() {
-      galleryGroupController.text = 'default';
+      galleryGroupController.text = _displayGroupName('default');
       galleryPriorityController.text = '0';
       galleryDownloadOriginalImage = false;
-      archiveGroupController.text = 'default';
+      archiveGroupController.text = _displayGroupName('default');
       archivePriorityController.text = '0';
     });
     _saveDefaults();
@@ -1043,8 +1057,9 @@ class _WebSettingsDownloadMenuPageState
     bool? downloadOriginalImage,
     ValueChanged<bool>? onDownloadOriginalImageChanged,
   }) {
+    final normalizedGroup = _normalizeGroupName(groupController.text);
     final selectedGroup =
-        groups.contains(groupController.text) ? groupController.text : null;
+        groups.contains(normalizedGroup) ? normalizedGroup : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1064,12 +1079,15 @@ class _WebSettingsDownloadMenuPageState
                   for (final group in groups)
                     DropdownMenuItem(
                       value: group,
-                      child: Text(group, overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        _displayGroupName(group),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                 ],
                 onChanged: (value) {
                   if (value != null) {
-                    groupController.text = value;
+                    groupController.text = _displayGroupName(value);
                   }
                 },
               ),

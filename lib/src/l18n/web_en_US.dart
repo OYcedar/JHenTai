@@ -1274,6 +1274,7 @@ class WebEnUS {
       'downloads.setGroup': 'Group',
       'downloads.priorityLabel': 'Priority @n',
       'downloads.groupLabel': 'Group',
+      'downloads.defaultGroup': 'Default',
       'downloads.groupActions': 'Group actions',
       'downloads.renameGroup': 'Rename group',
       'downloads.renameGroupConfirm': 'Rename group "@group" to:',

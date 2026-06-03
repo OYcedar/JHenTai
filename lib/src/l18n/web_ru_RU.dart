@@ -1188,14 +1188,16 @@ class WebRuRU {
       'downloads.setGroup': 'Группа',
       'downloads.priorityLabel': 'Приоритет @n',
       'downloads.groupLabel': 'Группа',
+      'downloads.defaultGroup': 'По умолчанию',
       'downloads.groupActions': 'Действия группы',
       'downloads.renameGroup': 'Переименовать группу',
       'downloads.renameGroupConfirm': 'Переименовать группу "@group" в:',
       'downloads.groupRenamed': 'Группа изменена для задач: @count',
       'downloads.clearGroup': 'Очистить группу',
       'downloads.clearGroupConfirm':
-          'Переместить @count задач из "@group" обратно в default?',
-      'downloads.groupCleared': '@count задач перемещено обратно в default',
+          'Переместить @count задач из "@group" обратно в группу по умолчанию?',
+      'downloads.groupCleared':
+          '@count задач перемещено обратно в группу по умолчанию',
       'downloads.superseded': 'Обновлено до gid @gid',
       'downloads.editTask': 'Редактировать задачу',
       'downloads.selectTasks': 'Выбрать задачи',
