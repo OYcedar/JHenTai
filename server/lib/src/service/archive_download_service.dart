@@ -116,10 +116,44 @@ class ArchiveDownloadService {
   int get _maxConcurrent => effectiveMaxConcurrentArchiveDownloads(_config);
 
   List<ArchiveDownloadTask> get tasks => _tasks.values.toList();
+  int get activeDownloadCount => _activeDownloads.length;
 
   ArchiveDownloadService(this._client, this._config, this._eventBus);
 
   Future<void> init() async {
+    _loadTasksFromDatabase();
+    log.info('Loaded ${_tasks.length} archive download tasks');
+
+    final activeStatuses = {
+      ArchiveStatus.unlocking,
+      ArchiveStatus.parsingUrl,
+      ArchiveStatus.downloading,
+      ArchiveStatus.downloaded,
+      ArchiveStatus.unpacking,
+    };
+    final toResume =
+        _tasks.values.where((t) => activeStatuses.contains(t.status)).toList();
+    for (final task in toResume) {
+      log.info('Resuming archive download: ${task.gid} (${task.title})');
+      task.status = ArchiveStatus.unlocking;
+      db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
+    }
+    if (toResume.isNotEmpty) {
+      _processQueue();
+    }
+  }
+
+  void reloadFromDatabase() {
+    for (final task in _tasks.values) {
+      task._cancelToken?.cancel('reload');
+    }
+    _activeDownloads.clear();
+    _loadTasksFromDatabase();
+    log.info('Reloaded ${_tasks.length} archive download tasks');
+  }
+
+  void _loadTasksFromDatabase() {
+    _tasks.clear();
     final rows = db.selectAllArchiveDownloads();
     for (final row in rows) {
       final task = ArchiveDownloadTask(
@@ -148,25 +182,6 @@ class ArchiveDownloadService {
             row['insert_time'] as String? ?? DateTime.now().toIso8601String(),
       );
       _tasks[task.gid] = task;
-    }
-    log.info('Loaded ${_tasks.length} archive download tasks');
-
-    final activeStatuses = {
-      ArchiveStatus.unlocking,
-      ArchiveStatus.parsingUrl,
-      ArchiveStatus.downloading,
-      ArchiveStatus.downloaded,
-      ArchiveStatus.unpacking,
-    };
-    final toResume =
-        _tasks.values.where((t) => activeStatuses.contains(t.status)).toList();
-    for (final task in toResume) {
-      log.info('Resuming archive download: ${task.gid} (${task.title})');
-      task.status = ArchiveStatus.unlocking;
-      db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unlocking.index);
-    }
-    if (toResume.isNotEmpty) {
-      _processQueue();
     }
   }
 

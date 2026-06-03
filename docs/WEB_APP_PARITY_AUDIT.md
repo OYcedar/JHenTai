@@ -13,7 +13,7 @@ The Docker/Web fork already covers most high-value App workflows:
 - Reading: online, downloaded, archive, local, continuous/fit-width/double-column style Web reader controls.
 - Downloads: gallery/archive tasks, search, regex search, category filter, sorting, grouping, priorities, batch actions, restore.
 - Data portability: Web export, App-compatible `JHenTaiConfig` export, Web/App JSON import, cloud config import/upload.
-- Management pages: history, search history, quick search, block rules, EH tag sets, local galleries, Docker paths/logs/security.
+- Management pages: history, search history, quick search, block rules, EH tag sets, local galleries, Docker paths/logs/security, SQLite backup and restore.
 
 The remaining gaps are either platform-specific App features or larger backend work, not small UI-feedback tasks.
 
@@ -37,7 +37,7 @@ The remaining gaps are either platform-specific App features or larger backend w
 | Block rules | Yes | Yes | Covered | Web has grouped rule management and import/export support. |
 | EH tag sets | Yes | Yes | Covered | Web manages watched/hidden tags and tag set colors through server proxy. |
 | Settings | Yes | Yes | Covered | Web maps settings to Docker-compatible pages, including network, read, style, download, performance, security, Docker. |
-| Data export/import | Yes | Yes | Covered | Web can export JSON, export App-compatible `JHenTaiConfig`, and import both formats. |
+| Data export/import | Yes | Yes | Covered | Web can export JSON, export App-compatible `JHenTaiConfig`, import both formats, and restore SQLite backups from the Docker maintenance center. |
 | Cloud config sync | Yes | Yes | Covered | Web supports share code lookup, import, upload, delete, download. |
 | Super-resolution | Yes, desktop/local only | No Web backend API | Deferred | Native feature depends on local model files and subprocess execution. A Docker implementation needs server APIs, model management, output storage, and reader/download integration. |
 | Native package updates | Yes | No | Not in scope | This fork is Docker/Web-only and does not publish native app packages. |
@@ -76,4 +76,3 @@ Before starting new Web/App parity work:
 3. Choose one theme package.
 4. Implement, verify, and commit that theme as one Chinese commit.
 5. Avoid repeated tiny commits for the same pattern across pages.
-

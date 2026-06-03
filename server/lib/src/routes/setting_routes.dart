@@ -10,7 +10,9 @@ import 'package:sqlite3/sqlite3.dart' show Row;
 import '../config/server_config.dart';
 import '../core/database.dart';
 import '../network/eh_client.dart';
+import '../service/archive_download_service.dart';
 import '../service/download_runtime_settings.dart';
+import '../service/gallery_download_service.dart';
 import '../utils/site_setting_page_parser.dart';
 
 class _ImportSectionSummary {
@@ -54,12 +56,38 @@ class _ImportSummary {
       };
 }
 
+class _RestoreTableSpec {
+  final String table;
+  final String summaryKey;
+
+  const _RestoreTableSpec(this.table, this.summaryKey);
+}
+
 class SettingRoutes {
   final ServerConfig _config;
   final EHClient _client;
+  final GalleryDownloadService _galleryDownloadService;
+  final ArchiveDownloadService _archiveDownloadService;
   static const _reservedKeys = {'api_token', 'eh_cookies'};
+  static const _restoreTables = [
+    _RestoreTableSpec('config', 'config'),
+    _RestoreTableSpec('history', 'history'),
+    _RestoreTableSpec('search_history', 'searchHistory'),
+    _RestoreTableSpec('quick_search', 'quickSearch'),
+    _RestoreTableSpec('block_rule', 'blockRules'),
+    _RestoreTableSpec('gallery_download', 'galleryDownloads'),
+    _RestoreTableSpec('gallery_image', 'galleryImages'),
+    _RestoreTableSpec('archive_download', 'archiveDownloads'),
+    _RestoreTableSpec('tag_translation', 'tagTranslations'),
+    _RestoreTableSpec('tag_count', 'tagCounts'),
+  ];
 
-  SettingRoutes(this._config, this._client);
+  SettingRoutes(
+    this._config,
+    this._client,
+    this._galleryDownloadService,
+    this._archiveDownloadService,
+  );
 
   Router get router {
     final router = Router();
@@ -83,6 +111,7 @@ class SettingRoutes {
     router.get('/maintenance', _getMaintenance);
     router.get('/maintenance/update-check', _checkMaintenanceUpdate);
     router.get('/backup/sqlite', _downloadSqliteBackup);
+    router.post('/backup/sqlite/restore', _restoreSqliteBackup);
     router.get('/logs', _listLogs);
     router.get('/logs/<name>', _readLog);
     router.delete('/logs', _clearLogs);
@@ -708,6 +737,269 @@ class SettingRoutes {
         if (backupFile.existsSync()) backupFile.deleteSync();
       } catch (_) {}
     }
+  }
+
+  Future<Response> _restoreSqliteBackup(Request request) async {
+    final dryRun = request.url.queryParameters['dryRun'] == 'true';
+    final activeDownloads = _activeDownloadsSummary();
+    if (!dryRun &&
+        ((activeDownloads['gallery'] ?? 0) > 0 ||
+            (activeDownloads['archive'] ?? 0) > 0)) {
+      return Response(
+        409,
+        body: jsonEncode({
+          'error':
+              'Active downloads are running. Pause or wait for them before restoring a SQLite backup.',
+          'activeDownloads': activeDownloads,
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    await Directory(_config.tempDir).create(recursive: true);
+    final uploadedPath = p.join(
+      _config.tempDir,
+      'restore-upload-${DateTime.now().microsecondsSinceEpoch}.sqlite',
+    );
+    final uploadedFile = File(uploadedPath);
+    try {
+      final sink = uploadedFile.openWrite();
+      await for (final chunk in request.read()) {
+        sink.add(chunk);
+      }
+      await sink.close();
+      if (!uploadedFile.existsSync() || uploadedFile.lengthSync() == 0) {
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Empty SQLite backup file'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final result = dryRun
+          ? _analyzeAttachedSqliteBackup(uploadedPath)
+          : await _restoreAttachedSqliteBackup(uploadedPath);
+      return Response.ok(
+        jsonEncode(result),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      return Response.internalServerError(
+        body: jsonEncode({
+          'error': dryRun
+              ? 'Failed to analyze SQLite backup: $e'
+              : 'Failed to restore SQLite backup: $e',
+        }),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } finally {
+      try {
+        if (uploadedFile.existsSync()) uploadedFile.deleteSync();
+      } catch (_) {}
+    }
+  }
+
+  Map<String, int> _activeDownloadsSummary() => {
+        'gallery': _galleryDownloadService.activeDownloadCount,
+        'archive': _archiveDownloadService.activeDownloadCount,
+      };
+
+  Map<String, dynamic> _analyzeAttachedSqliteBackup(String backupPath) {
+    _attachRestoreDatabase(backupPath);
+    try {
+      final summary = _restoreSummary();
+      return {
+        'success': true,
+        'dryRun': true,
+        'summary': summary,
+        'warnings': _restoreWarnings(summary),
+        'preserved': {
+          'apiToken': true,
+          'pageCache': true,
+        },
+        'restoredSensitive': {
+          'ehCookies': true,
+        },
+      };
+    } finally {
+      _detachRestoreDatabase();
+    }
+  }
+
+  Future<Map<String, dynamic>> _restoreAttachedSqliteBackup(
+      String backupPath) async {
+    _attachRestoreDatabase(backupPath);
+    var committed = false;
+    try {
+      final summary = _restoreSummary();
+      final apiToken = db.readConfig('api_token');
+      db.raw.execute('BEGIN TRANSACTION');
+      for (final spec in _restoreTables) {
+        _restoreTable(spec, preserveApiToken: apiToken);
+      }
+      final normalized = _normalizeRestoredDownloadStatuses();
+      if (apiToken != null && apiToken.isNotEmpty) {
+        db.writeConfig('api_token', apiToken);
+      }
+      db.raw.execute('COMMIT');
+      committed = true;
+
+      await _client.cookieManager.reloadFromStorage();
+      final restoredSite = db.readConfig('site');
+      if (restoredSite == 'EH' || restoredSite == 'EX') {
+        _client.site = restoredSite!;
+      } else {
+        _client.site = 'EH';
+      }
+      _galleryDownloadService.reloadFromDatabase();
+      _archiveDownloadService.reloadFromDatabase();
+
+      return {
+        'success': true,
+        'dryRun': false,
+        'summary': summary,
+        'warnings': _restoreWarnings(summary),
+        'preserved': {
+          'apiToken': true,
+          'pageCache': true,
+        },
+        'restoredSensitive': {
+          'ehCookies': true,
+        },
+        'normalized': normalized,
+        'message': 'SQLite backup restored successfully.',
+      };
+    } finally {
+      if (!committed) {
+        try {
+          db.raw.execute('ROLLBACK');
+        } catch (_) {}
+      }
+      _detachRestoreDatabase();
+    }
+  }
+
+  void _attachRestoreDatabase(String backupPath) {
+    final escapedPath = backupPath.replaceAll("'", "''");
+    db.raw.execute("ATTACH DATABASE '$escapedPath' AS restore_src");
+    try {
+      db.raw.select('SELECT COUNT(*) AS count FROM restore_src.sqlite_master');
+      for (final spec in _restoreTables) {
+        if (!_restoreTableExists(spec.table)) {
+          throw StateError('Backup is missing required table: ${spec.table}');
+        }
+      }
+    } catch (_) {
+      _detachRestoreDatabase();
+      rethrow;
+    }
+  }
+
+  void _detachRestoreDatabase() {
+    try {
+      db.raw.execute('DETACH DATABASE restore_src');
+    } catch (_) {}
+  }
+
+  Map<String, int> _restoreSummary() {
+    final summary = <String, int>{};
+    for (final spec in _restoreTables) {
+      final row = db.raw
+          .select('SELECT COUNT(*) AS count FROM restore_src.${spec.table}')
+          .first;
+      summary[spec.summaryKey] = (row['count'] as num?)?.toInt() ?? 0;
+    }
+    return summary;
+  }
+
+  List<String> _restoreWarnings(Map<String, int> summary) {
+    final warnings = <String>[
+      'Current API token will be preserved.',
+      'EH login cookies will be restored from the backup.',
+      'Page cache will not be restored.',
+      'Downloading tasks in the backup will be changed to paused.',
+    ];
+    if ((summary['galleryDownloads'] ?? 0) == 0 &&
+        (summary['archiveDownloads'] ?? 0) == 0) {
+      warnings.add('Backup does not contain download tasks.');
+    }
+    return warnings;
+  }
+
+  bool _restoreTableExists(String table) {
+    final row = db.raw.select(
+      'SELECT COUNT(*) AS count FROM restore_src.sqlite_master WHERE type = ? AND name = ?',
+      ['table', table],
+    ).first;
+    return ((row['count'] as num?)?.toInt() ?? 0) > 0;
+  }
+
+  List<String> _tableColumns(String database, String table) {
+    return db.raw
+        .select('SELECT name FROM $database.pragma_table_info(?)', [table])
+        .map((row) => row['name']?.toString() ?? '')
+        .where((name) => name.isNotEmpty)
+        .toList();
+  }
+
+  void _restoreTable(_RestoreTableSpec spec,
+      {required String? preserveApiToken}) {
+    final sourceColumns = _tableColumns('restore_src', spec.table).toSet();
+    final targetColumns = _tableColumns('main', spec.table);
+    final columns = targetColumns
+        .where((column) => sourceColumns.contains(column))
+        .toList();
+    if (columns.isEmpty) {
+      throw StateError('Backup table ${spec.table} has no compatible columns.');
+    }
+    final columnSql = columns.map(_quoteIdentifier).join(', ');
+    final sourceColumnSql = columns.map(_quoteIdentifier).join(', ');
+    db.raw.execute('DELETE FROM ${_quoteIdentifier(spec.table)}');
+    if (spec.table == 'config') {
+      db.raw.execute(
+        'INSERT INTO ${_quoteIdentifier(spec.table)} ($columnSql) '
+        'SELECT $sourceColumnSql FROM restore_src.${_quoteIdentifier(spec.table)} '
+        "WHERE key != 'api_token'",
+      );
+      if (preserveApiToken != null && preserveApiToken.isNotEmpty) {
+        db.writeConfig('api_token', preserveApiToken);
+      }
+      return;
+    }
+    db.raw.execute(
+      'INSERT INTO ${_quoteIdentifier(spec.table)} ($columnSql) '
+      'SELECT $sourceColumnSql FROM restore_src.${_quoteIdentifier(spec.table)}',
+    );
+  }
+
+  Map<String, int> _normalizeRestoredDownloadStatuses() {
+    db.raw.execute(
+      'UPDATE gallery_download SET download_status = ? WHERE download_status = ?',
+      [
+        GalleryDownloadStatus.paused.index,
+        GalleryDownloadStatus.downloading.index,
+      ],
+    );
+    final galleryRows = db.raw.updatedRows;
+    db.raw.execute(
+      'UPDATE archive_download SET archive_status = ? WHERE archive_status IN (?, ?, ?, ?, ?)',
+      [
+        ArchiveStatus.paused.index,
+        ArchiveStatus.unlocking.index,
+        ArchiveStatus.parsingUrl.index,
+        ArchiveStatus.downloading.index,
+        ArchiveStatus.downloaded.index,
+        ArchiveStatus.unpacking.index,
+      ],
+    );
+    final archiveRows = db.raw.updatedRows;
+    return {
+      'galleryDownloadsPaused': galleryRows,
+      'archiveDownloadsPaused': archiveRows,
+    };
+  }
+
+  String _quoteIdentifier(String value) {
+    return '"${value.replaceAll('"', '""')}"';
   }
 
   Map<String, dynamic> _runtimeInfo() {

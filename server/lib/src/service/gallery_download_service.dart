@@ -118,10 +118,36 @@ class GalleryDownloadService {
   int get _maxConcurrent => effectiveMaxConcurrentGalleryDownloads(_config);
 
   List<GalleryDownloadTask> get tasks => _tasks.values.toList();
+  int get activeDownloadCount => _activeDownloads.length;
 
   GalleryDownloadService(this._client, this._config, this._eventBus);
 
   Future<void> init() async {
+    _loadTasksFromDatabase();
+    log.info('Loaded ${_tasks.length} gallery download tasks');
+
+    final toResume = _tasks.values
+        .where((t) => t.status == GalleryDownloadStatus.downloading)
+        .toList();
+    for (final task in toResume) {
+      log.info('Resuming gallery download: ${task.gid} (${task.title})');
+    }
+    if (toResume.isNotEmpty) {
+      _processQueue();
+    }
+  }
+
+  void reloadFromDatabase() {
+    for (final task in _tasks.values) {
+      task._cancelToken?.cancel('reload');
+    }
+    _activeDownloads.clear();
+    _loadTasksFromDatabase();
+    log.info('Reloaded ${_tasks.length} gallery download tasks');
+  }
+
+  void _loadTasksFromDatabase() {
+    _tasks.clear();
     final rows = db.selectAllGalleryDownloads();
     for (final row in rows) {
       final task = GalleryDownloadTask(
@@ -148,17 +174,6 @@ class GalleryDownloadService {
         supersededByGid: row['superseded_by_gid'] as int?,
       );
       _tasks[task.gid] = task;
-    }
-    log.info('Loaded ${_tasks.length} gallery download tasks');
-
-    final toResume = _tasks.values
-        .where((t) => t.status == GalleryDownloadStatus.downloading)
-        .toList();
-    for (final task in toResume) {
-      log.info('Resuming gallery download: ${task.gid} (${task.title})');
-    }
-    if (toResume.isNotEmpty) {
-      _processQueue();
     }
   }
 

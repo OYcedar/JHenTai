@@ -1247,6 +1247,19 @@ class BackendApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> restoreSqliteBackup(
+    Uint8List bytes, {
+    bool dryRun = false,
+  }) async {
+    final response = await _dio.post(
+      '/api/setting/backup/sqlite/restore',
+      queryParameters: dryRun ? {'dryRun': 'true'} : null,
+      data: bytes,
+      options: Options(contentType: 'application/octet-stream'),
+    );
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<List<Map<String, dynamic>>> listProfiles() async {
     final response = await _dio.get('/api/setting/profiles');
     final data = response.data;

@@ -64,7 +64,15 @@ class AppRouter {
             .call);
     router.mount('/api/local/', LocalRoutes(localGalleryService).router.call);
     router.mount('/api/image/', ImageRoutes(config).router.call);
-    router.mount('/api/setting/', SettingRoutes(config, ehClient).router.call);
+    router.mount(
+      '/api/setting/',
+      SettingRoutes(
+        config,
+        ehClient,
+        galleryDownloadService,
+        archiveDownloadService,
+      ).router.call,
+    );
     router.mount('/api/favorite/', FavoriteRoutes(ehClient).router.call);
     router.mount('/api/rating/', RatingRoutes(ehClient).router.call);
     router.mount('/api/history/', HistoryRoutes().router.call);

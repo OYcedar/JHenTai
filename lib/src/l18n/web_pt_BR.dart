@@ -521,6 +521,26 @@ class WebPtBR {
       'settings.downloadSqliteBackup': 'Download SQLite backup',
       'settings.sqliteBackupDownloaded': 'SQLite backup download started',
       'settings.sqliteBackupFailed': 'SQLite backup failed: @error',
+      'settings.restoreSqliteBackup': 'Restore SQLite backup',
+      'settings.sqliteRestorePreviewTitle': 'Restore SQLite backup?',
+      'settings.sqliteRestorePreviewIntro':
+          'The selected backup will replace current Web data. A fresh SQLite backup will be downloaded before restoring.',
+      'settings.confirmRestoreSqliteBackup':
+          'Back up current database and restore',
+      'settings.sqliteRestoreSuccess':
+          'SQLite backup restored. Paused @gallery gallery tasks and @archive archive tasks.',
+      'settings.sqliteRestoreFailed': 'SQLite restore failed: @error',
+      'settings.sqliteRestoreGalleryDownloads': 'Gallery download tasks',
+      'settings.sqliteRestoreArchiveDownloads': 'Archive download tasks',
+      'settings.sqliteRestoreGalleryImages': 'Downloaded image records',
+      'settings.sqliteRestoreWarnToken': 'Current API token will be preserved.',
+      'settings.sqliteRestoreWarnCookies':
+          'EH login cookies will be restored from the backup.',
+      'settings.sqliteRestoreWarnPageCache': 'Page cache will not be restored.',
+      'settings.sqliteRestoreWarnDownloadsPaused':
+          'Downloading tasks in the backup will be changed to paused.',
+      'settings.sqliteRestoreWarnNoDownloads':
+          'Backup does not contain download tasks.',
       'settings.maintenanceStorage': 'Storage summary',
       'settings.databaseSize': 'Database size',
       'settings.logsSize': 'Logs size',

@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
 import 'package:web/web.dart' as web;
 
@@ -22,6 +25,7 @@ class _WebSettingsMaintenancePageState extends State<WebSettingsMaintenancePage>
   bool loading = true;
   bool checkingUpdate = false;
   bool downloadingBackup = false;
+  bool restoringBackup = false;
   String? error;
 
   @override
@@ -89,6 +93,61 @@ class _WebSettingsMaintenancePageState extends State<WebSettingsMaintenancePage>
     } finally {
       if (mounted) {
         setState(() => downloadingBackup = false);
+      }
+    }
+  }
+
+  Future<void> _restoreBackup() async {
+    setState(() => restoringBackup = true);
+    try {
+      final bytes = await _pickSqliteFileBytes();
+      if (bytes == null) {
+        return;
+      }
+      final preview = await backendApiClient.restoreSqliteBackup(
+        bytes,
+        dryRun: true,
+      );
+      if (!mounted) {
+        return;
+      }
+      final ok = await Get.dialog<bool>(
+        _SqliteRestorePreviewDialog(preview: preview),
+      );
+      if (ok != true) {
+        return;
+      }
+
+      final currentBackup = await backendApiClient.downloadSqliteBackup();
+      _downloadBytes(currentBackup.bytes, currentBackup.fileName);
+
+      final result = await backendApiClient.restoreSqliteBackup(bytes);
+      await _load();
+      if (Get.isRegistered<WebSettingsController>()) {
+        await Get.find<WebSettingsController>().refreshStatus();
+      }
+      if (Get.isRegistered<WebDownloadService>()) {
+        await Get.find<WebDownloadService>().refresh();
+      }
+      Get.snackbar(
+        'common.success'.tr,
+        'settings.sqliteRestoreSuccess'.trParams({
+          'gallery':
+              '${_intValue(_map(result['normalized'])['galleryDownloadsPaused'])}',
+          'archive':
+              '${_intValue(_map(result['normalized'])['archiveDownloadsPaused'])}',
+        }),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'common.error'.tr,
+        'settings.sqliteRestoreFailed'.trParams({'error': '$e'}),
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => restoringBackup = false);
       }
     }
   }
@@ -246,6 +305,17 @@ class _WebSettingsMaintenancePageState extends State<WebSettingsMaintenancePage>
                 )
               : const Icon(Icons.download_outlined),
           label: Text('settings.downloadSqliteBackup'.tr),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: restoringBackup ? null : _restoreBackup,
+          icon: restoringBackup
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.restore_outlined),
+          label: Text('settings.restoreSqliteBackup'.tr),
         ),
       ],
     );
@@ -435,5 +505,128 @@ class _WebSettingsMaintenancePageState extends State<WebSettingsMaintenancePage>
     anchor.click();
     anchor.remove();
     web.URL.revokeObjectURL(url);
+  }
+}
+
+Future<Uint8List?> _pickSqliteFileBytes() async {
+  final input = web.HTMLInputElement()
+    ..type = 'file'
+    ..accept = '.sqlite,.db,application/octet-stream'
+    ..style.display = 'none';
+  web.document.body?.appendChild(input);
+  try {
+    final changed = input.onChange.first;
+    input.click();
+    await changed;
+    final file = input.files?.item(0);
+    if (file == null) {
+      return null;
+    }
+    final buffer = await file.arrayBuffer().toDart;
+    return buffer.toDart.asUint8List();
+  } finally {
+    input.remove();
+  }
+}
+
+class _SqliteRestorePreviewDialog extends StatelessWidget {
+  const _SqliteRestorePreviewDialog({required this.preview});
+
+  final Map<String, dynamic> preview;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = preview['summary'] is Map
+        ? Map<String, dynamic>.from(preview['summary'] as Map)
+        : const <String, dynamic>{};
+    final warnings = (preview['warnings'] as List? ?? [])
+        .map((item) => item.toString())
+        .where((item) => item.isNotEmpty)
+        .toList();
+    return AlertDialog(
+      title: Text('settings.sqliteRestorePreviewTitle'.tr),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('settings.sqliteRestorePreviewIntro'.tr),
+              const SizedBox(height: 12),
+              _summaryRow('settings.importSectionConfig'.tr, summary['config']),
+              _summaryRow('history.title'.tr, summary['history']),
+              _summaryRow('settings.importSectionSearchHistory'.tr,
+                  summary['searchHistory']),
+              _summaryRow('quickSearch.title'.tr, summary['quickSearch']),
+              _summaryRow(
+                  'settings.importSectionBlockRules'.tr, summary['blockRules']),
+              _summaryRow('settings.sqliteRestoreGalleryDownloads'.tr,
+                  summary['galleryDownloads']),
+              _summaryRow('settings.sqliteRestoreArchiveDownloads'.tr,
+                  summary['archiveDownloads']),
+              _summaryRow('settings.sqliteRestoreGalleryImages'.tr,
+                  summary['galleryImages']),
+              const SizedBox(height: 12),
+              for (final warning in warnings)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_outlined,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(child: Text(_localizedWarning(warning))),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('common.cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: () => Get.back(result: true),
+          child: Text('settings.confirmRestoreSqliteBackup'.tr),
+        ),
+      ],
+    );
+  }
+
+  Widget _summaryRow(String label, Object? value) {
+    final count = (value as num?)?.toInt() ?? 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          Text('$count'),
+        ],
+      ),
+    );
+  }
+
+  String _localizedWarning(String warning) {
+    return switch (warning) {
+      'Current API token will be preserved.' =>
+        'settings.sqliteRestoreWarnToken'.tr,
+      'EH login cookies will be restored from the backup.' =>
+        'settings.sqliteRestoreWarnCookies'.tr,
+      'Page cache will not be restored.' =>
+        'settings.sqliteRestoreWarnPageCache'.tr,
+      'Downloading tasks in the backup will be changed to paused.' =>
+        'settings.sqliteRestoreWarnDownloadsPaused'.tr,
+      'Backup does not contain download tasks.' =>
+        'settings.sqliteRestoreWarnNoDownloads'.tr,
+      _ => warning,
+    };
   }
 }
