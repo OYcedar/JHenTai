@@ -91,6 +91,10 @@ services:
     container_name: jhentai
     ports:
       - "8080:8080"
+    # Optional: GPU passthrough for image super-resolution.
+    # AMD/Intel iGPU NAS devices usually need:
+    # devices:
+    #   - /dev/dri:/dev/dri
     volumes:
       - jhentai-data:/data
     environment:
@@ -107,6 +111,8 @@ docker-compose up -d
 ```
 
 Then open `http://<your-server-ip>:8080` in any browser and enter the API token from `docker logs jhentai`.
+
+For **AMD/Intel integrated GPU** NAS devices, pass `/dev/dri` into the container before using image super-resolution. If the self-check still reports no GPU or permission denied, add `group_add` as described in the [Docker Deployment Guide](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md#image-super-resolution-gpu-first).
 
 **For detailed Docker documentation** (configuration, backup, reverse proxy, CI/CD, security, troubleshooting), see:
 

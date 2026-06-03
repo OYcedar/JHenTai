@@ -146,7 +146,7 @@ Docker/Web 端提供可选的图片超分辨率功能，入口在 **设置 → W
 1. 默认按 **GPU/Vulkan 优先** 运行。未检测到 GPU 时，页面会显示警告；CPU-only 仅作为实验模式开放，不建议在低配 NAS 上批量使用。
 2. 官方 Ubuntu 预编译包在本 fork 中按 amd64 路径处理。arm64 NAS 若上游包不可运行，需要自行提供可执行二进制并通过 `JH_SUPER_RESOLUTION_BINARY` 调试。
 3. 超分输出通常比原图大很多，请确认数据卷剩余空间充足。
-4. Intel/AMD 核显通常需要把宿主 `/dev/dri` 暴露给容器：
+4. Intel/AMD 核显通常需要把宿主 `/dev/dri` 暴露给容器。AMD/Intel 核显 NAS 通常也按这个方式配置：
 
 ```yaml
 services:
@@ -155,8 +155,27 @@ services:
       - /dev/dri:/dev/dri
 ```
 
-5. NVIDIA GPU 需要先在宿主机安装 NVIDIA Container Toolkit，再按宿主 Docker/Compose 版本配置 `--gpus all` 或对应 compose GPU 参数。
-6. 如果反代或 NAS 平台不支持 GPU 透传，超分中心仍可用于自检、模型管理和查看任务，但不建议创建 CPU-only 大任务。
+5. 如果超分自检仍显示没有 GPU，或日志里出现 `/dev/dri/renderD128` 权限不足，请把宿主机的 render/video 组 ID 加到容器。不同 NAS 的 GID 可能不同，先在宿主机执行：
+
+```bash
+stat -c '%n %g' /dev/dri/renderD128 /dev/dri/card0
+```
+
+然后在 compose 中填入对应数字，例如：
+
+```yaml
+services:
+  jhentai:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "109" # 替换为 /dev/dri/renderD128 的组 ID
+      - "44"  # 如有需要，替换为 /dev/dri/card0 的组 ID
+```
+
+6. NVIDIA GPU 需要先在宿主机安装 NVIDIA Container Toolkit，再按宿主 Docker/Compose 版本配置 `--gpus all` 或对应 compose GPU 参数。
+7. 如果反代或 NAS 平台不支持 GPU 透传，超分中心仍可用于自检、模型管理和查看任务，但不建议创建 CPU-only 大任务。
+8. “下载完成后自动超分”默认关闭。确认 GPU 自检正常、模型已安装、磁盘空间充足后再开启，避免 NAS 在批量下载后持续高负载。
 
 ---
 

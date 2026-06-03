@@ -130,7 +130,7 @@ Notes:
 1. The feature is **GPU/Vulkan first**. If no GPU is detected, the page shows a warning. CPU-only mode is experimental and is not recommended for large NAS workloads.
 2. Official Ubuntu prebuilt packages are treated as the amd64 path in this fork. arm64 NAS users may need to provide a compatible custom executable and debug with `JH_SUPER_RESOLUTION_BINARY`.
 3. Super-resolution output can be much larger than source images. Check free space before starting large jobs.
-4. Intel/AMD integrated GPUs usually require passing `/dev/dri` into the container:
+4. Intel/AMD integrated GPUs usually require passing `/dev/dri` into the container. AMD/Intel integrated GPU NAS devices usually use this path:
 
 ```yaml
 services:
@@ -139,8 +139,27 @@ services:
       - /dev/dri:/dev/dri
 ```
 
-5. NVIDIA GPUs require NVIDIA Container Toolkit on the host and the appropriate `--gpus all` / Compose GPU configuration.
-6. If your NAS or reverse proxy environment cannot expose GPU devices, the page can still be used for diagnostics and model management, but large CPU-only jobs are discouraged.
+5. If the self-check still reports no GPU, or logs show permission errors for `/dev/dri/renderD128`, add the host render/video group IDs to the container. These IDs vary by NAS. Check them on the host first:
+
+```bash
+stat -c '%n %g' /dev/dri/renderD128 /dev/dri/card0
+```
+
+Then add the matching numeric IDs to compose, for example:
+
+```yaml
+services:
+  jhentai:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "109" # replace with the group ID of /dev/dri/renderD128
+      - "44"  # replace with the group ID of /dev/dri/card0 if needed
+```
+
+6. NVIDIA GPUs require NVIDIA Container Toolkit on the host and the appropriate `--gpus all` / Compose GPU configuration.
+7. If your NAS or reverse proxy environment cannot expose GPU devices, the page can still be used for diagnostics and model management, but large CPU-only jobs are discouraged.
+8. “Auto super-resolve after download” is disabled by default. Enable it only after GPU self-check passes, models are installed, and enough free disk space is available.
 
 ---
 

@@ -76,6 +76,10 @@ services:
     container_name: jhentai
     ports:
       - "8080:8080"
+    # Optional: GPU passthrough for image super-resolution.
+    # AMD/Intel iGPU NAS devices usually need:
+    # devices:
+    #   - /dev/dri:/dev/dri
     volumes:
       - jhentai-data:/data
     environment:
@@ -92,6 +96,8 @@ docker-compose up -d
 ```
 
 브라우저에서 `http://<서버IP>:8080`을 열고 `docker logs jhentai`에 표시된 API 토큰을 입력하면 사용할 수 있습니다.
+
+AMD/Intel 내장 GPU NAS에서 이미지 초해상도를 사용하려면 `/dev/dri`를 컨테이너에 전달하세요. 자가 진단이 여전히 GPU 없음 또는 권한 부족을 표시하면 [Docker 배포 가이드](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md#이미지-초해상도gpu-우선)의 `group_add` 설명을 따르세요.
 
 **상세 Docker 배포 문서** (설정, 백업, 리버스 프록시, CI/CD, 보안, 문제 해결)는 아래를 참조하세요:
 

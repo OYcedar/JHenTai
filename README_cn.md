@@ -87,6 +87,9 @@ services:
     container_name: jhentai
     ports:
       - "8080:8080"
+    # 可选：图片超分辨率 GPU 透传。AMD/Intel 核显 NAS 通常需要：
+    # devices:
+    #   - /dev/dri:/dev/dri
     volumes:
       - jhentai-data:/data
     environment:
@@ -103,6 +106,8 @@ docker-compose up -d
 ```
 
 在浏览器中打开 `http://<服务器IP>:8080`，输入 `docker logs jhentai` 中显示的 API Token 即可使用。
+
+如果你的 NAS 使用 **AMD/Intel 核显** 并希望使用图片超分辨率，请把宿主机的 `/dev/dri` 透传到容器。若超分页面仍提示没有 GPU 或权限不足，再按 [Docker 部署指南](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md#图片超分辨率gpu-优先) 增加 `group_add`。
 
 **详细的 Docker 部署文档**（配置、备份、反向代理、CI/CD、安全、常见问题）请参阅：
 

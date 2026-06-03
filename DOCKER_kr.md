@@ -116,6 +116,45 @@ environment:
 
 ---
 
+## 이미지 초해상도 (GPU 우선)
+
+Docker/Web에는 선택 사항인 이미지 초해상도 기능이 있습니다. 위치는 **설정 → Web/Docker → Image super resolution** 입니다. 이 기능은 `Real-CUGAN ncnn Vulkan` / `Real-ESRGAN ncnn Vulkan` 외부 도구를 사용하며, 모델은 `/data/super_resolution/models`, 출력은 `/data/super_resolution/output`에 저장됩니다. 원본 다운로드 이미지는 덮어쓰지 않습니다.
+
+주의:
+
+1. 기본은 **GPU/Vulkan 우선**입니다. GPU가 감지되지 않으면 페이지에 경고가 표시됩니다. CPU-only는 실험 모드이며 NAS 대량 작업에는 권장하지 않습니다.
+2. 공식 Ubuntu 사전 빌드 패키지는 이 fork에서 amd64 경로로 취급합니다. arm64 NAS는 호환 실행 파일을 직접 제공하고 `JH_SUPER_RESOLUTION_BINARY`로 디버그해야 할 수 있습니다.
+3. 초해상도 출력은 원본보다 훨씬 커질 수 있으므로 여유 공간을 먼저 확인하세요.
+4. Intel/AMD 내장 GPU는 보통 호스트의 `/dev/dri`를 컨테이너에 전달해야 합니다. AMD/Intel 내장 GPU NAS도 이 방식입니다.
+
+```yaml
+services:
+  jhentai:
+    devices:
+      - /dev/dri:/dev/dri
+```
+
+5. 자가 진단이 여전히 GPU 없음 또는 `/dev/dri/renderD128` 권한 부족을 표시하면 호스트의 render/video 그룹 ID를 컨테이너에 추가하세요. NAS마다 GID가 다를 수 있으니 먼저 호스트에서 확인합니다.
+
+```bash
+stat -c '%n %g' /dev/dri/renderD128 /dev/dri/card0
+```
+
+```yaml
+services:
+  jhentai:
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "109" # /dev/dri/renderD128 그룹 ID로 교체
+      - "44"  # 필요하면 /dev/dri/card0 그룹 ID로 교체
+```
+
+6. NVIDIA GPU는 호스트에 NVIDIA Container Toolkit을 설치한 뒤 Docker/Compose 버전에 맞게 `--gpus all` 또는 compose GPU 옵션을 설정해야 합니다.
+7. “Auto super-resolve after download”는 기본적으로 꺼져 있습니다. GPU 자가 진단 통과, 모델 설치, 충분한 디스크 공간을 확인한 뒤 켜세요.
+
+---
+
 ## 로컬 갤러리 스캔
 
 미디어 디렉토리를 컨테이너에 마운트하고 `JH_EXTRA_SCAN_PATHS`로 등록하세요:
