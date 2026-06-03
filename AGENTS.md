@@ -8,5 +8,6 @@
 - For Web/App experience parity work, check `docs/WEB_APP_PARITY_AUDIT.md` first. Update the matrix, choose one high-value theme package, and avoid low-value "feedback only" commits unless they are part of that theme.
 - Before committing, check `git rev-list --count master..docker`.
 - After every 10 commits on `docker`, merge `docker` into `master`, push the Docker image, increment `docker/fork_revision`, and update README / Docker image tags through the publish script.
+- After every successful Docker image publish, remove old local JHenTai Docker images. Keep only the current published `x.y.z-hhh` tag and `latest`; do not remove unrelated project images.
 - If fewer than 10 commits have accumulated, push only the `docker` branch and do not push a Docker image.
 - Commit messages in this repository must be written in Chinese.
