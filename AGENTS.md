@@ -2,6 +2,9 @@
 
 ## Local agent rules
 
+- Load `skills/docker-web-development/SKILL.md` before making code, docs,
+  Docker, release, or Git changes in this repository. The portable human-readable
+  rule sheet is `docs/DOCKER_WEB_DEVELOPMENT_RULES.md`.
 - Work on the `docker` branch only unless the user explicitly asks for a release merge.
 - Keep related cross-page UX work in one scoped change and one commit. For example, if adding or refactoring "scroll to top", scan all relevant Web pages first, implement the shared behavior once, and commit it once.
 - Do not create repeated tiny commits for the same UI pattern across pages.
