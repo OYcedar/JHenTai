@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/main_web.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
+import 'package:jhentai/src/pages_web/web_download_priority.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_controller.dart';
 import 'package:jhentai/src/pages_web/web_scan_roots_dialog.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
@@ -61,12 +62,12 @@ class _WebSettingsDownloadMenuPageState
     super.initState();
     galleryGroupController.text =
         _displayGroupName(_readStorage(_galleryGroupKey, 'default'));
-    galleryPriorityController.text = _readStorage(_galleryPriorityKey, '0');
+    galleryPriorityController.text = _readStorage(_galleryPriorityKey, '5');
     galleryDownloadOriginalImage =
         _readStorage(_galleryOriginalKey, 'false') == 'true';
     archiveGroupController.text =
         _displayGroupName(_readStorage(_archiveGroupKey, 'default'));
-    archivePriorityController.text = _readStorage(_archivePriorityKey, '0');
+    archivePriorityController.text = _readStorage(_archivePriorityKey, '5');
     _loadRestoreTasksAutomatically();
     _loadSpeedLimit();
     _loadRuntimeSettings();
@@ -103,6 +104,11 @@ class _WebSettingsDownloadMenuPageState
       return 'default';
     }
     return text;
+  }
+
+  int _priorityValue(TextEditingController controller) {
+    return normalizeWebDownloadPriority(
+        int.tryParse(controller.text.trim()) ?? webDownloadPriorityMedium);
   }
 
   List<String> _groupCandidates() {
@@ -427,10 +433,8 @@ class _WebSettingsDownloadMenuPageState
   void _saveDefaults() {
     final galleryGroup = _normalizeGroupName(galleryGroupController.text);
     final archiveGroup = _normalizeGroupName(archiveGroupController.text);
-    final galleryPriority =
-        int.tryParse(galleryPriorityController.text.trim()) ?? 0;
-    final archivePriority =
-        int.tryParse(archivePriorityController.text.trim()) ?? 0;
+    final galleryPriority = _priorityValue(galleryPriorityController);
+    final archivePriority = _priorityValue(archivePriorityController);
 
     web.window.localStorage.setItem(_galleryGroupKey, galleryGroup);
     web.window.localStorage.setItem(_galleryPriorityKey, '$galleryPriority');
@@ -450,10 +454,10 @@ class _WebSettingsDownloadMenuPageState
   void _resetDefaults() {
     setState(() {
       galleryGroupController.text = _displayGroupName('default');
-      galleryPriorityController.text = '0';
+      galleryPriorityController.text = '5';
       galleryDownloadOriginalImage = false;
       archiveGroupController.text = _displayGroupName('default');
-      archivePriorityController.text = '0';
+      archivePriorityController.text = '5';
     });
     _saveDefaults();
   }
@@ -1060,6 +1064,7 @@ class _WebSettingsDownloadMenuPageState
     final normalizedGroup = _normalizeGroupName(groupController.text);
     final selectedGroup =
         groups.contains(normalizedGroup) ? normalizedGroup : null;
+    final selectedPriority = _priorityValue(priorityController);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1095,13 +1100,9 @@ class _WebSettingsDownloadMenuPageState
             const SizedBox(width: 12),
             Expanded(
               flex: 2,
-              child: TextField(
-                controller: priorityController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'downloads.setPriority'.tr,
-                  border: const OutlineInputBorder(),
-                ),
+              child: WebDownloadPrioritySelector(
+                selectedPriority: selectedPriority,
+                onSelected: (value) => priorityController.text = '$value',
               ),
             ),
           ],
