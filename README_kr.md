@@ -64,7 +64,7 @@ JHenTai는 **Docker 컨테이너**로 배포하여 모든 기기의 웹 브라�
 문서 예시는 **`x.y.z-hhh`** 태그를 고정해 사용합니다(`hhh`는 fork 리비전의 16진수 3자리, `docker/fork_revision` 참고). 배포 스크립트도 `latest`를 푸시하지만 README / compose 예시는 명시 버전을 사용해야 합니다. Docker Hub에 이미지를 푸시할 때마다 `docker/fork_revision`을 올리고 README의 이미지 태그를 갱신해야 하며, 배포 스크립트가 푸시 전에 자동으로 처리합니다.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.13-151
+docker pull hemumoe/jhentai:8.0.13-152
 ```
 
 **docker-compose로 빠르게 시작:**
@@ -72,7 +72,7 @@ docker pull hemumoe/jhentai:8.0.13-151
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.13-151
+    image: hemumoe/jhentai:8.0.13-152
     container_name: jhentai
     ports:
       - "8080:8080"
