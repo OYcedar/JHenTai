@@ -652,6 +652,36 @@ class WebDownloadsController extends GetxController
 
   Future<void> refresh() => _svc.refresh();
 
+  Future<void> retryFailedGalleryDownloads() async {
+    final result = await _svc.retryFailedGalleryDownloads();
+    final count = (result['retriedGalleryCount'] as num?)?.toInt() ?? 0;
+    Get.snackbar(
+      'common.success'.tr,
+      'downloads.failedGalleryRetried'.trParams({'count': '$count'}),
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  Future<void> retryFailedArchiveDownloads() async {
+    final result = await _svc.retryFailedArchiveDownloads();
+    final count = (result['retriedArchiveCount'] as num?)?.toInt() ?? 0;
+    Get.snackbar(
+      'common.success'.tr,
+      'downloads.failedArchiveRetried'.trParams({'count': '$count'}),
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
+  Future<void> reUnlockFailedArchiveDownloads() async {
+    final result = await _svc.reUnlockFailedArchiveDownloads();
+    final count = (result['reUnlockedArchiveCount'] as num?)?.toInt() ?? 0;
+    Get.snackbar(
+      'common.success'.tr,
+      'downloads.failedArchiveReUnlocked'.trParams({'count': '$count'}),
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  }
+
   Future<void> pauseVisibleTasks() async {
     final galleryTab = tabController.index == 0;
     final tasks = _batchTargetTasks();
@@ -1144,6 +1174,10 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         return Column(
           children: [
             _DownloadConnectionStatusBar(service: svc),
+            _DownloadIssueStatusBar(
+              service: svc,
+              controller: controller,
+            ),
             _DownloadFilterBar(controller: controller),
             Expanded(
               child: TabBarView(
@@ -1158,6 +1192,97 @@ class WebDownloadsPage extends GetView<WebDownloadsController> {
         );
       }),
     );
+  }
+}
+
+class _DownloadIssueStatusBar extends StatelessWidget {
+  const _DownloadIssueStatusBar({
+    required this.service,
+    required this.controller,
+  });
+
+  final WebDownloadService service;
+  final WebDownloadsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      service.downloadIssuesVersion.value;
+      final issues = service.downloadIssues;
+      final summary =
+          Map<String, dynamic>.from(issues['summary'] as Map? ?? {});
+      final total = (summary['failedTotal'] as num?)?.toInt() ?? 0;
+      if (total <= 0) {
+        return const SizedBox.shrink();
+      }
+      final gallery = (summary['galleryFailed'] as num?)?.toInt() ?? 0;
+      final archive = (summary['archiveFailed'] as num?)?.toInt() ?? 0;
+      final theme = Theme.of(context);
+      final colorScheme = theme.colorScheme;
+      return Material(
+        color: colorScheme.errorContainer,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Icon(Icons.report_problem_outlined,
+                  size: 18, color: colorScheme.onErrorContainer),
+              Text(
+                'downloads.failedIssueSummary'.trParams({
+                  'total': '$total',
+                  'gallery': '$gallery',
+                  'archive': '$archive',
+                }),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: colorScheme.onErrorContainer),
+              ),
+              TextButton.icon(
+                onPressed: () => Get.toNamed('/web/settings/troubleshooting'),
+                icon: const Icon(Icons.plumbing_outlined, size: 16),
+                label: Text('settings.troubleshootingWorkbench'.tr),
+                style: TextButton.styleFrom(
+                  foregroundColor: colorScheme.onErrorContainer,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              if (gallery > 0)
+                TextButton.icon(
+                  onPressed: controller.retryFailedGalleryDownloads,
+                  icon: const Icon(Icons.restart_alt, size: 16),
+                  label: Text('downloads.retryFailedGallery'.tr),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colorScheme.onErrorContainer,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              if (archive > 0)
+                TextButton.icon(
+                  onPressed: controller.retryFailedArchiveDownloads,
+                  icon: const Icon(Icons.play_circle_outline, size: 16),
+                  label: Text('downloads.retryFailedArchive'.tr),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colorScheme.onErrorContainer,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              if (archive > 0)
+                TextButton.icon(
+                  onPressed: controller.reUnlockFailedArchiveDownloads,
+                  icon: const Icon(Icons.lock_reset, size: 16),
+                  label: Text('downloads.reUnlockFailedArchive'.tr),
+                  style: TextButton.styleFrom(
+                    foregroundColor: colorScheme.onErrorContainer,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
 
@@ -3013,6 +3138,7 @@ class _GalleryTaskCard extends StatelessWidget {
     final priority = (task['priority'] as num?)?.toInt() ?? 0;
     final supersededBy = task['supersededByGid'] as int?;
     final status = task['status'] as int? ?? 0;
+    final lastError = task['lastError']?.toString() ?? '';
     final completed = task['completedCount'] as int? ?? 0;
     final total = task['pageCount'] as int? ?? 0;
     final progress = total > 0 ? completed / total : 0.0;
@@ -3236,6 +3362,8 @@ class _GalleryTaskCard extends StatelessWidget {
                                     color: Colors.orange.shade800),
                               ),
                             ),
+                          if (status == 4 && lastError.isNotEmpty)
+                            _TaskErrorSummary(error: lastError),
                           const SizedBox(height: 4),
                           LinearProgressIndicator(value: progress),
                         ],
@@ -3403,6 +3531,7 @@ class _ArchiveTaskCard extends StatelessWidget {
     final groupName =
         (task['group_name'] ?? task['groupName'] ?? 'default') as String;
     final status = task['status'] as int? ?? 0;
+    final lastError = task['lastError']?.toString() ?? '';
     final downloaded = task['downloadedBytes'] as int? ?? 0;
     final total = task['totalBytes'] as int? ?? 0;
     final progress = total > 0 ? downloaded / total : 0.0;
@@ -3631,6 +3760,8 @@ class _ArchiveTaskCard extends StatelessWidget {
                                 ),
                             ],
                           ),
+                          if (status == 8 && lastError.isNotEmpty)
+                            _TaskErrorSummary(error: lastError),
                           const SizedBox(height: 4),
                           LinearProgressIndicator(
                               value: status == 3
@@ -3700,6 +3831,36 @@ class _ArchiveTaskCard extends StatelessWidget {
 }
 
 // --- Shared widgets ---
+
+class _TaskErrorSummary extends StatelessWidget {
+  const _TaskErrorSummary({required this.error});
+
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.error;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, size: 14, color: color),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              error,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _StatusBadge extends StatelessWidget {
   final int statusIndex;

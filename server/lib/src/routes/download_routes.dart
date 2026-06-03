@@ -6,8 +6,9 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../config/server_config.dart';
-import '../service/gallery_download_service.dart';
 import '../service/archive_download_service.dart';
+import '../service/download_issue_summary.dart';
+import '../service/gallery_download_service.dart';
 import '../utils/archive_util.dart';
 
 class DownloadRoutes {
@@ -22,11 +23,14 @@ class DownloadRoutes {
   Router get router {
     final router = Router();
 
+    router.get('/issues', _downloadIssues);
+
     // Gallery downloads
     router.get('/gallery/list', _listGalleryDownloads);
     router.post('/gallery/start', _startGalleryDownload);
     router.post('/gallery/upgrade', _upgradeGalleryDownload);
     router.post('/gallery/restore', _restoreGalleryDownloads);
+    router.post('/gallery/retry-failed', _retryFailedGalleryDownloads);
     router.patch('/gallery/<gid>', _patchGalleryDownload);
     router.post('/gallery/<gid>/pause', _pauseGalleryDownload);
     router.post('/gallery/<gid>/resume', _resumeGalleryDownload);
@@ -40,6 +44,8 @@ class DownloadRoutes {
     router.get('/archive/list', _listArchiveDownloads);
     router.post('/archive/start', _startArchiveDownload);
     router.post('/archive/restore', _restoreArchiveDownloads);
+    router.post('/archive/retry-failed', _retryFailedArchiveDownloads);
+    router.post('/archive/reunlock-failed', _reUnlockFailedArchiveDownloads);
     router.patch('/archive/<gid>', _patchArchiveDownload);
     router.post('/archive/<gid>/pause', _pauseArchiveDownload);
     router.post('/archive/<gid>/resume', _resumeArchiveDownload);
@@ -51,6 +57,20 @@ class DownloadRoutes {
   }
 
   // --- Gallery ---
+
+  Future<Response> _downloadIssues(Request request) async {
+    return Response.ok(
+      jsonEncode(_downloadIssuesPayload()),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Map<String, dynamic> _downloadIssuesPayload() {
+    return DownloadIssueSummary.build(
+      galleryTasks: _galleryService.tasks.map((task) => task.toJson()),
+      archiveTasks: _archiveService.tasks.map((task) => task.toJson()),
+    );
+  }
 
   Future<Response> _listGalleryDownloads(Request request) async {
     final tasks = _galleryService.tasks.map((t) => t.toJson()).toList();
@@ -137,6 +157,24 @@ class DownloadRoutes {
     final restored = await _galleryService.restoreDownloadsFromMetadata();
     return Response.ok(
       jsonEncode({'success': true, 'restoredGalleryCount': restored}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _retryFailedGalleryDownloads(Request request) async {
+    final ids = _galleryService.tasks
+        .where((task) => task.status == GalleryDownloadStatus.failed)
+        .map((task) => task.gid)
+        .toList();
+    for (final gid in ids) {
+      _galleryService.resumeDownload(gid);
+    }
+    return Response.ok(
+      jsonEncode({
+        'success': true,
+        'retriedGalleryCount': ids.length,
+        'issues': _downloadIssuesPayload(),
+      }),
       headers: {'Content-Type': 'application/json'},
     );
   }
@@ -320,6 +358,45 @@ class DownloadRoutes {
     final restored = await _archiveService.restoreDownloadsFromMetadata();
     return Response.ok(
       jsonEncode({'success': true, 'restoredArchiveCount': restored}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _retryFailedArchiveDownloads(Request request) async {
+    final ids = _archiveService.tasks
+        .where((task) => task.status == ArchiveStatus.failed)
+        .map((task) => task.gid)
+        .toList();
+    for (final gid in ids) {
+      _archiveService.resumeDownload(gid);
+    }
+    return Response.ok(
+      jsonEncode({
+        'success': true,
+        'retriedArchiveCount': ids.length,
+        'issues': _downloadIssuesPayload(),
+      }),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+
+  Future<Response> _reUnlockFailedArchiveDownloads(Request request) async {
+    final ids = _archiveService.tasks
+        .where((task) => task.status == ArchiveStatus.failed)
+        .map((task) => task.gid)
+        .toList();
+    var count = 0;
+    for (final gid in ids) {
+      if (await _archiveService.reUnlock(gid)) {
+        count++;
+      }
+    }
+    return Response.ok(
+      jsonEncode({
+        'success': true,
+        'reUnlockedArchiveCount': count,
+        'issues': _downloadIssuesPayload(),
+      }),
       headers: {'Content-Type': 'application/json'},
     );
   }

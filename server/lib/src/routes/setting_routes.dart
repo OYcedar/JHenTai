@@ -11,6 +11,7 @@ import '../config/server_config.dart';
 import '../core/database.dart';
 import '../network/eh_client.dart';
 import '../service/archive_download_service.dart';
+import '../service/download_issue_summary.dart';
 import '../service/download_runtime_settings.dart';
 import '../service/gallery_download_service.dart';
 import '../service/super_resolution_service.dart';
@@ -648,11 +649,20 @@ class SettingRoutes {
     final diagnostics = _diagnosticsPayload();
     final maintenance = _maintenancePayload();
     final superResolution = _superResolutionSnapshot();
+    final downloadIssues = _downloadIssuesPayload();
     final recentProblems = _recentProblemLogs();
+    final issues = _troubleshootingIssues(
+      diagnostics,
+      maintenance,
+      superResolution,
+      downloadIssues,
+      recentProblems,
+    );
     final issueCount = _troubleshootingIssueCount(
       diagnostics,
       maintenance,
       superResolution,
+      downloadIssues,
       recentProblems,
     );
     return Response.ok(
@@ -660,8 +670,10 @@ class SettingRoutes {
         'status': issueCount > 0 ? 'warn' : 'ok',
         'generatedAt': DateTime.now().toIso8601String(),
         'summary': {'issueCount': issueCount},
+        'issues': issues,
         'diagnostics': diagnostics,
         'maintenance': maintenance,
+        'downloads': downloadIssues,
         'network': _networkRuntime(),
         'logs': {
           ..._logsSummary(),
@@ -694,6 +706,9 @@ class SettingRoutes {
     }
     if (probes.contains('superResolution')) {
       results['superResolution'] = _probeSuperResolution();
+    }
+    if (probes.contains('downloads')) {
+      results['downloads'] = _downloadIssuesPayload();
     }
     return Response.ok(
       jsonEncode({
@@ -734,10 +749,18 @@ class SettingRoutes {
     };
   }
 
+  Map<String, dynamic> _downloadIssuesPayload() {
+    return DownloadIssueSummary.build(
+      galleryTasks: _galleryDownloadService.tasks.map((task) => task.toJson()),
+      archiveTasks: _archiveDownloadService.tasks.map((task) => task.toJson()),
+    );
+  }
+
   int _troubleshootingIssueCount(
     Map<String, dynamic> diagnostics,
     Map<String, dynamic> maintenance,
     Map<String, dynamic> superResolution,
+    Map<String, dynamic> downloadIssues,
     List<Map<String, dynamic>> recentProblems,
   ) {
     final diagnosticSummary = diagnostics['summary'] is Map
@@ -751,10 +774,107 @@ class SettingRoutes {
         ? Map<String, dynamic>.from(superResolution['capabilities'] as Map)
         : const <String, dynamic>{};
     final srIssues = srCaps['status'] == 'ok' ? 0 : 1;
+    final downloadSummary = downloadIssues['summary'] is Map
+        ? Map<String, dynamic>.from(downloadIssues['summary'] as Map)
+        : const <String, dynamic>{};
+    final downloadIssueCount =
+        (downloadSummary['failedTotal'] as num?)?.toInt() ?? 0;
     return diagnosticIssues +
         maintenanceIssues +
         srIssues +
+        downloadIssueCount +
         recentProblems.length.clamp(0, 5).toInt();
+  }
+
+  List<Map<String, dynamic>> _troubleshootingIssues(
+    Map<String, dynamic> diagnostics,
+    Map<String, dynamic> maintenance,
+    Map<String, dynamic> superResolution,
+    Map<String, dynamic> downloadIssues,
+    List<Map<String, dynamic>> recentProblems,
+  ) {
+    final issues = <Map<String, dynamic>>[];
+    final checks =
+        (diagnostics['checks'] as List? ?? const []).whereType<Map>();
+    for (final check in checks) {
+      final status = check['status']?.toString() ?? 'ok';
+      if (status == 'ok') continue;
+      issues.add({
+        'id': 'diagnostics_${check['id']}',
+        'group': check['group']?.toString() ?? 'storage',
+        'status': status,
+        'title': check['label']?.toString() ?? 'Deployment check',
+        'detail': check['detail']?.toString() ?? '',
+        'hint': check['hint']?.toString() ?? '',
+        'route': '/web/settings/diagnostics',
+        'probe': check['group'] == 'network' ? 'network' : null,
+      });
+    }
+
+    final downloadGroups =
+        (downloadIssues['groups'] as List? ?? const []).whereType<Map>();
+    for (final group in downloadGroups) {
+      final category = group['category']?.toString() ?? 'unknown';
+      issues.add({
+        'id': 'downloads_$category',
+        'group': category == 'hath' ? 'hath' : 'downloads',
+        'status': 'warn',
+        'titleKey': group['titleKey'],
+        'detailKey': group['detailKey'],
+        'count': group['count'],
+        'route': '/web/downloads',
+        'probe': category == 'hath' ? 'hath' : 'downloads',
+        'actions': group['actions'],
+      });
+    }
+
+    final srCaps = superResolution['capabilities'] is Map
+        ? Map<String, dynamic>.from(superResolution['capabilities'] as Map)
+        : const <String, dynamic>{};
+    if (srCaps['status'] != 'ok') {
+      final warnings = (srCaps['warnings'] as List? ?? const [])
+          .map((item) => item.toString())
+          .where((item) => item.isNotEmpty)
+          .join(' ');
+      final gpu = srCaps['gpu'] is Map
+          ? Map<String, dynamic>.from(srCaps['gpu'] as Map)
+          : const <String, dynamic>{};
+      issues.add({
+        'id': 'super_resolution_runtime',
+        'group': 'superResolution',
+        'status': 'warn',
+        'titleKey': 'superResolution.title',
+        'detail': warnings,
+        'route': '/web/settings/super-resolution',
+        'probe': 'superResolution',
+        if ((gpu['composeSnippet']?.toString() ?? '').isNotEmpty)
+          'copyText': gpu['composeSnippet'].toString(),
+      });
+    }
+
+    if (maintenance['status'] != 'ok') {
+      issues.add({
+        'id': 'maintenance_paths',
+        'group': 'storage',
+        'status': 'warn',
+        'titleKey': 'settings.maintenanceCenter',
+        'detailKey': 'settings.maintenanceCenterSummary',
+        'route': '/web/settings/maintenance',
+      });
+    }
+
+    if (recentProblems.isNotEmpty) {
+      issues.add({
+        'id': 'recent_problem_logs',
+        'group': 'logs',
+        'status': 'warn',
+        'titleKey': 'settings.troubleshootingRecentProblems',
+        'detail': recentProblems.first['line']?.toString() ?? '',
+        'route': '/web/settings/advanced',
+      });
+    }
+
+    return issues.take(24).toList();
   }
 
   List<Map<String, dynamic>> _troubleshootingActions(

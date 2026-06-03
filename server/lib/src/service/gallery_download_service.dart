@@ -47,6 +47,8 @@ class GalleryDownloadTask {
   final String insertTime;
   int? supersedesGid;
   int? supersededByGid;
+  String lastError;
+  String errorCategory;
   CancelToken? _cancelToken;
 
   GalleryDownloadTask({
@@ -68,6 +70,8 @@ class GalleryDownloadTask {
     required this.insertTime,
     this.supersedesGid,
     this.supersededByGid,
+    this.lastError = '',
+    this.errorCategory = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -93,6 +97,8 @@ class GalleryDownloadTask {
         'insertTime': insertTime,
         if (supersedesGid != null) 'supersedesGid': supersedesGid,
         if (supersededByGid != null) 'supersededByGid': supersededByGid,
+        if (lastError.isNotEmpty) 'lastError': lastError,
+        if (errorCategory.isNotEmpty) 'errorCategory': errorCategory,
       };
 }
 
@@ -202,6 +208,8 @@ class GalleryDownloadService {
       if (existing.status == GalleryDownloadStatus.paused ||
           existing.status == GalleryDownloadStatus.failed) {
         existing.status = GalleryDownloadStatus.downloading;
+        existing.lastError = '';
+        existing.errorCategory = '';
         db.updateGalleryDownloadStatus(
             gid, GalleryDownloadStatus.downloading.index);
         _processQueue();
@@ -361,6 +369,8 @@ class GalleryDownloadService {
     if (task.status != GalleryDownloadStatus.paused &&
         task.status != GalleryDownloadStatus.failed) return;
     task.status = GalleryDownloadStatus.downloading;
+    task.lastError = '';
+    task.errorCategory = '';
     db.updateGalleryDownloadStatus(
         gid, GalleryDownloadStatus.downloading.index);
     _notifyProgress(task);
@@ -628,6 +638,8 @@ class GalleryDownloadService {
       if (imagePageUrls.isEmpty) {
         log.warning('No image pages found for gallery ${task.gid}');
         task.status = GalleryDownloadStatus.failed;
+        task.lastError = 'No image pages found';
+        task.errorCategory = 'imagePage';
         db.updateGalleryDownloadStatus(
             task.gid, GalleryDownloadStatus.failed.index);
         _activeDownloads.remove(task.gid);
@@ -679,6 +691,8 @@ class GalleryDownloadService {
           log.warning(
               'Failed to download image $i after retries, marking gallery ${task.gid} as failed');
           task.status = GalleryDownloadStatus.failed;
+          task.lastError = 'Failed to download image ${i + 1} after retries';
+          task.errorCategory = 'imagePage';
           db.updateGalleryDownloadStatus(
               task.gid, GalleryDownloadStatus.failed.index);
           _notifyProgress(task,
@@ -689,6 +703,8 @@ class GalleryDownloadService {
 
       if (task.status == GalleryDownloadStatus.downloading) {
         task.status = GalleryDownloadStatus.completed;
+        task.lastError = '';
+        task.errorCategory = '';
         db.updateGalleryDownloadStatus(
             task.gid, GalleryDownloadStatus.completed.index,
             completedCount: task.completedCount);
@@ -703,6 +719,8 @@ class GalleryDownloadService {
     } catch (e, s) {
       log.error('Gallery download failed for ${task.gid}', e, s);
       task.status = GalleryDownloadStatus.failed;
+      task.lastError = '$e';
+      task.errorCategory = _classifyGalleryError('$e');
       db.updateGalleryDownloadStatus(
           task.gid, GalleryDownloadStatus.failed.index);
       _notifyProgress(task, error: '$e');
@@ -973,5 +991,22 @@ class GalleryDownloadService {
     final data = task.toJson();
     if (error != null) data['error'] = error;
     _eventBus.fire('gallery_download_progress', data);
+  }
+
+  String _classifyGalleryError(String error) {
+    final text = error.toLowerCase();
+    if (text.contains('509') || text.contains('image limit')) return 'quota';
+    if (text.contains('hath.network') ||
+        text.contains('proxy') ||
+        text.contains('handshake') ||
+        text.contains('socket') ||
+        text.contains('connection') ||
+        text.contains('timeout')) {
+      return 'hath';
+    }
+    if (text.contains('image page') || text.contains('download image')) {
+      return 'imagePage';
+    }
+    return 'unknown';
   }
 }

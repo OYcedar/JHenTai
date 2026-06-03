@@ -372,6 +372,16 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  Future<Map<String, dynamic>> getDownloadIssues() async {
+    final response = await _dio.get('/api/download/issues');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> retryFailedGalleryDownloads() async {
+    final response = await _dio.post('/api/download/gallery/retry-failed');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<void> patchGalleryDownload(
     int gid, {
     int? priority,
@@ -480,6 +490,16 @@ class BackendApiClient {
 
   Future<void> reUnlockArchiveDownload(int gid) async {
     await _dio.post('/api/download/archive/$gid/reunlock');
+  }
+
+  Future<Map<String, dynamic>> retryFailedArchiveDownloads() async {
+    final response = await _dio.post('/api/download/archive/retry-failed');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  Future<Map<String, dynamic>> reUnlockFailedArchiveDownloads() async {
+    final response = await _dio.post('/api/download/archive/reunlock-failed');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
   Future<void> deleteArchiveDownload(int gid, {bool deleteFiles = true}) async {

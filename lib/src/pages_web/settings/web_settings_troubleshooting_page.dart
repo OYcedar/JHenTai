@@ -61,11 +61,11 @@ class _WebSettingsTroubleshootingPageState
     }
   }
 
-  Future<void> _runProbe() async {
+  Future<void> _runProbe({List<String>? probes}) async {
     setState(() => probing = true);
     try {
       final result = await backendApiClient.probeTroubleshooting(
-        probes: const ['network', 'hath', 'superResolution'],
+        probes: probes ?? const ['network', 'hath', 'superResolution'],
         imageUrl: _hathUrlController.text,
       );
       if (!mounted) {
@@ -144,6 +144,8 @@ class _WebSettingsTroubleshootingPageState
                     padding: const EdgeInsets.all(16),
                     children: [
                       _summaryCard(context),
+                      const SizedBox(height: 12),
+                      _issuesCard(context),
                       const SizedBox(height: 12),
                       _probeCard(context),
                       const SizedBox(height: 12),
@@ -232,7 +234,7 @@ class _WebSettingsTroubleshootingPageState
         Align(
           alignment: Alignment.centerRight,
           child: FilledButton.icon(
-            onPressed: probing ? null : _runProbe,
+            onPressed: probing ? null : () => _runProbe(),
             icon: probing
                 ? const SizedBox.square(
                     dimension: 18,
@@ -269,6 +271,111 @@ class _WebSettingsTroubleshootingPageState
         _infoRow('JH_IMAGE_PROXY_DEBUG',
             _boolLabel(network['imageProxyDebug'] == true)),
       ],
+    );
+  }
+
+  Widget _issuesCard(BuildContext context) {
+    final issues =
+        (snapshot['issues'] as List? ?? const []).whereType<Map>().toList();
+    if (issues.isEmpty) {
+      return _sectionCard(
+        context,
+        icon: Icons.task_alt_outlined,
+        iconColor: Colors.green,
+        title: 'settings.troubleshootingIssueList'.tr,
+        children: [Text('settings.troubleshootingNoIssues'.tr)],
+      );
+    }
+    return _sectionCard(
+      context,
+      icon: Icons.report_problem_outlined,
+      iconColor: _statusColor(context, 'warn'),
+      title: 'settings.troubleshootingIssueList'.tr,
+      children: [
+        for (final issue in issues.take(8))
+          _issueTile(context, Map<String, dynamic>.from(issue)),
+      ],
+    );
+  }
+
+  Widget _issueTile(BuildContext context, Map<String, dynamic> issue) {
+    final status = issue['status']?.toString() ?? 'warn';
+    final title = _issueText(issue, 'title', 'titleKey');
+    final detail = _issueText(issue, 'detail', 'detailKey');
+    final route = issue['route']?.toString() ?? '';
+    final probe = issue['probe']?.toString() ?? '';
+    final copyText = issue['copyText']?.toString() ?? '';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _statusColor(context, status).withValues(alpha: 0.3),
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(_statusIcon(status),
+                      color: _statusColor(context, status), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  _statusChip(context, status),
+                ],
+              ),
+              if (detail.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(detail, style: Theme.of(context).textTheme.bodySmall),
+              ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  if (route.isNotEmpty)
+                    OutlinedButton.icon(
+                      onPressed: () => Get.toNamed(route),
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: Text('settings.troubleshootingOpenTarget'.tr),
+                    ),
+                  if (probe.isNotEmpty)
+                    OutlinedButton.icon(
+                      onPressed:
+                          probing ? null : () => _runProbe(probes: [probe]),
+                      icon: const Icon(Icons.science_outlined, size: 16),
+                      label: Text('settings.troubleshootingRetest'.tr),
+                    ),
+                  if (copyText.isNotEmpty)
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: copyText));
+                        Get.snackbar(
+                          'common.success'.tr,
+                          'hasCopiedToClipboard'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                      },
+                      icon: const Icon(Icons.copy_all_outlined, size: 16),
+                      label: Text('settings.troubleshootingCopyFix'.tr),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -503,6 +610,23 @@ class _WebSettingsTroubleshootingPageState
 
   String _boolLabel(bool value) {
     return value ? 'settings.enabled'.tr : 'settings.disabled'.tr;
+  }
+
+  String _issueText(
+    Map<String, dynamic> issue,
+    String textKey,
+    String translationKey,
+  ) {
+    final text = issue[textKey]?.toString() ?? '';
+    if (text.isNotEmpty) {
+      return text;
+    }
+    final key = issue[translationKey]?.toString() ?? '';
+    if (key.isEmpty) {
+      return '';
+    }
+    final count = issue['count']?.toString() ?? '';
+    return count.isEmpty ? key.tr : key.trParams({'count': count});
   }
 
   String _gpuComposeSnippet() {

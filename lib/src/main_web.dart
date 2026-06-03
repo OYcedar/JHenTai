@@ -89,6 +89,8 @@ class WebDownloadService extends GetxController {
   final archiveTasks = <int, Map<String, dynamic>>{}.obs;
   final galleryTasksVersion = 0.obs;
   final archiveTasksVersion = 0.obs;
+  final downloadIssues = <String, dynamic>{}.obs;
+  final downloadIssuesVersion = 0.obs;
   final superResolutionJobs = <String, Map<String, dynamic>>{}.obs;
   final superResolutionJobsVersion = 0.obs;
   final isLoaded = false.obs;
@@ -143,6 +145,9 @@ class WebDownloadService extends GetxController {
       }
       archiveTasks.value = aMap;
       archiveTasksVersion.value++;
+
+      downloadIssues.value = await backendApiClient.getDownloadIssues();
+      downloadIssuesVersion.value++;
 
       final srJobs = await backendApiClient.listSuperResolutionJobs();
       final srMap = <String, Map<String, dynamic>>{};
@@ -223,10 +228,12 @@ class WebDownloadService extends GetxController {
         final gid = data['gid'] as int;
         galleryTasks[gid] = data;
         galleryTasksVersion.value++;
+        _updateLocalDownloadIssues();
       } else if (eventType == 'archive_download_progress') {
         final gid = data['gid'] as int;
         archiveTasks[gid] = data;
         archiveTasksVersion.value++;
+        _updateLocalDownloadIssues();
       } else if (eventType == 'download_removed') {
         _loadTasks();
       } else if (eventType == 'super_resolution_progress') {
@@ -249,6 +256,24 @@ class WebDownloadService extends GetxController {
 
   Map<String, dynamic>? getGalleryTask(int gid) => galleryTasks[gid];
   Map<String, dynamic>? getArchiveTask(int gid) => archiveTasks[gid];
+
+  void _updateLocalDownloadIssues() {
+    final failedGallery =
+        galleryTasks.values.where((task) => task['status'] == 4).length;
+    final failedArchive =
+        archiveTasks.values.where((task) => task['status'] == 8).length;
+    final total = failedGallery + failedArchive;
+    final current = Map<String, dynamic>.from(downloadIssues);
+    current['status'] = total == 0 ? 'ok' : 'warn';
+    current['summary'] = {
+      ...Map<String, dynamic>.from(current['summary'] as Map? ?? {}),
+      'failedTotal': total,
+      'galleryFailed': failedGallery,
+      'archiveFailed': failedArchive,
+    };
+    downloadIssues.value = current;
+    downloadIssuesVersion.value++;
+  }
 
   int? getGalleryStatus(int gid) => galleryTasks[gid]?['status'] as int?;
   int? getArchiveStatus(int gid) => archiveTasks[gid]?['status'] as int?;
@@ -336,6 +361,29 @@ class WebDownloadService extends GetxController {
       );
 
   Future<void> refresh() => _loadTasks();
+
+  Future<void> refreshDownloadIssues() async {
+    downloadIssues.value = await backendApiClient.getDownloadIssues();
+    downloadIssuesVersion.value++;
+  }
+
+  Future<Map<String, dynamic>> retryFailedGalleryDownloads() async {
+    final result = await backendApiClient.retryFailedGalleryDownloads();
+    await _loadTasks();
+    return result;
+  }
+
+  Future<Map<String, dynamic>> retryFailedArchiveDownloads() async {
+    final result = await backendApiClient.retryFailedArchiveDownloads();
+    await _loadTasks();
+    return result;
+  }
+
+  Future<Map<String, dynamic>> reUnlockFailedArchiveDownloads() async {
+    final result = await backendApiClient.reUnlockFailedArchiveDownloads();
+    await _loadTasks();
+    return result;
+  }
 }
 
 class WebEventNoticeService extends GetxController {

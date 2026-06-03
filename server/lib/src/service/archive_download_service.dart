@@ -52,6 +52,8 @@ class ArchiveDownloadTask {
   String downloadUrl;
   int downloadedBytes;
   int totalBytes;
+  String lastError;
+  String errorCategory;
   CancelToken? _cancelToken;
 
   ArchiveDownloadTask({
@@ -76,6 +78,8 @@ class ArchiveDownloadTask {
     this.downloadUrl = '',
     this.downloadedBytes = 0,
     this.totalBytes = 0,
+    this.lastError = '',
+    this.errorCategory = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -103,6 +107,8 @@ class ArchiveDownloadTask {
         'publishTime': publishTime,
         'publish_time': publishTime,
         'insertTime': insertTime,
+        if (lastError.isNotEmpty) 'lastError': lastError,
+        if (errorCategory.isNotEmpty) 'errorCategory': errorCategory,
       };
 }
 
@@ -211,6 +217,8 @@ class ArchiveDownloadService {
       if (existing.status == ArchiveStatus.paused ||
           existing.status == ArchiveStatus.failed) {
         existing.status = ArchiveStatus.unlocking;
+        existing.lastError = '';
+        existing.errorCategory = '';
         db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
         _processQueue();
       }
@@ -297,6 +305,8 @@ class ArchiveDownloadService {
     if (task.status != ArchiveStatus.paused &&
         task.status != ArchiveStatus.failed) return;
     task.status = ArchiveStatus.unlocking;
+    task.lastError = '';
+    task.errorCategory = '';
     db.updateArchiveDownloadStatus(gid, ArchiveStatus.unlocking.index);
     _notifyProgress(task);
     _processQueue();
@@ -309,6 +319,8 @@ class ArchiveDownloadService {
     task._cancelToken?.cancel('reunlock');
     _activeDownloads.remove(gid);
     task.status = ArchiveStatus.unlocking;
+    task.lastError = '';
+    task.errorCategory = '';
     task.downloadPageUrl = '';
     task.downloadUrl = '';
     task.downloadedBytes = 0;
@@ -555,6 +567,8 @@ class ArchiveDownloadService {
       }
 
       task.status = ArchiveStatus.completed;
+      task.lastError = '';
+      task.errorCategory = '';
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.completed.index);
       _saveMetadata(task);
       _notifyProgress(task);
@@ -567,17 +581,23 @@ class ArchiveDownloadService {
     } on ArchiveUnlockException catch (e) {
       log.error('Archive unlock failed for ${task.gid}: ${e.message}');
       task.status = ArchiveStatus.failed;
+      task.lastError = e.message;
+      task.errorCategory = 'archiveUnlock';
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
       _notifyProgress(task);
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) return;
       log.error('Archive download failed for ${task.gid}', e);
       task.status = ArchiveStatus.failed;
+      task.lastError = '$e';
+      task.errorCategory = _classifyArchiveError('$e');
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
       _notifyProgress(task);
     } catch (e, s) {
       log.error('Archive download failed for ${task.gid}', e, s);
       task.status = ArchiveStatus.failed;
+      task.lastError = '$e';
+      task.errorCategory = _classifyArchiveError('$e');
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.failed.index);
       _notifyProgress(task);
     } finally {
@@ -627,5 +647,25 @@ class ArchiveDownloadService {
 
   void _notifyProgress(ArchiveDownloadTask task) {
     _eventBus.fire('archive_download_progress', task.toJson());
+  }
+
+  String _classifyArchiveError(String error) {
+    final text = error.toLowerCase();
+    if (text.contains('509')) return 'quota';
+    if (text.contains('unlock')) return 'archiveUnlock';
+    if (text.contains('hath.network') ||
+        text.contains('proxy') ||
+        text.contains('handshake') ||
+        text.contains('socket') ||
+        text.contains('connection') ||
+        text.contains('timeout')) {
+      return 'hath';
+    }
+    if (text.contains('extract') ||
+        text.contains('zip') ||
+        text.contains('archive')) {
+      return 'archiveDownload';
+    }
+    return 'unknown';
   }
 }

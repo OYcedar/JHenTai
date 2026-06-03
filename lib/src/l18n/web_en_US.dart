@@ -639,6 +639,11 @@ class WebEnUS {
           'Troubleshooting probe failed: @error',
       'settings.troubleshootingSummary': 'Troubleshooting summary',
       'settings.troubleshootingSummaryBody': '@count items need attention.',
+      'settings.troubleshootingIssueList': 'Issues to fix',
+      'settings.troubleshootingNoIssues': 'No actionable issues right now.',
+      'settings.troubleshootingOpenTarget': 'Open related page',
+      'settings.troubleshootingRetest': 'Retest',
+      'settings.troubleshootingCopyFix': 'Copy fix snippet',
       'settings.troubleshootingActiveProbe': 'Manual active probe',
       'settings.troubleshootingActiveProbeHint':
           'Only runs when clicked; tests EH/EX, H@H image hosts, and GPU/super-resolution runtime.',
@@ -648,6 +653,7 @@ class WebEnUS {
       'settings.troubleshootingProbe_hath': 'H@H image host',
       'settings.troubleshootingProbe_superResolution':
           'GPU/super-resolution runtime',
+      'settings.troubleshootingProbe_downloads': 'Download failures',
       'settings.troubleshootingFailedJobs': 'Failed jobs',
       'settings.troubleshootingGpuDevices': 'GPU devices',
       'settings.copyGpuComposeSnippet': 'Copy GPU compose snippet',
@@ -1253,6 +1259,37 @@ class WebEnUS {
       'downloads.batchGroupChanged': 'Changed group for @count tasks',
       'downloads.batchPriorityChanged': 'Changed priority for @count tasks',
       'downloads.batchDeleted': 'Deleted @count tasks',
+      'downloads.failedIssueSummary':
+          '@total failed tasks found (gallery @gallery, archive @archive).',
+      'downloads.retryFailedGallery': 'Retry failed galleries',
+      'downloads.retryFailedArchive': 'Retry failed archives',
+      'downloads.reUnlockFailedArchive': 'Re-unlock failed archives',
+      'downloads.failedGalleryRetried': 'Retried @count failed gallery tasks',
+      'downloads.failedArchiveRetried': 'Retried @count failed archive tasks',
+      'downloads.failedArchiveReUnlocked':
+          'Re-unlocked @count failed archive tasks',
+      'downloads.issue_hath': '@count H@H/proxy failures',
+      'downloads.issue_hath_hint':
+          'Check the H@H URL, JH_HATH_PROXY, and reverse proxy network path.',
+      'downloads.issue_quota': '@count quota/509 limits',
+      'downloads.issue_quota_hint':
+          'Wait for quota recovery or reset the image limit from EH status before retrying.',
+      'downloads.issue_imagePage': '@count image page/download failures',
+      'downloads.issue_imagePage_hint':
+          'Retry first; if it keeps failing, run the H@H active probe.',
+      'downloads.issue_archiveUnlock': '@count archive unlock failures',
+      'downloads.issue_archiveUnlock_hint':
+          'Re-unlock archives and check login cookies/network proxy if needed.',
+      'downloads.issue_archiveDownload':
+          '@count archive download/extract failures',
+      'downloads.issue_archiveDownload_hint':
+          'Retry archive tasks; if the URL expired, re-unlock first.',
+      'downloads.issue_localFile': '@count local file issues',
+      'downloads.issue_localFile_hint':
+          'Check download directory mounts, permissions, and NAS disk health.',
+      'downloads.issue_unknown': '@count unknown failures',
+      'downloads.issue_unknown_hint':
+          'Open the troubleshooting workbench, copy diagnostics, and review recent server logs.',
 
       'detail.startDownloadTitle': 'Start download',
       'detail.downloadGroup': 'Group',
