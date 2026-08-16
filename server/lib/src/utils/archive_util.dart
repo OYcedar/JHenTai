@@ -90,11 +90,11 @@ String archiveDirPath(String downloadDir, int gid, String title) =>
     p.join(downloadDir, computeArchiveDirName(gid, title));
 
 /// 按 gid 查找已解压的归档目录：
-/// 兼容 Web 新格式、旧版数字目录，以及 iPad 导出的嵌套命名目录。
+/// 优先匹配新格式 `Archive - <gid> - <标题>`，回退旧格式 `archive/<gid>`。
 String? resolveArchiveDir(String downloadDir, int gid) {
   final root = Directory(downloadDir);
-  final prefix = 'Archive - $gid - ';
   if (root.existsSync()) {
+    final prefix = 'Archive - $gid - ';
     try {
       for (final entity in root.listSync(followLinks: false)) {
         if (entity is Directory && p.basename(entity.path).startsWith(prefix)) {
@@ -106,21 +106,7 @@ String? resolveArchiveDir(String downloadDir, int gid) {
     }
   }
   final legacy = p.join(downloadDir, 'archive', '$gid');
-  if (Directory(legacy).existsSync()) return legacy;
-
-  final legacyRoot = Directory(p.join(downloadDir, 'archive'));
-  if (legacyRoot.existsSync()) {
-    try {
-      for (final entity in legacyRoot.listSync(followLinks: false)) {
-        if (entity is Directory && p.basename(entity.path).startsWith(prefix)) {
-          return entity.path;
-        }
-      }
-    } catch (_) {
-      // 目录扫描失败时按未找到处理。
-    }
-  }
-  return null;
+  return Directory(legacy).existsSync() ? legacy : null;
 }
 
 /// 从 `Archive - <gid> - <标题>` 形式的目录名中解析 gid。

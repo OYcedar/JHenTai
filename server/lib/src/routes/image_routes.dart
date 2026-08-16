@@ -59,7 +59,8 @@ class ImageRoutes {
     return _serveFile(filePath, request);
   }
 
-  /// 解析归档解压目录：优先缓存，再兼容 Web、旧版数字目录和 iPad 导出布局。
+  /// 解析归档解压目录：优先缓存，再按新格式 `Archive - <gid> - <标题>`
+  /// 扫描，最后回退旧格式 `archive/<gid>`。
   String? _resolveArchiveDir(int gid) {
     final cached = _archiveDirCache[gid];
     if (cached != null && Directory(cached).existsSync()) return cached;
