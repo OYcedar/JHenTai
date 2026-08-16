@@ -425,8 +425,20 @@ class ArchiveDownloadService {
     db.deleteArchiveDownload(gid);
 
     if (deleteFiles) {
-      final archiveDir = Directory(_archiveDir(gid));
-      if (await archiveDir.exists()) await archiveDir.delete(recursive: true);
+      // 新格式 `Archive - <gid> - <标题>` 与旧格式 `archive/<gid>` 都删。
+      final dirs = <String>{p.join(_config.downloadDir, 'archive', '$gid')};
+      if (task != null) {
+        dirs.add(_archiveDir(task));
+      } else {
+        final resolved = resolveArchiveDir(_config.downloadDir, gid);
+        if (resolved != null) dirs.add(resolved);
+      }
+      for (final dirPath in dirs) {
+        final archiveDir = Directory(dirPath);
+        if (await archiveDir.exists()) {
+          await archiveDir.delete(recursive: true);
+        }
+      }
       final zipFile = File(_archiveZipPath(gid));
       if (await zipFile.exists()) await zipFile.delete();
     }
@@ -435,26 +447,55 @@ class ArchiveDownloadService {
   }
 
   Future<int> restoreDownloadsFromMetadata() async {
-    final root = Directory(p.join(_config.downloadDir, 'archive'));
-    if (!await root.exists()) return 0;
+    // 新格式：下载根目录下 `Archive - <gid> - <标题>` 文件夹，内含 ametadata。
+    // 旧格式：`archive/<gid>` 文件夹，内含 metadata.json。两者都恢复。
+    final candidates = <Directory>[];
+    final root = Directory(_config.downloadDir);
+    if (root.existsSync()) {
+      try {
+        await for (final entity in root.list(followLinks: false)) {
+          if (entity is Directory &&
+              RegExp(r'^Archive - \d+ - ').hasMatch(p.basename(entity.path))) {
+            candidates.add(entity);
+          }
+        }
+      } catch (e) {
+        log.warning('Restore archive scan failed: ${root.path}: $e');
+      }
+    }
+    final legacyRoot = Directory(p.join(_config.downloadDir, 'archive'));
+    if (legacyRoot.existsSync()) {
+      try {
+        await for (final entity in legacyRoot.list(followLinks: false)) {
+          if (entity is Directory) candidates.add(entity);
+        }
+      } catch (e) {
+        log.warning('Restore archive scan failed: ${legacyRoot.path}: $e');
+      }
+    }
 
     var restored = 0;
-    await for (final entity in root.list(followLinks: false)) {
-      if (entity is! Directory) continue;
-      final metaFile = File(p.join(entity.path, 'metadata.json'));
-      if (!await metaFile.exists()) continue;
+    for (final entity in candidates) {
+      final metaFile = File(p.join(entity.path, 'ametadata'));
+      final legacyMetaFile = File(p.join(entity.path, 'metadata.json'));
+      final metaFileToUse = metaFile.existsSync()
+          ? metaFile
+          : (legacyMetaFile.existsSync() ? legacyMetaFile : null);
+      if (metaFileToUse == null) continue;
 
       Map<String, dynamic> meta;
       try {
-        final decoded = jsonDecode(await metaFile.readAsString());
+        final decoded = jsonDecode(await metaFileToUse.readAsString());
         if (decoded is! Map) continue;
         meta = decoded.cast<String, dynamic>();
       } catch (e) {
-        log.warning('Restore archive metadata failed: ${metaFile.path}: $e');
+        log.warning(
+            'Restore archive metadata failed: ${metaFileToUse.path}: $e');
         continue;
       }
 
       final gid = (meta['gid'] as num?)?.toInt() ??
+          gidFromArchiveDirName(entity.path) ??
           int.tryParse(p.basename(entity.path));
       if (gid == null || _tasks.containsKey(gid)) continue;
 
@@ -470,7 +511,8 @@ class ArchiveDownloadService {
       }
 
       final hasImages = _hasExtractedImages(entity);
-      final insertTime = (await metaFile.stat()).modified.toIso8601String();
+      final insertTime =
+          (await metaFileToUse.stat()).modified.toIso8601String();
       final task = ArchiveDownloadTask(
         gid: gid,
         token: token,
@@ -643,7 +685,7 @@ class ArchiveDownloadService {
       db.updateArchiveDownloadStatus(task.gid, ArchiveStatus.unpacking.index);
       _notifyProgress(task);
 
-      final extractDir = _archiveDir(task.gid);
+      final extractDir = _archiveDir(task);
       await Directory(extractDir).create(recursive: true);
 
       final success = await extractZipArchive(zipPath, extractDir);
@@ -704,8 +746,8 @@ class ArchiveDownloadService {
     }
   }
 
-  String _archiveDir(int gid) =>
-      p.join(_config.downloadDir, 'archive', gid.toString());
+  String _archiveDir(ArchiveDownloadTask task) =>
+      archiveDirPath(_config.downloadDir, task.gid, task.title);
   String _archiveZipPath(int gid) =>
       p.join(_config.tempDir, 'archive_$gid.zip');
 
@@ -721,7 +763,8 @@ class ArchiveDownloadService {
   }
 
   void _saveMetadata(ArchiveDownloadTask task) {
-    final metaFile = File(p.join(_archiveDir(task.gid), 'metadata.json'));
+    // 与旧版移动端一致的元数据文件名（无扩展名），放在归档解压目录内。
+    final metaFile = File(p.join(_archiveDir(task), 'ametadata'));
     metaFile.parent.createSync(recursive: true);
     metaFile.writeAsStringSync(jsonEncode({
       'gid': task.gid,

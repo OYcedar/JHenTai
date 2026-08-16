@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../config/server_config.dart';
 import '../core/database.dart';
 import '../core/log.dart';
+import '../utils/archive_util.dart';
 import 'event_bus.dart';
 
 enum SuperResolutionSourceType { gallery, archive }
@@ -773,7 +774,9 @@ class SuperResolutionService {
           .where((image) => File(image.path).existsSync())
           .toList();
     }
-    final dir = Directory(p.join(_config.downloadDir, 'archive', '$gid'));
+    final resolvedDir = resolveArchiveDir(_config.downloadDir, gid);
+    if (resolvedDir == null) return [];
+    final dir = Directory(resolvedDir);
     if (!dir.existsSync()) return [];
     final files = dir
         .listSync()

@@ -10,10 +10,12 @@ import '../console_diag.dart';
 import '../core/log.dart';
 import '../debug_flags.dart';
 import '../service/local_gallery_runtime_settings.dart';
+import '../utils/archive_util.dart';
 
 class ImageRoutes {
   final ServerConfig _config;
   late final String _downloadDirCanonical = p.canonicalize(_config.downloadDir);
+  final Map<int, String> _archiveDirCache = {};
 
   ImageRoutes(this._config);
 
@@ -42,8 +44,24 @@ class ImageRoutes {
 
   Future<Response> _serveArchiveImage(
       Request request, String gid, String filename) async {
-    final filePath = p.join(_config.downloadDir, 'archive', gid, filename);
+    final gidNum = int.tryParse(gid);
+    if (gidNum == null) return Response.notFound('Missing gid');
+    final archiveDir = _resolveArchiveDir(gidNum);
+    if (archiveDir == null) {
+      return Response.notFound('Archive not found');
+    }
+    final filePath = p.join(archiveDir, filename);
     return _serveFile(filePath, request);
+  }
+
+  /// 解析归档解压目录：优先缓存，再按新格式 `Archive - <gid> - <标题>`
+  /// 扫描，最后回退旧格式 `archive/<gid>`。
+  String? _resolveArchiveDir(int gid) {
+    final cached = _archiveDirCache[gid];
+    if (cached != null && Directory(cached).existsSync()) return cached;
+    final resolved = resolveArchiveDir(_config.downloadDir, gid);
+    if (resolved != null) _archiveDirCache[gid] = resolved;
+    return resolved;
   }
 
   Response _serveFile(String filePath, Request request) {

@@ -46,7 +46,8 @@ Future<bool> extractGZipArchive(String archivePath, String extractPath) async {
     try {
       final inputStream = InputFileStream(archivePath);
       final bytes = GZipDecoder().decodeBuffer(inputStream);
-      final outputStream = OutputFileStream('$extractPath/${_fileNameWithoutExtension(archivePath)}');
+      final outputStream = OutputFileStream(
+          '$extractPath/${_fileNameWithoutExtension(archivePath)}');
       outputStream.writeBytes(Uint8List.fromList(bytes.toList()));
       outputStream.close();
       inputStream.close();
@@ -59,7 +60,56 @@ Future<bool> extractGZipArchive(String archivePath, String extractPath) async {
 
 bool isImageFile(String path) {
   final ext = path.split('.').last.toLowerCase();
-  return const {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'}.contains(ext);
+  return const {'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif'}
+      .contains(ext);
+}
+
+/// 归档文件夹标题最大长度，与旧版移动端一致。
+const int archiveMaxTitleLength = 80;
+
+/// 把原始标题清洗成可安全用作文件夹名的形式：
+/// 替换路径非法字符为空格，超过 [archiveMaxTitleLength] 时截断。
+String sanitizeArchiveTitle(String rawTitle) {
+  var title = rawTitle.replaceAll(RegExp(r'[/|?,:*"<>\\.]'), ' ').trim();
+  if (title.length > archiveMaxTitleLength) {
+    title = title.substring(0, archiveMaxTitleLength).trim();
+  }
+  return title;
+}
+
+/// 归档解压后的文件夹名，格式与旧版一致：`Archive - <gid> - <标题>`。
+String computeArchiveDirName(int gid, String title) =>
+    'Archive - $gid - ${sanitizeArchiveTitle(title)}';
+
+/// 归档解压后的完整目录路径。
+String archiveDirPath(String downloadDir, int gid, String title) =>
+    p.join(downloadDir, computeArchiveDirName(gid, title));
+
+/// 按 gid 查找已解压的归档目录：
+/// 优先匹配新格式 `Archive - <gid> - <标题>`，回退旧格式 `archive/<gid>`。
+String? resolveArchiveDir(String downloadDir, int gid) {
+  final root = Directory(downloadDir);
+  if (root.existsSync()) {
+    final prefix = 'Archive - $gid - ';
+    try {
+      for (final entity in root.listSync(followLinks: false)) {
+        if (entity is Directory && p.basename(entity.path).startsWith(prefix)) {
+          return entity.path;
+        }
+      }
+    } catch (_) {
+      // 目录扫描失败时按未找到处理，回退旧格式。
+    }
+  }
+  final legacy = p.join(downloadDir, 'archive', '$gid');
+  return Directory(legacy).existsSync() ? legacy : null;
+}
+
+/// 从 `Archive - <gid> - <标题>` 形式的目录名中解析 gid。
+int? gidFromArchiveDirName(String dirPath) {
+  final name = p.basename(dirPath);
+  final match = RegExp(r'^Archive - (\d+) - ').firstMatch(name);
+  return match == null ? null : int.tryParse(match.group(1)!);
 }
 
 int naturalCompare(String a, String b) {

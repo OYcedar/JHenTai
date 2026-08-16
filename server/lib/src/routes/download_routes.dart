@@ -503,8 +503,16 @@ class DownloadRoutes {
   }
 
   Future<Response> _listArchiveImages(Request request, String gid) async {
-    final dir = Directory(p.join(_config.downloadDir, 'archive', gid));
-    return _listImageFiles(dir);
+    final gidNum = int.tryParse(gid);
+    if (gidNum == null) {
+      return Response.ok(
+        jsonEncode({'images': <String>[]}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+    final resolvedDir = resolveArchiveDir(_config.downloadDir, gidNum);
+    return _listImageFiles(
+        Directory(resolvedDir ?? p.join(_config.downloadDir, 'archive', gid)));
   }
 
   Future<Response> _listImageFiles(Directory dir) async {
@@ -565,7 +573,10 @@ class DownloadRoutes {
   }
 
   void _invalidateArchiveImageCache(int gid) {
-    _imageListCache.remove(p.join(_config.downloadDir, 'archive', '$gid'));
+    final legacyPath = p.join(_config.downloadDir, 'archive', '$gid');
+    _imageListCache.remove(legacyPath);
+    _imageListCache.removeWhere((path, _) =>
+        path.startsWith(p.join(_config.downloadDir, 'Archive - $gid - ')));
   }
 
   void _evictImageListCache() {
