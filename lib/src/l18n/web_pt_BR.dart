@@ -1341,18 +1341,21 @@ class WebPtBR {
           'Escanear QR code para ler recursos baixados no Yealico',
       'yealicoConfigTitle': 'Configuração do Leitor Yealico',
       'yealicoConfigHint':
-          'Escanear o QR code abaixo com o Yealico para importar a regra do site e ler galerias, arquivos e bibliotecas locais baixados pelo JHenTai.',
+          'O servidor gera uma regra de site somente leitura para o Yealico: copie o JSON da regra ou baixe o arquivo da regra e cole-o no editor de regras do Yealico para ler galerias, arquivos e bibliotecas locais baixados pelo JHenTai.',
       'yealicoConfigScanHint':
           'Abrir Yealico → Regras → Escanear para importar',
       'yealicoConfigRuleJson': 'Regra JSON',
       'yealicoConfigCopy': 'Copiar',
       'yealicoConfigCopied': 'Copiado',
+      'yealicoConfigDownload': 'Baixar arquivo de regra',
+      'yealicoConfigQrHint':
+          'Após importar, toque em Generate QR Code no editor de regras do Yealico para compartilhar a regra com outros dispositivos por leitura de QR code.',
       'yealicoConfigImportSteps':
-          'Você também pode copiar o JSON da regra e colá-lo no editor de regras do Yealico.',
+          'Importar: Yealico → Regras → Editar → cole o JSON da regra e salve (ou abra o arquivo de regra baixado com o Yealico).',
       'yealicoConfigRotate': 'Regenerar',
       'yealicoConfigRotateConfirm':
-          'Após regenerar, o QR code e a regra antigos deixam de funcionar imediatamente. Escaneie e importe novamente.',
-      'yealicoConfigRotated': 'Regenerado, escaneie novamente',
+          'Após regenerar, a regra antiga deixa de funcionar imediatamente. Copie/baixe e importe novamente.',
+      'yealicoConfigRotated': 'Regenerado, importe a regra novamente',
       'yealicoConfigLoadFailed': 'Falha ao carregar a configuração do Yealico',
     };
   }

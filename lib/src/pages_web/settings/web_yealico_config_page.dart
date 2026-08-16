@@ -1,13 +1,17 @@
 import 'dart:convert';
+import 'dart:js_interop';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/network/backend_api_client.dart';
 import 'package:jhentai/src/pages_web/web_scroll_to_top.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:web/web.dart' as web;
 
-/// Yealico 阅读器配置页：展示可扫码导入的站点规则（含服务器地址与 reader token）。
+/// Yealico 阅读器配置页：下载/复制可导入的站点规则（含服务器地址与 reader token）。
+///
+/// 按 Yealico 官方导入流程：JSON 粘贴到规则编辑器导入；
+/// 二维码由 Yealico 内部生成（规则编辑器 → Generate QR Code）供其他设备扫描。
 class WebYealicoConfigPage extends StatefulWidget {
   const WebYealicoConfigPage({super.key});
 
@@ -101,6 +105,21 @@ class _WebYealicoConfigPageState extends State<WebYealicoConfigPage>
     }
   }
 
+  void _downloadRule() {
+    if (rule == null) return;
+    final blob = web.Blob([jsonEncode(rule).toJS].toJS,
+        web.BlobPropertyBag(type: 'application/json'));
+    final objectUrl = web.URL.createObjectURL(blob);
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement;
+    anchor.href = objectUrl;
+    anchor.download = 'jhentai-yealico-rule.json';
+    anchor.style.display = 'none';
+    web.document.body?.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    web.URL.revokeObjectURL(objectUrl);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,46 +162,16 @@ class _WebYealicoConfigPageState extends State<WebYealicoConfigPage>
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
-                      children: [
-                        QrImageView(
-                          data: jsonEncode(rule),
-                          version: QrVersions.auto,
-                          size: 240,
-                          backgroundColor: Colors.white,
-                        ),
-                        const SizedBox(height: 12),
-                        Text('yealicoConfigScanHint'.tr,
-                            textAlign: TextAlign.center),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'yealicoConfigRuleJson'.tr,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: _copyRule,
-                              icon: const Icon(Icons.copy, size: 18),
-                              label: Text('yealicoConfigCopy'.tr),
-                            ),
-                          ],
+                        Text(
+                          'yealicoConfigRuleJson'.tr,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         Container(
                           width: double.infinity,
-                          constraints: const BoxConstraints(maxHeight: 220),
+                          constraints: const BoxConstraints(maxHeight: 260),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Theme.of(context)
@@ -195,8 +184,30 @@ class _WebYealicoConfigPageState extends State<WebYealicoConfigPage>
                             style: const TextStyle(fontSize: 12),
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: _copyRule,
+                                icon: const Icon(Icons.copy, size: 18),
+                                label: Text('yealicoConfigCopy'.tr),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: _downloadRule,
+                                icon: const Icon(Icons.download, size: 18),
+                                label: Text('yealicoConfigDownload'.tr),
+                              ),
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 8),
                         Text('yealicoConfigImportSteps'.tr),
+                        const SizedBox(height: 4),
+                        Text('yealicoConfigQrHint'.tr),
                       ],
                     ),
                   ),
@@ -210,7 +221,7 @@ class _WebYealicoConfigPageState extends State<WebYealicoConfigPage>
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.qr_code_2),
+                      : const Icon(Icons.refresh),
                   label: Text('yealicoConfigRotate'.tr),
                 ),
               ],

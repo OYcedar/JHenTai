@@ -1397,17 +1397,19 @@ class WebEnUS {
           'Scan the QR code to read downloaded resources in Yealico',
       'yealicoConfigTitle': 'Yealico Reader Setup',
       'yealicoConfigHint':
-          'Scan the QR code below with Yealico to import the site rule, then browse galleries, archives and local libraries downloaded by JHenTai.',
-      'yealicoConfigScanHint': 'Open Yealico → Rules → Scan to import',
+          'The server generates a read-only Yealico site rule: copy the rule JSON or download the rule file, then paste it into the Yealico rule editor to browse galleries, archives and local libraries downloaded by JHenTai.',
       'yealicoConfigRuleJson': 'Rule JSON',
       'yealicoConfigCopy': 'Copy',
       'yealicoConfigCopied': 'Copied',
+      'yealicoConfigDownload': 'Download rule file',
+      'yealicoConfigQrHint':
+          'After importing, you can tap Generate QR Code in the Yealico rule editor to share the rule with other devices by scanning.',
       'yealicoConfigImportSteps':
-          'You can also copy the rule JSON and paste it in the Yealico rule editor to import.',
+          'Import: Yealico → Rules → Edit → paste the rule JSON and save (or open the downloaded rule file with Yealico).',
       'yealicoConfigRotate': 'Regenerate',
       'yealicoConfigRotateConfirm':
-          'After regeneration, the old QR code and rule stop working immediately. Scan and import again.',
-      'yealicoConfigRotated': 'Regenerated, please scan again',
+          'After regeneration, the old rule stops working immediately. Copy/download and import again.',
+      'yealicoConfigRotated': 'Regenerated, please import the rule again',
       'yealicoConfigLoadFailed': 'Failed to load Yealico configuration',
     };
   }

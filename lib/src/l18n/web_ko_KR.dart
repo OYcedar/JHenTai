@@ -1257,17 +1257,19 @@ class WebKoKR {
       'yealicoConfigEntryHint': 'QR 코드로 Yealico 연결, 다운로드한 리소스 열람',
       'yealicoConfigTitle': 'Yealico 리더 설정',
       'yealicoConfigHint':
-          '아래 QR 코드를 Yealico로 스캔하여 사이트 규칙을 가져오면 JHenTai가 다운로드한 갤러리, 아카이브 및 로컬 라이브러리를 읽을 수 있습니다.',
-      'yealicoConfigScanHint': 'Yealico 열기 → 규칙 → 스캔 가져오기',
+          '서버가 Yealico용 읽기 전용 사이트 규칙을 생성합니다: 규칙 JSON을 복사하거나 규칙 파일을 다운로드한 뒤 Yealico 규칙 편집기에 붙여넣어 가져오면 JHenTai가 다운로드한 갤러리, 아카이브 및 로컬 라이브러리를 읽을 수 있습니다.',
       'yealicoConfigRuleJson': '규칙 JSON',
       'yealicoConfigCopy': '복사',
       'yealicoConfigCopied': '복사됨',
+      'yealicoConfigDownload': '규칙 파일 다운로드',
+      'yealicoConfigQrHint':
+          '가져온 후 Yealico 규칙 편집기에서 Generate QR Code를 눌러 다른 기기에서 스캔할 수 있는 공유 QR 코드를 만들 수 있습니다.',
       'yealicoConfigImportSteps':
-          '규칙 JSON을 복사하여 Yealico 규칙 편집기에 붙여넣어 가져올 수도 있습니다.',
+          '가져오기: Yealico → 규칙 → 편집 → 규칙 JSON 붙여넣기 후 저장(또는 다운로드한 규칙 파일을 Yealico로 열기).',
       'yealicoConfigRotate': '다시 생성',
       'yealicoConfigRotateConfirm':
-          '다시 생성하면 이전 QR 코드와 규칙이 즉시 무효화됩니다. 다시 스캔하여 가져와야 합니다.',
-      'yealicoConfigRotated': '다시 생성됨, 다시 스캔하세요',
+          '다시 생성하면 이전 규칙이 즉시 무효화됩니다. 다시 복사/다운로드하여 가져와야 합니다.',
+      'yealicoConfigRotated': '다시 생성됨, 규칙을 다시 가져오세요',
       'yealicoConfigLoadFailed': 'Yealico 설정을 불러오지 못했습니다',
     };
   }

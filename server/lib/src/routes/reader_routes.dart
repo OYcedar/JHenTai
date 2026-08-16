@@ -139,10 +139,12 @@ class ReaderRoutes {
 
   Future<Response> _listItems(Request request) async {
     final source = request.url.queryParameters['source']?.trim();
-    final page = int.tryParse(request.url.queryParameters['page'] ?? '') ?? 1;
+    final page =
+        max(1, int.tryParse(request.url.queryParameters['page'] ?? '') ?? 1);
     final pageSize =
-        int.tryParse(request.url.queryParameters['pageSize'] ?? '') ??
-            readerDefaultPageSize;
+        (int.tryParse(request.url.queryParameters['pageSize'] ?? '') ??
+                readerDefaultPageSize)
+            .clamp(1, 200);
     final q = (request.url.queryParameters['q'] ?? '').trim().toLowerCase();
     final base = _baseUrl(request);
 
@@ -250,10 +252,23 @@ class ReaderRoutes {
     return const [];
   }
 
+  /// 目录图片列表缓存：按目录 mtime 失效，避免每张图片请求都重新扫描排序。
+  final Map<String, _DirFilesCacheEntry> _dirFilesCache = {};
+
   List<String> _listImageFilesInDir(String dirPath) {
     final dir = Directory(dirPath);
     if (!dir.existsSync()) return const [];
     try {
+      final stat = dir.statSync();
+      final cached = _dirFilesCache[dirPath];
+      if (cached != null &&
+          cached.modified == stat.modified &&
+          cached.changed == stat.changed) {
+        return cached.files;
+      }
+      if (_dirFilesCache.length > 200) {
+        _dirFilesCache.clear();
+      }
       final files = dir
           .listSync(followLinks: false)
           .whereType<File>()
@@ -261,6 +276,11 @@ class ReaderRoutes {
           .map((f) => f.path)
           .toList();
       files.sort(naturalCompare);
+      _dirFilesCache[dirPath] = _DirFilesCacheEntry(
+        modified: stat.modified,
+        changed: stat.changed,
+        files: files,
+      );
       return files;
     } catch (_) {
       return const [];
@@ -319,7 +339,8 @@ class ReaderRoutes {
       'indexUrl': '$itemsUrl?page={page:}&pageSize=$readerDefaultPageSize',
       'searchUrl':
           '$itemsUrl?q={keyword:}&page={page:}&pageSize=$readerDefaultPageSize',
-      'galleryUrl': '$base/api/reader/v1/items/{idCode:}/pages',
+      'detailUrl': '$itemsUrl/{idCode:}',
+      'galleryUrl': '$itemsUrl/{idCode:}/pages',
       'headers': {'Authorization': 'Bearer $token'},
       'indexRule': {
         'item': {'selector': r'$root.items[*]'},
@@ -329,20 +350,16 @@ class ReaderRoutes {
         'totalImages': {'selector': r'$.pageCount'},
         'uploader': {'selector': r'$.uploader'},
       },
+      'detailRule': {
+        'title': {'selector': r'$.title'},
+        'cover': {'selector': r'$.cover'},
+        'totalImages': {'selector': r'$.pageCount'},
+        'uploader': {'selector': r'$.uploader'},
+      },
       'galleryRule': {
         'item': {'selector': r'$root.pages[*]'},
         'image': {'selector': r'$.url'},
       },
-      'pages': [
-        {
-          'name': '全部',
-          'flags': <String>[],
-          'indexUrl': '$itemsUrl?page={page:}&pageSize=$readerDefaultPageSize',
-          'galleryUrl': '$base/api/reader/v1/items/{idCode:}/pages',
-          'relListRuleIndex': 0,
-          'relGalleryRuleIndex': 0,
-        }
-      ],
     };
   }
 
@@ -355,7 +372,7 @@ class ReaderRoutes {
     );
   }
 
-  /// 轮换 reader token，返回新规则 JSON（旧二维码立即失效）。
+  /// 轮换 reader token，返回新规则 JSON（旧规则立即失效）。
   Future<Response> _pair(Request request) async {
     final base = _baseUrl(request);
     final token = _rotateReaderToken();
@@ -364,4 +381,16 @@ class ReaderRoutes {
       headers: {'Content-Type': 'application/json; charset=utf-8'},
     );
   }
+}
+
+class _DirFilesCacheEntry {
+  _DirFilesCacheEntry({
+    required this.modified,
+    required this.changed,
+    required this.files,
+  });
+
+  final DateTime modified;
+  final DateTime changed;
+  final List<String> files;
 }

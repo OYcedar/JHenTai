@@ -1254,15 +1254,18 @@ class WebZhCN {
       'yealicoConfigEntryHint': '扫码接入 Yealico，阅读已下载资源',
       'yealicoConfigTitle': 'Yealico 阅读器配置',
       'yealicoConfigHint':
-          '用 Yealico 扫描下方二维码导入站点规则，即可阅读 JHenTai 已下载的画廊、归档与本地图库。',
-      'yealicoConfigScanHint': '打开 Yealico → 规则 → 扫一扫导入',
+          '服务端生成面向 Yealico 的只读站点规则：复制规则 JSON 或下载规则文件，在 Yealico 规则编辑页粘贴导入，即可阅读 JHenTai 已下载的画廊、归档与本地图库。',
       'yealicoConfigRuleJson': '规则 JSON',
       'yealicoConfigCopy': '复制',
       'yealicoConfigCopied': '已复制',
-      'yealicoConfigImportSteps': '也可复制规则 JSON，在 Yealico 规则编辑页粘贴导入。',
+      'yealicoConfigDownload': '下载规则文件',
+      'yealicoConfigQrHint':
+          '导入后可在 Yealico 规则编辑器中点 Generate QR Code 生成分享二维码，供其他设备扫描导入。',
+      'yealicoConfigImportSteps':
+          '导入步骤：Yealico → 规则 → 编辑 → 粘贴规则 JSON 并保存（或用 Yealico 打开下载的规则文件）。',
       'yealicoConfigRotate': '重新生成',
-      'yealicoConfigRotateConfirm': '重新生成后，旧二维码与旧规则立即失效，需要重新扫码导入。',
-      'yealicoConfigRotated': '已重新生成，请重新扫码',
+      'yealicoConfigRotateConfirm': '重新生成后，旧规则立即失效，需要重新复制/下载并导入。',
+      'yealicoConfigRotated': '已重新生成，请重新导入规则',
       'yealicoConfigLoadFailed': '获取 Yealico 配置失败',
     };
   }
