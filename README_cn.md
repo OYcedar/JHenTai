@@ -119,6 +119,20 @@ docker-compose up -d
 
 > **[Docker 部署指南（简体中文）](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md)** | [English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)
 
+### Yealico 阅读器
+
+服务端提供面向 **Yealico** 的只读站点规则，可以用 Yealico 的原生阅读器浏览 JHenTai 已下载的内容（画廊下载、归档下载、本地图库扫描）。
+
+1. 打开 JHenTai Web 界面 → **设置 → 高级 → Yealico 阅读器**。
+2. 用 Yealico 扫描页面上的二维码（或复制规则 JSON，在 Yealico 规则编辑页粘贴导入）。
+3. 书库中即可看到全部已下载的画廊、归档和本地图库，点开任意一部即可用 Yealico 翻页阅读。
+
+二维码/规则根据你当前访问的地址动态生成，并携带独立的只读 **reader token**（与管理员 API token 分离）。在页面点"重新生成"即可轮换 token，旧二维码立即失效。
+
+> 下图是二维码示例（占位地址与占位 token）。部署后请以 **Yealico 阅读器**设置页生成的二维码为准。
+
+![Yealico 配置二维码示例](docs/yealico-qr-sample.png)
+
 ## 更新
 
 安卓更新： 下载对应自己设置架构的apk文件，直接覆盖安装即可。

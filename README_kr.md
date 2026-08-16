@@ -103,6 +103,20 @@ AMD/Intel 내장 GPU NAS에서 이미지 초해상도를 사용하려면 `/dev/d
 
 > **[Docker 배포 가이드 (한국어)](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)** | [English](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md) | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md)
 
+### Yealico 리더
+
+서버는 **Yealico**용 읽기 전용 사이트 규칙을 제공합니다. Yealico의 네이티브 리더로 JHenTai가 다운로드한 콘텐츠(갤러리 다운로드, 아카이브 다운로드, 로컬 라이브러리 스캔)를 읽을 수 있습니다.
+
+1. JHenTai 웹 UI → **설정 → 고급 → Yealico 리더**를 엽니다.
+2. Yealico로 화면의 QR 코드를 스캔합니다(또는 규칙 JSON을 복사하여 Yealico 규칙 편집기에 붙여넣기).
+3. 라이브러리에 다운로드한 갤러리, 아카이브, 로컬 라이브러리가 표시되며, Yealico 리더로 읽을 수 있습니다.
+
+QR 코드/규칙은 현재 접속 중인 주소로 동적으로 생성되며, 관리자 API 토큰과 분리된 전용 읽기 전용 **reader token**을 포함합니다. 페이지에서 **다시 생성**을 누르면 토큰이 교체되고 이전 QR 코드는 즉시 무효화됩니다.
+
+> 아래 이미지는 QR 코드 예시입니다(예시 주소와 예시 토큰). 배포 후에는 **Yealico 리더** 설정 페이지에서 생성된 QR 코드를 사용하세요.
+
+![Yealico 설정 QR 코드 예시](docs/yealico-qr-sample.png)
+
 ## 개발 동기
 
 저의 첫 Flutter 프로젝트입니다. 저는 개발 중에 Flutter에 익숙해지는 것을 목표로 합니다. 제가 사용하는 기기는 Android 폰, iPad, Windows 컴퓨터입니다. 기존 E-hentai 앱들은

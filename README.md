@@ -124,6 +124,20 @@ Archive downloads use the official EH archive path by default. If you use a trus
 
 > **[Docker Deployment Guide (English)](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER.md)** | [简体中文](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_cn.md) | [한국어](https://github.com/OYcedar/JHenTai-Docker/blob/docker/DOCKER_kr.md)
 
+### Yealico Reader
+
+The server exposes a read-only **Yealico** site-rule so you can browse JHenTai-downloaded content (gallery downloads, archive downloads, local gallery scans) with Yealico's native reader.
+
+1. Open the JHenTai web UI → **Settings → Advanced → Yealico Reader**.
+2. Scan the QR code shown there with Yealico (or copy the rule JSON and paste it in the Yealico rule editor).
+3. The library now lists all downloaded galleries, archives and local libraries; open any item to read with Yealico's paging reader.
+
+The QR code / rule is generated from the address you are currently browsing, and carries a dedicated read-only **reader token** (separate from the admin API token). Use **Regenerate** on the same page to rotate the token — old QR codes stop working immediately.
+
+> The image below is a sample of the QR code (placeholder address and token). After deployment, always use the QR code generated on the **Yealico Reader** settings page.
+
+![Yealico config QR code sample](docs/yealico-qr-sample.png)
+
 ## Update
 
 Update for Android: download .apk according to your device architecture and install.
