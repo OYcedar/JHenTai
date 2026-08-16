@@ -75,7 +75,7 @@ JHenTai 支持通过 **Docker 容器** 部署，使用任意设备的 Web 浏览
 文档示例固定使用 **`x.y.z-hhh`** 标签（`hhh` 为本 fork 的三位十六进制版本，十进制 0–4095，见 `docker/fork_revision`）。发布脚本也会推送 `latest`，但 README / compose 示例必须使用明确版本。每次推送 Docker Hub 镜像都必须递增 `docker/fork_revision` 并更新 README 中的镜像标签；发布脚本会在推送前自动完成这两步。
 
 ```bash
-docker pull hemumoe/jhentai:8.0.14-155
+docker pull hemumoe/jhentai:8.0.14-156
 ```
 
 **使用 docker-compose 快速启动：**
@@ -83,7 +83,7 @@ docker pull hemumoe/jhentai:8.0.14-155
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.14-155
+    image: hemumoe/jhentai:8.0.14-156
     container_name: jhentai
     ports:
       - "8080:8080"
