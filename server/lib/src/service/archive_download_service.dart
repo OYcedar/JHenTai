@@ -177,6 +177,11 @@ class ArchiveDownloadService {
     if (toResume.isNotEmpty) {
       _processQueue();
     }
+
+    final restored = await restoreDownloadsFromMetadata();
+    if (restored > 0) {
+      log.info('Restored $restored archive downloads from disk metadata');
+    }
   }
 
   void reloadFromDatabase() {
