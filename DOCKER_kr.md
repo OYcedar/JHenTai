@@ -34,7 +34,7 @@
 배포 스크립트도 `latest`를 푸시하지만 compose/Unraid 예시는 명시적인 **`x.y.z-hhh`** 태그를 고정해야 합니다.
 
 ```bash
-docker pull hemumoe/jhentai:8.0.13-152
+docker pull hemumoe/jhentai:8.0.13-153
 ```
 
 **docker-compose.yml**（권장）:
@@ -42,7 +42,7 @@ docker pull hemumoe/jhentai:8.0.13-152
 ```yaml
 services:
   jhentai:
-    image: hemumoe/jhentai:8.0.13-152
+    image: hemumoe/jhentai:8.0.13-153
     container_name: jhentai
     ports:
       - "8080:8080"
