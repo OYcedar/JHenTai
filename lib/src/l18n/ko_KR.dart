@@ -288,12 +288,8 @@ class ko_KR {
       'redirect2EhHint':
           'Try to load gallery detail page from EH site first to get better network performance',
       'redirectAllGallery': 'Redirect all gallery to EH',
-<<<<<<< HEAD
       'imDonorHint':
-          'If you are a donor, you can turn this on to help you access gallerys in EX site',
-=======
-      'imDonorHint': 'If you are a donor, you can turn this on to help you access galleries in EX site',
->>>>>>> upstream/master
+          'If you are a donor, you can turn this on to help you access galleries in EX site',
       'profileSetting': 'Profile Setting',
       'chooseProfileHint': 'Choose profile used in JHenTai',
       'siteSetting': '사이트 내부 설정',
@@ -426,15 +422,10 @@ class ko_KR {
       'custom': '커스텀',
 
       /// performance setting page
-<<<<<<< HEAD
       'maxGalleryNum4Animation':
           'Max Gallery Num For List Animation in Download page',
       'maxGalleryNum4AnimationHint':
-          'Disable animation for groups which have more gallerys than this value(for list style)',
-=======
-      'maxGalleryNum4Animation': 'Max Gallery Num For List Animation in Download page',
-      'maxGalleryNum4AnimationHint': 'Disable animation for groups which have more galleries than this value(for list style)',
->>>>>>> upstream/master
+          'Disable animation for groups which have more galleries than this value(for list style)',
 
       /// mouse wheel setting page
       'themeColorSettingHint': '라이트 모드와 다크 모드 각각에 다른 색을 지정합니다',
@@ -644,15 +635,10 @@ class ko_KR {
       'reUnlock': '다시 잠금 해제',
       'reUnlockHint': '주의! 다시 잠금 해제하려면 이 파일을 다시 구입해야 합니다.',
       'downloadHelpInfo': '다운로드 할 수 없고 로그에 DB 테이블이 없다면 앱을 삭제하고 다시 설치하세요.',
-<<<<<<< HEAD
       'localGalleryHelpInfo':
           'JHenTai에서 다운로드하지 않은 갤러리를 불러옵니다. 다운로드 설정 → 추가 갤러리 스캔 경로를 추가하고 새로고침하세요.',
       'localGalleryHelpInfo4iOSAndMacOS':
-          'Load gallerys which is not downloaded by JHenTai. Put your gallerys in default download path and then refresh',
-=======
-      'localGalleryHelpInfo': 'JHenTai에서 다운로드하지 않은 갤러리를 불러옵니다. 다운로드 설정 → 추가 갤러리 스캔 경로를 추가하고 새로고침하세요.',
-      'localGalleryHelpInfo4iOSAndMacOS': 'Load galleries which is not downloaded by JHenTai. Put your galleries in default download path and then refresh',
->>>>>>> upstream/master
+          'Load galleries which is not downloaded by JHenTai. Put your galleries in default download path and then refresh',
       'deleteLocalGalleryHint': '사용자의 로컬 파일을 삭제합니다.',
       'priority': '우선순위',
       'highest': '높음',
@@ -676,10 +662,10 @@ class ko_KR {
       'operationHasCompleted': '작업이 완료되었습니다',
       'operationInProgress': '작업이 진행 중입니다',
       'startProcess': '작업을 시작합니다',
-<<<<<<< HEAD
-      'multiReDownloadHint': 'You will re-download all selected gallerys.',
-      'multiChangeGroupHint': 'You will change group of all selected gallerys.',
-      'multiDeleteHint': 'You will delete all selected gallerys.',
+      'multiReDownloadHint': 'You will re-download all selected galleries.',
+      'multiChangeGroupHint':
+          'You will change group of all selected galleries.',
+      'multiDeleteHint': 'You will delete all selected galleries.',
       'blankImageHint':
           'Downloading the image returned an empty result, trying to re-parse.',
       'peakHoursHint':
@@ -690,16 +676,6 @@ class ko_KR {
           'You have reached the image limit, and do not have sufficient GP to buy a download quota.',
       'deleteUpdatingDependentHint':
           'Another gallery\'s update relies on current gallery, you\'d better delete after update has completed.',
-=======
-      'multiReDownloadHint': 'You will re-download all selected galleries.',
-      'multiChangeGroupHint': 'You will change group of all selected galleries.',
-      'multiDeleteHint': 'You will delete all selected galleries.',
-      'blankImageHint': 'Downloading the image returned an empty result, trying to re-parse.',
-      'peakHoursHint': 'Downloading original files during peak hours requires GP, and you do not have enough, downloading is paused.',
-      'oldGalleryHint': 'Downloading original files of this gallery requires GP, and you do not have enough.',
-      'exceedLimitHint': 'You have reached the image limit, and do not have sufficient GP to buy a download quota.',
-      'deleteUpdatingDependentHint': 'Another gallery\'s update relies on current gallery, you\'d better delete after update has completed.',
->>>>>>> upstream/master
       'migrateToDownload': 'Migrate To 「Download」',
       'refresh': 'Refresh',
 
@@ -809,13 +785,10 @@ class ko_KR {
       'per': '/ 시간: ',
       'images': '장 ',
       'downloadTimeout': '다운로드 시간 초과',
-<<<<<<< HEAD
-          'Download All Gallerys of Same Priority',
+      'downloadAllGalleriesOfSamePriority':
+          'Download All Galleries of Same Priority',
+      'downloadAllGalleriesOfSamePriorityHint':
           'Download only 1 gallery simultaneously in 1 group with highest priority by default',
-=======
-      'downloadAllGalleriesOfSamePriority': 'Download All Galleries of Same Priority',
-      'downloadAllGalleriesOfSamePriorityHint': 'Download only 1 gallery simultaneously in 1 group with highest priority by default',
->>>>>>> upstream/master
       'alwaysUseDefaultGroup': '항상 기본 그룹 사용',
       'enableStoreMetadataForRestore': '복원을 위한 저장소 메타데이터 사용',
       'enableStoreMetadataForRestoreHint': '사용하지 않으면 다운로드 작업을 복원할 수 없습니다.',
@@ -904,12 +877,8 @@ class ko_KR {
       'useBuiltInBlockedUsersHint':
           'Filter out gallery comments from users on the blocklist',
       'blockingRules': 'Block Rules',
-<<<<<<< HEAD
       'blockingRulesHint':
-          'Additional blocking rules for gallerys and comments',
-=======
-      'blockingRulesHint': 'Additional blocking rules for galleries and comments',
->>>>>>> upstream/master
+          'Additional blocking rules for galleries and comments',
       'blockingTarget': 'Blocking Target',
       'blockingAttribute': 'Blocking Attribute',
       'blockingPattern': 'Blocking Pattern',

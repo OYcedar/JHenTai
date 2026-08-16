@@ -71,14 +71,16 @@ class ru_RU {
       'passwordTab': 'Аккаунт',
       'cookieTab': 'Cookie',
       'webTab': 'Web',
-      'webTabHint': 'Нажмите кнопку ниже, чтобы открыть браузер. После входа вы вернётесь автоматически.',
+      'webTabHint':
+          'Нажмите кнопку ниже, чтобы открыть браузер. После входа вы вернётесь автоматически.',
       'launchWebLogin': 'Открыть браузер для входа',
       'onlineVerification': 'Онлайн-проверка',
       'webviewVerification': 'Проверка через WebView',
       'skipVerification': 'Пропустить проверку',
       'assist': 'ассист.',
       'onlineVerificationHint': 'Проверка через HTTP-запрос',
-      'webviewVerificationHint': 'Проверка через WebView (используйте при сбое онлайн-проверки)',
+      'webviewVerificationHint':
+          'Проверка через WebView (используйте при сбое онлайн-проверки)',
       'skipVerificationHint': 'Сохранить напрямую без проверки',
       'igneousFieldHint': 'Только для сайта EX; для EH можно оставить пустым',
       'clipboardCookieDetected': 'Cookie найден в буфере обмена и заполнен',
@@ -826,13 +828,10 @@ class ru_RU {
       'per': 'за',
       'images': 'изображений',
       'downloadTimeout': 'Тайм-аут загрузки',
-<<<<<<< HEAD
+      'downloadAllGalleriesOfSamePriority':
           'Загружать все галереи одного приоритета',
+      'downloadAllGalleriesOfSamePriorityHint':
           'По умолчанию загружать только 1 галерею одновременно в 1 группе с высшим приоритетом',
-=======
-      'downloadAllGalleriesOfSamePriority': 'Загружать все галереи одного приоритета',
-      'downloadAllGalleriesOfSamePriorityHint': 'По умолчанию загружать только 1 галерею одновременно в 1 группе с высшим приоритетом',
->>>>>>> upstream/master
       'alwaysUseDefaultGroup': 'Всегда использовать группу по умолчанию',
       'enableStoreMetadataForRestore':
           'Включить сохранение метаданных для восстановления',

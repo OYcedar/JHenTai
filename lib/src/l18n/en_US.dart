@@ -71,14 +71,16 @@ class en_US {
       'passwordTab': 'Account',
       'cookieTab': 'Cookie',
       'webTab': 'Web',
-      'webTabHint': 'Click the button below to launch the browser. After logging in, you will be returned automatically.',
+      'webTabHint':
+          'Click the button below to launch the browser. After logging in, you will be returned automatically.',
       'launchWebLogin': 'Launch Browser Login',
       'onlineVerification': 'Online Verification',
       'webviewVerification': 'WebView Verification',
       'skipVerification': 'Skip Verification',
       'assist': 'Assist',
       'onlineVerificationHint': 'Validate via HTTP request',
-      'webviewVerificationHint': 'Validate via WebView (use when online verification fails)',
+      'webviewVerificationHint':
+          'Validate via WebView (use when online verification fails)',
       'skipVerificationHint': 'Save directly without verification',
       'igneousFieldHint': 'Only required for EX site; EH site can leave blank',
       'clipboardCookieDetected': 'Clipboard cookie detected and filled in',
@@ -294,12 +296,8 @@ class en_US {
       'redirect2EhHint':
           'Try to load gallery detail page from EH site first to get better network performance',
       'redirectAllGallery': 'Redirect all gallery to EH',
-<<<<<<< HEAD
       'imDonorHint':
-          'If you are a donor, you can turn this on to help you access gallerys in EX site',
-=======
-      'imDonorHint': 'If you are a donor, you can turn this on to help you access galleries in EX site',
->>>>>>> upstream/master
+          'If you are a donor, you can turn this on to help you access galleries in EX site',
       'profileSetting': 'Profile Setting',
       'chooseProfileHint': 'Choose profile used in JHenTai',
       'siteSetting': 'Site Setting',
@@ -437,15 +435,10 @@ class en_US {
       'custom': 'Custom',
 
       /// performance setting page
-<<<<<<< HEAD
       'maxGalleryNum4Animation':
           'Max Gallery Num For List Animation in Download page',
       'maxGalleryNum4AnimationHint':
-          'Disable animation for groups which have more gallerys than this value(for list style)',
-=======
-      'maxGalleryNum4Animation': 'Max Gallery Num For List Animation in Download page',
-      'maxGalleryNum4AnimationHint': 'Disable animation for groups which have more galleries than this value(for list style)',
->>>>>>> upstream/master
+          'Disable animation for groups which have more galleries than this value(for list style)',
 
       /// mouse wheel setting page
       'wheelScrollSpeed': 'Wheel scroll speed',
@@ -655,18 +648,12 @@ class en_US {
       'needReUnlock': 'Need Re-Unlock',
       'reUnlock': 'Re-Unlock',
       'reUnlockHint': 'Attention! Re-unlock need to buy this archive again.',
-<<<<<<< HEAD
       'downloadHelpInfo':
           'If you can\'t download and find errors like table doesn\'t exist in logs, please uninstall current app and re-install.',
       'localGalleryHelpInfo':
-          'Load gallerys which is not downloaded by JHenTai. Add config in Download Setting -> Extra Gallery Scan Path and then refresh.',
+          'Load galleries which is not downloaded by JHenTai. Add config in Download Setting -> Extra Gallery Scan Path and then refresh.',
       'localGalleryHelpInfo4iOSAndMacOS':
-          'Load gallerys which is not downloaded by JHenTai. Put your gallerys in default download path and then refresh',
-=======
-      'downloadHelpInfo': 'If you can\'t download and find errors like table doesn\'t exist in logs, please uninstall current app and re-install.',
-      'localGalleryHelpInfo': 'Load galleries which is not downloaded by JHenTai. Add config in Download Setting -> Extra Gallery Scan Path and then refresh.',
-      'localGalleryHelpInfo4iOSAndMacOS': 'Load galleries which is not downloaded by JHenTai. Put your galleries in default download path and then refresh',
->>>>>>> upstream/master
+          'Load galleries which is not downloaded by JHenTai. Put your galleries in default download path and then refresh',
       'deleteLocalGalleryHint': 'Delete your local files',
       'priority': 'Priority',
       'highest': 'Highest',
@@ -690,10 +677,10 @@ class en_US {
       'operationHasCompleted': 'The operation has completed',
       'operationInProgress': 'The operation is in progress',
       'startProcess': 'Start Process',
-<<<<<<< HEAD
-      'multiReDownloadHint': 'You will re-download all selected gallerys.',
-      'multiChangeGroupHint': 'You will change group of all selected gallerys.',
-      'multiDeleteHint': 'You will delete all selected gallerys.',
+      'multiReDownloadHint': 'You will re-download all selected galleries.',
+      'multiChangeGroupHint':
+          'You will change group of all selected galleries.',
+      'multiDeleteHint': 'You will delete all selected galleries.',
       'blankImageHint':
           'Downloading the image returned an empty result, trying to re-parse.',
       'peakHoursHint':
@@ -704,16 +691,6 @@ class en_US {
           'You have reached the image limit, and do not have sufficient GP to buy a download quota.',
       'deleteUpdatingDependentHint':
           'Another gallery\'s update relies on current gallery, you\'d better delete after update has completed.',
-=======
-      'multiReDownloadHint': 'You will re-download all selected galleries.',
-      'multiChangeGroupHint': 'You will change group of all selected galleries.',
-      'multiDeleteHint': 'You will delete all selected galleries.',
-      'blankImageHint': 'Downloading the image returned an empty result, trying to re-parse.',
-      'peakHoursHint': 'Downloading original files during peak hours requires GP, and you do not have enough, downloading is paused.',
-      'oldGalleryHint': 'Downloading original files of this gallery requires GP, and you do not have enough.',
-      'exceedLimitHint': 'You have reached the image limit, and do not have sufficient GP to buy a download quota.',
-      'deleteUpdatingDependentHint': 'Another gallery\'s update relies on current gallery, you\'d better delete after update has completed.',
->>>>>>> upstream/master
       'migrateToDownload': 'Migrate To 「Download」',
       'refresh': 'Refresh',
 
@@ -827,13 +804,10 @@ class en_US {
       'per': 'per',
       'images': 'images',
       'downloadTimeout': 'Download Timeout',
-<<<<<<< HEAD
-          'Download All Gallerys of Same Priority',
+      'downloadAllGalleriesOfSamePriority':
+          'Download All Galleries of Same Priority',
+      'downloadAllGalleriesOfSamePriorityHint':
           'Download only 1 gallery simultaneously in 1 group with highest priority by default',
-=======
-      'downloadAllGalleriesOfSamePriority': 'Download All Galleries of Same Priority',
-      'downloadAllGalleriesOfSamePriorityHint': 'Download only 1 gallery simultaneously in 1 group with highest priority by default',
->>>>>>> upstream/master
       'alwaysUseDefaultGroup': 'Always Use Default Group',
       'enableStoreMetadataForRestore': 'Enable Store Metadata for Restore',
       'enableStoreMetadataForRestoreHint':
@@ -925,12 +899,8 @@ class en_US {
       'useBuiltInBlockedUsersHint':
           'Filter out gallery comments from users on the blocklist',
       'blockingRules': 'Block Rules',
-<<<<<<< HEAD
       'blockingRulesHint':
-          'Additional blocking rules for gallerys and comments',
-=======
-      'blockingRulesHint': 'Additional blocking rules for galleries and comments',
->>>>>>> upstream/master
+          'Additional blocking rules for galleries and comments',
       'blockingTarget': 'Blocking Target',
       'blockingAttribute': 'Blocking Attribute',
       'blockingPattern': 'Blocking Pattern',
