@@ -64,6 +64,7 @@ $platforms = if ($env:DOCKER_PLATFORMS) { $env:DOCKER_PLATFORMS } else { 'linux/
 Write-Host "Platforms: $platforms"
 docker buildx build `
     --platform "$platforms" `
+    --network host `
     --build-arg "JH_APP_VERSION=$full" `
     --build-arg "JH_DOCKER_TAG=$tag" `
     --build-arg "JH_FORK_REVISION=$frNum" `
@@ -71,4 +72,7 @@ docker buildx build `
     -t "${image}:latest" `
     --push `
     $Root
+if ($LASTEXITCODE -ne 0) {
+    throw "docker buildx build failed with exit code $LASTEXITCODE"
+}
 Write-Host "Pushed ${image}:${tag} and ${image}:latest for $platforms"

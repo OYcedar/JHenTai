@@ -33,19 +33,29 @@ ARG JH_APP_VERSION=local/dev
 ARG JH_DOCKER_TAG=local/dev
 ARG JH_FORK_REVISION=local/dev
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libsqlite3-0 \
-    sqlite3 \
-    ca-certificates \
-    wget \
-    unzip \
-    libvulkan1 \
-    vulkan-tools \
-    mesa-vulkan-drivers \
-    gosu \
-    && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/lib/*/libsqlite3.so.0 /usr/lib/libsqlite3.so
+RUN set -eux; \
+    for attempt in 1 2 3 4 5; do \
+        apt-get -o Acquire::Retries=5 update && \
+        apt-get -o Acquire::Retries=5 install -y --no-install-recommends \
+            libsqlite3-0 \
+            sqlite3 \
+            ca-certificates \
+            wget \
+            unzip \
+            libvulkan1 \
+            vulkan-tools \
+            mesa-vulkan-drivers \
+            gosu && \
+        break; \
+        if [ "$attempt" = "5" ]; then \
+            exit 1; \
+        fi; \
+        apt-get clean; \
+        rm -rf /var/lib/apt/lists/*; \
+        sleep 5; \
+    done; \
+    rm -rf /var/lib/apt/lists/*; \
+    ln -sf /usr/lib/*/libsqlite3.so.0 /usr/lib/libsqlite3.so
 
 RUN groupadd -g 1000 jhentai && \
     useradd -u 1000 -g jhentai -m -s /bin/bash jhentai
