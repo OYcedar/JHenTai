@@ -104,9 +104,9 @@ class WebEnUS {
       'originalImage': 'Original',
       'downloadOriginalImage': 'Download original image',
       'downloadOriginalImageByDefault': 'Choose original image by default',
-      'downloadAllGallerysOfSamePriority':
+      'downloadAllGalleriesOfSamePriority':
           'Download all galleries of the same priority',
-      'downloadAllGallerysOfSamePriorityHint':
+      'downloadAllGalleriesOfSamePriorityHint':
           'By default, only one gallery per priority is downloaded at a time.',
       'useJH2UpdateGallery': 'Use JH server to accelerate gallery updates',
       'deleteArchiveFileAfterDownload':

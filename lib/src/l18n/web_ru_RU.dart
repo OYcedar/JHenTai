@@ -92,9 +92,9 @@ class WebRuRU {
       'downloadOriginalImage': 'Скачать оригинальное изображение',
       'downloadOriginalImageByDefault':
           'Выбирать оригинальное изображение по умолчанию',
-      'downloadAllGallerysOfSamePriority':
+      'downloadAllGalleriesOfSamePriority':
           'Скачивать все галереи одного приоритета',
-      'downloadAllGallerysOfSamePriorityHint':
+      'downloadAllGalleriesOfSamePriorityHint':
           'По умолчанию одновременно скачивается только одна галерея каждого приоритета.',
       'useJH2UpdateGallery':
           'Использовать сервер JH для ускорения обновления галерей',

@@ -91,9 +91,9 @@ class WebPtBR {
       'originalImage': 'Imagem original',
       'downloadOriginalImage': 'Baixar imagem original',
       'downloadOriginalImageByDefault': 'Escolher imagem original por padrão',
-      'downloadAllGallerysOfSamePriority':
+      'downloadAllGalleriesOfSamePriority':
           'Baixar todas as galerias da mesma prioridade',
-      'downloadAllGallerysOfSamePriorityHint':
+      'downloadAllGalleriesOfSamePriorityHint':
           'Por padrão, apenas uma galeria por prioridade é baixada por vez.',
       'useJH2UpdateGallery':
           'Usar servidor JH para acelerar atualizações de galerias',

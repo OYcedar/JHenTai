@@ -814,8 +814,8 @@ class _WebSettingsDownloadMenuPageState
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               secondary: const Icon(Icons.stacked_line_chart_outlined),
-              title: Text('downloadAllGallerysOfSamePriority'.tr),
-              subtitle: Text('downloadAllGallerysOfSamePriorityHint'.tr),
+              title: Text('downloadAllGalleriesOfSamePriority'.tr),
+              subtitle: Text('downloadAllGalleriesOfSamePriorityHint'.tr),
               value: downloadAllGalleriesOfSamePriority,
               onChanged:
                   isLoadingRuntimeSettings || runtimeSettingsError.isNotEmpty

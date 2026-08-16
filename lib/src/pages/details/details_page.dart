@@ -32,7 +32,7 @@ import 'package:jhentai/src/widget/loading_state_indicator.dart';
 import '../../database/database.dart';
 import '../../mixin/scroll_to_top_logic_mixin.dart';
 import '../../mixin/scroll_to_top_state_mixin.dart';
-import '../../service/gallery_download_service.dart';
+import '../../service/gallery_download/gallery_download_service.dart';
 import '../../setting/preference_setting.dart';
 import '../../setting/style_setting.dart';
 import '../../utils/date_util.dart';
@@ -45,6 +45,7 @@ import 'details_page_state.dart';
 
 class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
   final String tag = newUUID();
+  final bool enableLocalTitleBlocking;
 
   late final DetailsPageLogic logic;
   late final DetailsPageState state;
@@ -55,12 +56,12 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
   @override
   Scroll2TopStateMixin get scroll2TopState => state;
 
-  DetailsPage({super.key}) {
+  DetailsPage({super.key}) : enableLocalTitleBlocking = true {
     logic = Get.put(DetailsPageLogic(), tag: tag);
     state = logic.state;
   }
 
-  DetailsPage.preview({super.key});
+  DetailsPage.preview({super.key}) : enableLocalTitleBlocking = false;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +142,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
                           children: [Text('delete'.tr), const Icon(Icons.delete)],
                         ),
                       ),
-                    if (state.galleryDetails?.parentGalleryUrl != null || (state.galleryDetails?.childrenGallerys?.isNotEmpty ?? false))
+                    if (state.galleryDetails?.parentGalleryUrl != null || (state.galleryDetails?.childrenGalleries?.isNotEmpty ?? false))
                       PopupMenuItem(
                         value: 4,
                         child: Row(
@@ -320,20 +321,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
               anchors: editableTextState.contextMenuAnchors,
             );
 
-            if (!editableTextState.currentTextEditingValue.selection.isCollapsed) {
-              toolbar.buttonItems?.add(
-                ContextMenuButtonItem(
-                  label: 'search'.tr,
-                  onPressed: () {
-                    ContextMenuController.removeAny();
-                    newSearch(
-                      keyword: editableTextState.currentTextEditingValue.selection.textInside(editableTextState.currentTextEditingValue.text),
-                      forceNewRoute: true,
-                    );
-                  },
-                ),
-              );
-            }
+            _appendTitleContextMenuItems(toolbar, editableTextState);
 
             return toolbar;
           },
@@ -385,20 +373,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
                     anchors: editableTextState.contextMenuAnchors,
                   );
 
-                  if (!editableTextState.currentTextEditingValue.selection.isCollapsed) {
-                    toolbar.buttonItems?.add(
-                      ContextMenuButtonItem(
-                        label: 'search'.tr,
-                        onPressed: () {
-                          ContextMenuController.removeAny();
-                          newSearch(
-                            keyword: editableTextState.currentTextEditingValue.selection.textInside(editableTextState.currentTextEditingValue.text),
-                            forceNewRoute: true,
-                          );
-                        },
-                      ),
-                    );
-                  }
+                  _appendTitleContextMenuItems(toolbar, editableTextState);
 
                   return toolbar;
                 },
@@ -406,6 +381,42 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
             );
           },
         ),
+      ),
+    );
+  }
+
+  void _appendTitleContextMenuItems(
+    AdaptiveTextSelectionToolbar toolbar,
+    EditableTextState editableTextState,
+  ) {
+    TextEditingValue editingValue = editableTextState.currentTextEditingValue;
+    if (editingValue.selection.isCollapsed) {
+      return;
+    }
+
+    String rawSelectedText = editingValue.selection.textInside(editingValue.text);
+    toolbar.buttonItems?.add(
+      ContextMenuButtonItem(
+        label: 'search'.tr,
+        onPressed: () {
+          ContextMenuController.removeAny();
+          newSearch(keyword: rawSelectedText, forceNewRoute: true);
+        },
+      ),
+    );
+
+    String selectedText = rawSelectedText.trim();
+    if (!enableLocalTitleBlocking || selectedText.isEmpty) {
+      return;
+    }
+
+    toolbar.buttonItems?.add(
+      ContextMenuButtonItem(
+        label: 'blockTitleLocally'.tr,
+        onPressed: () {
+          ContextMenuController.removeAny();
+          logic.blockTitle(selectedText);
+        },
       ),
     );
   }
@@ -1383,7 +1394,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
                         });
                       }
 
-                      GalleryImage? downloadedImage = galleryDownloadService.galleryDownloadInfos[state.galleryUrl.gid]?.images[index];
+                      GalleryImage? downloadedImage = galleryDownloadService.galleryDownloadInfos[state.galleryUrl.gid]?.imageAtSync(index);
 
                       return Column(
                         children: [

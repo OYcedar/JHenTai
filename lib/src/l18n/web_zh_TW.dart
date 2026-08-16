@@ -93,8 +93,8 @@ class WebZhTW {
       'originalImage': '原圖',
       'downloadOriginalImage': '下載原圖',
       'downloadOriginalImageByDefault': '預設選中下載原圖',
-      'downloadAllGallerysOfSamePriority': '同一優先級下同時下載所有畫廊',
-      'downloadAllGallerysOfSamePriorityHint':
+      'downloadAllGalleriesOfSamePriority': '同一優先級下同時下載所有畫廊',
+      'downloadAllGalleriesOfSamePriorityHint':
           '預設情況下逐優先級下載畫廊，且每個優先級下只會同時下載一個畫廊',
       'useJH2UpdateGallery': '使用 JH 伺服器加速畫廊更新',
       'deleteArchiveFileAfterDownload': '歸檔下載完成後刪除原壓縮檔',

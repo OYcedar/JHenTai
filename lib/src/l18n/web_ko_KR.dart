@@ -91,8 +91,8 @@ class WebKoKR {
       'originalImage': '원본',
       'downloadOriginalImage': '원본 이미지 다운로드',
       'downloadOriginalImageByDefault': '기본값으로 원본 이미지 선택',
-      'downloadAllGallerysOfSamePriority': '같은 우선순위의 모든 갤러리 다운로드',
-      'downloadAllGallerysOfSamePriorityHint':
+      'downloadAllGalleriesOfSamePriority': '같은 우선순위의 모든 갤러리 다운로드',
+      'downloadAllGalleriesOfSamePriorityHint':
           '기본적으로 각 우선순위마다 갤러리 하나만 동시에 다운로드합니다.',
       'useJH2UpdateGallery': 'JH 서버로 갤러리 업데이트 가속',
       'deleteArchiveFileAfterDownload': '다운로드 완료 후 아카이브 ZIP 파일 삭제',

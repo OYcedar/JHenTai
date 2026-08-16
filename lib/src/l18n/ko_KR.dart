@@ -68,8 +68,22 @@ class ko_KR {
       'logout': '로그아웃',
       'passwordLogin': '비밀번호 로그인',
       'cookieLogin': '쿠키 로그인',
-      'useWebview': 'Use Webview',
-      'skipCookieVerification': 'Skip Verification',
+      'passwordTab': '계정',
+      'cookieTab': 'Cookie',
+      'webTab': 'Web',
+      'webTabHint': '아래 버튼을 눌러 브라우저를 실행하세요. 브라우저에서 로그인 완료 시 자동으로 돌아옵니다.',
+      'launchWebLogin': '브라우저 로그인 실행',
+      'onlineVerification': '온라인 검증',
+      'webviewVerification': 'WebView 검증',
+      'skipVerification': '검증 건너뛰기',
+      'assist': '보조',
+      'onlineVerificationHint': 'HTTP 요청으로 검증',
+      'webviewVerificationHint': 'WebView로 검증 (온라인 검증 실패 시 사용)',
+      'skipVerificationHint': '검증 없이 바로 저장',
+      'igneousFieldHint': 'EX 사이트에만 필요, EH 사이트는 비워두세요',
+      'clipboardCookieDetected': '클립보드에서 cookie를 감지해 채웠습니다',
+      'verifyAndLogin': '검증 후 로그인',
+      'recommended': '권장',
       'youHaveLoggedInAs': '환영합니다:   ',
       'cookieIsBlack': '쿠키가 비었습니다',
       'cookieFormatError': '쿠키 형식이 잘못됐습니다.',
@@ -100,7 +114,7 @@ class ko_KR {
       'filtered': 'Filtered',
 
       /// gallery page
-      'getGallerysFailed': "갤러리 가져오기 실패",
+      'getGalleriesFailed': "갤러리 가져오기 실패",
       'refreshGalleryFailed': '갤러리 새로고침 실패',
       'tabBarSetting': '탭 바 설정',
       'jumpPageTo': '페이지 이동: ',
@@ -194,6 +208,8 @@ class ko_KR {
       'addTagFailed': 'Add Tag Failed',
       'parentGallery': 'Parent',
       'blockUploaderLocally': 'Block user locally',
+      'blockTitleLocally': '선택한 제목을 로컬에서 차단',
+      'blockRuleAlreadyExists': '이 규칙은 이미 존재합니다',
       'block': 'Block',
 
       /// detail dialog
@@ -272,8 +288,12 @@ class ko_KR {
       'redirect2EhHint':
           'Try to load gallery detail page from EH site first to get better network performance',
       'redirectAllGallery': 'Redirect all gallery to EH',
+<<<<<<< HEAD
       'imDonorHint':
           'If you are a donor, you can turn this on to help you access gallerys in EX site',
+=======
+      'imDonorHint': 'If you are a donor, you can turn this on to help you access galleries in EX site',
+>>>>>>> upstream/master
       'profileSetting': 'Profile Setting',
       'chooseProfileHint': 'Choose profile used in JHenTai',
       'siteSetting': '사이트 내부 설정',
@@ -293,7 +313,7 @@ class ko_KR {
       'myTagsHint': '강조하거나 숨기고 싶은 태그를 관리',
       'localTags': 'Local Tags',
       'localTagsHint': 'Extra filter tags',
-      'localTagsHint2': 'Gallerys with these tags will be hidden',
+      'localTagsHint2': 'Galleries with these tags will be hidden',
       'addLocalTags': 'Add Tags',
       'hidden': '숨김',
       'nope': '없음',
@@ -406,10 +426,15 @@ class ko_KR {
       'custom': '커스텀',
 
       /// performance setting page
+<<<<<<< HEAD
       'maxGalleryNum4Animation':
           'Max Gallery Num For List Animation in Download page',
       'maxGalleryNum4AnimationHint':
           'Disable animation for groups which have more gallerys than this value(for list style)',
+=======
+      'maxGalleryNum4Animation': 'Max Gallery Num For List Animation in Download page',
+      'maxGalleryNum4AnimationHint': 'Disable animation for groups which have more galleries than this value(for list style)',
+>>>>>>> upstream/master
 
       /// mouse wheel setting page
       'themeColorSettingHint': '라이트 모드와 다크 모드 각각에 다른 색을 지정합니다',
@@ -619,10 +644,15 @@ class ko_KR {
       'reUnlock': '다시 잠금 해제',
       'reUnlockHint': '주의! 다시 잠금 해제하려면 이 파일을 다시 구입해야 합니다.',
       'downloadHelpInfo': '다운로드 할 수 없고 로그에 DB 테이블이 없다면 앱을 삭제하고 다시 설치하세요.',
+<<<<<<< HEAD
       'localGalleryHelpInfo':
           'JHenTai에서 다운로드하지 않은 갤러리를 불러옵니다. 다운로드 설정 → 추가 갤러리 스캔 경로를 추가하고 새로고침하세요.',
       'localGalleryHelpInfo4iOSAndMacOS':
           'Load gallerys which is not downloaded by JHenTai. Put your gallerys in default download path and then refresh',
+=======
+      'localGalleryHelpInfo': 'JHenTai에서 다운로드하지 않은 갤러리를 불러옵니다. 다운로드 설정 → 추가 갤러리 스캔 경로를 추가하고 새로고침하세요.',
+      'localGalleryHelpInfo4iOSAndMacOS': 'Load galleries which is not downloaded by JHenTai. Put your galleries in default download path and then refresh',
+>>>>>>> upstream/master
       'deleteLocalGalleryHint': '사용자의 로컬 파일을 삭제합니다.',
       'priority': '우선순위',
       'highest': '높음',
@@ -646,6 +676,7 @@ class ko_KR {
       'operationHasCompleted': '작업이 완료되었습니다',
       'operationInProgress': '작업이 진행 중입니다',
       'startProcess': '작업을 시작합니다',
+<<<<<<< HEAD
       'multiReDownloadHint': 'You will re-download all selected gallerys.',
       'multiChangeGroupHint': 'You will change group of all selected gallerys.',
       'multiDeleteHint': 'You will delete all selected gallerys.',
@@ -659,6 +690,16 @@ class ko_KR {
           'You have reached the image limit, and do not have sufficient GP to buy a download quota.',
       'deleteUpdatingDependentHint':
           'Another gallery\'s update relies on current gallery, you\'d better delete after update has completed.',
+=======
+      'multiReDownloadHint': 'You will re-download all selected galleries.',
+      'multiChangeGroupHint': 'You will change group of all selected galleries.',
+      'multiDeleteHint': 'You will delete all selected galleries.',
+      'blankImageHint': 'Downloading the image returned an empty result, trying to re-parse.',
+      'peakHoursHint': 'Downloading original files during peak hours requires GP, and you do not have enough, downloading is paused.',
+      'oldGalleryHint': 'Downloading original files of this gallery requires GP, and you do not have enough.',
+      'exceedLimitHint': 'You have reached the image limit, and do not have sufficient GP to buy a download quota.',
+      'deleteUpdatingDependentHint': 'Another gallery\'s update relies on current gallery, you\'d better delete after update has completed.',
+>>>>>>> upstream/master
       'migrateToDownload': 'Migrate To 「Download」',
       'refresh': 'Refresh',
 
@@ -719,10 +760,10 @@ class ko_KR {
 
       /// ranklist page
       'getRanklistFailed': '순위 리스트 가져오기 실패',
-      'getSomeOfGallerysFailed': '일부 갤러리 가져오기 실패',
+      'getSomeOfGalleriesFailed': '일부 갤러리 가져오기 실패',
 
       /// history page
-      'getHistoryGallerysFailed': '일부 갤러리 기록 가져오기 실패',
+      'getHistoryGalleriesFailed': '일부 갤러리 기록 가져오기 실패',
 
       /// search page
       'search': '검색',
@@ -768,10 +809,13 @@ class ko_KR {
       'per': '/ 시간: ',
       'images': '장 ',
       'downloadTimeout': '다운로드 시간 초과',
-      'downloadAllGallerysOfSamePriority':
+<<<<<<< HEAD
           'Download All Gallerys of Same Priority',
-      'downloadAllGallerysOfSamePriorityHint':
           'Download only 1 gallery simultaneously in 1 group with highest priority by default',
+=======
+      'downloadAllGalleriesOfSamePriority': 'Download All Galleries of Same Priority',
+      'downloadAllGalleriesOfSamePriorityHint': 'Download only 1 gallery simultaneously in 1 group with highest priority by default',
+>>>>>>> upstream/master
       'alwaysUseDefaultGroup': '항상 기본 그룹 사용',
       'enableStoreMetadataForRestore': '복원을 위한 저장소 메타데이터 사용',
       'enableStoreMetadataForRestoreHint': '사용하지 않으면 다운로드 작업을 복원할 수 없습니다.',
@@ -860,8 +904,12 @@ class ko_KR {
       'useBuiltInBlockedUsersHint':
           'Filter out gallery comments from users on the blocklist',
       'blockingRules': 'Block Rules',
+<<<<<<< HEAD
       'blockingRulesHint':
           'Additional blocking rules for gallerys and comments',
+=======
+      'blockingRulesHint': 'Additional blocking rules for galleries and comments',
+>>>>>>> upstream/master
       'blockingTarget': 'Blocking Target',
       'blockingAttribute': 'Blocking Attribute',
       'blockingPattern': 'Blocking Pattern',

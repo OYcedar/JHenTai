@@ -37,6 +37,7 @@ import 'package:jhentai/src/widget/eh_rating_dialog.dart';
 import 'package:jhentai/src/widget/eh_gallery_stat_dialog.dart';
 import 'package:jhentai/src/routes/routes.dart';
 import 'package:jhentai/src/service/archive_download_service.dart';
+import 'package:jhentai/src/service/gallery_download/gallery_images_retainer.dart';
 import 'package:jhentai/src/service/tag_translation_service.dart';
 import 'package:jhentai/src/setting/favorite_setting.dart';
 import 'package:jhentai/src/setting/user_setting.dart';
@@ -58,7 +59,8 @@ import '../../model/gallery_note.dart';
 import '../../model/search_config.dart';
 import '../../model/tag_set.dart';
 import '../../service/history_service.dart';
-import '../../service/gallery_download_service.dart';
+import '../../service/gallery_download/download_path_resolver.dart';
+import '../../service/gallery_download/gallery_download_service.dart';
 import '../../service/local_block_rule_service.dart';
 import '../../service/storage_service.dart';
 import '../../setting/eh_setting.dart';
@@ -97,7 +99,8 @@ class DetailsPageLogic extends GetxController
     with
         LoginRequiredMixin,
         Scroll2TopLogicMixin,
-        UpdateGlobalGalleryStatusLogicMixin {
+        UpdateGlobalGalleryStatusLogicMixin,
+        GalleryImagesRetainer {
   static const String galleryId = 'galleryId';
   static const String uploaderId = 'uploaderId';
   static const String detailsId = 'detailsId';
@@ -148,6 +151,16 @@ class DetailsPageLogic extends GetxController
   @override
   void onReady() async {
     super.onReady();
+
+    /// If this gallery is in the download list and its image list has been
+    /// evicted (fully downloaded earlier), reload so detail/thumbnails pages
+    /// can read image status synchronously. Retain for the lifetime of this
+    /// controller so eviction stays deferred until details (and any spawned
+    /// thumbnails page) closes.
+    final int gid = state.galleryUrl.gid;
+    if (galleryDownloadService.containGallery(gid)) {
+      await retainGalleryImages(gid);
+    }
 
     if (state.galleryDetails == null || state.apikey == null) {
       getDetails();
@@ -366,9 +379,8 @@ class DetailsPageLogic extends GetxController
   }
 
   Future<void> handleTapDownload() async {
-    GalleryDownloadedData? galleryDownloadedData = galleryDownloadService
-        .gallerys
-        .singleWhereOrNull((g) => g.gid == state.galleryUrl.gid);
+    GalleryDownloadInfo? galleryDownloadedData =
+        galleryDownloadService.galleryDownloadInfos[state.galleryUrl.gid];
     GalleryDownloadProgress? downloadProgress = galleryDownloadService
         .galleryDownloadInfos[state.galleryUrl.gid]?.downloadProgress;
 
@@ -396,7 +408,7 @@ class DetailsPageLogic extends GetxController
 
       unawaited(downloadSetting.saveRecentGalleryGroup(result.group));
 
-      GalleryDownloadedData galleryDownloadedData = GalleryDownloadedData(
+      GalleryDownloadRequest galleryDownloadRequest = GalleryDownloadRequest(
         gid: state.galleryDetails?.galleryUrl.gid ??
             state.gallery!.galleryUrl.gid,
         token: state.galleryDetails?.galleryUrl.token ??
@@ -409,18 +421,14 @@ class DetailsPageLogic extends GetxController
         uploader: state.galleryDetails?.uploader ?? state.gallery?.uploader,
         publishTime:
             state.galleryDetails?.publishTime ?? state.gallery!.publishTime,
-        downloadStatusIndex: DownloadStatus.downloading.index,
         downloadOriginalImage: result.downloadOriginalImage,
-        sortOrder: 0,
-        groupName: result.group,
-        insertTime: DateTime.now().toString(),
-        priority: GalleryDownloadService.defaultDownloadGalleryPriority,
+        group: result.group,
         tags: state.galleryDetails != null
             ? tagMap2TagString(state.galleryDetails!.tags)
             : tagMap2TagString(state.gallery!.tags),
         tagRefreshTime: DateTime.now().toString(),
       );
-      galleryDownloadService.downloadGallery(galleryDownloadedData);
+      galleryDownloadService.downloadGallery(galleryDownloadRequest);
 
       updateGlobalGalleryStatus();
 
@@ -909,7 +917,7 @@ class DetailsPageLogic extends GetxController
             state.galleryDetails?.rawTitle ??
             '',
         parentUrl: state.galleryDetails?.parentGalleryUrl,
-        childrenGallerys: state.galleryDetails?.childrenGallerys,
+        childrenGalleries: state.galleryDetails?.childrenGalleries,
       ),
     );
   }
@@ -1093,6 +1101,36 @@ class DetailsPageLogic extends GetxController
     toast('success'.tr);
   }
 
+  Future<void> blockTitle(String title) async {
+    String expression = title.trim();
+    if (expression.isEmpty) {
+      return;
+    }
+
+    LocalBlockRule rule = LocalBlockRule(
+      groupId: newUUID(),
+      target: LocalBlockTargetEnum.gallery,
+      attribute: LocalBlockAttributeEnum.title,
+      pattern: LocalBlockPatternEnum.like,
+      expression: expression,
+    );
+
+    try {
+      ({bool success, bool inserted, String? msg}) result =
+          await localBlockRuleService.insertBlockRuleIfAbsent(rule);
+      if (!result.success) {
+        snack('configureBlockRuleFailed'.tr, result.msg ?? '');
+      } else if (result.inserted) {
+        toast('success'.tr);
+      } else {
+        toast('blockRuleAlreadyExists'.tr);
+      }
+    } catch (e, stack) {
+      log.error('Block title failed, expression:$expression', e, stack);
+      snack('configureBlockRuleFailed'.tr, e.toString());
+    }
+  }
+
   Future<void> handleResetReadProgress() async {
     await readProgressService
         .deleteReadProgress(state.galleryUrl.gid.toString());
@@ -1141,13 +1179,14 @@ class DetailsPageLogic extends GetxController
     }
 
     /// use GalleryDownloadedData's title
-    GalleryDownloadedData gallery = galleryDownloadService.gallerys
-        .firstWhere((g) => g.gid == state.galleryUrl.gid);
+    GalleryDownloadInfo gallery =
+        galleryDownloadService.galleryDownloadInfos[state.galleryUrl.gid]!;
 
     if (readSetting.useThirdPartyViewer.isTrue &&
         readSetting.thirdPartyViewerPath.value != null) {
       openThirdPartyViewer(
-          galleryDownloadService.computeGalleryDownloadAbsolutePath(gallery));
+          DownloadPathResolver.computeGalleryDownloadAbsolutePath(
+              gallery.toGalleryDownloadedData()));
       return;
     }
 
