@@ -6,7 +6,12 @@ COPY pubspec.yaml pubspec.lock ./
 COPY web/ web/
 
 RUN flutter config --no-analytics && \
-    flutter pub get
+    set -eux; \
+    for attempt in 1 2 3 4 5; do \
+        if flutter pub get; then break; fi; \
+        if [ "$attempt" = "5" ]; then exit 1; fi; \
+        sleep 10; \
+    done
 
 COPY lib/ lib/
 COPY assets/ assets/
