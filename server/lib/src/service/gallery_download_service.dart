@@ -12,6 +12,7 @@ import '../core/log.dart';
 import '../network/eh_client.dart';
 import '../network/jh_public_client.dart';
 import '../service/event_bus.dart';
+import '../utils/archive_util.dart';
 import 'download_runtime_settings.dart';
 import 'download_rate_limiter.dart';
 import 'super_resolution_service.dart';
@@ -400,7 +401,7 @@ class GalleryDownloadService {
     _tasks.remove(gid);
     db.deleteGalleryDownload(gid);
 
-    final dir = Directory(_galleryDir(gid));
+    final dir = Directory(_galleryDir(old));
     if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
@@ -437,7 +438,7 @@ class GalleryDownloadService {
     }
 
     final previousStatus = task.status;
-    final dir = Directory(_galleryDir(gid));
+    final dir = Directory(_galleryDir(task));
     await dir.create(recursive: true);
     final existing = _findExistingImage(gid, serialNo);
     if (existing != null && await existing.exists()) {
@@ -480,9 +481,19 @@ class GalleryDownloadService {
     db.deleteGalleryDownload(gid);
 
     if (deleteFiles) {
-      final dir = Directory(_galleryDir(gid));
-      if (await dir.exists()) {
-        await dir.delete(recursive: true);
+      // 新格式 `<gid> - <标题>` 与旧格式 `gallery/<gid>` 都删。
+      final dirs = <String>{p.join(_config.downloadDir, 'gallery', '$gid')};
+      if (task != null) {
+        dirs.add(_galleryDir(task));
+      } else {
+        final resolved = resolveGalleryDir(_config.downloadDir, gid);
+        if (resolved != null) dirs.add(resolved);
+      }
+      for (final dirPath in dirs) {
+        final dir = Directory(dirPath);
+        if (await dir.exists()) {
+          await dir.delete(recursive: true);
+        }
       }
     }
     _eventBus.fire('download_removed', {'type': 'gallery', 'gid': gid});
@@ -490,23 +501,57 @@ class GalleryDownloadService {
   }
 
   Future<int> restoreDownloadsFromMetadata() async {
-    final root = Directory(p.join(_config.downloadDir, 'gallery'));
-    if (!await root.exists()) return 0;
+    // 新格式：下载根目录下 `<gid> - <标题>` 文件夹，内含 metadata（app 端包裹格式）。
+    // 旧格式：`gallery/<gid>` 文件夹，内含 metadata.json。两者都恢复。
+    final candidates = <Directory>[];
+    final root = Directory(_config.downloadDir);
+    if (root.existsSync()) {
+      try {
+        await for (final entity in root.list(followLinks: false)) {
+          if (entity is Directory &&
+              RegExp(r'^\d+ - ').hasMatch(p.basename(entity.path))) {
+            candidates.add(entity);
+          }
+        }
+      } catch (e) {
+        log.warning('Restore gallery scan failed: ${root.path}: $e');
+      }
+    }
+    final legacyRoot = Directory(p.join(_config.downloadDir, 'gallery'));
+    if (legacyRoot.existsSync()) {
+      try {
+        await for (final entity in legacyRoot.list(followLinks: false)) {
+          if (entity is Directory) candidates.add(entity);
+        }
+      } catch (e) {
+        log.warning('Restore gallery scan failed: ${legacyRoot.path}: $e');
+      }
+    }
 
     var restored = 0;
-    await for (final entity in root.list(followLinks: false)) {
-      if (entity is! Directory) continue;
-      final metaFile = File(p.join(entity.path, 'metadata.json'));
-      if (!await metaFile.exists()) continue;
+    for (final entity in candidates) {
+      final metaFile = File(p.join(entity.path, 'metadata'));
+      final legacyMetaFile = File(p.join(entity.path, 'metadata.json'));
+      final metaFileToUse = metaFile.existsSync()
+          ? metaFile
+          : (legacyMetaFile.existsSync() ? legacyMetaFile : null);
+      if (metaFileToUse == null) continue;
 
       Map<String, dynamic> meta;
       try {
-        final decoded = jsonDecode(await metaFile.readAsString());
+        final decoded = jsonDecode(await metaFileToUse.readAsString());
         if (decoded is! Map) continue;
         meta = decoded.cast<String, dynamic>();
       } catch (e) {
-        log.warning('Restore gallery metadata failed: ${metaFile.path}: $e');
+        log.warning(
+            'Restore gallery metadata failed: ${metaFileToUse.path}: $e');
         continue;
+      }
+
+      // app 端包裹格式：{"gallery": {...}, "images": "..."}
+      final gallery = meta['gallery'];
+      if (gallery is Map) {
+        meta = gallery.cast<String, dynamic>();
       }
 
       final gid = (meta['gid'] as num?)?.toInt() ??
@@ -529,7 +574,8 @@ class GalleryDownloadService {
       final status = pageCount > 0 && completedCount >= pageCount
           ? GalleryDownloadStatus.completed
           : GalleryDownloadStatus.paused;
-      final insertTime = (await metaFile.stat()).modified.toIso8601String();
+      final insertTime = meta['insertTime']?.toString() ??
+          (await metaFileToUse.stat()).modified.toIso8601String();
 
       final task = GalleryDownloadTask(
         gid: gid,
@@ -629,7 +675,7 @@ class GalleryDownloadService {
 
   Future<void> _doDownload(GalleryDownloadTask task) async {
     try {
-      final dir = Directory(_galleryDir(task.gid));
+      final dir = Directory(_galleryDir(task));
       await dir.create(recursive: true);
 
       final detail = await _client.fetchGalleryDetail(task.galleryUrl);
@@ -760,8 +806,7 @@ class GalleryDownloadService {
         }
 
         final ext = _getExtension(imagePage.imageUrl);
-        final savePath =
-            p.join(dir.path, '${index.toString().padLeft(5, '0')}.$ext');
+        final savePath = p.join(dir.path, '$index.$ext');
 
         await _rateLimiter.waitForSlot();
         cancelTokenThrowIfCancelled(task._cancelToken);
@@ -815,10 +860,33 @@ class GalleryDownloadService {
     }
     if (fromDb.length >= task.pageCount) return fromDb;
 
-    final metaFile = File(p.join(_galleryDir(task.gid), 'metadata.json'));
+    // app 端格式：metadata 文件，images 是 GalleryImage JSON 列表的编码字符串。
+    final metaFile = File(p.join(_galleryDir(task), 'metadata'));
     if (await metaFile.exists()) {
       try {
-        final meta = jsonDecode(await metaFile.readAsString());
+        final decoded = jsonDecode(await metaFile.readAsString());
+        if (decoded is Map) {
+          final raw = decoded['images'];
+          if (raw is String && raw.isNotEmpty) {
+            final list = jsonDecode(raw);
+            if (list is List) {
+              final urls = [
+                for (final item in list)
+                  if (item is Map && item['url']?.toString().isNotEmpty == true)
+                    item['url'].toString()
+              ];
+              if (urls.length >= task.pageCount) return urls;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // fork 旧格式：metadata.json 的 imagePageUrls 字段。
+    final legacyMetaFile = File(p.join(_galleryDir(task), 'metadata.json'));
+    if (await legacyMetaFile.exists()) {
+      try {
+        final meta = jsonDecode(await legacyMetaFile.readAsString());
         final urls = (meta['imagePageUrls'] as List?)?.cast<String>() ?? [];
         if (urls.length >= task.pageCount) return urls;
       } catch (_) {}
@@ -840,8 +908,8 @@ class GalleryDownloadService {
     return urls;
   }
 
-  String _galleryDir(int gid) =>
-      p.join(_config.downloadDir, 'gallery', gid.toString());
+  String _galleryDir(GalleryDownloadTask task) =>
+      galleryDirPath(_config.downloadDir, task.gid, task.title);
 
   /// Align with native [GalleryDownloadService._tryCopyImageInfosFromImageHashes]: JHenTai public hashes + old dir files.
   Future<void> _tryCopyPagesFromSupersededGallery(
@@ -883,7 +951,7 @@ class GalleryDownloadService {
       return;
     }
 
-    final newDir = Directory(_galleryDir(task.gid));
+    final newDir = Directory(_galleryDir(task));
     await newDir.create(recursive: true);
 
     var copied = 0;
@@ -898,8 +966,7 @@ class GalleryDownloadService {
 
       var ext = p.extension(oldFile.path).replaceFirst('.', '');
       if (ext.isEmpty) ext = 'jpg';
-      final savePath =
-          p.join(newDir.path, '${i.toString().padLeft(5, '0')}.$ext');
+      final savePath = p.join(newDir.path, '$i.$ext');
 
       try {
         await oldFile.copy(savePath);
@@ -928,14 +995,19 @@ class GalleryDownloadService {
   }
 
   File? _findExistingImage(int gid, int index) {
-    final dir = Directory(_galleryDir(gid));
+    final task = _tasks[gid];
+    final dir = Directory(task != null
+        ? _galleryDir(task)
+        : resolveGalleryDir(_config.downloadDir, gid) ??
+            p.join(_config.downloadDir, 'gallery', '$gid'));
     if (!dir.existsSync()) return null;
-    final prefix = index.toString().padLeft(5, '0');
+    // 兼容旧版 5 位补零命名（00000.jpg）与 app 端普通命名（0.jpg）。
+    final names = {index.toString().padLeft(5, '0'), index.toString()};
     try {
       return dir
           .listSync()
           .whereType<File>()
-          .where((f) => p.basenameWithoutExtension(f.path) == prefix)
+          .where((f) => names.contains(p.basenameWithoutExtension(f.path)))
           .firstOrNull;
     } catch (_) {
       return null;
@@ -943,7 +1015,7 @@ class GalleryDownloadService {
   }
 
   int _countExistingImages(Directory dir) {
-    final pattern = RegExp(r'^\d{5}\.[^.]+$');
+    final pattern = RegExp(r'^\d+\.[^.]+$');
     try {
       return dir
           .listSync(followLinks: false)
@@ -956,21 +1028,34 @@ class GalleryDownloadService {
   }
 
   void _saveMetadata(GalleryDownloadTask task, List<String> imagePageUrls) {
-    final metaFile = File(p.join(_galleryDir(task.gid), 'metadata.json'));
+    // 与旧版移动端一致：文件夹 `<gid> - <标题>`，元数据文件 metadata，
+    // 内容为 `{"gallery": {...}, "images": "..."}` 包裹格式，字段名沿用 app 端。
+    final metaFile = File(p.join(_galleryDir(task), 'metadata'));
     metaFile.writeAsStringSync(jsonEncode({
-      'gid': task.gid,
-      'token': task.token,
-      'title': task.title,
-      'category': task.category,
-      'pageCount': task.pageCount,
-      'galleryUrl': task.galleryUrl,
-      'coverUrl': task.coverUrl,
-      'uploader': task.uploader,
-      'group': task.group,
-      'priority': task.priority,
-      'downloadOriginalImage': task.downloadOriginalImage,
-      'publishTime': task.publishTime,
-      'imagePageUrls': imagePageUrls,
+      'gallery': {
+        'gid': task.gid,
+        'token': task.token,
+        'title': task.title,
+        'category': task.category,
+        'pageCount': task.pageCount,
+        'galleryUrl': task.galleryUrl,
+        'oldVersionGalleryUrl': null,
+        'uploader': task.uploader,
+        'publishTime': task.publishTime,
+        'downloadStatusIndex': task.status.index,
+        'insertTime': task.insertTime,
+        'downloadOriginalImage': task.downloadOriginalImage,
+        'priority': task.priority,
+        'sortOrder': 0,
+        'groupName': task.group,
+        'tags': '',
+        'tagRefreshTime': null,
+        // fork 扩展字段
+        'coverUrl': task.coverUrl,
+      },
+      'images': jsonEncode([
+        for (final url in imagePageUrls) {'url': url},
+      ]),
     }));
   }
 

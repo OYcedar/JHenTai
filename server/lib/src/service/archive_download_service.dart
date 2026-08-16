@@ -511,7 +511,7 @@ class ArchiveDownloadService {
       }
 
       final hasImages = _hasExtractedImages(entity);
-      final insertTime =
+      final insertTime = meta['insertTime']?.toString() ??
           (await metaFileToUse.stat()).modified.toIso8601String();
       final task = ArchiveDownloadTask(
         gid: gid,
@@ -763,7 +763,8 @@ class ArchiveDownloadService {
   }
 
   void _saveMetadata(ArchiveDownloadTask task) {
-    // 与旧版移动端一致的元数据文件名（无扩展名），放在归档解压目录内。
+    // 与旧版移动端一致：文件夹 `Archive - <gid> - <标题>`，元数据文件 ametadata，
+    // 字段名也沿用 app 端（archiveStatusIndex/insertTime/sortOrder/groupName 等）。
     final metaFile = File(p.join(_archiveDir(task), 'ametadata'));
     metaFile.parent.createSync(recursive: true);
     metaFile.writeAsStringSync(jsonEncode({
@@ -776,16 +777,32 @@ class ArchiveDownloadService {
       'coverUrl': task.coverUrl,
       'uploader': task.uploader,
       'size': task.size,
-      'archivePageUrl': task.archivePageUrl,
-      'isOriginal': task.isOriginal,
-      'parseSource': task.parseSource.name,
-      'group': task.group,
-      'priority': task.priority,
       'publishTime': task.publishTime,
+      'archiveStatusIndex': _archiveStatusToAppCode(task.status),
+      'archivePageUrl': task.archivePageUrl,
       'downloadPageUrl': task.downloadPageUrl,
       'downloadUrl': task.downloadUrl,
+      'isOriginal': task.isOriginal,
+      'insertTime': task.insertTime,
+      'sortOrder': 0,
+      'groupName': task.group,
+      // fork 扩展字段
+      'parseSource': task.parseSource.name,
+      'priority': task.priority,
     }));
   }
+
+  /// 服务端状态码转 app 端 ArchiveStatus code（10-90）。
+  int _archiveStatusToAppCode(ArchiveStatus status) => switch (status) {
+        ArchiveStatus.completed => 90,
+        ArchiveStatus.downloaded => 70,
+        ArchiveStatus.unpacking => 80,
+        ArchiveStatus.parsingUrl => 50,
+        ArchiveStatus.downloading => 60,
+        ArchiveStatus.paused => 20,
+        ArchiveStatus.failed => 10,
+        ArchiveStatus.none || ArchiveStatus.unlocking => 30,
+      };
 
   void _notifyProgress(ArchiveDownloadTask task) {
     _eventBus.fire('archive_download_progress', task.toJson());

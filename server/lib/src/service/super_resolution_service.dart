@@ -763,9 +763,15 @@ class SuperResolutionService {
           .selectGalleryImages(gid)
           .map((row) {
             final raw = row['path']?.toString() ?? '';
-            final path = p.isAbsolute(raw)
-                ? raw
-                : p.join(_config.downloadDir, 'gallery', '$gid', raw);
+            String path;
+            if (p.isAbsolute(raw)) {
+              path = raw;
+            } else {
+              final resolvedDir = resolveGalleryDir(_config.downloadDir, gid);
+              path = p.join(
+                  resolvedDir ?? p.join(_config.downloadDir, 'gallery', '$gid'),
+                  raw);
+            }
             return SuperResolutionInputImage(
               serialNo: (row['serial_no'] as int?) ?? 0,
               path: path,

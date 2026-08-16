@@ -67,19 +67,23 @@ bool isImageFile(String path) {
 /// 归档文件夹标题最大长度，与旧版移动端一致。
 const int archiveMaxTitleLength = 80;
 
+/// 画廊文件夹标题最大长度，与旧版移动端一致。
+const int galleryMaxTitleLength = 85;
+
 /// 把原始标题清洗成可安全用作文件夹名的形式：
-/// 替换路径非法字符为空格，超过 [archiveMaxTitleLength] 时截断。
-String sanitizeArchiveTitle(String rawTitle) {
+/// 替换路径非法字符为空格，超过 [maxLength] 时截断。
+String sanitizeFolderTitle(String rawTitle,
+    {int maxLength = archiveMaxTitleLength}) {
   var title = rawTitle.replaceAll(RegExp(r'[/|?,:*"<>\\.]'), ' ').trim();
-  if (title.length > archiveMaxTitleLength) {
-    title = title.substring(0, archiveMaxTitleLength).trim();
+  if (title.length > maxLength) {
+    title = title.substring(0, maxLength).trim();
   }
   return title;
 }
 
 /// 归档解压后的文件夹名，格式与旧版一致：`Archive - <gid> - <标题>`。
 String computeArchiveDirName(int gid, String title) =>
-    'Archive - $gid - ${sanitizeArchiveTitle(title)}';
+    'Archive - $gid - ${sanitizeFolderTitle(title)}';
 
 /// 归档解压后的完整目录路径。
 String archiveDirPath(String downloadDir, int gid, String title) =>
@@ -110,6 +114,34 @@ int? gidFromArchiveDirName(String dirPath) {
   final name = p.basename(dirPath);
   final match = RegExp(r'^Archive - (\d+) - ').firstMatch(name);
   return match == null ? null : int.tryParse(match.group(1)!);
+}
+
+/// 画廊下载文件夹名，格式与旧版一致：`<gid> - <标题>`。
+String computeGalleryDirName(int gid, String title) =>
+    '$gid - ${sanitizeFolderTitle(title, maxLength: galleryMaxTitleLength)}';
+
+/// 画廊下载的完整目录路径。
+String galleryDirPath(String downloadDir, int gid, String title) =>
+    p.join(downloadDir, computeGalleryDirName(gid, title));
+
+/// 按 gid 查找画廊下载目录：
+/// 优先匹配新格式 `<gid> - <标题>`，回退旧格式 `gallery/<gid>`。
+String? resolveGalleryDir(String downloadDir, int gid) {
+  final root = Directory(downloadDir);
+  if (root.existsSync()) {
+    final prefix = '$gid - ';
+    try {
+      for (final entity in root.listSync(followLinks: false)) {
+        if (entity is Directory && p.basename(entity.path).startsWith(prefix)) {
+          return entity.path;
+        }
+      }
+    } catch (_) {
+      // 目录扫描失败时按未找到处理，回退旧格式。
+    }
+  }
+  final legacy = p.join(downloadDir, 'gallery', '$gid');
+  return Directory(legacy).existsSync() ? legacy : null;
 }
 
 int naturalCompare(String a, String b) {

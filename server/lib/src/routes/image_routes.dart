@@ -16,6 +16,7 @@ class ImageRoutes {
   final ServerConfig _config;
   late final String _downloadDirCanonical = p.canonicalize(_config.downloadDir);
   final Map<int, String> _archiveDirCache = {};
+  final Map<int, String> _galleryDirCache = {};
 
   ImageRoutes(this._config);
 
@@ -38,7 +39,11 @@ class ImageRoutes {
 
   Future<Response> _serveGalleryImage(
       Request request, String gid, String filename) async {
-    final filePath = p.join(_config.downloadDir, 'gallery', gid, filename);
+    final gidNum = int.tryParse(gid);
+    if (gidNum == null) return Response.notFound('Missing gid');
+    final galleryDir = _resolveGalleryDir(gidNum);
+    if (galleryDir == null) return Response.notFound('Gallery not found');
+    final filePath = p.join(galleryDir, filename);
     return _serveFile(filePath, request);
   }
 
@@ -61,6 +66,16 @@ class ImageRoutes {
     if (cached != null && Directory(cached).existsSync()) return cached;
     final resolved = resolveArchiveDir(_config.downloadDir, gid);
     if (resolved != null) _archiveDirCache[gid] = resolved;
+    return resolved;
+  }
+
+  /// 解析画廊下载目录：优先缓存，再按新格式 `<gid> - <标题>`
+  /// 扫描，最后回退旧格式 `gallery/<gid>`。
+  String? _resolveGalleryDir(int gid) {
+    final cached = _galleryDirCache[gid];
+    if (cached != null && Directory(cached).existsSync()) return cached;
+    final resolved = resolveGalleryDir(_config.downloadDir, gid);
+    if (resolved != null) _galleryDirCache[gid] = resolved;
     return resolved;
   }
 
