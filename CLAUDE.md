@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-JHenTai is a Flutter app for browsing E-Hentai / EXHentai, targeting Android, iOS, Windows, macOS, and Linux. Version `8.0.12+309` (from pubspec.yaml).
+JHenTai is a Flutter app for browsing E-Hentai / EXHentai, targeting Android, iOS, Windows, macOS, and Linux. Version `8.0.14+323` (from pubspec.yaml).
 
 ## Build & dev commands
 
@@ -40,10 +40,30 @@ Every singleton service and setting implements `JHLifeCircleBean` from `lib/src/
 - `afterBeanReady()` — post-runApp setup
 - `initDependencies` — list of other beans this one needs initialized first
 
-All beans are registered in a topological-sorted list in `main.dart` and initialized in order. Three mixins simplify common patterns:
-- `JHLifeCircleBeanErrorCatch` — wraps init/ready in try/catch with logging
-- `JHLifeCircleBeanWithConfigStorage` — adds JSON serialize/deserialize to the `local_config` DB table
+All beans are registered in a topological-sorted list in `lib/src/main.dart` and initialized in order. Three mixins simplify common patterns:
+- `JHLifeCircleBeanErrorCatch` — wraps init/ready in try/catch with logging; subclasses override `doInitBean()` / `doAfterBeanReady()` instead
+- `JHLifeCircleBeanWithConfigStorage` — adds JSON serialize/deserialize to the `local_config` DB table via `applyBeanConfig()` / `getBeanConfig()`
 - Service beans live in `lib/src/service/`; settings singletons live in `lib/src/setting/`
+
+### Logging
+
+Uses the `logger` package via the global `log` singleton (`lib/src/service/log.dart`). Four tiered outputs:
+- Console logger (dev: colored + method info; prod: plain with timestamp)
+- Verbose file logger (trace-level, `verbose/`)
+- Warning file logger (warn+, `warning/`)
+- Download-specific file logger (`download/`)
+
+Call `log.trace/debug/info/warn/error(msg, e, stack)`. Errors in `JHLifeCircleBeanErrorCatch` mixin are automatically logged.
+
+### Supporting directories
+
+- `lib/src/config/` — app-level configuration (theme, UI constants, Sentry, API secrets)
+- `lib/src/enum/` — enums shared across the app (`EHNamespace`, `ConfigEnum`, `ConfigTypeEnum`)
+- `lib/src/extension/` — extension methods on framework types (DioException, String, List, Directory, Widget, GetLogic)
+- `lib/src/mixin/` — reusable page mixins: scroll-to-top, double-tap-refresh, login-required guard, animation, window-widget
+- `lib/src/model/` — data classes: `Gallery`, `GalleryTag`, `GalleryImage`, `GalleryComment`, `SearchConfig`, `SearchHistory`, and per-endpoint response models in `model/jh_response/` and `model/archive_bot_response/`
+- `lib/src/utils/` — 30+ utility files for parsing (eh_spider_parser, jh_spider_parser), IO, date, crypto, proxy, version, etc.
+- `lib/src/exception/` — custom exception classes (`EHSiteException`, `NotUploadException`)
 
 ### Routing
 

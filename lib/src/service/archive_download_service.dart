@@ -54,7 +54,6 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
 
   static const int _maxRetryTimes = 3;
   static const String metadataFileName = 'ametadata';
-  static const int _maxTitleLength = 80;
   static const int _maxIsolateCountsTotal = 10;
 
   final Completer<bool> _completer = Completer();
@@ -119,9 +118,12 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
       if (archiveDownloadInfos.containsKey(archive.gid)) {
         return;
       }
-      if (!await _initArchiveInfo(archive)) {
+
+      ArchiveDownloadedData? archiveWithSanitizedTitle = await _initArchiveInfo(archive);
+      if (archiveWithSanitizedTitle == null) {
         return;
       }
+      archive = archiveWithSanitizedTitle;
 
       _generateComicInfoInDisk(archive);
     }
@@ -456,6 +458,12 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
 
       archive = archive.copyWith(archiveStatusCode: ArchiveStatus.completed.code);
 
+      /// Back-fill sanitizedTitle for metadata files written before this field was introduced.
+      if (archive.sanitizedTitle == null) {
+        final int reservedBytes = utf8.encode('Archive - ${archive.gid} - ').length;
+        archive = archive.copyWith(sanitizedTitle: Value(_computeSanitizedArchiveTitle(archive.title, reservedBytes)));
+      }
+
       if (!await _saveArchiveAndGroupInDatabase(archive)) {
         log.error('Restore archive failed: $archive');
         await deleteArchive(archive.gid);
@@ -476,7 +484,7 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
 
   Future<List<GalleryImage>> getUnpackedImages(int gid, {bool computeHash = false}) async {
     ArchiveDownloadedData archive = archives.firstWhere((a) => a.gid == gid);
-    Directory directory = Directory(computeArchiveUnpackingPath(archive.title, archive.gid));
+    Directory directory = Directory(computeArchiveUnpackingPath(archive));
 
     return directory.list().toList().then((files) {
       List<File> imageFiles = files.whereType<File>().where((file) => FileUtil.isImageExtension(file.path)).toList();
@@ -537,7 +545,7 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
     );
 
     try {
-      File file = File(join(computeArchiveUnpackingPath(archive.title, archive.gid), 'ComicInfo.xml'));
+      File file = File(join(computeArchiveUnpackingPath(archive), 'ComicInfo.xml'));
       if (!await file.exists()) {
         await file.create(recursive: true);
       }
@@ -547,26 +555,24 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
     }
   }
 
-  String _computeArchiveTitle(String rawTitle) {
+  static const int _maxFileNameBytes = 200;
+
+  /// Compute the sanitized title for the first time. Strips illegal file-name
+  /// characters then truncates to fit within [_maxFileNameBytes] bytes minus
+  /// [reservedBytes] (the byte length of the surrounding prefix / suffix).
+  String _computeSanitizedArchiveTitle(String rawTitle, int reservedBytes) {
     String title = rawTitle.replaceAll(RegExp(r'[/|?,:*"<>\\.]'), ' ').trim();
-
-    if (title.length > _maxTitleLength) {
-      title = title.substring(0, _maxTitleLength).trim();
-    }
-
-    return title;
+    return FileUtil.truncateTitleToBytes(title, _maxFileNameBytes - reservedBytes);
   }
 
   String computePackingFileDownloadPath(ArchiveDownloadedData archive) {
-    String title = _computeArchiveTitle(archive.title);
-
-    return join(downloadSetting.downloadPath.value, 'ArchiveV2 - ${archive.gid} - $title.zip');
+    /// File name format: 'ArchiveV2 - {gid} - {title}.zip'
+    return join(downloadSetting.downloadPath.value, 'ArchiveV2 - ${archive.gid} - ${archive.sanitizedTitle}.zip');
   }
 
-  String computeArchiveUnpackingPath(String rawTitle, int gid) {
-    String title = _computeArchiveTitle(rawTitle);
-
-    return join(downloadSetting.downloadPath.value, 'Archive - $gid - $title');
+  String computeArchiveUnpackingPath(ArchiveDownloadedData archive) {
+    /// Directory name format: 'Archive - {gid} - {title}'
+    return join(downloadSetting.downloadPath.value, 'Archive - ${archive.gid} - ${archive.sanitizedTitle}');
   }
 
   void _sortArchives() {
@@ -1066,7 +1072,7 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
 
     bool success = await extractZipArchive(
       computePackingFileDownloadPath(archive),
-      computeArchiveUnpackingPath(archive.title, archive.gid),
+      computeArchiveUnpackingPath(archive),
     );
 
     if (!success) {
@@ -1106,12 +1112,18 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
     _sortArchives();
   }
 
-  Future<bool> _initArchiveInfo(ArchiveDownloadedData archive) async {
+  Future<ArchiveDownloadedData?> _initArchiveInfo(ArchiveDownloadedData archive) async {
+    /// Compute and attach the sanitized title before the first DB write so the
+    /// path is frozen for the lifetime of this download task.
+    final int reservedBytes = utf8.encode('Archive - ${archive.gid} - ').length;
+    archive = archive.copyWith(sanitizedTitle: Value(_computeSanitizedArchiveTitle(archive.title, reservedBytes)));
+
     if (!await _saveArchiveAndGroupInDatabase(archive)) {
-      return false;
+      return null;
     }
+
     _initArchiveInMemory(archive);
-    return true;
+    return archive;
   }
 
   Future<bool> _addGroup(String group) async {
@@ -1151,6 +1163,7 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
               tags: Value(archive.tags),
               tagRefreshTime: Value(archive.tagRefreshTime),
               parseSource: Value(archive.parseSource),
+              sanitizedTitle: Value(archive.sanitizedTitle),
             ),
           ) >
           0;
@@ -1225,7 +1238,7 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
   // DISK
 
   Future<void> _saveArchiveInfoInDisk(ArchiveDownloadedData archive) async {
-    File file = File(join(computeArchiveUnpackingPath(archive.title, archive.gid), metadataFileName));
+    File file = File(join(computeArchiveUnpackingPath(archive), metadataFileName));
     if (!await file.exists()) {
       await file.create(recursive: true);
     }
@@ -1259,7 +1272,7 @@ class ArchiveDownloadService extends GetxController with GridBasePageServiceMixi
   Future<void> _deleteArchiveInDisk(ArchiveDownloadedData archive) async {
     await _deletePackingFileInDisk(archive);
 
-    Directory directory = Directory(computeArchiveUnpackingPath(archive.title, archive.gid));
+    Directory directory = Directory(computeArchiveUnpackingPath(archive));
     if (directory.existsSync()) {
       directory.deleteSync(recursive: true);
     }

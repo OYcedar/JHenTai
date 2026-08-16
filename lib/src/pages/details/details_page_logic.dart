@@ -357,6 +357,7 @@ class DetailsPageLogic extends GetxController with LoginRequiredMixin, Scroll2To
           candidates: galleryDownloadService.allGroups,
           showDownloadOriginalImageCheckBox: userSetting.hasLoggedIn(),
           downloadOriginalImage: downloadSetting.downloadOriginalImageByDefault.value,
+          preferredGroups: downloadSetting.preferredGalleryGroups,
         ),
       );
 
@@ -367,6 +368,8 @@ class DetailsPageLogic extends GetxController with LoginRequiredMixin, Scroll2To
       if (state.gallery == null && state.galleryDetails == null) {
         return;
       }
+
+      unawaited(downloadSetting.saveRecentGalleryGroup(result.group));
 
       GalleryDownloadedData galleryDownloadedData = GalleryDownloadedData(
         gid: state.galleryDetails?.galleryUrl.gid ?? state.gallery!.galleryUrl.gid,
@@ -873,7 +876,8 @@ class DetailsPageLogic extends GetxController with LoginRequiredMixin, Scroll2To
       gid: state.galleryDetails!.galleryUrl.gid,
       token: state.galleryDetails!.galleryUrl.token,
       apikey: state.apikey!,
-      onTagVoted: (bool isVoted) => onTagVoted(tag, isVoted),
+      voteStatus: tag.voteStatus,
+      onTagVoted: (bool isVoted, bool isCancel) => onTagVoted(tag, isVoted, isCancel),
     ));
   }
 
@@ -929,8 +933,10 @@ class DetailsPageLogic extends GetxController with LoginRequiredMixin, Scroll2To
     }
   }
 
-  void onTagVoted(GalleryTag tag, bool isVoted) {
-    if (tag.voteStatus == EHTagVoteStatus.none) {
+  void onTagVoted(GalleryTag tag, bool isVoted, bool isCancel) {
+    if (isCancel) {
+      tag.voteStatus = EHTagVoteStatus.none;
+    } else if (tag.voteStatus == EHTagVoteStatus.none) {
       tag.voteStatus = isVoted ? EHTagVoteStatus.up : EHTagVoteStatus.down;
     } else if (tag.voteStatus == EHTagVoteStatus.up) {
       tag.voteStatus = isVoted ? EHTagVoteStatus.up : EHTagVoteStatus.none;
@@ -982,6 +988,12 @@ class DetailsPageLogic extends GetxController with LoginRequiredMixin, Scroll2To
     toast('success'.tr);
   }
 
+  Future<void> handleResetReadProgress() async {
+    await readProgressService.deleteReadProgress(state.galleryUrl.gid.toString());
+    updateSafely([readButtonId]);
+    toast('success'.tr);
+  }
+
   Future<void> blockGallery() async {
     await localBlockRuleService.upsertBlockRule(
       LocalBlockRule(
@@ -1019,7 +1031,7 @@ class DetailsPageLogic extends GetxController with LoginRequiredMixin, Scroll2To
     GalleryDownloadedData gallery = galleryDownloadService.gallerys.firstWhere((g) => g.gid == state.galleryUrl.gid);
 
     if (readSetting.useThirdPartyViewer.isTrue && readSetting.thirdPartyViewerPath.value != null) {
-      openThirdPartyViewer(galleryDownloadService.computeGalleryDownloadAbsolutePath(gallery.title, gallery.gid));
+      openThirdPartyViewer(galleryDownloadService.computeGalleryDownloadAbsolutePath(gallery));
       return;
     }
 

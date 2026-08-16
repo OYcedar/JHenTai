@@ -30,12 +30,13 @@ class HorizontalDoubleColumnLayout extends BaseLayout {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return PhotoViewGallery.builder(
+              enableCtrlScrollZoom: true,
               scrollPhysics: const ClampingScrollPhysics(),
               pageController: state.pageController,
               cacheExtent: readPageState.readPageInfo.mode == ReadMode.online
                   ? (readSetting.preloadPageCount.value.toDouble() + 1) / 2
                   : (readSetting.preloadPageCountLocal.value.toDouble() + 1) / 2,
-              reverse: readSetting.isInRight2LeftDirection,
+              reverse: logic.readPageLogic.isInRight2LeftDirection,
               itemCount: state.pageCount,
               builder: (context, index) => PhotoViewGalleryPageOptions.customChild(
                 initialScale: 1.0,
@@ -63,7 +64,7 @@ class HorizontalDoubleColumnLayout extends BaseLayout {
       return null;
     }
 
-    if (readSetting.isInRight2LeftDirection) {
+    if (logic.readPageLogic.isInRight2LeftDirection) {
       displayImageIndexes.reverseRange(0, displayImageIndexes.length);
     }
 
@@ -88,7 +89,7 @@ class HorizontalDoubleColumnLayout extends BaseLayout {
       return null;
     }
 
-    if (readSetting.isInRight2LeftDirection) {
+    if (logic.readPageLogic.isInRight2LeftDirection) {
       displayImageIndexes.reverseRange(0, displayImageIndexes.length);
     }
 

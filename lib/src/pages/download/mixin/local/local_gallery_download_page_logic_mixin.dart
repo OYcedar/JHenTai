@@ -18,6 +18,7 @@ import '../../../../utils/process_util.dart';
 import '../../../../utils/route_util.dart' as route;
 import '../../../../utils/toast_util.dart';
 import '../../../../widget/eh_alert_dialog.dart';
+import '../../../../widget/eh_context_menu.dart';
 import '../../../../widget/loading_state_indicator.dart';
 
 mixin LocalGalleryDownloadPageLogicMixin on GetxController {
@@ -119,24 +120,17 @@ mixin LocalGalleryDownloadPageLogicMixin on GetxController {
     });
   }
 
-  void showBottomSheet(LocalGallery gallery, BuildContext context) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        actions: <CupertinoActionSheetAction>[
-          CupertinoActionSheetAction(
-            child: Text('delete'.tr, style: TextStyle(color: UIConfig.alertColor(context))),
-            onPressed: () {
-              route.backRoute();
-              handleRemoveItem(gallery);
-            },
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          child: Text('cancel'.tr),
-          onPressed: route.backRoute,
+  void showBottomSheet(LocalGallery gallery, BuildContext context, {Offset? position}) {
+    showEHContextMenu(
+      context,
+      position: position,
+      actions: [
+        EHContextMenuAction(
+          text: 'delete'.tr,
+          color: UIConfig.alertColor(context),
+          onTap: () => handleRemoveItem(gallery),
         ),
-      ),
+      ],
     );
   }
 

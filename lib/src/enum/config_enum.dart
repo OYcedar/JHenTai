@@ -21,6 +21,7 @@ enum ConfigEnum {
   superResolutionSetting('SuperResolutionSetting'),
   userSetting('userSetting'),
   archiveBotSetting('archiveBotSetting'),
+  keyboardShortcutSetting('keyboardShortcutSetting'),
   downloadSearchPageType('downloadSearchPageType'),
   windowFullScreen('windowFullScreen'),
   windowMaximize('windowMaximize'),

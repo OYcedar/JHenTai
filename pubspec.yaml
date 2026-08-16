@@ -2,7 +2,7 @@ name: jhentai
 description: A flutter app for E-Hentai/EXHentai
 
 publish_to: 'none'
-version: 8.0.13+311
+version: 8.0.14+328
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -31,6 +31,7 @@ dependencies:
   intl: 0.20.2
   collection: 1.19.0
   clipboard: 0.1.3
+  pasteboard: 0.5.0
   scrollable_positioned_list: 
     git:
       url: https://github.com/jiangtian616/flutter.widgets
@@ -38,7 +39,7 @@ dependencies:
   flutter_list_view: 1.1.21
   executor: 2.2.2
   retry: 3.1.2
-  path: ^1.9.0
+  path: 1.9.1
   drift: 2.21.0
   sqlite3_flutter_libs: 0.5.32
   path_provider: 2.1.3
@@ -95,6 +96,12 @@ dependencies:
     git: 
       url: https://github.com/jiangtian616/system_network_proxy
       path: system_network_proxy
+      ref: 46f89c8
+  system_network_proxy_linux:
+    git:
+      url: https://github.com/jiangtian616/system_network_proxy
+      path: system_network_proxy_linux
+      ref: 46f89c8
   http_proxy: 
     git: https://github.com/jiangtian616/http_proxy
   flutter_socks_proxy:
@@ -124,9 +131,11 @@ dependencies:
   uuid: 4.4.0
   xml: 6.5.0
   telegram: 0.0.9
-  
+  volume_button_override:
+    git:
+      url: https://github.com/jiangtian616/volume_button_override
+
 dependency_overrides:
-  extended_image_library: ^5.0.1
   test_api: 0.6.0
   matcher: 0.12.16
   chewie: 1.7.0
@@ -138,8 +147,24 @@ dependency_overrides:
       path: dio
       ref: append-mode
   collection: 1.19.0
+  extended_image_library: ^5.0.1
   intl: 0.20.2
   web_socket_channel: ^3.0.0
+  system_network_proxy_linux:
+    git:
+      url: https://github.com/jiangtian616/system_network_proxy
+      path: system_network_proxy_linux
+      ref: 46f89c8
+  system_network_proxy_windows:
+    git:
+      url: https://github.com/jiangtian616/system_network_proxy
+      path: system_network_proxy_windows
+      ref: 46f89c8
+  system_network_proxy_macos:
+    git:
+      url: https://github.com/jiangtian616/system_network_proxy
+      path: system_network_proxy_macos
+      ref: 46f89c8
     
 dev_dependencies:
   flutter_test:

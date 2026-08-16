@@ -156,8 +156,8 @@ abstract class BaseLayout extends StatelessWidget {
 
   Widget _buildOnlineImage(BuildContext context, int index) {
     return GestureDetector(
-      onLongPress: () => logic.showBottomMenuInOnlineMode(index, context),
-      onSecondaryTap: () => logic.showBottomMenuInOnlineMode(index, context),
+      onLongPressStart: (details) => logic.showOnlineImageContextMenu(index, context, position: details.globalPosition),
+      onSecondaryTapDown: (details) => logic.showOnlineImageContextMenu(index, context, position: details.globalPosition),
       child: EHImage(
         galleryImage: readPageState.images[index]!,
         containerWidth: logic.readPageState.imageContainerSizes[index]?.width ?? logic.getPlaceHolderSize(index).width,
@@ -166,6 +166,7 @@ abstract class BaseLayout extends StatelessWidget {
         loadingProgressWidgetBuilder: (double progress) => _loadingProgressWidgetBuilder(index, progress),
         failedWidgetBuilder: (ExtendedImageState state) => _failedWidgetBuilder(index, state),
         completedWidgetBuilder: (state) => completedWidgetBuilderCallBack(index, state),
+        animateOnlyWhenVisible: true,
         maxBytes: readSetting.enableMaxImageKilobyte.isTrue ? readSetting.maxImageKilobyte.toInt() * 1024 : null,
       ),
     );
@@ -258,8 +259,8 @@ abstract class BaseLayout extends StatelessWidget {
         }
 
         return GestureDetector(
-          onLongPress: () => logic.showBottomMenuInLocalMode(index, context),
-          onSecondaryTap: () => logic.showBottomMenuInLocalMode(index, context),
+          onLongPressStart: (details) => logic.showLocalImageContextMenu(index, context, position: details.globalPosition),
+          onSecondaryTapDown: (details) => logic.showLocalImageContextMenu(index, context, position: details.globalPosition),
           child: EHImage(
             galleryImage: readPageState.images[index]!.copyWith(
               path: superResolutionService.computeImageOutputRelativePath(readPageState.images[index]!.path!),
@@ -270,6 +271,7 @@ abstract class BaseLayout extends StatelessWidget {
             loadingWidgetBuilder: () => _loadingWidgetBuilder(context, index),
             failedWidgetBuilder: (state) => _failedWidgetBuilderForLocalMode(index, state),
             completedWidgetBuilder: (state) => completedWidgetBuilderForLocalModeCallBack(index, state),
+            animateOnlyWhenVisible: true,
             maxBytes: readSetting.enableMaxImageKilobyte.isTrue ? readSetting.maxImageKilobyte.toInt() * 1024 : null,
           ),
         );
@@ -318,8 +320,8 @@ abstract class BaseLayout extends StatelessWidget {
 
   Widget _buildLocalImage(BuildContext context, int index) {
     return GestureDetector(
-      onLongPress: () => logic.showBottomMenuInLocalMode(index, context),
-      onSecondaryTap: () => logic.showBottomMenuInLocalMode(index, context),
+      onLongPressStart: (details) => logic.showLocalImageContextMenu(index, context, position: details.globalPosition),
+      onSecondaryTapDown: (details) => logic.showLocalImageContextMenu(index, context, position: details.globalPosition),
       child: EHImage(
         galleryImage: readPageState.images[index]!,
         containerWidth: logic.readPageState.imageContainerSizes[index]?.width ?? logic.getPlaceHolderSize(index).width,
@@ -330,6 +332,7 @@ abstract class BaseLayout extends StatelessWidget {
         loadingWidgetBuilder: () => _loadingWidgetBuilder(context, index),
         failedWidgetBuilder: (state) => _failedWidgetBuilderForLocalMode(index, state),
         completedWidgetBuilder: (state) => completedWidgetBuilderForLocalModeCallBack(index, state),
+        animateOnlyWhenVisible: true,
         maxBytes: readSetting.enableMaxImageKilobyte.isTrue ? readSetting.maxImageKilobyte.toInt() * 1024 : null,
       ),
     );

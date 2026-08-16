@@ -1007,6 +1007,15 @@ class EHSpiderParser {
     return {'credit': credit?.trim() ?? '-1', 'gp': gp?.trim() ?? '-1'};
   }
 
+  static String? hathPage2Hath(Headers headers, dynamic data) {
+    Document document = parse(data as String);
+
+    List<Element> ps = document.querySelectorAll('.stuffbox > div > p');
+    String? hath = ps.length >= 4 ? RegExp(r'You currently have ([\d,.]+) Hath').firstMatch(ps[3].text)?.group(1) : null;
+
+    return hath?.trim();
+  }
+
   static String githubReleasePage2LatestVersion(Headers headers, dynamic data) {
     List releases = data;
     Map latestRelease = releases[0];

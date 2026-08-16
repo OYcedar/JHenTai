@@ -1,3 +1,4 @@
+import 'package:flutter/rendering.dart';
 import 'dart:math';
 
 import 'package:animate_do/animate_do.dart';
@@ -5,7 +6,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:jhentai/src/config/ui_config.dart';
 import 'package:jhentai/src/enum/eh_namespace.dart';
@@ -115,7 +115,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
                         value: 0,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [Text('jump'.tr), const Icon(FontAwesomeIcons.paperPlane, size: 20)],
+                          children: [Text('jump'.tr), Icon(Icons.send, size: 20)],
                         ),
                       ),
                     PopupMenuItem(
@@ -157,6 +157,13 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
                           children: [Text('block'.tr), const Icon(Icons.block)],
                         ),
                       ),
+                    PopupMenuItem(
+                      value: 6,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [Text('resetReadProgress'.tr), const Icon(Icons.restore)],
+                      ),
+                    ),
                   ];
                 },
                 onSelected: (value) {
@@ -182,6 +189,9 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
                   if (value == 5) {
                     logic.blockGallery();
                   }
+                  if (value == 6) {
+                    logic.handleResetReadProgress();
+                  }
                 },
               );
             },
@@ -200,7 +210,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           scrollBehavior: UIConfig.scrollBehaviourWithScrollBarWithMouse,
           controller: state.scrollController,
-          cacheExtent: 5000,
+          scrollCacheExtent: ScrollCacheExtent.pixels(5000),
           slivers: [
             CupertinoSliverRefreshControl(onRefresh: logic.handleRefresh),
             if (preferenceSetting.showAllGalleryTitles.isTrue) _buildSubTitle(context),
@@ -962,6 +972,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
               ),
               onPressed: disabled ? null : logic.handleTapDownload,
               onLongPress: () => toRoute(Routes.download),
+              onSecondaryTap: () => toRoute(Routes.download),
             );
           },
         );
@@ -1003,6 +1014,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
             ),
             onPressed: disabled ? null : () => logic.handleTapFavorite(useDefault: preferenceSetting.enableDefaultFavorite.isTrue),
             onLongPress: disabled || preferenceSetting.enableDefaultFavorite.isFalse ? null : () => logic.handleTapFavorite(useDefault: false),
+            onSecondaryTap: disabled || preferenceSetting.enableDefaultFavorite.isFalse ? null : () => logic.handleTapFavorite(useDefault: false),
           ),
           errorWidgetSameWithIdle: true,
         );
@@ -1086,6 +1098,7 @@ class DetailsPage extends StatelessWidget with Scroll2TopPageMixin {
               ),
               onPressed: disabled ? null : () => logic.handleTapArchive(context),
               onLongPress: () => toRoute(Routes.download),
+              onSecondaryTap: () => toRoute(Routes.download),
             );
           },
         );

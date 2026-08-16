@@ -4,10 +4,9 @@ import 'package:get/get.dart';
 import 'package:jhentai/src/enum/config_enum.dart';
 import 'package:jhentai/src/extension/get_logic_extension.dart';
 import 'package:jhentai/src/service/local_config_service.dart';
-import 'package:jhentai/src/service/storage_service.dart';
+import 'package:jhentai/src/service/log.dart';
 import 'package:jhentai/src/service/tag_translation_service.dart';
 import 'package:jhentai/src/utils/convert_util.dart';
-import 'package:jhentai/src/service/log.dart';
 import 'package:jhentai/src/utils/string_uril.dart';
 import 'package:jhentai/src/widget/loading_state_indicator.dart';
 import 'package:throttling/throttling.dart';
@@ -28,6 +27,7 @@ import '../../utils/process_util.dart';
 import '../../utils/route_util.dart';
 import '../../utils/table.dart' as t;
 import '../../widget/eh_alert_dialog.dart';
+import '../../widget/eh_context_menu.dart';
 import '../../widget/eh_download_dialog.dart';
 import 'download_search_state.dart';
 
@@ -249,7 +249,8 @@ class DownloadSearchLogic extends GetxController with UpdateGlobalGalleryStatusL
     }
 
     if (readSetting.useThirdPartyViewer.isTrue && readSetting.thirdPartyViewerPath.value != null) {
-      openThirdPartyViewer(galleryDownloadService.computeGalleryDownloadAbsolutePath(gallery.title, gallery.gid));
+      GalleryDownloadedData galleryData = galleryDownloadService.gallerys.firstWhere((g) => g.gid == gallery.gid);
+      openThirdPartyViewer(galleryDownloadService.computeGalleryDownloadAbsolutePath(galleryData));
     } else {
       String? string = await localConfigService.read(configKey: ConfigEnum.readIndexRecord, subConfigKey: gallery.gid.toString());
       int readIndexRecord = (string == null ? 0 : (int.tryParse(string) ?? 0));
@@ -277,7 +278,8 @@ class DownloadSearchLogic extends GetxController with UpdateGlobalGalleryStatusL
     }
 
     if (readSetting.useThirdPartyViewer.isTrue && readSetting.thirdPartyViewerPath.value != null) {
-      openThirdPartyViewer(archiveDownloadService.computeArchiveUnpackingPath(archive.title, archive.gid));
+      ArchiveDownloadedData archiveData = archiveDownloadService.archives.firstWhere((a) => a.gid == archive.gid);
+      openThirdPartyViewer(archiveDownloadService.computeArchiveUnpackingPath(archiveData));
     } else {
       String? string = await localConfigService.read(configKey: ConfigEnum.readIndexRecord, subConfigKey: archive.gid.toString());
       int readIndexRecord = (string == null ? 0 : (int.tryParse(string) ?? 0));
@@ -302,56 +304,39 @@ class DownloadSearchLogic extends GetxController with UpdateGlobalGalleryStatusL
     }
   }
 
-  void onLongPressGallery(BuildContext context, GallerySearchVO gallery) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        actions: <CupertinoActionSheetAction>[
-          CupertinoActionSheetAction(
-            child: Text('changeGroup'.tr),
-            onPressed: () {
-              backRoute();
-              handleChangeGalleryGroup(gallery);
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text('deleteTaskAndImages'.tr, style: TextStyle(color: UIConfig.alertColor(context))),
-            onPressed: () {
-              backRoute();
-              handleRemoveGallery(gallery, context);
-            },
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(child: Text('cancel'.tr), onPressed: backRoute),
-      ),
+  void onLongPressGallery(BuildContext context, GallerySearchVO gallery, {Offset? position}) {
+    showEHContextMenu(
+      context,
+      position: position,
+      actions: [
+        EHContextMenuAction(
+          text: 'changeGroup'.tr,
+          onTap: () => handleChangeGalleryGroup(gallery),
+        ),
+        EHContextMenuAction(
+          text: 'deleteTaskAndImages'.tr,
+          color: UIConfig.alertColor(context),
+          onTap: () => handleRemoveGallery(gallery, context),
+        ),
+      ],
     );
   }
 
-  void onLongPressArchive(BuildContext context, ArchiveSearchVO archive) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) => CupertinoActionSheet(
-        actions: <CupertinoActionSheetAction>[
-          CupertinoActionSheetAction(
-            child: Text('changeGroup'.tr),
-            onPressed: () {
-              backRoute();
-              handleChangeArchiveGroup(archive);
-            },
-          ),
-          CupertinoActionSheetAction(
-            child: Text('delete'.tr, style: TextStyle(color: UIConfig.alertColor(context))),
-            onPressed: () {
-              handleRemoveArchive(archive);
-              backRoute();
-            },
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          child: Text('cancel'.tr),
-          onPressed: backRoute,
+  void onLongPressArchive(BuildContext context, ArchiveSearchVO archive, {Offset? position}) {
+    showEHContextMenu(
+      context,
+      position: position,
+      actions: [
+        EHContextMenuAction(
+          text: 'changeGroup'.tr,
+          onTap: () => handleChangeArchiveGroup(archive),
         ),
-      ),
+        EHContextMenuAction(
+          text: 'delete'.tr,
+          color: UIConfig.alertColor(context),
+          onTap: () => handleRemoveArchive(archive),
+        ),
+      ],
     );
   }
 
