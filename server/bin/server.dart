@@ -175,7 +175,7 @@ Handler _buildHandler(Handler apiHandler, ServerConfig config) {
       }
       final response = await staticHandler(request);
       if (request.method != 'GET' || response.statusCode != 404) {
-        return response;
+        return _noCacheFlutterEntry(response, path);
       }
       final lastSegment =
           request.url.pathSegments.isEmpty ? '' : request.url.pathSegments.last;
@@ -184,12 +184,29 @@ Handler _buildHandler(Handler apiHandler, ServerConfig config) {
       }
       return Response.ok(
         indexFile.openRead(),
-        headers: {'Content-Type': 'text/html; charset=utf-8'},
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-cache',
+        },
       );
     };
   }
 
   return apiHandler;
+}
+
+/// Flutter Web 入口文件禁用缓存，避免 Service Worker 一直加载旧构建：
+/// index.html 与 flutter_bootstrap.js 每次重新校验，flutter_service_worker.js
+/// 按规范也必须可更新，否则浏览器永远停留在旧版本页面。
+Response _noCacheFlutterEntry(Response response, String path) {
+  final name = path.split('/').last;
+  if (name.isEmpty ||
+      name == 'index.html' ||
+      name == 'flutter_bootstrap.js' ||
+      name == 'flutter_service_worker.js') {
+    return response.change(headers: {'Cache-Control': 'no-cache'});
+  }
+  return response;
 }
 
 Middleware _corsMiddleware() {
