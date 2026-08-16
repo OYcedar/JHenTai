@@ -85,6 +85,9 @@ class ReaderRoutes {
     return '$scheme://$host';
   }
 
+  String _withReaderToken(String url, String token) =>
+      '$url?token=${Uri.encodeQueryComponent(token)}';
+
   // ---------- 书库模型 ----------
 
   String _galleryId(int gid) => 'g_$gid';
@@ -92,47 +95,53 @@ class ReaderRoutes {
   String _localId(String path) =>
       'l_${sha1.convert(utf8.encode(path)).toString().substring(0, 12)}';
 
-  Map<String, dynamic> _galleryItem(GalleryDownloadTask task, String base) {
+  Map<String, dynamic> _galleryItem(
+      GalleryDownloadTask task, String base, String token) {
     final id = _galleryId(task.gid);
     return {
       'id': id,
       'title': task.title,
-      'cover': '$base/api/reader/v1/items/$id/pages/0',
+      'cover': _withReaderToken('$base/api/reader/v1/items/$id/pages/0', token),
       'pageCount': task.pageCount,
       'source': 'gallery',
       'status': 'ready',
       'uploader': task.uploader,
-      'galleryUrl': '$base/api/reader/v1/items/$id/pages',
+      'galleryUrl':
+          _withReaderToken('$base/api/reader/v1/items/$id/pages', token),
       'insertTime': task.insertTime,
     };
   }
 
-  Map<String, dynamic> _archiveItem(ArchiveDownloadTask task, String base) {
+  Map<String, dynamic> _archiveItem(
+      ArchiveDownloadTask task, String base, String token) {
     final id = _archiveId(task.gid);
     return {
       'id': id,
       'title': task.title,
-      'cover': '$base/api/reader/v1/items/$id/pages/0',
+      'cover': _withReaderToken('$base/api/reader/v1/items/$id/pages/0', token),
       'pageCount': task.pageCount,
       'source': 'archive',
       'status': 'ready',
       'uploader': task.uploader,
-      'galleryUrl': '$base/api/reader/v1/items/$id/pages',
+      'galleryUrl':
+          _withReaderToken('$base/api/reader/v1/items/$id/pages', token),
       'insertTime': task.insertTime,
     };
   }
 
-  Map<String, dynamic> _localItem(LocalGallery gallery, String base) {
+  Map<String, dynamic> _localItem(
+      LocalGallery gallery, String base, String token) {
     final id = _localId(gallery.path);
     return {
       'id': id,
       'title': gallery.title,
-      'cover': '$base/api/reader/v1/items/$id/pages/0',
+      'cover': _withReaderToken('$base/api/reader/v1/items/$id/pages/0', token),
       'pageCount': gallery.imageCount,
       'source': 'local',
       'status': 'ready',
       'uploader': '',
-      'galleryUrl': '$base/api/reader/v1/items/$id/pages',
+      'galleryUrl':
+          _withReaderToken('$base/api/reader/v1/items/$id/pages', token),
       'insertTime': '',
     };
   }
@@ -147,26 +156,27 @@ class ReaderRoutes {
             .clamp(1, 200);
     final q = (request.url.queryParameters['q'] ?? '').trim().toLowerCase();
     final base = _baseUrl(request);
+    final token = _ensureReaderToken();
 
     final items = <Map<String, dynamic>>[];
     if (source == null || source == 'gallery') {
       for (final task in _galleryService.tasks) {
         if (task.status != GalleryDownloadStatus.completed) continue;
         if (q.isNotEmpty && !task.title.toLowerCase().contains(q)) continue;
-        items.add(_galleryItem(task, base));
+        items.add(_galleryItem(task, base, token));
       }
     }
     if (source == null || source == 'archive') {
       for (final task in _archiveService.tasks) {
         if (task.status != ArchiveStatus.completed) continue;
         if (q.isNotEmpty && !task.title.toLowerCase().contains(q)) continue;
-        items.add(_archiveItem(task, base));
+        items.add(_archiveItem(task, base, token));
       }
     }
     if (source == null || source == 'local') {
       for (final gallery in _localGalleryService.galleries) {
         if (q.isNotEmpty && !gallery.title.toLowerCase().contains(q)) continue;
-        items.add(_localItem(gallery, base));
+        items.add(_localItem(gallery, base, token));
       }
     }
 
@@ -192,7 +202,8 @@ class ReaderRoutes {
 
   Future<Response> _itemDetail(Request request, String id) async {
     final base = _baseUrl(request);
-    final item = _findItem(id, base);
+    final token = _ensureReaderToken();
+    final item = _findItem(id, base, token);
     if (item == null) return Response.notFound('{"error":"item not found"}');
     return Response.ok(
       jsonEncode(item),
@@ -200,7 +211,7 @@ class ReaderRoutes {
     );
   }
 
-  Map<String, dynamic>? _findItem(String id, String base) {
+  Map<String, dynamic>? _findItem(String id, String base, String token) {
     if (id.startsWith('g_')) {
       final gid = int.tryParse(id.substring(2));
       if (gid == null) return null;
@@ -208,7 +219,7 @@ class ReaderRoutes {
           .where((t) =>
               t.gid == gid && t.status == GalleryDownloadStatus.completed)
           .firstOrNull;
-      return task == null ? null : _galleryItem(task, base);
+      return task == null ? null : _galleryItem(task, base, token);
     }
     if (id.startsWith('a_')) {
       final gid = int.tryParse(id.substring(2));
@@ -216,11 +227,13 @@ class ReaderRoutes {
       final task = _archiveService.tasks
           .where((t) => t.gid == gid && t.status == ArchiveStatus.completed)
           .firstOrNull;
-      return task == null ? null : _archiveItem(task, base);
+      return task == null ? null : _archiveItem(task, base, token);
     }
     if (id.startsWith('l_')) {
       for (final gallery in _localGalleryService.galleries) {
-        if (_localId(gallery.path) == id) return _localItem(gallery, base);
+        if (_localId(gallery.path) == id) {
+          return _localItem(gallery, base, token);
+        }
       }
     }
     return null;
@@ -290,6 +303,7 @@ class ReaderRoutes {
   Future<Response> _listPages(Request request, String id) async {
     final files = _resolveImageFiles(id);
     final base = _baseUrl(request);
+    final token = _ensureReaderToken();
     return Response.ok(
       jsonEncode({
         'id': id,
@@ -298,7 +312,8 @@ class ReaderRoutes {
           for (var i = 0; i < files.length; i++)
             {
               'index': i,
-              'url': '$base/api/reader/v1/items/$id/pages/$i',
+              'url': _withReaderToken(
+                  '$base/api/reader/v1/items/$id/pages/$i', token),
             }
         ],
       }),
@@ -332,15 +347,17 @@ class ReaderRoutes {
 
   Map<String, dynamic> _siteRuleJson(String base, String token) {
     final itemsUrl = '$base/api/reader/v1/items';
+    final authenticatedItemsUrl = _withReaderToken(itemsUrl, token);
     return {
       'name': 'JHenTai Reader',
       'domain': base,
       'displayMode': 'collection',
-      'indexUrl': '$itemsUrl?page={page:}&pageSize=$readerDefaultPageSize',
+      'indexUrl':
+          '$authenticatedItemsUrl&page={page:}&pageSize=$readerDefaultPageSize',
       'searchUrl':
-          '$itemsUrl?q={keyword:}&page={page:}&pageSize=$readerDefaultPageSize',
-      'detailUrl': '$itemsUrl/{idCode:}',
-      'galleryUrl': '$itemsUrl/{idCode:}/pages',
+          '$authenticatedItemsUrl&q={keyword:}&page={page:}&pageSize=$readerDefaultPageSize',
+      'detailUrl': _withReaderToken('$itemsUrl/{idCode:}', token),
+      'galleryUrl': _withReaderToken('$itemsUrl/{idCode:}/pages', token),
       'headers': {'Authorization': 'Bearer $token'},
       'indexRule': {
         'item': {'selector': r'$root.items[*]'},
