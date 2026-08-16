@@ -28,6 +28,7 @@ import 'local_routes.dart';
 import 'proxy_routes.dart';
 import 'quick_search_routes.dart';
 import 'rating_routes.dart';
+import 'reader_routes.dart';
 import 'search_history_routes.dart';
 import 'setting_routes.dart';
 import 'super_resolution_routes.dart';
@@ -97,6 +98,13 @@ class AppRouter {
     router.mount('/api/block-rule/', BlockRuleRoutes().router.call);
     router.mount('/api/super-resolution/',
         SuperResolutionRoutes(superResolutionService).router.call);
+    router.mount(
+      '/api/reader/v1/',
+      ReaderRoutes(config, galleryDownloadService, archiveDownloadService,
+              localGalleryService)
+          .router
+          .call,
+    );
 
     router.get('/api/health', (Request request) {
       return Response.ok(

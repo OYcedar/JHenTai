@@ -27,6 +27,7 @@ import 'package:jhentai/src/pages_web/settings/web_settings_eh_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_hub_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_maintenance_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_mouse_wheel_page.dart';
+import 'package:jhentai/src/pages_web/settings/web_yealico_config_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_network_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_performance_page.dart';
 import 'package:jhentai/src/pages_web/settings/web_settings_preference_page.dart';
@@ -656,6 +657,10 @@ final _webRoutes = [
     name: '/web/settings/cloud-sync',
     page: () => const WebSettingsCloudSyncPage(),
     binding: BindingsBuilder(ensureWebSettingsController),
+  ),
+  GetPage(
+    name: '/web/settings/yealico',
+    page: () => const WebYealicoConfigPage(),
   ),
   GetPage(
     name: '/web/settings/security',

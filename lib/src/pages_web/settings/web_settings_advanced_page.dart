@@ -424,6 +424,14 @@ class _WebSettingsAdvancedPageState extends State<WebSettingsAdvancedPage>
                   ),
                   const Divider(height: 1),
                   ListTile(
+                    leading: const Icon(Icons.qr_code_2),
+                    title: Text('yealicoConfigEntry'.tr),
+                    subtitle: Text('yealicoConfigEntryHint'.tr),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Get.toNamed('/web/settings/yealico'),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
                     leading: const Icon(Icons.cloud_sync_outlined),
                     title: Text('settings.cloudSync'.tr),
                     subtitle: Text('settings.cloudSyncHint'.tr),

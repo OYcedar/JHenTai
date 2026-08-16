@@ -104,6 +104,20 @@ class AuthMiddleware {
     }
     if (path == 'api/health') return true;
     if (path == 'api/auth/token/verify') return true;
+
+    // Yealico 只读阅读接口使用独立 reader token（可轮换），
+    // 不占用管理员 API token；数据接口接受 Bearer 头或 ?token= 查询参数。
+    if (path.startsWith('api/reader/v1/items')) {
+      final qToken = request.url.queryParameters['token'];
+      if (qToken != null && qToken.isNotEmpty && qToken == _readerToken()) {
+        return true;
+      }
+      final authHeader = request.headers['authorization'];
+      return authHeader != null &&
+          authHeader.startsWith('Bearer ') &&
+          authHeader.substring(7) == _readerToken();
+    }
+
     if (path.startsWith('ws/') ||
         path.startsWith('api/proxy/image') ||
         path.startsWith('api/image/') ||
@@ -112,6 +126,12 @@ class AuthMiddleware {
       return qToken == _token;
     }
     return false;
+  }
+
+  /// 从数据库读取 reader token（轮换后立即生效）。
+  String? _readerToken() {
+    final stored = db.readConfig('reader_token');
+    return (stored == null || stored.isEmpty) ? null : stored;
   }
 
   bool _isImageRelatedPath(String path) {

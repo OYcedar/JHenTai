@@ -128,6 +128,7 @@ dependencies:
   template_expressions: 3.2.0+7
   web_socket_channel: ^3.0.0
   web: ^1.0.0
+  qr_flutter: ^4.1.0
   uuid: 4.4.0
   xml: 6.5.0
   telegram: 0.0.9

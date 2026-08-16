@@ -1336,6 +1336,24 @@ class WebPtBR {
           'Existe uma versão mais nova da galeria. Baixe o arquivo pela página da nova galeria.',
       'detail.openNewVersion': 'Abrir nova versão',
       'settings.usertags': 'Tags observadas / ocultas',
+      'yealicoConfigEntry': 'Leitor Yealico',
+      'yealicoConfigEntryHint':
+          'Escanear QR code para ler recursos baixados no Yealico',
+      'yealicoConfigTitle': 'Configuração do Leitor Yealico',
+      'yealicoConfigHint':
+          'Escanear o QR code abaixo com o Yealico para importar a regra do site e ler galerias, arquivos e bibliotecas locais baixados pelo JHenTai.',
+      'yealicoConfigScanHint':
+          'Abrir Yealico → Regras → Escanear para importar',
+      'yealicoConfigRuleJson': 'Regra JSON',
+      'yealicoConfigCopy': 'Copiar',
+      'yealicoConfigCopied': 'Copiado',
+      'yealicoConfigImportSteps':
+          'Você também pode copiar o JSON da regra e colá-lo no editor de regras do Yealico.',
+      'yealicoConfigRotate': 'Regenerar',
+      'yealicoConfigRotateConfirm':
+          'Após regenerar, o QR code e a regra antigos deixam de funcionar imediatamente. Escaneie e importe novamente.',
+      'yealicoConfigRotated': 'Regenerado, escaneie novamente',
+      'yealicoConfigLoadFailed': 'Falha ao carregar a configuração do Yealico',
     };
   }
 }

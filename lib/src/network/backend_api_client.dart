@@ -1453,6 +1453,18 @@ class BackendApiClient {
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
   }
 
+  /// Yealico 阅读器：获取站点规则 JSON（含服务器地址与 reader token）。
+  Future<Map<String, dynamic>> fetchReaderSiteRule() async {
+    final response = await _dio.get('/api/reader/v1/site-rule');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
+  /// Yealico 阅读器：轮换 reader token，返回新 token 与新规则 JSON。
+  Future<Map<String, dynamic>> rotateReaderToken() async {
+    final response = await _dio.post('/api/reader/v1/pair');
+    return response.data is Map ? Map<String, dynamic>.from(response.data) : {};
+  }
+
   Future<Map<String, dynamic>> getSetupChecklist() async {
     final response = await _dio.get('/api/setting/setup-checklist');
     return response.data is Map ? Map<String, dynamic>.from(response.data) : {};

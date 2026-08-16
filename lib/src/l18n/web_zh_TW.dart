@@ -1243,6 +1243,20 @@ class WebZhTW {
       'detail.openNewVersion': '開啟新版本',
 
       'settings.usertags': '關注 / 隱藏標籤',
+      'yealicoConfigEntry': 'Yealico 閱讀器',
+      'yealicoConfigEntryHint': '掃碼接入 Yealico，閱讀已下載資源',
+      'yealicoConfigTitle': 'Yealico 閱讀器配置',
+      'yealicoConfigHint':
+          '用 Yealico 掃描下方二維碼導入站點規則，即可閱讀 JHenTai 已下載的畫廊、歸檔與本地圖庫。',
+      'yealicoConfigScanHint': '打開 Yealico → 規則 → 掃一掃導入',
+      'yealicoConfigRuleJson': '規則 JSON',
+      'yealicoConfigCopy': '複製',
+      'yealicoConfigCopied': '已複製',
+      'yealicoConfigImportSteps': '也可複製規則 JSON，在 Yealico 規則編輯頁粘貼導入。',
+      'yealicoConfigRotate': '重新生成',
+      'yealicoConfigRotateConfirm': '重新生成後，舊二維碼與舊規則立即失效，需要重新掃碼導入。',
+      'yealicoConfigRotated': '已重新生成，請重新掃碼',
+      'yealicoConfigLoadFailed': '獲取 Yealico 配置失敗',
     };
   }
 }

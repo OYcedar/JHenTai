@@ -1253,6 +1253,22 @@ class WebKoKR {
           '새 갤러리 버전이 있습니다. 새 갤러리 페이지에서 아카이브를 다운로드하세요.',
       'detail.openNewVersion': '새 버전 열기',
       'settings.usertags': '관심 / 숨김 태그',
+      'yealicoConfigEntry': 'Yealico 리더',
+      'yealicoConfigEntryHint': 'QR 코드로 Yealico 연결, 다운로드한 리소스 열람',
+      'yealicoConfigTitle': 'Yealico 리더 설정',
+      'yealicoConfigHint':
+          '아래 QR 코드를 Yealico로 스캔하여 사이트 규칙을 가져오면 JHenTai가 다운로드한 갤러리, 아카이브 및 로컬 라이브러리를 읽을 수 있습니다.',
+      'yealicoConfigScanHint': 'Yealico 열기 → 규칙 → 스캔 가져오기',
+      'yealicoConfigRuleJson': '규칙 JSON',
+      'yealicoConfigCopy': '복사',
+      'yealicoConfigCopied': '복사됨',
+      'yealicoConfigImportSteps':
+          '규칙 JSON을 복사하여 Yealico 규칙 편집기에 붙여넣어 가져올 수도 있습니다.',
+      'yealicoConfigRotate': '다시 생성',
+      'yealicoConfigRotateConfirm':
+          '다시 생성하면 이전 QR 코드와 규칙이 즉시 무효화됩니다. 다시 스캔하여 가져와야 합니다.',
+      'yealicoConfigRotated': '다시 생성됨, 다시 스캔하세요',
+      'yealicoConfigLoadFailed': 'Yealico 설정을 불러오지 못했습니다',
     };
   }
 }

@@ -1324,6 +1324,24 @@ class WebRuRU {
           'Есть более новая версия галереи. Скачайте архив со страницы новой галереи.',
       'detail.openNewVersion': 'Открыть новую версию',
       'settings.usertags': 'Отслеживаемые / скрытые теги',
+      'yealicoConfigEntry': 'Читалка Yealico',
+      'yealicoConfigEntryHint':
+          'Отсканируйте QR-код, чтобы читать скачанные ресурсы в Yealico',
+      'yealicoConfigTitle': 'Настройка читалки Yealico',
+      'yealicoConfigHint':
+          'Отсканируйте QR-код ниже в Yealico, чтобы импортировать правило сайта и читать галереи, архивы и локальные библиотеки, скачанные JHenTai.',
+      'yealicoConfigScanHint':
+          'Откройте Yealico → Правила → Сканировать для импорта',
+      'yealicoConfigRuleJson': 'JSON правила',
+      'yealicoConfigCopy': 'Копировать',
+      'yealicoConfigCopied': 'Скопировано',
+      'yealicoConfigImportSteps':
+          'Также можно скопировать JSON правила и вставить его в редактор правил Yealico.',
+      'yealicoConfigRotate': 'Перегенерировать',
+      'yealicoConfigRotateConfirm':
+          'После перегенерации старый QR-код и правило перестанут работать. Нужно сканировать и импортировать заново.',
+      'yealicoConfigRotated': 'Перегенерировано, сканируйте заново',
+      'yealicoConfigLoadFailed': 'Не удалось загрузить конфигурацию Yealico',
     };
   }
 }

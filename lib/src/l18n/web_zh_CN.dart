@@ -1250,6 +1250,20 @@ class WebZhCN {
       'detail.upgradeFailed': '升级失败: @error',
       'detail.archiveNewVersionHint': '存在新版本画廊，请在新版页面重新下载归档。',
       'detail.openNewVersion': '打开新版本',
+      'yealicoConfigEntry': 'Yealico 阅读器',
+      'yealicoConfigEntryHint': '扫码接入 Yealico，阅读已下载资源',
+      'yealicoConfigTitle': 'Yealico 阅读器配置',
+      'yealicoConfigHint':
+          '用 Yealico 扫描下方二维码导入站点规则，即可阅读 JHenTai 已下载的画廊、归档与本地图库。',
+      'yealicoConfigScanHint': '打开 Yealico → 规则 → 扫一扫导入',
+      'yealicoConfigRuleJson': '规则 JSON',
+      'yealicoConfigCopy': '复制',
+      'yealicoConfigCopied': '已复制',
+      'yealicoConfigImportSteps': '也可复制规则 JSON，在 Yealico 规则编辑页粘贴导入。',
+      'yealicoConfigRotate': '重新生成',
+      'yealicoConfigRotateConfirm': '重新生成后，旧二维码与旧规则立即失效，需要重新扫码导入。',
+      'yealicoConfigRotated': '已重新生成，请重新扫码',
+      'yealicoConfigLoadFailed': '获取 Yealico 配置失败',
     };
   }
 }

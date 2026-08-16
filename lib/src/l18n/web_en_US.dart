@@ -1392,6 +1392,23 @@ class WebEnUS {
       'detail.archiveNewVersionHint':
           'A newer gallery version exists. Download archive from the new gallery page.',
       'detail.openNewVersion': 'Open new version',
+      'yealicoConfigEntry': 'Yealico Reader',
+      'yealicoConfigEntryHint':
+          'Scan the QR code to read downloaded resources in Yealico',
+      'yealicoConfigTitle': 'Yealico Reader Setup',
+      'yealicoConfigHint':
+          'Scan the QR code below with Yealico to import the site rule, then browse galleries, archives and local libraries downloaded by JHenTai.',
+      'yealicoConfigScanHint': 'Open Yealico → Rules → Scan to import',
+      'yealicoConfigRuleJson': 'Rule JSON',
+      'yealicoConfigCopy': 'Copy',
+      'yealicoConfigCopied': 'Copied',
+      'yealicoConfigImportSteps':
+          'You can also copy the rule JSON and paste it in the Yealico rule editor to import.',
+      'yealicoConfigRotate': 'Regenerate',
+      'yealicoConfigRotateConfirm':
+          'After regeneration, the old QR code and rule stop working immediately. Scan and import again.',
+      'yealicoConfigRotated': 'Regenerated, please scan again',
+      'yealicoConfigLoadFailed': 'Failed to load Yealico configuration',
     };
   }
 }
