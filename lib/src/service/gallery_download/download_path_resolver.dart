@@ -16,6 +16,7 @@ import '../path_service.dart';
 class DownloadPathResolver {
   static const int maxFileNameBytes = 200;
   static const int legacyGalleryTitleMaxChars = 85;
+  static const int legacyArchiveTitleMaxChars = 80;
 
   /// Compute the sanitized title for the first time. Strips illegal file-name
   /// characters then truncates to fit within [maxFileNameBytes] bytes minus
@@ -60,6 +61,40 @@ class DownloadPathResolver {
       return directoryName.substring(prefix.length);
     }
     return persistedSanitizedTitle ?? computeLegacySanitizedGalleryTitle(rawTitle);
+  }
+
+  /// Reproduce the pre-sanitizedTitle archive unpacking-directory naming rule.
+  ///
+  /// Old releases sanitized illegal characters and then truncated the title to
+  /// 80 Dart string characters. Metadata written by those releases has no
+  /// `sanitizedTitle`, so using the current byte-based rule while restoring it
+  /// can point every image at an unpacking directory that never existed on disk.
+  static String computeLegacyArchiveTitle(String rawTitle) {
+    String title = rawTitle.replaceAll(RegExp(r'[/|?,:*"<>\\.]'), ' ').trim();
+    if (title.length > legacyArchiveTitleMaxChars) {
+      title = title.substring(0, legacyArchiveTitleMaxChars).trim();
+    }
+    return title;
+  }
+
+  /// Resolve the archive unpacking-directory title to use while restoring
+  /// metadata from disk. Same rationale as [resolveSanitizedGalleryTitleForRestore]
+  /// but for the `Archive - {gid} - {title}` directory shape: prefer the scanned
+  /// directory's own suffix (that is where the unpacked image bytes live), then
+  /// the persisted value, and finally the legacy 80-char rule for metadata
+  /// written before `sanitizedTitle` existed.
+  static String resolveArchiveSanitizedTitleForRestore({
+    required int gid,
+    required String rawTitle,
+    required String? persistedSanitizedTitle,
+    required String archiveDirectoryPath,
+  }) {
+    final String directoryName = path.basename(path.normalize(archiveDirectoryPath));
+    final String prefix = 'Archive - $gid - ';
+    if (directoryName.startsWith(prefix)) {
+      return directoryName.substring(prefix.length);
+    }
+    return persistedSanitizedTitle ?? computeLegacyArchiveTitle(rawTitle);
   }
 
   /// Directory name format: '{gid} - {title}'
