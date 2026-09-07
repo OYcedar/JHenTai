@@ -125,12 +125,18 @@ class _GalleryMetadataStore {
 
     GalleryDownloadedData gallery = GalleryDownloadedData.fromJson(raw['gallery']);
 
-    /// Back-fill sanitizedTitle for metadata files written before this field was introduced.
-    if (gallery.sanitizedTitle == null) {
-      final int reservedBytes = utf8.encode('${gallery.gid} - ').length;
-      gallery = gallery.copyWith(
-        sanitizedTitle: Value(DownloadPathResolver.computeSanitizedGalleryTitle(gallery.title, reservedBytes)),
-      );
+    /// The scanned directory is where the bytes actually live. Old metadata
+    /// has no sanitizedTitle, and metadata produced by an earlier buggy restore
+    /// may contain a title computed with the newer byte-based rule. Reconcile
+    /// both cases to the actual `{gid} - {title}` directory on disk.
+    final String restoredSanitizedTitle = DownloadPathResolver.resolveSanitizedGalleryTitleForRestore(
+      gid: gallery.gid,
+      rawTitle: gallery.title,
+      persistedSanitizedTitle: gallery.sanitizedTitle,
+      galleryDirectoryPath: galleryDir.path,
+    );
+    if (gallery.sanitizedTitle != restoredSanitizedTitle) {
+      gallery = gallery.copyWith(sanitizedTitle: Value(restoredSanitizedTitle));
     }
 
     List<GalleryImage?> images = (jsonDecode(raw['images']) as List).map((_map) => _map == null ? null : GalleryImage.fromJson(_map)).toList();
