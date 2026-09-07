@@ -913,7 +913,7 @@ class ru_RU {
       /// tag dialog actions
       'tagActionAccurate': 'Точно',
       'tagActionInaccurate': 'Неточно',
-      'tagActionFollow': 'Отслеживать',
+      'tagActionFollow': 'Отслеживать тег',
       'tagActionHide': 'Скрыть тег',
       'tagActionTagSets': 'Управление наборами тегов',
       'tagActionVoteUpTooltip': 'Проголосовать, что этот тег подходит для этой галереи',

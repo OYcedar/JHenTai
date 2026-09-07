@@ -905,7 +905,7 @@ Example 2: Block comments with a score not exceeding 10————Comment Score
       /// tag dialog actions
       'tagActionAccurate': 'Accurate',
       'tagActionInaccurate': 'Inaccurate',
-      'tagActionFollow': 'Follow',
+      'tagActionFollow': 'Follow Tag',
       'tagActionHide': 'Hide Tag',
       'tagActionTagSets': 'Manage Tag Sets',
       'tagActionVoteUpTooltip': 'Vote that this tag is correct for this gallery',

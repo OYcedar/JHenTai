@@ -910,7 +910,7 @@ favnote：配對收藏備註
       /// tag dialog actions
       'tagActionAccurate': '準確',
       'tagActionInaccurate': '不準確',
-      'tagActionFollow': '關注',
+      'tagActionFollow': '關注標籤',
       'tagActionHide': '隱藏標籤',
       'tagActionTagSets': '管理標籤集',
       'tagActionVoteUpTooltip': '投票認為此標籤適用於當前畫廊',

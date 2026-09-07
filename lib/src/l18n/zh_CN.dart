@@ -909,7 +909,7 @@ favnote：匹配收藏备注
       /// tag dialog actions
       'tagActionAccurate': '准确',
       'tagActionInaccurate': '不准确',
-      'tagActionFollow': '关注',
+      'tagActionFollow': '关注标签',
       'tagActionHide': '屏蔽标签',
       'tagActionTagSets': '管理标签集',
       'tagActionVoteUpTooltip': '投票认为此标签适用于当前画廊',
