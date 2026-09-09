@@ -147,8 +147,8 @@ mixin EHTagVoteLogicMixin<T extends StatefulWidget> on State<T> implements Login
         parser: EHSpiderParser.voteTagResponse2ErrorMessage,
       );
     } on DioException catch (e) {
-      log.error('voteTagFailed'.tr, e.message);
-      snack('voteTagFailed'.tr, e.message ?? '');
+      log.error('voteTagFailed'.tr, e.errorMsg);
+      snack('voteTagFailed'.tr, e.errorMsg ?? '');
       setStateSafely(() {
         if (clickedIsVotingUp) {
           voteUpState = LoadingState.idle;
